@@ -1,0 +1,36 @@
+{
+    "name": "jjk",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "DavidAnson.vscode-markdownlint",
+                "ms-vscode.extension-test-runner",
+                "esbenp.prettier-vscode",
+                "dbaeumer.vscode-eslint"
+            ],
+            "settings": {
+                "[markdown]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "prettier.proseWrap": "always",
+                "markdownlint.config": {
+                    "no-duplicate-heading": {
+                        "siblings_only": true
+                    }
+                },
+                "files.insertFinalNewline": true
+            }
+        }
+    },
+    "workspaceFolder": "/workspaces/jjk",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/jjk,type=bind,consistency=cached",
+    "remoteUser": "node",
+    "mounts": [
+        "source=config-jjk,target=/home/node/persistent-config,type=volume",
+        "source=/etc/localtime,target=/usr/share/zoneinfo/hostlocaltime,type=bind,readonly"
+    ],
+    "postCreateCommand": "bash .devcontainer/setup.sh"
+}
