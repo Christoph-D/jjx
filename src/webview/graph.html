@@ -362,7 +362,12 @@
                 const textContent = document.createElement('div');
                 textContent.className = 'text-content';
                 const nodeLabel = document.createElement("div");
-                nodeLabel.textContent = change.label;
+                const changeId = change.contextValue;
+                const labelWithMonospace = change.label.replace(
+                    changeId,
+                    `<span class="change-id">${changeId}</span>`
+                );
+                nodeLabel.innerHTML = labelWithMonospace;
                 textContent.append(nodeLabel);
                 const nodeDescription = document.createElement("div");
                 nodeDescription.className = 'description';

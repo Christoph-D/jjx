@@ -174,3 +174,7 @@ body {
 .node-circle.highlighted .diamond-path {
     opacity: 1;
 }
+
+.change-id {
+    font-family: var(--vscode-editor-font-family, monospace);
+}

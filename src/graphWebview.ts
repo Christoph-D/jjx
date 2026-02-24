@@ -299,7 +299,7 @@ export function parseJJLog(output: string): ChangeNode[] {
       ? symbolsMatch[0].match(/[@○◆]/)
       : null;
     const branchType = branchTypeMatch ? branchTypeMatch[0] : undefined;
-    const formattedLine = `${description}${changeId === "zzzzzzzz" ? "root()" : ""} • ${changeId} • ${commitIdMatch ? commitIdMatch[0] : ""}`;
+    const formattedLine = `${changeId} • ${description}${changeId === "zzzzzzzz" ? "root()" : ""} • ${commitIdMatch ? commitIdMatch[0] : ""}`;
 
     // Create a ChangeNode for the odd line with the appended description
     changeNodes.push(
