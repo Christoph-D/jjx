@@ -436,6 +436,16 @@
                     });
                 };
 
+                node.ondblclick = (e) => {
+                    if (change.contextValue === workingCopyId) {
+                        return;
+                    }
+                    vscode.postMessage({
+                        command: 'editChange',
+                        changeId: change.contextValue
+                    });
+                };
+
                 node.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
                     if (change.contextValue === "zzzzzzzz") {
