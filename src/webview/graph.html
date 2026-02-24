@@ -43,7 +43,7 @@
                         command: 'selectChange',
                         selectedNodes: []
                     });
-                    updateGraph(message.changes, message.workingCopyId, message.changeEditAction, message.preserveScroll);
+                    updateGraph(message.changes, message.workingCopyId, message.changeEditAction, message.graphStyle, message.preserveScroll);
                     break;
             }
         });
@@ -331,7 +331,7 @@
             return [fromNode, toNode];
         }
 
-        function updateGraph(changes, workingCopyId, changeEditAction, preserveScroll = false) {
+        function updateGraph(changes, workingCopyId, changeEditAction, graphStyle, preserveScroll = false) {
             // Save current scroll position only when preserveScroll is true
             const scrollTop = preserveScroll ?
                 (window.scrollY || document.documentElement.scrollTop) : 0;
@@ -340,6 +340,13 @@
             const circlesContainer = document.getElementById('node-circles');
             nodesContainer.innerHTML = '';
             circlesContainer.innerHTML = '';
+
+            const graphContainer = document.getElementById('graph');
+            if (graphStyle === 'compact') {
+                graphContainer.classList.add('compact');
+            } else {
+                graphContainer.classList.remove('compact');
+            }
 
             // Calculate maximum curve offset needed
             let maxParentCount = 0;
@@ -366,7 +373,12 @@
                 const textContent = document.createElement('div');
                 textContent.className = 'text-content';
                 const nodeLabel = document.createElement("div");
-                nodeLabel.textContent = change.label;
+                const changeId = change.contextValue;
+                const labelWithMonospace = change.label.replace(
+                    changeId,
+                    `<span class="change-id">${changeId}</span>`
+                );
+                nodeLabel.innerHTML = labelWithMonospace;
                 textContent.append(nodeLabel);
                 const nodeDescription = document.createElement("div");
                 nodeDescription.className = 'description';

@@ -149,14 +149,16 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       return;
     }
 
-    let changes = parseJJLog(await this.repository.log());
+    const config = vscode.workspace.getConfiguration("jjk");
+    const graphStyle = config.get<string>("graphStyle") || "full";
+
+    let changes = parseJJLog(await this.repository.log(), graphStyle);
     changes = await this.getChangeNodesWithParents(changes);
 
     const status = await this.repository.getStatus(true);
     const workingCopyId = status.workingCopy.changeId;
 
     this.selectedNodes.clear();
-    const config = vscode.workspace.getConfiguration("jjk");
     const changeEditAction = config.get<string>("changeEditAction");
 
     this.panel.webview.postMessage({
@@ -164,6 +166,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       changes: changes,
       workingCopyId,
       changeEditAction,
+      graphStyle,
       preserveScroll: true,
     });
   }
@@ -288,7 +291,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   }
 }
 
-export function parseJJLog(output: string): ChangeNode[] {
+export function parseJJLog(output: string, style: string = "full"): ChangeNode[] {
   const lines = output.split("\n");
   const changeNodes: ChangeNode[] = [];
 
@@ -298,18 +301,15 @@ export function parseJJLog(output: string): ChangeNode[] {
 
     let changeId = "";
     if (i % 2 === 0) {
-      // Check if the line is odd-numbered (0-based index, so 0, 2, 4... are odd lines)
-      const match = oddLine.match(/\b([a-zA-Z0-9]+)\b/); // Match the first group of alphanumeric characters
+      const match = oddLine.match(/\b([a-zA-Z0-9]+)\b/);
       if (match) {
         changeId = match[1];
       }
     }
 
-    // Match the first alphanumeric character or opening parenthesis and everything after it
     const match = evenLine.match(/([a-zA-Z0-9(].*)/);
     const description = match ? match[1] : "";
 
-    // Remove the description from the even line
     if (description) {
       evenLine = evenLine.replace(description, "");
     }
@@ -323,18 +323,27 @@ export function parseJJLog(output: string): ChangeNode[] {
     const symbolsMatch = oddLine.match(/^[^a-zA-Z0-9(]+/);
     const commitIdMatch = oddLine.match(/([a-zA-Z0-9]{8})$/);
 
-    // Add this: Find first occurrence of @, ○, or ◆
     const branchTypeMatch = symbolsMatch
       ? symbolsMatch[0].match(/[@○◆]/)
       : null;
     const branchType = branchTypeMatch ? branchTypeMatch[0] : undefined;
-    const formattedLine = `${description}${changeId === "zzzzzzzz" ? "root()" : ""} • ${changeId} • ${commitIdMatch ? commitIdMatch[0] : ""}`;
 
-    // Create a ChangeNode for the odd line with the appended description
+    let formattedLine: string;
+    let formattedDescription: string;
+
+    if (style === "compact") {
+      const firstLine = description.split("\n")[0] || description;
+      formattedLine = `${changeId} • ${firstLine}${changeId === "zzzzzzzz" ? "root()" : ""} • ${emailMatch ? emailMatch[0] : ""}`;
+      formattedDescription = "";
+    } else {
+      formattedLine = `${changeId} • ${description}${changeId === "zzzzzzzz" ? "root()" : ""} • ${commitIdMatch ? commitIdMatch[0] : ""}`;
+      formattedDescription = `${emailMatch ? emailMatch[0] : ""} ${timestampMatch ? timestampMatch[0] : ""}`;
+    }
+
     changeNodes.push(
       new ChangeNode(
         formattedLine,
-        `${emailMatch ? emailMatch[0] : ""} ${timestampMatch ? timestampMatch[0] : ""}`,
+        formattedDescription,
         changeId,
         changeId,
         undefined,

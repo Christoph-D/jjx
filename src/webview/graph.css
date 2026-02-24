@@ -199,3 +199,16 @@ body {
     background-color: var(--vscode-menu-selectionBackground);
     color: var(--vscode-menu-selectionForeground);
 }
+
+/* Compact mode styling */
+.compact .text-content {
+    min-height: 12px;
+}
+
+.compact .description {
+    display: none;
+}
+
+.change-id {
+    font-family: var(--vscode-editor-font-family, monospace);
+}

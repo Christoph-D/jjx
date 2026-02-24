@@ -491,6 +491,17 @@
           ],
           "description": "Action to perform when clicking the edit button on a change in the graph view",
           "scope": "resource"
+        },
+        "jjk.graphStyle": {
+          "type": "string",
+          "default": "full",
+          "enum": ["full", "compact"],
+          "enumDescriptions": [
+            "Show full commit details: description, change ID, commit ID, author, and timestamp",
+            "Show compact single line: change ID - first line of description - author email"
+          ],
+          "description": "Display style for commits in the graph view",
+          "scope": "resource"
         }
       }
     },
