@@ -9,6 +9,7 @@
 <body>
     <div id="context-menu" class="context-menu">
         <div class="context-menu-item" data-action="edit">Edit this change</div>
+        <div class="context-menu-item" data-action="copyId">Copy change ID</div>
     </div>
     <div id="graph">
         <svg id="connections">
@@ -437,11 +438,17 @@
 
                 node.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
-                    if (change.contextValue === "zzzzzzzz" || change.contextValue === currentWorkingCopyId) {
+                    if (change.contextValue === "zzzzzzzz") {
                         return;
                     }
                     const contextMenu = document.getElementById('context-menu');
                     contextMenu.dataset.changeId = change.contextValue;
+                    const editItem = contextMenu.querySelector('[data-action="edit"]');
+                    if (change.contextValue === currentWorkingCopyId) {
+                        editItem.style.display = 'none';
+                    } else {
+                        editItem.style.display = 'block';
+                    }
                     contextMenu.style.left = e.pageX + 'px';
                     contextMenu.style.top = e.pageY + 'px';
                     contextMenu.style.display = 'block';
@@ -467,11 +474,18 @@
         document.getElementById('context-menu').addEventListener('click', (e) => {
             const contextMenu = document.getElementById('context-menu');
             const changeId = contextMenu.dataset.changeId;
-            if (changeId && changeId !== "zzzzzzzz") {
+            const target = e.target.closest('.context-menu-item');
+            if (!target || !changeId || changeId === "zzzzzzzz") {
+                return;
+            }
+            const action = target.dataset.action;
+            if (action === 'edit') {
                 vscode.postMessage({
                     command: 'editChangeDirect',
                     changeId: changeId
                 });
+            } else if (action === 'copyId') {
+                navigator.clipboard.writeText(changeId);
             }
         });
 
