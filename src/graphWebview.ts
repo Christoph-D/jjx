@@ -250,7 +250,7 @@ export function parseJJLogJson(
   return entries.map((entry) => {
     const changeIdShort = entry.change_id_short;
     const changeIdShortest = entry.change_id_shortest;
-    const changeIdSuffix = changeIdShort.slice(changeIdShortest.length);
+    const changeIdSuffix = entry.change_id.slice(changeIdShortest.length).substring(0, Math.max(0, 4 - changeIdShortest.length));
     const email = entry.author.email;
     const timestamp = entry.author.timestamp;
     const commitId = entry.commit_id_short;
