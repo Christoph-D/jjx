@@ -1543,6 +1543,7 @@ export class JJRepository {
       `", \\"change_id_shortest\\": \\"" ++ change_id.shortest() ++ "\\"" ++` +
       `", \\"commit_id_short\\": \\"" ++ commit_id.short(8) ++ "\\"" ++` +
       `", \\"immutable\\": " ++ if(self.immutable(), "true", "false") ++ ` +
+      `", \\"mine\\": " ++ if(self.mine(), "true", "false") ++ ` +
       `", \\"current_working_copy\\": " ++ if(self.current_working_copy(), "true", "false") ++ ` +
       `", \\"root\\": " ++ if(self.root(), "true", "false") ++ ` +
       `", \\"description\\": " ++ description.escape_json() ++ ` +
@@ -2004,6 +2005,7 @@ export interface LogEntry {
   change_id_shortest: string;
   commit_id_short: string;
   immutable: boolean;
+  mine: boolean;
   current_working_copy: boolean;
   root: boolean,
   description: string;

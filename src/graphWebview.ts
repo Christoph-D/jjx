@@ -259,11 +259,11 @@ export function parseJJLogJson(
 
     if (style === "compact") {
       const firstLine = entry.description.split("\n")[0] || entry.description;
-      formattedLine = `${changeIdShort} ${firstLine}${entry.root ? "root()" : ""} • ${email}`;
+      formattedLine = `${changeIdShort} ${firstLine}${entry.root ? "root()" : ""}`;
     } else {
       formattedLine = `${changeIdShort} ${entry.description}${entry.root ? "root()" : ""} • ${commitId}`;
     }
-    const formattedDescription = `${email} ${timestamp}`;
+    const formattedDescription = (entry.mine || entry.root) ? timestamp : `${email} ${timestamp}`;
 
     return new ChangeNode(
       entry.change_id,
