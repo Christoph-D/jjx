@@ -3,6 +3,8 @@ import * as fs from "fs";
 import type { JJRepository, LogEntry } from "./repository";
 import path from "path";
 
+const rootChangeId = "z".repeat(32);
+
 type Message = {
   command: string;
   changeId: string;
@@ -18,7 +20,6 @@ export class ChangeNode {
   label: string;
   description: string;
   tooltip: string;
-  contextValue: string;
   currentWorkingCopy: boolean;
   parentChangeIds?: string[];
   branchType?: string;
@@ -29,7 +30,6 @@ export class ChangeNode {
     label: string,
     description: string,
     tooltip: string,
-    contextValue: string,
     currentWorkingCopy: boolean,
     parentChangeIds?: string[],
     branchType?: string,
@@ -40,7 +40,6 @@ export class ChangeNode {
     this.label = label;
     this.description = description;
     this.tooltip = tooltip;
-    this.contextValue = contextValue;
     this.currentWorkingCopy = currentWorkingCopy;
     this.parentChangeIds = parentChangeIds;
     this.branchType = branchType;
@@ -107,7 +106,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (changeEditAction === "new") {
               await this.repository.new(undefined, [message.changeId]);
             } else {
-              if (message.changeId === "zzzzzzzz") {
+              if (message.changeId === rootChangeId) {
                 return;
               }
               await this.repository.editRetryImmutable(message.changeId);
@@ -120,7 +119,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "editChangeDirect":
           try {
-            if (message.changeId === "zzzzzzzz") {
+            if (message.changeId === rootChangeId) {
               return;
             }
             const status = await this.repository.getStatus(true);
@@ -247,9 +246,10 @@ export function parseJJLogJson(
   style: string = "full",
 ): ChangeNode[] {
   return entries.map((entry) => {
-    const changeIdShort = entry.change_id_short;
     const changeIdShortest = entry.change_id_shortest;
-    const changeIdSuffix = entry.change_id.slice(changeIdShortest.length).substring(0, Math.max(0, 4 - changeIdShortest.length));
+    const changeIdSuffix = entry.change_id
+      .slice(changeIdShortest.length)
+      .substring(0, Math.max(0, 4 - changeIdShortest.length));
     const email = entry.author.email;
     const timestamp = entry.author.timestamp;
     const commitId = entry.commit_id_short;
@@ -267,11 +267,12 @@ export function parseJJLogJson(
 
     const desc = description(entry);
     if (style === "compact") {
-      formattedLine = `${changeIdShort} ${desc}`;
+      formattedLine = desc;
     } else {
-      formattedLine = `${changeIdShort} ${desc} • ${commitId}`;
+      formattedLine = `${desc} • ${commitId}`;
     }
-    const formattedDescription = (entry.mine || entry.root) ? timestamp : `${email} ${timestamp}`;
+    const formattedDescription =
+      entry.mine || entry.root ? timestamp : `${email} ${timestamp}`;
 
     return new ChangeNode(
       entry.change_id,
@@ -280,7 +281,6 @@ export function parseJJLogJson(
       formattedLine,
       formattedDescription,
       entry.change_id,
-      changeIdShort,
       entry.current_working_copy,
       entry.parents,
       branchType,

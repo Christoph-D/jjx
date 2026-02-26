@@ -21,6 +21,7 @@
     </div>
     <script>
         const vscode = acquireVsCodeApi();
+        const rootChangeId = "z".repeat(32);
         let selectedNodes = new Set();
 
         window.addEventListener('message', event => {
@@ -360,7 +361,7 @@
             document.documentElement.style.setProperty('--curve-offset', `${maxOffset}px`);
 
             changes.forEach(change => {
-                if (!change.contextValue) return;
+                if (!change.changeId) return;
                 const node = document.createElement('div');
                 node.className = 'change-node';
                 node.dataset.changeId = change.changeId;
@@ -372,14 +373,9 @@
                 const textContent = document.createElement('div');
                 textContent.className = 'text-content';
                 const nodeLabel = document.createElement("div");
-                const changeId = change.contextValue;
-                const changeIdPrefix = change.changeIdPrefix || changeId;
+                const changeIdPrefix = change.changeIdPrefix;
                 const changeIdSuffix = change.changeIdSuffix || "";
-                const labelWithMonospace = change.label.replace(
-                    changeId,
-                    `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span>`
-                );
-                nodeLabel.innerHTML = labelWithMonospace;
+                nodeLabel.innerHTML = `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span> ${change.label}`;
                 textContent.append(nodeLabel);
                 const nodeDescription = document.createElement("div");
                 nodeDescription.className = 'description';
@@ -397,12 +393,12 @@
                     // Just send the edit command and let updateGraph handle the cleanup
                     await vscode.postMessage({
                         command: 'editChange',
-                        changeId: change.contextValue
+                        changeId: change.changeId
                     });
                 };
 
                 // Hide edit button if this is the working copy, or root commit in edit mode
-                if (change.currentWorkingCopy || (changeEditAction === 'edit' && change.contextValue === "zzzzzzzz")) {
+                if (change.currentWorkingCopy || (changeEditAction === 'edit' && change.changeId === rootChangeId)) {
                     editButton.style.display = 'none';
                 }
                 node.appendChild(editButton);
@@ -433,13 +429,11 @@
                 });
 
                 node.onclick = (e) => {
-                    if (selectedNodes.has(change.contextValue)) {
-                        // Deselecting a node
-                        selectedNodes.delete(change.contextValue);
+                    if (selectedNodes.has(change.changeId)) {
+                        selectedNodes.delete(change.changeId);
                         node.classList.remove('selected');
                     } else {
-                        // Adding a new node to selection
-                        selectedNodes.add(change.contextValue);
+                        selectedNodes.add(change.changeId);
                         node.classList.add('selected');
                     }
 
@@ -455,17 +449,17 @@
                     }
                     vscode.postMessage({
                         command: 'editChange',
-                        changeId: change.contextValue
+                        changeId: change.changeId
                     });
                 };
 
                 node.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
-                    if (change.contextValue === "zzzzzzzz") {
+                    if (change.changeId === rootChangeId) {
                         return;
                     }
                     const contextMenu = document.getElementById('context-menu');
-                    contextMenu.dataset.changeId = change.contextValue;
+                    contextMenu.dataset.changeId = change.changeId;
                     const editItem = contextMenu.querySelector('[data-action="edit"]');
                     if (change.currentWorkingCopy) {
                         editItem.style.display = 'none';
@@ -498,7 +492,7 @@
             const contextMenu = document.getElementById('context-menu');
             const changeId = contextMenu.dataset.changeId;
             const target = e.target.closest('.context-menu-item');
-            if (!target || !changeId || changeId === "zzzzzzzz") {
+            if (!target || !changeId || changeId === rootChangeId) {
                 return;
             }
             const action = target.dataset.action;
