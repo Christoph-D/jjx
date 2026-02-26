@@ -205,10 +205,6 @@ body {
     min-height: 12px;
 }
 
-.compact .description {
-    display: none;
-}
-
 .change-id {
     font-family: var(--vscode-editor-font-family, monospace);
 }

@@ -329,16 +329,14 @@ export function parseJJLog(output: string, style: string = "full"): ChangeNode[]
     const branchType = branchTypeMatch ? branchTypeMatch[0] : undefined;
 
     let formattedLine: string;
-    let formattedDescription: string;
 
     if (style === "compact") {
       const firstLine = description.split("\n")[0] || description;
       formattedLine = `${changeId} • ${firstLine}${changeId === "zzzzzzzz" ? "root()" : ""} • ${emailMatch ? emailMatch[0] : ""}`;
-      formattedDescription = "";
     } else {
       formattedLine = `${changeId} • ${description}${changeId === "zzzzzzzz" ? "root()" : ""} • ${commitIdMatch ? commitIdMatch[0] : ""}`;
-      formattedDescription = `${emailMatch ? emailMatch[0] : ""} ${timestampMatch ? timestampMatch[0] : ""}`;
     }
+    const formattedDescription = `${emailMatch ? emailMatch[0] : ""} ${timestampMatch ? timestampMatch[0] : ""}`;
 
     changeNodes.push(
       new ChangeNode(
