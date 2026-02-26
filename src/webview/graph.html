@@ -376,6 +376,14 @@
                 const changeIdPrefix = change.changeIdPrefix;
                 const changeIdSuffix = change.changeIdSuffix || "";
                 nodeLabel.innerHTML = `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span> ${change.label}`;
+                if (change.bookmarks && change.bookmarks.length > 0) {
+                    change.bookmarks.forEach(b => {
+                        const pill = document.createElement("span");
+                        pill.className = 'bookmark-pill';
+                        pill.textContent = b;
+                        nodeLabel.appendChild(pill);
+                    });
+                }
                 textContent.append(nodeLabel);
                 const nodeDescription = document.createElement("div");
                 nodeDescription.className = 'description';

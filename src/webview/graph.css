@@ -111,6 +111,18 @@ body {
     opacity: 0.8;
 }
 
+.bookmark-pill {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-left: 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-family: var(--vscode-font-family);
+    background-color: #393a9b;
+    color: #ffffff;
+    vertical-align: middle;
+}
+
 /* Edit button styling */
 .edit-button {
     opacity: 0;

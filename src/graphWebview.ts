@@ -21,6 +21,7 @@ export class ChangeNode {
   description: string;
   tooltip: string;
   currentWorkingCopy: boolean;
+  bookmarks: string[];
   parentChangeIds?: string[];
   branchType?: string;
   constructor(
@@ -31,6 +32,7 @@ export class ChangeNode {
     description: string,
     tooltip: string,
     currentWorkingCopy: boolean,
+    bookmarks: string[],
     parentChangeIds?: string[],
     branchType?: string,
   ) {
@@ -41,6 +43,7 @@ export class ChangeNode {
     this.description = description;
     this.tooltip = tooltip;
     this.currentWorkingCopy = currentWorkingCopy;
+    this.bookmarks = bookmarks;
     this.parentChangeIds = parentChangeIds;
     this.branchType = branchType;
   }
@@ -282,6 +285,7 @@ export function parseJJLogJson(
       formattedDescription,
       entry.change_id,
       entry.current_working_copy,
+      entry.bookmarks || [],
       entry.parents,
       branchType,
     );

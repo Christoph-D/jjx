@@ -1559,7 +1559,7 @@ export class JJRepository {
       '", \\"timestamp\\": \\"" ++ committer.timestamp().local().format("%Y-%m-%d %H:%M:%S") ++ "\\"" ++ ' +
       '"}" ++ ' +
       '", \\"parents\\": [" ++ parents.map(|p| "\\"" ++ p.change_id() ++ "\\"").join(",") ++ "]" ++ ' +
-      '", \\"bookmarks\\": [" ++ bookmarks.map(|b| "\\"" ++ b.name() ++ "\\"").join(",") ++ "]" ++ ' +
+      '", \\"bookmarks\\": [" ++ bookmarks.map(|b| "\\"" ++ b.name() ++ if(b.synced(), "", "*") ++ "\\"").join(",") ++ "]" ++ ' +
       '", \\"tags\\": [" ++ tags.map(|t| "\\"" ++ t.name() ++ "\\"").join(",") ++ "]" ++ ' +
       '"}\\n"';
 
