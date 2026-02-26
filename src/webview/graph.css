@@ -208,3 +208,12 @@ body {
 .change-id {
     font-family: var(--vscode-editor-font-family, monospace);
 }
+
+.change-id-prefix {
+    font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.change-id-suffix {
+    font-family: var(--vscode-editor-font-family, monospace);
+    opacity: 0.5;
+}

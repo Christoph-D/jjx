@@ -11,6 +11,10 @@ type Message = {
 
 export class ChangeNode {
   changeId: string;
+  // Shortest change ID prefix
+  changeIdPrefix: string;
+  // Suffix of the short change ID (after the prefix)
+  changeIdSuffix: string;
   label: string;
   description: string;
   tooltip: string;
@@ -19,6 +23,8 @@ export class ChangeNode {
   branchType?: string;
   constructor(
     changeId: string,
+    changeIdPrefix: string,
+    changeIdSuffix: string,
     label: string,
     description: string,
     tooltip: string,
@@ -27,6 +33,8 @@ export class ChangeNode {
     branchType?: string,
   ) {
     this.changeId = changeId;
+    this.changeIdPrefix = changeIdPrefix;
+    this.changeIdSuffix = changeIdSuffix;
     this.label = label;
     this.description = description;
     this.tooltip = tooltip;
@@ -232,6 +240,8 @@ export function parseJJLogJson(
 ): ChangeNode[] {
   return entries.map((entry) => {
     const changeIdShort = entry.change_id_short;
+    const changeIdShortest = entry.change_id_shortest;
+    const changeIdSuffix = changeIdShort.slice(changeIdShortest.length);
     const email = entry.author.email;
     const timestamp = entry.author.timestamp;
     const commitId = entry.commit_id_short;
@@ -249,9 +259,9 @@ export function parseJJLogJson(
 
     if (style === "compact") {
       const firstLine = entry.description.split("\n")[0] || entry.description;
-      formattedLine = `${changeIdShort} • ${firstLine}${entry.root ? "root()" : ""}`;
+      formattedLine = `${changeIdShort} ${firstLine}${entry.root ? "root()" : ""} • ${email}`;
     } else {
-      formattedLine = `${changeIdShort} • ${entry.description}${entry.root ? "root()" : ""} • ${commitId}`;
+      formattedLine = `${changeIdShort} ${entry.description}${entry.root ? "root()" : ""} • ${commitId}`;
     }
     const formattedDescription = `${email} ${timestamp}`;
 
@@ -259,6 +269,8 @@ export function parseJJLogJson(
 
     return new ChangeNode(
       entry.change_id,
+      changeIdShortest,
+      changeIdSuffix,
       formattedLine,
       formattedDescription,
       entry.change_id,

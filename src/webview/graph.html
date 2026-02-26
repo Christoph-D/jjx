@@ -374,9 +374,11 @@
                 textContent.className = 'text-content';
                 const nodeLabel = document.createElement("div");
                 const changeId = change.contextValue;
+                const changeIdPrefix = change.changeIdPrefix || changeId;
+                const changeIdSuffix = change.changeIdSuffix || "";
                 const labelWithMonospace = change.label.replace(
                     changeId,
-                    `<span class="change-id">${changeId}</span>`
+                    `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span>`
                 );
                 nodeLabel.innerHTML = labelWithMonospace;
                 textContent.append(nodeLabel);

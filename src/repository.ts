@@ -1540,6 +1540,7 @@ export class JJRepository {
       `"{" ++` +
       `"\\"change_id\\": \\"" ++ change_id ++ "\\"" ++` +
       `", \\"change_id_short\\": \\"" ++ change_id.short(8) ++ "\\"" ++` +
+      `", \\"change_id_shortest\\": \\"" ++ change_id.shortest() ++ "\\"" ++` +
       `", \\"commit_id_short\\": \\"" ++ commit_id.short(8) ++ "\\"" ++` +
       `", \\"immutable\\": " ++ if(self.immutable(), "true", "false") ++ ` +
       `", \\"current_working_copy\\": " ++ if(self.current_working_copy(), "true", "false") ++ ` +
@@ -2000,6 +2001,7 @@ export interface ChangeWithDetails extends Change {
 export interface LogEntry {
   change_id: string;
   change_id_short: string;
+  change_id_shortest: string;
   commit_id_short: string;
   immutable: boolean;
   current_working_copy: boolean;
