@@ -19,6 +19,7 @@ export class ChangeNode {
   description: string;
   tooltip: string;
   contextValue: string;
+  currentWorkingCopy: boolean;
   parentChangeIds?: string[];
   branchType?: string;
   constructor(
@@ -29,6 +30,7 @@ export class ChangeNode {
     description: string,
     tooltip: string,
     contextValue: string,
+    currentWorkingCopy: boolean,
     parentChangeIds?: string[],
     branchType?: string,
   ) {
@@ -39,6 +41,7 @@ export class ChangeNode {
     this.description = description;
     this.tooltip = tooltip;
     this.contextValue = contextValue;
+    this.currentWorkingCopy = currentWorkingCopy;
     this.parentChangeIds = parentChangeIds;
     this.branchType = branchType;
   }
@@ -167,16 +170,12 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     const entries = await this.repository.log();
     const changes = parseJJLogJson(entries, graphStyle);
 
-    const status = await this.repository.getStatus(true);
-    const workingCopyId = status.workingCopy.changeId;
-
     this.selectedNodes.clear();
     const changeEditAction = config.get<string>("changeEditAction");
 
     this.panel.webview.postMessage({
       command: "updateGraph",
       changes: changes,
-      workingCopyId,
       changeEditAction,
       graphStyle,
       preserveScroll: true,
@@ -282,6 +281,7 @@ export function parseJJLogJson(
       formattedDescription,
       entry.change_id,
       changeIdShort,
+      entry.current_working_copy,
       entry.parents,
       branchType,
     );
