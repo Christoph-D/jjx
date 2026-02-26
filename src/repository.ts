@@ -1535,35 +1535,7 @@ export class JJRepository {
     }).catch(convertJJErrors);
   }
 
-  async log(
-    rev: string = "::",
-    template: string = "builtin_log_compact",
-    limit: number = 50,
-    noGraph: boolean = false,
-  ) {
-    return (
-      await handleJJCommand(
-        this.spawnJJRead(
-          [
-            "log",
-            "-r",
-            rev,
-            "-n",
-            limit.toString(),
-            "-T",
-            template,
-            ...(noGraph ? ["--no-graph"] : []),
-          ],
-          {
-            timeout: 5000,
-            cwd: this.repositoryRoot,
-          },
-        ),
-      )
-    ).toString();
-  }
-
-  async logJson(rev: string = "::", limit: number = 50): Promise<LogEntry[]> {
+  async log(rev: string = "::", limit: number = 50): Promise<LogEntry[]> {
     const template =
       `"{" ++` +
       `"\\"change_id\\": \\"" ++ change_id ++ "\\"" ++` +

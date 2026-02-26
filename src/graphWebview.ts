@@ -156,7 +156,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     const config = vscode.workspace.getConfiguration("jjk");
     const graphStyle = config.get<string>("graphStyle") || "full";
 
-    const entries = await this.repository.logJson();
+    const entries = await this.repository.log();
     const changes = parseJJLogJson(entries, graphStyle);
 
     const status = await this.repository.getStatus(true);

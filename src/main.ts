@@ -1137,29 +1137,15 @@ export async function activate(context: vscode.ExtensionContext) {
           const items: ({ changeId: string } & vscode.QuickPickItem)[] = [];
 
           try {
-            const childChanges = await repository.log(
-              "all:@+",
-              'change_id ++ "\n"',
-              undefined,
-              true,
-            );
+            const childChanges = await repository.log("@+");
 
             items.push(
-              ...(await Promise.all(
-                childChanges
-                  .trim()
-                  .split("\n")
-                  .map(async (changeId) => {
-                    const show = await repository.show(changeId);
-                    return {
-                      label: `$(arrow-up) Child: ${changeId.substring(0, 8)}`,
-                      description:
-                        show.change.description || "(no description)",
-                      alwaysShow: true,
-                      changeId,
-                    };
-                  }),
-              )),
+              ...childChanges.map((entry) => ({
+                label: `$(arrow-up) Child: ${entry.change_id_short}`,
+                description: entry.description || "(no description)",
+                alwaysShow: true,
+                changeId: entry.change_id_short,
+              })),
             );
           } catch (_) {
             // No child changes or error, continue with just parents
@@ -1304,20 +1290,7 @@ export async function activate(context: vscode.ExtensionContext) {
               throw new Error("Repository not found");
             }
 
-            const parentChangesOutput = (
-              await repository.log(
-                `all:${currentRev}-`,
-                'change_id ++ "\n"',
-                undefined,
-                true,
-              )
-            ).trim();
-
-            if (parentChangesOutput === "") {
-              throw new Error("No parent changes found");
-            }
-
-            const parentChanges = parentChangesOutput.split("\n");
+            const parentChanges = await repository.log(`${currentRev}-`);
 
             if (parentChanges.length === 0) {
               throw new Error("No parent changes found");
@@ -1325,19 +1298,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
             let selectedParentChange: string;
             if (parentChanges.length === 1) {
-              selectedParentChange = parentChanges[0];
+              selectedParentChange = parentChanges[0].change_id;
             } else {
-              const items = (await Promise.all(
-                parentChanges.map(async (changeId) => {
-                  const show = await repository.show(changeId);
-                  return {
-                    label: `$(arrow-down) Parent: ${changeId.substring(0, 8)}`,
-                    description: show.change.description || "(no description)",
-                    alwaysShow: true,
-                    changeId,
-                  };
-                }),
-              )) satisfies vscode.QuickPickItem[];
+              const items = parentChanges.map((entry) => ({
+                label: `$(arrow-down) Parent: ${entry.change_id_short}`,
+                description: entry.description || "(no description)",
+                alwaysShow: true,
+                changeId: entry.change_id,
+              })) satisfies vscode.QuickPickItem[];
 
               const selection = await vscode.window.showQuickPick(items, {
                 placeHolder: "Select parent change to open",
@@ -1403,20 +1371,7 @@ export async function activate(context: vscode.ExtensionContext) {
               throw new Error("Repository not found");
             }
 
-            const childChangesOutput = (
-              await repository.log(
-                `all:${currentRev}+`,
-                'change_id ++ "\n"',
-                undefined,
-                true,
-              )
-            ).trim();
-
-            if (childChangesOutput === "") {
-              throw new Error("No child changes found");
-            }
-
-            const childChanges = childChangesOutput.split("\n");
+            const childChanges = await repository.log(`${currentRev}+`);
 
             if (childChanges.length === 0) {
               throw new Error("No child changes found");
@@ -1424,19 +1379,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
             let selectedChildChange: string;
             if (childChanges.length === 1) {
-              selectedChildChange = childChanges[0];
+              selectedChildChange = childChanges[0].change_id;
             } else {
-              const items = (await Promise.all(
-                childChanges.map(async (changeId) => {
-                  const show = await repository.show(changeId);
-                  return {
-                    label: `$(arrow-up) Child: ${changeId.substring(0, 8)}`,
-                    description: show.change.description || "(no description)",
-                    alwaysShow: true,
-                    changeId,
-                  };
-                }),
-              )) satisfies vscode.QuickPickItem[];
+              const items = childChanges.map((entry) => ({
+                label: `$(arrow-up) Child: ${entry.change_id_short}`,
+                description: entry.description || "(no description)",
+                alwaysShow: true,
+                changeId: entry.change_id,
+              })) satisfies vscode.QuickPickItem[];
 
               const selection = await vscode.window.showQuickPick(items, {
                 placeHolder: "Select child change to open",
