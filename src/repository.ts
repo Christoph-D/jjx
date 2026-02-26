@@ -1563,6 +1563,57 @@ export class JJRepository {
     ).toString();
   }
 
+  async logJson(rev: string = "::", limit: number = 50): Promise<LogEntry[]> {
+    const template =
+      `"{" ++` +
+      `"\\"change_id\\": \\"" ++ change_id ++ "\\"" ++` +
+      `", \\"change_id_short\\": \\"" ++ change_id.short(8) ++ "\\"" ++` +
+      `", \\"commit_id_short\\": \\"" ++ commit_id.short(8) ++ "\\"" ++` +
+      `", \\"immutable\\": " ++ if(self.immutable(), "true", "false") ++ ` +
+      `", \\"current_working_copy\\": " ++ if(self.current_working_copy(), "true", "false") ++ ` +
+      `", \\"root\\": " ++ if(self.root(), "true", "false") ++ ` +
+      `", \\"description\\": " ++ description.escape_json() ++ ` +
+      `", \\"author\\": " ++ json(author) ++ ` +
+      `", \\"committer\\": " ++ json(committer) ++ ` +
+      `", \\"parents\\": [" ++ parents.map(|p| "\\"" ++ p.change_id() ++ "\\"").join(",") ++ "]" ++ ` +
+      `", \\"bookmarks\\": [" ++ bookmarks.map(|b| "\\"" ++ b.name() ++ "\\"").join(",") ++ "]" ++ ` +
+      `", \\"tags\\": [" ++ tags.map(|t| "\\"" ++ t.name() ++ "\\"").join(",") ++ "]" ++ ` +
+      `"}\\n"`;
+
+    const output = (
+      await handleJJCommand(
+        this.spawnJJRead(
+          [
+            "log",
+            "-r",
+            rev,
+            "-n",
+            limit.toString(),
+            "-T",
+            template,
+            "--no-graph",
+          ],
+          {
+            timeout: 5000,
+            cwd: this.repositoryRoot,
+          },
+        ),
+      )
+    ).toString();
+
+    if (!output.trim()) {
+      return [];
+    }
+
+    const entries: LogEntry[] = [];
+    for (const line of output.trim().split("\n")) {
+      if (line.trim()) {
+        entries.push(JSON.parse(line) as LogEntry);
+      }
+    }
+    return entries;
+  }
+
   async editRetryImmutable(rev: string) {
     try {
       return await this.edit(rev);
@@ -1972,6 +2023,29 @@ export interface ChangeWithDetails extends Change {
     email: string;
   };
   authoredDate: string;
+}
+
+export interface LogEntry {
+  change_id: string;
+  change_id_short: string;
+  commit_id_short: string;
+  immutable: boolean;
+  current_working_copy: boolean;
+  root: boolean,
+  description: string;
+  author: {
+    name: string;
+    email: string;
+    timestamp: string;
+  };
+  committer: {
+    name: string;
+    email: string;
+    timestamp: string;
+  };
+  parents: string[];
+  bookmarks: string[];
+  tags: string[];
 }
 
 export type RepositoryStatus = {

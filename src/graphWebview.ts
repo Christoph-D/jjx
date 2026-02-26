@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
-import type { JJRepository } from "./repository";
+import type { JJRepository, LogEntry } from "./repository";
 import path from "path";
 
 type Message = {
@@ -10,6 +10,7 @@ type Message = {
 };
 
 export class ChangeNode {
+  changeId: string;
   label: string;
   description: string;
   tooltip: string;
@@ -17,6 +18,7 @@ export class ChangeNode {
   parentChangeIds?: string[];
   branchType?: string;
   constructor(
+    changeId: string,
     label: string,
     description: string,
     tooltip: string,
@@ -24,6 +26,7 @@ export class ChangeNode {
     parentChangeIds?: string[],
     branchType?: string,
   ) {
+    this.changeId = changeId;
     this.label = label;
     this.description = description;
     this.tooltip = tooltip;
@@ -88,7 +91,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "editChange":
           try {
             const config = vscode.workspace.getConfiguration("jjk");
-            const changeEditAction = config.get<string>("changeEditAction") || "edit";
+            const changeEditAction =
+              config.get<string>("changeEditAction") || "edit";
             if (changeEditAction === "new") {
               await this.repository.new(undefined, [message.changeId]);
             } else {
@@ -152,8 +156,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     const config = vscode.workspace.getConfiguration("jjk");
     const graphStyle = config.get<string>("graphStyle") || "full";
 
-    let changes = parseJJLog(await this.repository.log(), graphStyle);
-    changes = await this.getChangeNodesWithParents(changes);
+    const entries = await this.repository.logJson();
+    const changes = parseJJLogJson(entries, graphStyle);
 
     const status = await this.repository.getStatus(true);
     const workingCopyId = status.workingCopy.changeId;
@@ -210,80 +214,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     return html;
   }
 
-  private async getChangeNodesWithParents(
-    changeNodes: ChangeNode[],
-  ): Promise<ChangeNode[]> {
-    const output = await this.repository.log(
-      "::", // get all changes
-      `
-        if(root,
-          "root()",
-          concat(
-            self.change_id().short(),
-            " ",
-            parents.map(|p| p.change_id().short()).join(" "),
-            "\n"
-          )
-        )
-        `,
-      50,
-      false,
-    );
-
-    const lines = output.split("\n");
-
-    // Build a map of change IDs to their parent IDs
-    const parentMap = new Map<string, string[]>();
-
-    for (const line of lines) {
-      // Extract only alphanumeric strings from the line
-      const ids = line.match(/[a-zA-Z0-9]+/g) || [];
-      if (ids.length < 1) {
-        continue;
-      }
-
-      // Check for root() after cleaning up symbols
-      if (ids[0] === "root") {
-        continue;
-      }
-
-      const [changeId, ...parentIds] = ids;
-      if (!changeId) {
-        continue;
-      }
-
-      // Take only the first 8 characters of each ID
-      parentMap.set(
-        changeId.substring(0, 8),
-        parentIds.map((id) => id.substring(0, 8)),
-      );
-    }
-
-    // Assign parents to nodes using the map
-    const res = changeNodes.map((node) => {
-      if (node.contextValue) {
-        node.parentChangeIds = parentMap.get(node.contextValue) || [];
-      }
-      return node;
-    });
-
-    return res;
-  }
-
   areChangeNodesEqual(a: ChangeNode[], b: ChangeNode[]): boolean {
     if (a.length !== b.length) {
       return false;
     }
-
-    return a.every((nodeA, index) => {
-      const nodeB = b[index];
-      return (
-        nodeA.label === nodeB.label &&
-        nodeA.tooltip === nodeB.tooltip &&
-        nodeA.description === nodeB.description &&
-        nodeA.contextValue === nodeB.contextValue
-      );
-    });
+    return a.every((nodeA, index) => nodeA.changeId === b[index].changeId);
   }
 
   dispose() {
@@ -291,63 +226,45 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   }
 }
 
-export function parseJJLog(output: string, style: string = "full"): ChangeNode[] {
-  const lines = output.split("\n");
-  const changeNodes: ChangeNode[] = [];
+export function parseJJLogJson(
+  entries: LogEntry[],
+  style: string = "full",
+): ChangeNode[] {
+  return entries.map((entry) => {
+    const changeIdShort = entry.change_id_short;
+    const email = entry.author.email;
+    const timestamp = entry.author.timestamp;
+    const commitId = entry.commit_id_short;
 
-  for (let i = 0; i < lines.length; i += 2) {
-    const oddLine = lines[i];
-    let evenLine = lines[i + 1] || "";
-
-    let changeId = "";
-    if (i % 2 === 0) {
-      const match = oddLine.match(/\b([a-zA-Z0-9]+)\b/);
-      if (match) {
-        changeId = match[1];
-      }
+    let branchType: string | undefined;
+    if (entry.current_working_copy) {
+      branchType = "@";
+    } else if (entry.immutable) {
+      branchType = "◆";
+    } else {
+      branchType = "○";
     }
-
-    const match = evenLine.match(/([a-zA-Z0-9(].*)/);
-    const description = match ? match[1] : "";
-
-    if (description) {
-      evenLine = evenLine.replace(description, "");
-    }
-
-    const emailMatch = oddLine.match(
-      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
-    );
-    const timestampMatch = oddLine.match(
-      /\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b/,
-    );
-    const symbolsMatch = oddLine.match(/^[^a-zA-Z0-9(]+/);
-    const commitIdMatch = oddLine.match(/([a-zA-Z0-9]{8})$/);
-
-    const branchTypeMatch = symbolsMatch
-      ? symbolsMatch[0].match(/[@○◆]/)
-      : null;
-    const branchType = branchTypeMatch ? branchTypeMatch[0] : undefined;
 
     let formattedLine: string;
 
     if (style === "compact") {
-      const firstLine = description.split("\n")[0] || description;
-      formattedLine = `${changeId} • ${firstLine}${changeId === "zzzzzzzz" ? "root()" : ""} • ${emailMatch ? emailMatch[0] : ""}`;
+      const firstLine = entry.description.split("\n")[0] || entry.description;
+      formattedLine = `${changeIdShort} • ${firstLine}${entry.root ? "root()" : ""}`;
     } else {
-      formattedLine = `${changeId} • ${description}${changeId === "zzzzzzzz" ? "root()" : ""} • ${commitIdMatch ? commitIdMatch[0] : ""}`;
+      formattedLine = `${changeIdShort} • ${entry.description}${entry.root ? "root()" : ""} • ${commitId}`;
     }
-    const formattedDescription = `${emailMatch ? emailMatch[0] : ""} ${timestampMatch ? timestampMatch[0] : ""}`;
+    const formattedDescription = `${email} ${timestamp}`;
 
-    changeNodes.push(
-      new ChangeNode(
-        formattedLine,
-        formattedDescription,
-        changeId,
-        changeId,
-        undefined,
-        branchType,
-      ),
+    const parentIdsShort = entry.parents.map((p) => p.substring(0, 8));
+
+    return new ChangeNode(
+      entry.change_id,
+      formattedLine,
+      formattedDescription,
+      entry.change_id,
+      changeIdShort,
+      parentIdsShort,
+      branchType,
     );
-  }
-  return changeNodes;
+  });
 }
