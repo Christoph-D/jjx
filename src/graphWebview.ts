@@ -234,6 +234,15 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   }
 }
 
+function description(entry: LogEntry) {
+  if (entry.root) {
+    return "root()";
+  }
+  const prefix = entry.empty ? "(empty) " : "";
+  const desc = entry.description.split("\n")[0] || "(no description set)";
+  return prefix + desc;
+}
+
 export function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
@@ -257,11 +266,11 @@ export function parseJJLogJson(
 
     let formattedLine: string;
 
+    const desc = description(entry);
     if (style === "compact") {
-      const firstLine = entry.description.split("\n")[0] || entry.description;
-      formattedLine = `${changeIdShort} ${firstLine}${entry.root ? "root()" : ""}`;
+      formattedLine = `${changeIdShort} ${desc}`;
     } else {
-      formattedLine = `${changeIdShort} ${entry.description}${entry.root ? "root()" : ""} • ${commitId}`;
+      formattedLine = `${changeIdShort} ${desc} • ${commitId}`;
     }
     const formattedDescription = (entry.mine || entry.root) ? timestamp : `${email} ${timestamp}`;
 
