@@ -1537,23 +1537,31 @@ export class JJRepository {
 
   async log(rev: string = "::", limit: number = 50): Promise<LogEntry[]> {
     const template =
-      `"{" ++` +
-      `"\\"change_id\\": \\"" ++ change_id ++ "\\"" ++` +
-      `", \\"change_id_short\\": \\"" ++ change_id.short(8) ++ "\\"" ++` +
-      `", \\"change_id_shortest\\": \\"" ++ change_id.shortest() ++ "\\"" ++` +
-      `", \\"commit_id_short\\": \\"" ++ commit_id.short(8) ++ "\\"" ++` +
-      `", \\"immutable\\": " ++ if(self.immutable(), "true", "false") ++ ` +
-      `", \\"mine\\": " ++ if(self.mine(), "true", "false") ++ ` +
-      `", \\"empty\\": " ++ if(self.empty(), "true", "false") ++ ` +
-      `", \\"current_working_copy\\": " ++ if(self.current_working_copy(), "true", "false") ++ ` +
-      `", \\"root\\": " ++ if(self.root(), "true", "false") ++ ` +
-      `", \\"description\\": " ++ description.escape_json() ++ ` +
-      `", \\"author\\": " ++ json(author) ++ ` +
-      `", \\"committer\\": " ++ json(committer) ++ ` +
-      `", \\"parents\\": [" ++ parents.map(|p| "\\"" ++ p.change_id() ++ "\\"").join(",") ++ "]" ++ ` +
-      `", \\"bookmarks\\": [" ++ bookmarks.map(|b| "\\"" ++ b.name() ++ "\\"").join(",") ++ "]" ++ ` +
-      `", \\"tags\\": [" ++ tags.map(|t| "\\"" ++ t.name() ++ "\\"").join(",") ++ "]" ++ ` +
-      `"}\\n"`;
+      '"{" ++' +
+      '"\\"change_id\\": \\"" ++ change_id ++ "\\"" ++' +
+      '", \\"change_id_short\\": \\"" ++ change_id.short(8) ++ "\\"" ++' +
+      '", \\"change_id_shortest\\": \\"" ++ change_id.shortest() ++ "\\"" ++' +
+      '", \\"commit_id_short\\": \\"" ++ commit_id.short(8) ++ "\\"" ++' +
+      '", \\"immutable\\": " ++ if(self.immutable(), "true", "false") ++ ' +
+      '", \\"mine\\": " ++ if(self.mine(), "true", "false") ++ ' +
+      '", \\"empty\\": " ++ if(self.empty(), "true", "false") ++ ' +
+      '", \\"current_working_copy\\": " ++ if(self.current_working_copy(), "true", "false") ++ ' +
+      '", \\"root\\": " ++ if(self.root(), "true", "false") ++ ' +
+      '", \\"description\\": " ++ description.escape_json() ++ ' +
+      '", \\"author\\": {" ++ ' +
+      '"\\"name\\": " ++ author.name().escape_json() ++ ' +
+      '", \\"email\\": \\"" ++ author.email() ++ "\\"" ++ ' +
+      '", \\"timestamp\\": \\"" ++ author.timestamp().local().format("%Y-%m-%d %H:%M:%S") ++ "\\"" ++ ' +
+      '"}" ++ ' +
+      '", \\"committer\\": {" ++ ' +
+      '"\\"name\\": " ++ committer.name().escape_json() ++ ' +
+      '", \\"email\\": \\"" ++ committer.email() ++ "\\"" ++ ' +
+      '", \\"timestamp\\": \\"" ++ committer.timestamp().local().format("%Y-%m-%d %H:%M:%S") ++ "\\"" ++ ' +
+      '"}" ++ ' +
+      '", \\"parents\\": [" ++ parents.map(|p| "\\"" ++ p.change_id() ++ "\\"").join(",") ++ "]" ++ ' +
+      '", \\"bookmarks\\": [" ++ bookmarks.map(|b| "\\"" ++ b.name() ++ "\\"").join(",") ++ "]" ++ ' +
+      '", \\"tags\\": [" ++ tags.map(|t| "\\"" ++ t.name() ++ "\\"").join(",") ++ "]" ++ ' +
+      '"}\\n"';
 
     const output = (
       await handleJJCommand(
@@ -2009,7 +2017,7 @@ export interface LogEntry {
   mine: boolean;
   empty: boolean;
   current_working_copy: boolean;
-  root: boolean,
+  root: boolean;
   description: string;
   author: {
     name: string;
