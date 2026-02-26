@@ -265,8 +265,6 @@ export function parseJJLogJson(
     }
     const formattedDescription = `${email} ${timestamp}`;
 
-    const parentIdsShort = entry.parents.map((p) => p.substring(0, 8));
-
     return new ChangeNode(
       entry.change_id,
       changeIdShortest,
@@ -275,7 +273,7 @@ export function parseJJLogJson(
       formattedDescription,
       entry.change_id,
       changeIdShort,
-      parentIdsShort,
+      entry.parents,
       branchType,
     );
   });

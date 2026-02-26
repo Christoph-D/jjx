@@ -365,7 +365,7 @@
                 if (!change.contextValue) return;
                 const node = document.createElement('div');
                 node.className = 'change-node';
-                node.dataset.changeId = change.contextValue;
+                node.dataset.changeId = change.changeId;
                 node.dataset.parentIds = JSON.stringify(change.parentChangeIds || []);
                 node.dataset.branchType = change.branchType;
 
