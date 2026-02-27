@@ -1536,8 +1536,7 @@ export class JJRepository {
   }
 
   async log(rev: string = "::", limit: number = 50): Promise<LogEntry[]> {
-    const template =
-      `"{" ++
+    const template = `"{" ++
       "\\"change_id\\": \\"" ++ change_id ++ "\\"" ++
       ", \\"change_id_short\\": \\"" ++ change_id.short(8) ++ "\\"" ++
       ", \\"change_id_shortest\\": \\"" ++ change_id.shortest() ++ "\\"" ++
@@ -1558,6 +1557,14 @@ export class JJRepository {
       "\\"name\\": " ++ committer.name().escape_json() ++
       ", \\"email\\": \\"" ++ committer.email() ++ "\\"" ++
       ", \\"timestamp\\": \\"" ++ committer.timestamp().local().format("%Y-%m-%d %H:%M:%S") ++ "\\"" ++
+      "}" ++
+      ", \\"diff\\": {" ++
+      "\\"total_added\\": " ++ self.diff().stat().total_added() ++
+      ", \\"total_removed\\": " ++ self.diff().stat().total_removed() ++
+      ", \\"files\\": [" ++ self.diff().stat().files().map(|f| "{" ++
+      "\\"path\\": \\"" ++ f.path().display() ++ "\\"" ++
+      ", \\"status_char\\": \\"" ++ f.status_char() ++ "\\"" ++
+      "}").join(",") ++ "]" ++
       "}" ++
       ", \\"parents\\": [" ++ parents.map(|p| "\\"" ++ p.change_id() ++ "\\"").join(",") ++ "]" ++
       ", \\"bookmarks\\": [" ++ bookmarks.map(|b| "\\"" ++ b.name() ++ if(b.synced(), "", "*") ++ "\\"").join(",") ++ "]" ++
@@ -2009,6 +2016,11 @@ export interface ChangeWithDetails extends Change {
   authoredDate: string;
 }
 
+export interface LogEntryFile {
+  path: string;
+  status_char: FileStatusType;
+}
+
 export interface LogEntry {
   change_id: string;
   change_id_short: string;
@@ -2030,6 +2042,11 @@ export interface LogEntry {
     name: string;
     email: string;
     timestamp: string;
+  };
+  diff: {
+    total_added: number;
+    total_removed: number;
+    files: LogEntryFile[];
   };
   parents: string[];
   bookmarks: string[];
