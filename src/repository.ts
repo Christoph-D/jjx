@@ -11,6 +11,7 @@ import { JJFileSystemProvider } from "./fileSystemProvider";
 import * as os from "os";
 import * as crypto from "crypto";
 import which from "which";
+import { generateTemplate, LOG_ENTRY_FIELDS } from "./templateBuilder";
 
 async function getJJVersion(jjPath: string): Promise<string> {
   try {
@@ -1536,40 +1537,7 @@ export class JJRepository {
   }
 
   async log(rev: string = "::", limit: number = 50): Promise<LogEntry[]> {
-    const template = `"{" ++
-      "\\"change_id\\": \\"" ++ change_id ++ "\\"" ++
-      ", \\"change_id_short\\": \\"" ++ change_id.short(8) ++ "\\"" ++
-      ", \\"change_id_shortest\\": \\"" ++ change_id.shortest() ++ "\\"" ++
-      ", \\"commit_id_short\\": \\"" ++ commit_id.short(8) ++ "\\"" ++
-      ", \\"immutable\\": " ++ if(self.immutable(), "true", "false") ++
-      ", \\"mine\\": " ++ if(self.mine(), "true", "false") ++
-      ", \\"empty\\": " ++ if(self.empty(), "true", "false") ++
-      ", \\"current_working_copy\\": " ++ if(self.current_working_copy(), "true", "false") ++
-      ", \\"root\\": " ++ if(self.root(), "true", "false") ++
-      ", \\"conflict\\": " ++ if(self.conflict(), "true", "false") ++
-      ", \\"description\\": " ++ description.escape_json() ++
-      ", \\"author\\": {" ++
-      "\\"name\\": " ++ author.name().escape_json() ++
-      ", \\"email\\": \\"" ++ author.email() ++ "\\"" ++
-      ", \\"timestamp\\": \\"" ++ author.timestamp().local().format("%Y-%m-%d %H:%M:%S") ++ "\\"" ++
-      "}" ++
-      ", \\"committer\\": {" ++
-      "\\"name\\": " ++ committer.name().escape_json() ++
-      ", \\"email\\": \\"" ++ committer.email() ++ "\\"" ++
-      ", \\"timestamp\\": \\"" ++ committer.timestamp().local().format("%Y-%m-%d %H:%M:%S") ++ "\\"" ++
-      "}" ++
-      ", \\"diff\\": {" ++
-      "\\"total_added\\": " ++ self.diff().stat().total_added() ++
-      ", \\"total_removed\\": " ++ self.diff().stat().total_removed() ++
-      ", \\"files\\": [" ++ self.diff().stat().files().map(|f| "{" ++
-      "\\"path\\": \\"" ++ f.path().display() ++ "\\"" ++
-      ", \\"status_char\\": \\"" ++ f.status_char() ++ "\\"" ++
-      "}").join(",") ++ "]" ++
-      "}" ++
-      ", \\"parents\\": [" ++ parents.map(|p| "\\"" ++ p.change_id() ++ "\\"").join(",") ++ "]" ++
-      ", \\"bookmarks\\": [" ++ bookmarks.map(|b| "\\"" ++ b.name() ++ if(b.synced(), "", "*") ++ "\\"").join(",") ++ "]" ++
-      ", \\"tags\\": [" ++ tags.map(|t| "\\"" ++ t.name() ++ if(t.synced(), "", "*") ++ "\\"").join(",") ++ "]" ++
-      "}\\n"`;
+    const template = generateTemplate(LOG_ENTRY_FIELDS);
 
     const output = (
       await handleJJCommand(

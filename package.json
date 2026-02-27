@@ -655,7 +655,9 @@
     "pretest": "npm run compile-tests && npm run compile",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "node out/test/runTest.js"
+    "unit-test": "node --import tsx --test src/unit-test/templateBuilder.test.ts",
+    "vscode-test": "node out/test/runTest.js",
+    "test": "npm-run-all unit-test vscode-test"
   },
   "devDependencies": {
     "@types/cross-spawn": "^6.0.6",
@@ -664,6 +666,7 @@
     "@types/vscode": "^1.96.0",
     "@types/which": "^3.0.4",
     "@vscode/test-cli": "^0.0.10",
+    "tsx": "^4.19.0",
     "@vscode/test-electron": "^2.4.1",
     "esbuild": "^0.24.0",
     "eslint": "^9.16.0",
