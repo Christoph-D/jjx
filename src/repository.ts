@@ -1547,6 +1547,7 @@ export class JJRepository {
       ", \\"empty\\": " ++ if(self.empty(), "true", "false") ++
       ", \\"current_working_copy\\": " ++ if(self.current_working_copy(), "true", "false") ++
       ", \\"root\\": " ++ if(self.root(), "true", "false") ++
+      ", \\"conflict\\": " ++ if(self.conflict(), "true", "false") ++
       ", \\"description\\": " ++ description.escape_json() ++
       ", \\"author\\": {" ++
       "\\"name\\": " ++ author.name().escape_json() ++
@@ -2018,6 +2019,7 @@ export interface LogEntry {
   empty: boolean;
   current_working_copy: boolean;
   root: boolean;
+  conflict: boolean;
   description: string;
   author: {
     name: string;
