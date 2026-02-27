@@ -1,6 +1,6 @@
 FROM node:25-bookworm
 
-RUN apt-get update && apt-get -y install git curl bash ripgrep less tzdata
+RUN apt-get update && apt-get -y install git curl bash ripgrep less tzdata xvfb
 RUN ln -sf /usr/share/zoneinfo/hostlocaltime /etc/localtime
 
 ADD https://go.microsoft.com/fwlink/?LinkID=760868 /tmp/vscode.deb
