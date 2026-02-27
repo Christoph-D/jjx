@@ -384,6 +384,14 @@
                         nodeLabel.appendChild(pill);
                     });
                 }
+                if (change.tags && change.tags.length > 0) {
+                    change.tags.forEach(t => {
+                        const pill = document.createElement("span");
+                        pill.className = 'tag-pill';
+                        pill.textContent = t;
+                        nodeLabel.appendChild(pill);
+                    });
+                }
                 textContent.append(nodeLabel);
                 const nodeDescription = document.createElement("div");
                 nodeDescription.className = 'description';

@@ -1560,7 +1560,7 @@ export class JJRepository {
       '"}" ++ ' +
       '", \\"parents\\": [" ++ parents.map(|p| "\\"" ++ p.change_id() ++ "\\"").join(",") ++ "]" ++ ' +
       '", \\"bookmarks\\": [" ++ bookmarks.map(|b| "\\"" ++ b.name() ++ if(b.synced(), "", "*") ++ "\\"").join(",") ++ "]" ++ ' +
-      '", \\"tags\\": [" ++ tags.map(|t| "\\"" ++ t.name() ++ "\\"").join(",") ++ "]" ++ ' +
+      '", \\"tags\\": [" ++ tags.map(|t| "\\"" ++ t.name() ++ if(t.synced(), "", "*") ++ "\\"").join(",") ++ "]" ++ ' +
       '"}\\n"';
 
     const output = (
