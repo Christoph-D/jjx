@@ -13,9 +13,7 @@ type Message = {
 
 export class ChangeNode {
   changeId: string;
-  // Shortest change ID prefix
   changeIdPrefix: string;
-  // Suffix of the short change ID (after the prefix)
   changeIdSuffix: string;
   label: string;
   description: string;
@@ -25,6 +23,13 @@ export class ChangeNode {
   tags: string[];
   parentChangeIds?: string[];
   branchType?: string;
+  authorName: string;
+  authorEmail: string;
+  authorTimestamp: string;
+  fullDescription: string;
+  filesChanged: number;
+  linesAdded: number;
+  linesRemoved: number;
   constructor(
     changeId: string,
     changeIdPrefix: string,
@@ -35,8 +40,15 @@ export class ChangeNode {
     currentWorkingCopy: boolean,
     bookmarks: string[],
     tags: string[],
-    parentChangeIds?: string[],
-    branchType?: string,
+    parentChangeIds: string[] | undefined,
+    branchType: string | undefined,
+    authorName: string,
+    authorEmail: string,
+    authorTimestamp: string,
+    fullDescription: string,
+    filesChanged: number,
+    linesAdded: number,
+    linesRemoved: number,
   ) {
     this.changeId = changeId;
     this.changeIdPrefix = changeIdPrefix;
@@ -49,6 +61,13 @@ export class ChangeNode {
     this.tags = tags;
     this.parentChangeIds = parentChangeIds;
     this.branchType = branchType;
+    this.authorName = authorName;
+    this.authorEmail = authorEmail;
+    this.authorTimestamp = authorTimestamp;
+    this.fullDescription = fullDescription;
+    this.filesChanged = filesChanged;
+    this.linesAdded = linesAdded;
+    this.linesRemoved = linesRemoved;
   }
 }
 
@@ -280,6 +299,10 @@ export function parseJJLogJson(
     const formattedDescription =
       entry.mine || entry.root ? timestamp : `${email} ${timestamp}`;
 
+    const filesChanged = entry.diff?.files?.length ?? 0;
+    const linesAdded = entry.diff?.total_added ?? 0;
+    const linesRemoved = entry.diff?.total_removed ?? 0;
+
     return new ChangeNode(
       entry.change_id,
       changeIdShortest,
@@ -292,6 +315,13 @@ export function parseJJLogJson(
       entry.tags.sort(),
       entry.parents,
       branchType,
+      entry.author.name,
+      entry.author.email,
+      entry.author.timestamp,
+      entry.description,
+      filesChanged,
+      linesAdded,
+      linesRemoved,
     );
   });
 }

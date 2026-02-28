@@ -11,6 +11,7 @@
         <div class="context-menu-item" data-action="edit">Edit this change</div>
         <div class="context-menu-item" data-action="copyId">Copy change ID</div>
     </div>
+    <div id="tooltip" class="tooltip"></div>
     <div id="graph">
         <svg id="connections">
             <defs id="svg-defs"></defs>
@@ -23,6 +24,7 @@
         const vscode = acquireVsCodeApi();
         const rootChangeId = "z".repeat(32);
         let selectedNodes = new Set();
+        let tooltipTimeout = null;
 
         window.addEventListener('message', event => {
             const message = event.data;
@@ -330,6 +332,85 @@
             return [fromNode, toNode];
         }
 
+        function showTooltip(nodeElement, e) {
+            const tooltip = document.getElementById('tooltip');
+            const authorName = nodeElement.dataset.authorName;
+            const authorEmail = nodeElement.dataset.authorEmail;
+            const authorTimestamp = nodeElement.dataset.authorTimestamp;
+            const fullDescription = nodeElement.dataset.fullDescription;
+            const filesChanged = parseInt(nodeElement.dataset.filesChanged) || 0;
+            const linesAdded = parseInt(nodeElement.dataset.linesAdded) || 0;
+            const linesRemoved = parseInt(nodeElement.dataset.linesRemoved) || 0;
+
+            let html = '';
+            if (authorName || authorEmail || authorTimestamp) {
+                html += `<div class="tooltip-header">`;
+                if (authorName) {
+                    html += `<span class="tooltip-author">${authorName}</span>`;
+                    if (authorEmail) {
+                        html += ` <span class="tooltip-email">&lt;${authorEmail}&gt;</span>`;
+                    }
+                }
+                html += `</div>`;
+                if (authorTimestamp) {
+                    html += `<div class="tooltip-timestamp">${authorTimestamp}</div>`;
+                }
+            }
+
+            html += `<div class="tooltip-summary">${filesChanged} file${filesChanged !== 1 ? 's' : ''} changed, <span class="tooltip-added">+${linesAdded}</span> <span class="tooltip-removed">-${linesRemoved}</span></div>`;
+
+            if (fullDescription) {
+                html += `<div class="tooltip-description">${escapeHtml(fullDescription)}</div>`;
+            }
+
+            tooltip.innerHTML = html;
+            tooltip.style.display = 'block';
+            tooltip.style.left = '-9999px';
+            tooltip.style.top = '-9999px';
+
+            requestAnimationFrame(() => {
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                const offset = 15;
+                let left = mouseX + offset;
+                let top = mouseY + offset;
+
+                if (left + tooltipRect.width > viewportWidth - 10) {
+                    left = mouseX - tooltipRect.width - offset;
+                }
+
+                if (top + tooltipRect.height > viewportHeight - 10) {
+                    top = mouseY - tooltipRect.height - offset;
+                }
+
+                if (top < 10) {
+                    top = 10;
+                }
+
+                if (left < 10) {
+                    left = 10;
+                }
+
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            });
+        }
+
+        function hideTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.display = 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function updateGraph(changes, changeEditAction, graphStyle, preserveScroll = false) {
             // Save current scroll position only when preserveScroll is true
             const scrollTop = preserveScroll ?
@@ -368,6 +449,13 @@
                 node.dataset.parentIds = JSON.stringify(change.parentChangeIds || []);
                 node.dataset.branchType = change.branchType;
                 node.dataset.currentWorkingCopy = change.currentWorkingCopy;
+                node.dataset.authorName = change.authorName || '';
+                node.dataset.authorEmail = change.authorEmail || '';
+                node.dataset.authorTimestamp = change.authorTimestamp || '';
+                node.dataset.fullDescription = change.fullDescription || '';
+                node.dataset.filesChanged = change.filesChanged || 0;
+                node.dataset.linesAdded = change.linesAdded || 0;
+                node.dataset.linesRemoved = change.linesRemoved || 0;
 
                 // Create text content container
                 const textContent = document.createElement('div');
@@ -436,12 +524,33 @@
                 circlesContainer.appendChild(circle);
 
                 // Add hover handlers
-                node.addEventListener('mouseenter', () => {
+                node.addEventListener('mouseenter', (e) => {
                     highlightConnectedNodes(node, true);
+                    if (change.changeId !== rootChangeId) {
+                        tooltipTimeout = setTimeout(() => {
+                            showTooltip(node, e);
+                        }, 500);
+                    }
+                });
+
+                node.addEventListener('mousemove', (e) => {
+                    if (tooltipTimeout) {
+                        clearTimeout(tooltipTimeout);
+                    }
+                    if (change.changeId !== rootChangeId) {
+                        tooltipTimeout = setTimeout(() => {
+                            showTooltip(node, e);
+                        }, 500);
+                    }
                 });
 
                 node.addEventListener('mouseleave', () => {
                     highlightConnectedNodes(node, false);
+                    if (tooltipTimeout) {
+                        clearTimeout(tooltipTimeout);
+                        tooltipTimeout = null;
+                    }
+                    hideTooltip();
                 });
 
                 node.onclick = (e) => {
