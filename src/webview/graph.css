@@ -283,8 +283,31 @@ body {
 }
 
 /* Compact mode styling */
+.compact .change-node {
+    min-height: 8px;
+    padding: 2px 8px;
+}
+
 .compact .text-content {
-    min-height: 12px;
+    min-height: 8px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.compact .text-content > div:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.compact .description {
+    display: none;
+}
+
+.author-subdued {
+    opacity: 0.5;
+    margin-left: 4px;
 }
 
 .change-id {

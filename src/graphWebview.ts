@@ -30,6 +30,7 @@ export class ChangeNode {
   filesChanged: number;
   linesAdded: number;
   linesRemoved: number;
+  mine: boolean;
   constructor(
     changeId: string,
     changeIdPrefix: string,
@@ -49,6 +50,7 @@ export class ChangeNode {
     filesChanged: number,
     linesAdded: number,
     linesRemoved: number,
+    mine: boolean,
   ) {
     this.changeId = changeId;
     this.changeIdPrefix = changeIdPrefix;
@@ -68,6 +70,7 @@ export class ChangeNode {
     this.filesChanged = filesChanged;
     this.linesAdded = linesAdded;
     this.linesRemoved = linesRemoved;
+    this.mine = mine;
   }
 }
 
@@ -322,6 +325,7 @@ export function parseJJLogJson(
       filesChanged,
       linesAdded,
       linesRemoved,
+      entry.mine,
     );
   });
 }

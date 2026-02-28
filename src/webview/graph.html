@@ -456,6 +456,7 @@
                 node.dataset.filesChanged = change.filesChanged || 0;
                 node.dataset.linesAdded = change.linesAdded || 0;
                 node.dataset.linesRemoved = change.linesRemoved || 0;
+                node.dataset.mine = change.mine || false;
 
                 // Create text content container
                 const textContent = document.createElement('div');
@@ -480,11 +481,19 @@
                         nodeLabel.appendChild(pill);
                     });
                 }
+                if (graphStyle === 'compact' && !change.mine && change.authorName) {
+                    const authorSpan = document.createElement("span");
+                    authorSpan.className = 'author-subdued';
+                    authorSpan.textContent = change.authorName;
+                    nodeLabel.appendChild(authorSpan);
+                }
                 textContent.append(nodeLabel);
-                const nodeDescription = document.createElement("div");
-                nodeDescription.className = 'description';
-                nodeDescription.textContent = change.description;
-                textContent.append(nodeDescription);
+                if (graphStyle !== 'compact') {
+                    const nodeDescription = document.createElement("div");
+                    nodeDescription.className = 'description';
+                    nodeDescription.textContent = change.description;
+                    textContent.append(nodeDescription);
+                }
                 node.appendChild(textContent);
 
                 // Create and append edit button
