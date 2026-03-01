@@ -4,6 +4,7 @@ const colorRegistryLength = 5;
 
 export interface LaneNode {
   id: string | null;
+  sourceId: string | null;
   colorIndex: number;
 }
 
@@ -47,11 +48,13 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
         nodeLane = activeLanes.length;
         activeLanes.push({
           id: entry.change_id,
+          sourceId: entry.change_id,
           colorIndex: rot(colorIndex, colorRegistryLength),
         });
       } else {
         activeLanes[nodeLane] = {
           id: entry.change_id,
+          sourceId: entry.change_id,
           colorIndex: rot(colorIndex, colorRegistryLength),
         };
       }
@@ -64,10 +67,11 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
     if (entry.parents.length > 0) {
       activeLanes[nodeLane] = {
         id: entry.parents[0],
+        sourceId: entry.change_id,
         colorIndex: nodeColorIndex,
       };
     } else {
-      activeLanes[nodeLane] = { id: null, colorIndex: nodeColorIndex };
+      activeLanes[nodeLane] = { id: null, sourceId: null, colorIndex: nodeColorIndex };
     }
 
     // Open new lanes for secondary parents (merge sources)
@@ -77,6 +81,7 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
       if (existingIndex === -1) {
         activeLanes.push({
           id: parentId,
+          sourceId: entry.change_id,
           colorIndex: rot(colorIndex, colorRegistryLength),
         });
         colorIndex++;
@@ -86,7 +91,7 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
     // When a commit is consumed from lane N, set other lanes tracking it to null (converged)
     for (let i = 0; i < activeLanes.length; i++) {
       if (i !== nodeLane && activeLanes[i].id === entry.change_id) {
-        activeLanes[i] = { id: null, colorIndex: activeLanes[i].colorIndex };
+        activeLanes[i] = { id: null, sourceId: null, colorIndex: activeLanes[i].colorIndex };
       }
     }
 
@@ -110,8 +115,8 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
           toLane: nodeLane,
           colorIndex: inputLanes[i].colorIndex,
           type: "incoming",
-          fromId: entry.change_id,
-          toId: entry.change_id,
+          fromId: inputLanes[i].sourceId!,
+          toId: inputLanes[i].id!,
         });
       }
     }
@@ -162,7 +167,7 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
           toLane: i,
           colorIndex: inputLanes[i].colorIndex,
           type: "passthrough",
-          fromId: inputLanes[i].id!,
+          fromId: inputLanes[i].sourceId!,
           toId: inputLanes[i].id!,
         });
       }

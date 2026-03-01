@@ -251,7 +251,7 @@
                                 d.push(`H ${fromX < toX ? toX - r : toX + r}`);
                             }
                             d.push(`A ${r} ${r} 0 0 ${sweepFlag} ${toX} ${nodeY + r}`);
-                            d.push(`V ${bottomMidY}`);
+                            d.push(`V ${nextY}`);
                             path.setAttribute('d', d.join(' '));
                         }
                         connectionLines.appendChild(path);
@@ -308,12 +308,13 @@
                     }
                 });
 
+                const connectedIds = new Set([...parentIds, ...childIds]);
                 document.querySelectorAll('.connection-line').forEach(line => {
                     const fromId = line.dataset.fromId;
                     const toId = line.dataset.toId;
 
-                    if ((fromId === nodeId && parentIds.includes(toId)) ||
-                        (childIds.includes(fromId) && toId === nodeId)) {
+                    if ((fromId === nodeId && connectedIds.has(toId)) ||
+                        (toId === nodeId && connectedIds.has(fromId))) {
                         line.classList.remove('dimmed');
                         line.classList.add('highlighted');
                         if (childIds.includes(fromId) && toId === nodeId) {

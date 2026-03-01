@@ -103,7 +103,8 @@ describe("assignLanes", () => {
     // B has a passthrough for lane 0 (tracking ccc)
     const passthroughB = edgesOfType(result[1], "passthrough");
     assert.strictEqual(passthroughB.length, 1);
-    assert.strictEqual(passthroughB[0].fromId, "ccc");
+    assert.strictEqual(passthroughB[0].fromId, "aaa");
+    assert.strictEqual(passthroughB[0].toId, "ccc");
 
     // C should be in lane 0 (first lane tracking ccc)
     assert.strictEqual(result[2].nodeLane, 0);
@@ -188,7 +189,7 @@ describe("assignLanes", () => {
     );
     // The passthrough should be for lane tracking bbb
     assert.ok(
-      passthroughC.some((e) => e.fromId === "bbb"),
+      passthroughC.some((e) => e.toId === "bbb"),
       "Expected passthrough edge tracking bbb",
     );
   });
@@ -298,9 +299,11 @@ describe("assignLanes", () => {
     assert.strictEqual(result[0].nodeLane, 0);
     const outgoingA = edgesOfType(result[0], "outgoing");
     assert.strictEqual(outgoingA.length, 1);
+    assert.strictEqual(outgoingA[0].fromId, "aaa");
     assert.strictEqual(outgoingA[0].toId, "bbb");
     const mergeA = edgesOfType(result[0], "merge-outgoing");
     assert.strictEqual(mergeA.length, 1);
+    assert.strictEqual(mergeA[0].fromId, "aaa");
     assert.strictEqual(mergeA[0].toId, "ccc");
     assert.strictEqual(result[0].outputLanes.length, 2);
     assert.strictEqual(result[0].outputLanes[0].id, "bbb");
@@ -315,6 +318,10 @@ describe("assignLanes", () => {
     const mergeC = edgesOfType(result[1], "merge-outgoing");
     assert.strictEqual(mergeC.length, 1);
     assert.strictEqual(mergeC[0].toId, "eee");
+    const passthroughC = edgesOfType(result[1], "passthrough");
+    assert.strictEqual(passthroughC.length, 1);
+    assert.strictEqual(passthroughC[0].fromId, "aaa");
+    assert.strictEqual(passthroughC[0].toId, "bbb");
     assert.strictEqual(result[1].outputLanes.length, 3);
     assert.strictEqual(result[1].outputLanes[0].id, "bbb");
     assert.strictEqual(result[1].outputLanes[1].id, "ddd");
@@ -348,6 +355,10 @@ describe("assignLanes", () => {
     const outgoingB = edgesOfType(result[4], "outgoing");
     assert.strictEqual(outgoingB.length, 1);
     assert.strictEqual(outgoingB[0].toId, "fff");
+    const incomingB = edgesOfType(result[4], "incoming");
+    assert.strictEqual(incomingB.length, 1);
+    assert.strictEqual(incomingB[0].fromId, "aaa");
+    assert.strictEqual(incomingB[0].toId, "bbb");
     assert.strictEqual(result[4].outputLanes.length, 3);
     assert.strictEqual(result[4].outputLanes[0].id, "fff");
     assert.strictEqual(result[4].outputLanes[1].id, "fff");
