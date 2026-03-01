@@ -42,6 +42,13 @@ body {
     fill: var(--lane-color, var(--vscode-charts-blue));
 }
 
+.node-circle .working-copy {
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-size: 120%;
+    fill: currentColor;
+}
+
 /* Node styling */
 .change-node {
     position: relative;
