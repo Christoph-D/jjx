@@ -655,7 +655,7 @@
     "pretest": "npm run compile-tests && npm run compile",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "unit-test": "node --import tsx --test src/unit-test/templateBuilder.test.ts",
+    "unit-test": "node --import tsx --test src/unit-test/templateBuilder.test.ts src/unit-test/assignLanes.test.ts",
     "vscode-test": "node out/test/runTest.js",
     "test": "npm-run-all unit-test vscode-test"
   },

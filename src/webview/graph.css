@@ -33,6 +33,15 @@ body {
     fill: none;
 }
 
+.node-circle circle {
+    fill: var(--lane-color, var(--vscode-charts-blue));
+    stroke: var(--lane-color, var(--vscode-charts-blue));
+}
+
+.node-circle .diamond-path {
+    fill: var(--lane-color, var(--vscode-charts-blue));
+}
+
 /* Node styling */
 .change-node {
     position: relative;
@@ -96,7 +105,7 @@ body {
     min-height: 42px;
     /* Set a consistent minimum height */
     justify-content: center;
-    margin-left: var(--curve-offset, 0px);
+    margin-left: calc(var(--graph-width, 24px) + 8px);
     padding-left: 12px;
 }
 
@@ -170,17 +179,8 @@ body {
     pointer-events: none;
 }
 
-.node-circle circle {
-    fill: var(--vscode-charts-blue);
-    stroke: var(--vscode-charts-blue);
-}
-
 .node-circle .heart-path {
     fill: whitesmoke;
-}
-
-.node-circle .diamond-path {
-    fill: var(--vscode-charts-blue);
 }
 
 .node-content {

@@ -2,6 +2,13 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import type { JJRepository, LogEntry } from "./repository";
 import path from "path";
+import { assignLanes } from "./laneAssigner";
+
+export type {
+  LaneNode,
+  LaneEdge,
+  CommitLaneInfo,
+} from "./laneAssigner";
 
 const rootChangeId = "z".repeat(32);
 
@@ -73,6 +80,8 @@ export class ChangeNode {
     this.mine = mine;
   }
 }
+
+export { assignLanes } from "./laneAssigner";
 
 export class JJGraphWebview implements vscode.WebviewViewProvider {
   subscriptions: {
@@ -200,9 +209,12 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     this.selectedNodes.clear();
     const changeEditAction = config.get<string>("changeEditAction");
 
+    const laneInfo = assignLanes(entries);
+
     this.panel.webview.postMessage({
       command: "updateGraph",
       changes: changes,
+      laneInfo,
       changeEditAction,
       graphStyle,
       preserveScroll: true,
