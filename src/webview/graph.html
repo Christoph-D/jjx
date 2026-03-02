@@ -431,14 +431,6 @@
                 graphContainer.classList.remove('compact');
             }
 
-            let maxLanes = 0;
-            currentLaneInfo.forEach(info => {
-                maxLanes = Math.max(maxLanes, info.inputLanes.length, info.outputLanes.length);
-            });
-
-            const graphWidth = SWIMLANE_WIDTH * maxLanes;
-            document.documentElement.style.setProperty('--graph-width', `${graphWidth}px`);
-
             const changeToLaneInfo = new Map();
             currentLaneInfo.forEach((info, index) => {
                 changeToLaneInfo.set(info.commitId, { ...info, changeIndex: index });
@@ -469,6 +461,8 @@
 
                 const textContent = document.createElement('div');
                 textContent.className = 'text-content';
+                const rowLanes = info ? Math.max(info.inputLanes.length, info.outputLanes.length) : 1;
+                textContent.style.setProperty('--graph-width', `${SWIMLANE_WIDTH * rowLanes}px`);
                 const nodeLabel = document.createElement("div");
                 const changeIdPrefix = change.changeIdPrefix;
                 const changeIdSuffix = change.changeIdSuffix || "";
