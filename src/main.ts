@@ -123,12 +123,18 @@ export async function activate(context: vscode.ExtensionContext) {
         repoSCM.updatePlaceholderText(changeEditAction);
       }
     }
+    if (e.affectsConfiguration("jjk.graphStyle")) {
+      if (graphWebview) {
+        await graphWebview.refresh();
+      }
+    }
   });
 
   let isInitialized = false;
+  let graphWebview: JJGraphWebview | undefined;
   function init() {
     const initialSelectedRepo = getSelectedRepo();
-    const graphWebview = new JJGraphWebview(
+    graphWebview = new JJGraphWebview(
       context.extensionUri,
       initialSelectedRepo,
       context,
@@ -136,7 +142,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(graphWebview);
     onDidSetSelectedRepository(
       async () => {
-        await graphWebview.setSelectedRepository(getSelectedRepo());
+        await graphWebview!.setSelectedRepository(getSelectedRepo());
       },
       undefined,
       context.subscriptions,
@@ -165,8 +171,8 @@ export async function activate(context: vscode.ExtensionContext) {
         ) {
           void operationLogManager.refresh();
         }
-        if (graphWebview.repository.repositoryRoot === repoSCM.repositoryRoot) {
-          void graphWebview.refresh();
+        if (graphWebview!.repository.repositoryRoot === repoSCM.repositoryRoot) {
+          void graphWebview!.refresh();
         }
       }),
     );
@@ -952,7 +958,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
       vscode.commands.registerCommand("jj.refreshGraphWebview", async () => {
         try {
-          await graphWebview.refresh();
+          await graphWebview!.refresh();
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to refresh graph${error instanceof Error ? `: ${error.message}` : ""}`,
@@ -963,14 +969,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
       vscode.commands.registerCommand("jj.newGraphWebview", async () => {
-        const selectedNodes = Array.from(graphWebview.selectedNodes);
+        const selectedNodes = Array.from(graphWebview!.selectedNodes);
         if (selectedNodes.length < 1) {
           return;
         }
         const revs = selectedNodes;
 
         try {
-          await graphWebview.repository.new(undefined, revs);
+          await graphWebview!.repository.new(undefined, revs);
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to create change${error instanceof Error ? `: ${error.message}` : ""}`,
