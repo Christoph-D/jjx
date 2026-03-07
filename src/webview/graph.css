@@ -117,7 +117,7 @@ body {
 .bookmark-pill {
     display: inline-block;
     padding: 2px 6px;
-    margin-left: 6px;
+    margin-right: 6px;
     border-radius: 3px;
     font-size: 0.85em;
     font-family: var(--vscode-font-family);
@@ -129,7 +129,7 @@ body {
 .tag-pill {
     display: inline-block;
     padding: 2px 6px;
-    margin-left: 6px;
+    margin-right: 6px;
     border-radius: 3px;
     font-size: 0.85em;
     font-family: var(--vscode-font-family);

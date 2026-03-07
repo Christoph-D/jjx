@@ -439,7 +439,6 @@
                 node.appendChild(changeIdLeft);
 
                 const nodeLabel = document.createElement("div");
-                nodeLabel.innerHTML = change.label;
                 if (change.bookmarks && change.bookmarks.length > 0) {
                     change.bookmarks.forEach(b => {
                         const pill = document.createElement("span");
@@ -456,6 +455,9 @@
                         nodeLabel.appendChild(pill);
                     });
                 }
+                const labelText = document.createElement("span");
+                labelText.textContent = change.label;
+                nodeLabel.appendChild(labelText);
                 if (graphStyle === 'compact' && !change.mine && change.authorName) {
                     const authorSpan = document.createElement("span");
                     authorSpan.className = 'author-subdued';
