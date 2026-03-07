@@ -411,7 +411,7 @@
                 const colorIndex = nodeData ? nodeData.colorIndex : 0;
 
                 const node = document.createElement('div');
-                node.className = 'change-node';
+                node.className = 'change-node' + (change.currentWorkingCopy ? ' working-copy' : '');
                 node.dataset.changeId = change.changeId;
                 node.dataset.parentIds = JSON.stringify(change.parentChangeIds || []);
                 node.dataset.branchType = change.branchType;

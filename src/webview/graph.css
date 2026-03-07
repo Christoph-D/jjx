@@ -315,3 +315,7 @@ body {
     font-family: var(--vscode-editor-font-family, monospace);
     opacity: 0.5;
 }
+
+.change-node.working-copy .text-content {
+    font-weight: bold;
+}
