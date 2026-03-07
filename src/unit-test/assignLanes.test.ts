@@ -207,6 +207,24 @@ describe("assignLanes", () => {
     assert.strictEqual(fromB[0].toId, "ccc");
   });
 
+  it("small branches reuse the lane", () => {
+    const entries = [
+      makeEntry("aaa", ["ddd"]),
+      makeEntry("bbb", ["ddd"]),
+      makeEntry("ccc", ["ddd"]),
+      makeEntry("ddd", []),
+    ];
+    const result = assignLanes(entries);
+
+    // Assert that bbb and ccc are both in lane 1
+    const nodeB = findNodeByChangeId(result, "bbb");
+    const nodeC = findNodeByChangeId(result, "ccc");
+    assert.ok(nodeB);
+    assert.ok(nodeC);
+    assert.strictEqual(nodeB.lane, 1);
+    assert.strictEqual(nodeC.lane, 1);
+  });
+
   it("assigns three branches to three lanes", () => {
     const entries = [
       makeEntry("aaa", ["bbb", "ccc"]),

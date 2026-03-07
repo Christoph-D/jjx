@@ -87,9 +87,21 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
       }
     }
 
+    // Deduplicate: if multiple lanes target the same ID, keep only the first
+    const seenTargets = new Set<string>();
+    for (let i = 0; i < lanes.length; i++) {
+      const tid = lanes[i].targetId;
+      if (tid !== null) {
+        if (seenTargets.has(tid)) {
+          lanes[i] = { targetId: null, colorIndex: lanes[i].colorIndex };
+        } else {
+          seenTargets.add(tid);
+        }
+      }
+    }
+
     while (lanes.length > 0 && lanes[lanes.length - 1].targetId === null) {
       lanes.pop();
-      numLanesActiveVisually--;
     }
 
     const n = result.nodes.push({
