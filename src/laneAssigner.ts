@@ -3,7 +3,7 @@ import type { LogEntry } from "./repository";
 const colorRegistryLength = 5;
 
 export interface LaneNode {
-  id: string | null;
+  targetId: string | null;
   sourceId: string | null;
   colorIndex: number;
 }
@@ -39,21 +39,21 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
     const inputLanes = activeLanes.map((l) => ({ ...l }));
 
     // Find which lane was expecting this commit
-    let nodeLane = activeLanes.findIndex((l) => l.id === entry.change_id);
+    let nodeLane = activeLanes.findIndex((l) => l.targetId === entry.change_id);
 
     if (nodeLane === -1) {
       // This commit wasn't expected by any lane — assign to an empty slot or create a new lane
-      nodeLane = activeLanes.findIndex((l) => l.id === null);
+      nodeLane = activeLanes.findIndex((l) => l.targetId === null);
       if (nodeLane === -1) {
         nodeLane = activeLanes.length;
         activeLanes.push({
-          id: entry.change_id,
+          targetId: entry.change_id,
           sourceId: entry.change_id,
           colorIndex: rot(colorIndex, colorRegistryLength),
         });
       } else {
         activeLanes[nodeLane] = {
-          id: entry.change_id,
+          targetId: entry.change_id,
           sourceId: entry.change_id,
           colorIndex: rot(colorIndex, colorRegistryLength),
         };
@@ -66,21 +66,21 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
     // Replace this commit's lane with its first parent (or null if no parents)
     if (entry.parents.length > 0) {
       activeLanes[nodeLane] = {
-        id: entry.parents[0],
+        targetId: entry.parents[0],
         sourceId: entry.change_id,
         colorIndex: nodeColorIndex,
       };
     } else {
-      activeLanes[nodeLane] = { id: null, sourceId: null, colorIndex: nodeColorIndex };
+      activeLanes[nodeLane] = { targetId: null, sourceId: null, colorIndex: nodeColorIndex };
     }
 
     // Open new lanes for secondary parents (merge sources)
     for (let i = 1; i < entry.parents.length; i++) {
       const parentId = entry.parents[i];
-      const existingIndex = activeLanes.findIndex((l) => l.id === parentId);
+      const existingIndex = activeLanes.findIndex((l) => l.targetId === parentId);
       if (existingIndex === -1) {
         activeLanes.push({
-          id: parentId,
+          targetId: parentId,
           sourceId: entry.change_id,
           colorIndex: rot(colorIndex, colorRegistryLength),
         });
@@ -90,14 +90,14 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
 
     // When a commit is consumed from lane N, set other lanes tracking it to null (converged)
     for (let i = 0; i < activeLanes.length; i++) {
-      if (i !== nodeLane && activeLanes[i].id === entry.change_id) {
-        activeLanes[i] = { id: null, sourceId: null, colorIndex: activeLanes[i].colorIndex };
+      if (i !== nodeLane && activeLanes[i].targetId === entry.change_id) {
+        activeLanes[i] = { targetId: null, sourceId: null, colorIndex: activeLanes[i].colorIndex };
       }
     }
 
     while (
       activeLanes.length > 0 &&
-      activeLanes[activeLanes.length - 1].id === null
+      activeLanes[activeLanes.length - 1].targetId === null
     ) {
       activeLanes.pop();
     }
@@ -109,14 +109,14 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
 
     // 1. Incoming edges: input lanes that were tracking this commit
     for (let i = 0; i < inputLanes.length; i++) {
-      if (inputLanes[i].id === entry.change_id) {
+      if (inputLanes[i].targetId === entry.change_id) {
         edges.push({
           fromLane: i,
           toLane: nodeLane,
           colorIndex: inputLanes[i].colorIndex,
           type: "incoming",
           fromId: inputLanes[i].sourceId!,
-          toId: inputLanes[i].id!,
+          toId: inputLanes[i].targetId!,
         });
       }
     }
@@ -124,7 +124,7 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
     // 2. Outgoing edge to first parent
     if (entry.parents.length > 0) {
       const firstParentOutputLane = outputLanes.findIndex(
-        (l) => l.id === entry.parents[0],
+        (l) => l.targetId === entry.parents[0],
       );
       if (firstParentOutputLane !== -1) {
         edges.push({
@@ -142,7 +142,7 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
     for (let i = 1; i < entry.parents.length; i++) {
       const parentId = entry.parents[i];
       const parentOutputLane = outputLanes.findIndex(
-        (l) => l.id === parentId,
+        (l) => l.targetId === parentId,
       );
       if (parentOutputLane !== -1) {
         edges.push({
@@ -159,8 +159,8 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
     // 4. Pass-through edges: input lanes that are NOT this commit, passing through to output
     for (let i = 0; i < inputLanes.length; i++) {
       if (
-        inputLanes[i].id !== null &&
-        inputLanes[i].id !== entry.change_id
+        inputLanes[i].targetId !== null &&
+        inputLanes[i].targetId !== entry.change_id
       ) {
         edges.push({
           fromLane: i,
@@ -168,7 +168,7 @@ export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
           colorIndex: inputLanes[i].colorIndex,
           type: "passthrough",
           fromId: inputLanes[i].sourceId!,
-          toId: inputLanes[i].id!,
+          toId: inputLanes[i].targetId!,
         });
       }
     }

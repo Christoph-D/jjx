@@ -97,8 +97,8 @@ describe("assignLanes", () => {
 
     // After processing B, both lanes track ccc (no dedup)
     assert.strictEqual(result[1].outputLanes.length, 2);
-    assert.strictEqual(result[1].outputLanes[0].id, "ccc");
-    assert.strictEqual(result[1].outputLanes[1].id, "ccc");
+    assert.strictEqual(result[1].outputLanes[0].targetId, "ccc");
+    assert.strictEqual(result[1].outputLanes[1].targetId, "ccc");
 
     // B has a passthrough for lane 0 (tracking ccc)
     const passthroughB = edgesOfType(result[1], "passthrough");
@@ -232,13 +232,13 @@ describe("assignLanes", () => {
     const bResult = result[1];
     assert.strictEqual(bResult.commitId, "bbb");
     assert.strictEqual(bResult.inputLanes.length, 1);
-    assert.strictEqual(bResult.inputLanes[0].id, "ccc");
+    assert.strictEqual(bResult.inputLanes[0].targetId, "ccc");
 
     // B opens a new lane (1), then replaces it with parent ccc.
     // Now both lanes track ccc (no dedup until consumed)
     assert.strictEqual(bResult.outputLanes.length, 2);
-    assert.strictEqual(bResult.outputLanes[0].id, "ccc");
-    assert.strictEqual(bResult.outputLanes[1].id, "ccc");
+    assert.strictEqual(bResult.outputLanes[0].targetId, "ccc");
+    assert.strictEqual(bResult.outputLanes[1].targetId, "ccc");
 
     // Lane 0 (tracking ccc) passes through B unchanged
     const passthroughB = edgesOfType(bResult, "passthrough");
@@ -250,8 +250,8 @@ describe("assignLanes", () => {
     const cResult = result[2];
     assert.strictEqual(cResult.commitId, "ccc");
     assert.strictEqual(cResult.inputLanes.length, 2);
-    assert.strictEqual(cResult.inputLanes[0].id, "ccc");
-    assert.strictEqual(cResult.inputLanes[1].id, "ccc");
+    assert.strictEqual(cResult.inputLanes[0].targetId, "ccc");
+    assert.strictEqual(cResult.inputLanes[1].targetId, "ccc");
 
     // C has 2 incoming edges (from both lanes)
     const incomingC = edgesOfType(cResult, "incoming");
@@ -260,7 +260,7 @@ describe("assignLanes", () => {
     // After C is consumed, other lanes tracking it become null
     // C's output has 1 lane tracking ddd (lane 1 was set to null and trimmed)
     assert.strictEqual(cResult.outputLanes.length, 1);
-    assert.strictEqual(cResult.outputLanes[0].id, "ddd");
+    assert.strictEqual(cResult.outputLanes[0].targetId, "ddd");
   });
   it("assigns three branches to three lanes", () => {
     // Change structure:
@@ -306,8 +306,8 @@ describe("assignLanes", () => {
     assert.strictEqual(mergeA[0].fromId, "aaa");
     assert.strictEqual(mergeA[0].toId, "ccc");
     assert.strictEqual(result[0].outputLanes.length, 2);
-    assert.strictEqual(result[0].outputLanes[0].id, "bbb");
-    assert.strictEqual(result[0].outputLanes[1].id, "ccc");
+    assert.strictEqual(result[0].outputLanes[0].targetId, "bbb");
+    assert.strictEqual(result[0].outputLanes[1].targetId, "ccc");
 
     // ccc is a merge commit in lane 1 with parents ddd and eee
     assert.strictEqual(result[1].commitId, "ccc");
@@ -323,9 +323,9 @@ describe("assignLanes", () => {
     assert.strictEqual(passthroughC[0].fromId, "aaa");
     assert.strictEqual(passthroughC[0].toId, "bbb");
     assert.strictEqual(result[1].outputLanes.length, 3);
-    assert.strictEqual(result[1].outputLanes[0].id, "bbb");
-    assert.strictEqual(result[1].outputLanes[1].id, "ddd");
-    assert.strictEqual(result[1].outputLanes[2].id, "eee");
+    assert.strictEqual(result[1].outputLanes[0].targetId, "bbb");
+    assert.strictEqual(result[1].outputLanes[1].targetId, "ddd");
+    assert.strictEqual(result[1].outputLanes[2].targetId, "eee");
 
     // eee is in lane 2, parent is ggg
     assert.strictEqual(result[2].commitId, "eee");
@@ -334,9 +334,9 @@ describe("assignLanes", () => {
     assert.strictEqual(outgoingE.length, 1);
     assert.strictEqual(outgoingE[0].toId, "hhh");
     assert.strictEqual(result[2].outputLanes.length, 3);
-    assert.strictEqual(result[2].outputLanes[0].id, "bbb");
-    assert.strictEqual(result[2].outputLanes[1].id, "ddd");
-    assert.strictEqual(result[2].outputLanes[2].id, "hhh");
+    assert.strictEqual(result[2].outputLanes[0].targetId, "bbb");
+    assert.strictEqual(result[2].outputLanes[1].targetId, "ddd");
+    assert.strictEqual(result[2].outputLanes[2].targetId, "hhh");
 
     // ddd is in lane 1, merges into fff
     assert.strictEqual(result[3].commitId, "ddd");
@@ -345,9 +345,9 @@ describe("assignLanes", () => {
     assert.strictEqual(outgoingD.length, 1);
     assert.strictEqual(outgoingD[0].toId, "fff");
     assert.strictEqual(result[3].outputLanes.length, 3);
-    assert.strictEqual(result[3].outputLanes[0].id, "bbb");
-    assert.strictEqual(result[3].outputLanes[1].id, "fff");
-    assert.strictEqual(result[3].outputLanes[2].id, "hhh");
+    assert.strictEqual(result[3].outputLanes[0].targetId, "bbb");
+    assert.strictEqual(result[3].outputLanes[1].targetId, "fff");
+    assert.strictEqual(result[3].outputLanes[2].targetId, "hhh");
 
     // bbb continues in lane 0, parent is fff
     assert.strictEqual(result[4].commitId, "bbb");
@@ -360,9 +360,9 @@ describe("assignLanes", () => {
     assert.strictEqual(incomingB[0].fromId, "aaa");
     assert.strictEqual(incomingB[0].toId, "bbb");
     assert.strictEqual(result[4].outputLanes.length, 3);
-    assert.strictEqual(result[4].outputLanes[0].id, "fff");
-    assert.strictEqual(result[4].outputLanes[1].id, "fff");
-    assert.strictEqual(result[4].outputLanes[2].id, "hhh");
+    assert.strictEqual(result[4].outputLanes[0].targetId, "fff");
+    assert.strictEqual(result[4].outputLanes[1].targetId, "fff");
+    assert.strictEqual(result[4].outputLanes[2].targetId, "hhh");
 
     // fff is in lane 0, parent is ggg
     assert.strictEqual(result[5].commitId, "fff");
@@ -371,9 +371,9 @@ describe("assignLanes", () => {
     assert.strictEqual(outgoingF.length, 1);
     assert.strictEqual(outgoingF[0].toId, "ggg");
     assert.strictEqual(result[5].outputLanes.length, 3);
-    assert.strictEqual(result[5].outputLanes[0].id, "ggg");
-    assert.strictEqual(result[5].outputLanes[1].id, null);
-    assert.strictEqual(result[5].outputLanes[2].id, "hhh");
+    assert.strictEqual(result[5].outputLanes[0].targetId, "ggg");
+    assert.strictEqual(result[5].outputLanes[1].targetId, null);
+    assert.strictEqual(result[5].outputLanes[2].targetId, "hhh");
 
     assert.strictEqual(result[6].commitId, "ggg");
     assert.strictEqual(result[6].nodeLane, 0);
@@ -381,9 +381,9 @@ describe("assignLanes", () => {
     assert.strictEqual(outgoingG.length, 1);
     assert.strictEqual(outgoingG[0].toId, "hhh");
     assert.strictEqual(result[6].outputLanes.length, 3);
-    assert.strictEqual(result[6].outputLanes[0].id, "hhh");
-    assert.strictEqual(result[6].outputLanes[1].id, null);
-    assert.strictEqual(result[6].outputLanes[2].id, "hhh");
+    assert.strictEqual(result[6].outputLanes[0].targetId, "hhh");
+    assert.strictEqual(result[6].outputLanes[1].targetId, null);
+    assert.strictEqual(result[6].outputLanes[2].targetId, "hhh");
 
     assert.strictEqual(result[7].commitId, "hhh");
     assert.strictEqual(result[7].nodeLane, 0);
