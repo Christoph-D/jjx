@@ -50,10 +50,10 @@
                         n.classList.remove('selected', 'highlighted', 'dimmed');
                     });
                     document.querySelectorAll('.node-circle').forEach(circle => {
-                        circle.classList.remove('child-node', 'dimmed');
+                        circle.classList.remove('dimmed');
                     });
                     document.querySelectorAll('.connection-line').forEach(line => {
-                        line.classList.remove('highlighted', 'dimmed', 'child-connection');
+                        line.classList.remove('highlighted', 'dimmed');
                     });
                     vscode.postMessage({
                         command: 'selectChange',
@@ -275,9 +275,6 @@
                     const circleData = circle.dataset.changeId;
                     if (circleData === nodeId || parentIds.includes(circleData) || childIds.includes(circleData)) {
                         circle.classList.remove('dimmed');
-                        if (childIds.includes(circleData)) {
-                            circle.classList.add('child-node');
-                        }
                     }
                 });
 
@@ -290,9 +287,6 @@
                         (toId === nodeId && connectedIds.has(fromId))) {
                         line.classList.remove('dimmed');
                         line.classList.add('highlighted');
-                        if (childIds.includes(fromId) && toId === nodeId) {
-                            line.classList.add('child-connection');
-                        }
                     }
                 });
             } else {
@@ -300,10 +294,10 @@
                     node.classList.remove('dimmed', 'highlighted');
                 });
                 nodeCircles.forEach(circle => {
-                    circle.classList.remove('dimmed', 'child-node');
+                    circle.classList.remove('dimmed');
                 });
                 document.querySelectorAll('.connection-line').forEach(line => {
-                    line.classList.remove('highlighted', 'dimmed', 'child-connection');
+                    line.classList.remove('highlighted', 'dimmed');
                 });
             }
         }
