@@ -7,7 +7,7 @@ export interface LaneNode {
   changeId: string;
   colorIndex: number;
   // Only for display purposes to calculate where to place the label
-  numLanesActive: number;
+  numLanesActiveVisually: number;
 }
 
 export interface LaneEdge {
@@ -44,7 +44,7 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
     const lanes = lanesByRow[lanesByRow.length - 1].map((l) => ({
       ...l,
     }));
-    let numLanesActive = lanes.length;
+    let numLanesActiveVisually = lanes.length;
     let nodeLane = lanes.findIndex((l) => l.targetId === entry.change_id);
     let color: number;
     if (nodeLane === -1) {
@@ -54,7 +54,7 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
       nodeLane = lanes.findIndex((l) => l.targetId === null);
       if (nodeLane === -1) {
         nodeLane = lanes.length;
-        numLanesActive++;
+        numLanesActiveVisually++;
       }
     } else {
       color = lanes[nodeLane].colorIndex;
@@ -89,14 +89,14 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
 
     while (lanes.length > 0 && lanes[lanes.length - 1].targetId === null) {
       lanes.pop();
-      numLanesActive--;
+      numLanesActiveVisually--;
     }
 
     const n = result.nodes.push({
       changeId: entry.change_id,
       lane: nodeLane,
       colorIndex: color,
-      numLanesActive,
+      numLanesActiveVisually,
     });
     nodeToRow[entry.change_id] = n - 1;
     lanesByRow.push(lanes);

@@ -53,7 +53,7 @@ body {
 .change-node {
     position: relative;
     z-index: 0;
-    padding: 4px 8px;
+    padding: 4px 0px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
@@ -105,6 +105,12 @@ body {
     fill: #4CAF50;
 }
 
+.change-id-left {
+    position: absolute;
+    width: var(--change-id-ch-width, 4ch);
+    font-family: var(--vscode-editor-font-family, monospace);
+}
+
 /* Text content styling */
 .text-content {
     display: flex;
@@ -112,7 +118,7 @@ body {
     min-height: 42px;
     /* Set a consistent minimum height */
     justify-content: center;
-    margin-left: calc(var(--graph-width, 24px));
+    margin-left: calc(var(--change-id-ch-width, 4ch) + var(--change-id-right-padding) + var(--graph-width) + 4px);
 }
 
 .label-text {
@@ -291,7 +297,7 @@ body {
 /* Compact mode styling */
 .compact .change-node {
     min-height: 8px;
-    padding: 2px 8px;
+    padding: 2px 0px;
 }
 
 .compact .text-content {
@@ -322,6 +328,7 @@ body {
 
 .change-id-prefix {
     font-family: var(--vscode-editor-font-family, monospace);
+    font-weight: bold;
 }
 
 .change-id-suffix {

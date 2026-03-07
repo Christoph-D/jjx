@@ -204,7 +204,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     const graphStyle = config.get<string>("graphStyle") || "full";
 
     const entries = await this.repository.log();
-    const changes = parseJJLogJson(entries, graphStyle);
+    const { changes, maxPrefixLength } = parseJJLogJson(entries, graphStyle);
 
     this.selectedNodes.clear();
     const changeEditAction = config.get<string>("changeEditAction");
@@ -217,6 +217,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       laneInfo,
       changeEditAction,
       graphStyle,
+      maxPrefixLength,
       preserveScroll: true,
     });
   }
@@ -284,12 +285,17 @@ function description(entry: LogEntry) {
 export function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
-): ChangeNode[] {
-  return entries.map((entry) => {
+): { changes: ChangeNode[]; maxPrefixLength: number } {
+  const maxPrefixLength = Math.max(
+    4,
+    ...entries.map((e) => e.change_id_shortest.length),
+  );
+
+  const changes = entries.map((entry) => {
     const changeIdShortest = entry.change_id_shortest;
     const changeIdSuffix = entry.change_id
       .slice(changeIdShortest.length)
-      .substring(0, Math.max(0, 4 - changeIdShortest.length));
+      .substring(0, Math.max(0, maxPrefixLength - changeIdShortest.length));
     const email = entry.author.email;
     const timestamp = entry.author.timestamp;
     const commitId = entry.commit_id_short;
@@ -340,4 +346,6 @@ export function parseJJLogJson(
       entry.mine,
     );
   });
+
+  return { changes, maxPrefixLength };
 }
