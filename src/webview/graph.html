@@ -439,10 +439,18 @@
                 node.appendChild(changeIdLeft);
 
                 const nodeLabel = document.createElement("div");
+                if (change.workingCopies && change.workingCopies.length > 0) {
+                    change.workingCopies.forEach(wc => {
+                        const pill = document.createElement("span");
+                        pill.className = 'pill workspace-pill';
+                        pill.textContent = wc;
+                        nodeLabel.appendChild(pill);
+                    });
+                }
                 if (change.bookmarks && change.bookmarks.length > 0) {
                     change.bookmarks.forEach(b => {
                         const pill = document.createElement("span");
-                        pill.className = 'bookmark-pill';
+                        pill.className = 'pill bookmark-pill';
                         pill.textContent = b;
                         nodeLabel.appendChild(pill);
                     });
@@ -450,7 +458,7 @@
                 if (change.tags && change.tags.length > 0) {
                     change.tags.forEach(t => {
                         const pill = document.createElement("span");
-                        pill.className = 'tag-pill';
+                        pill.className = 'pill tag-pill';
                         pill.textContent = t;
                         nodeLabel.appendChild(pill);
                     });

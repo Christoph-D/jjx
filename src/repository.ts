@@ -2019,6 +2019,7 @@ export interface LogEntry {
   parents: string[];
   bookmarks: string[];
   tags: string[];
+  working_copies: string[];
 }
 
 export type RepositoryStatus = {

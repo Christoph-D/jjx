@@ -186,4 +186,10 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     loopVar: "t",
     value: 't.name() ++ if(t.synced(), "", "*")',
   },
+  working_copies: {
+    type: "string_array",
+    expr: "self.working_copies()",
+    loopVar: "wc",
+    value: "wc.name()",
+  },
 };

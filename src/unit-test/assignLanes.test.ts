@@ -31,6 +31,7 @@ function makeEntry(
     parents,
     bookmarks: [],
     tags: [],
+    working_copies: [],
     ...overrides,
   };
 }

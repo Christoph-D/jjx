@@ -114,28 +114,31 @@ body {
     opacity: 0.8;
 }
 
-.bookmark-pill {
+.pill {
     display: inline-block;
     padding: 2px 6px;
     margin-right: 6px;
     border-radius: 3px;
     font-size: 0.85em;
     font-family: var(--vscode-font-family);
-    background-color: #393a9b;
     color: #ffffff;
     vertical-align: middle;
 }
 
+.bookmark-pill {
+    background-color: #393a9b;
+}
+
 .tag-pill {
-    display: inline-block;
-    padding: 2px 6px;
-    margin-right: 6px;
-    border-radius: 3px;
-    font-size: 0.85em;
-    font-family: var(--vscode-font-family);
     background-color: #ac681b;
-    color: #ffffff;
-    vertical-align: middle;
+}
+
+.workspace-pill {
+    background-color: #1a6b6b;
+}
+
+.workspace-pill::after {
+    content: "@";
 }
 
 .edit-button {

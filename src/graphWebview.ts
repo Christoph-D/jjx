@@ -28,6 +28,7 @@ export class ChangeNode {
   currentWorkingCopy: boolean;
   bookmarks: string[];
   tags: string[];
+  workingCopies: string[];
   parentChangeIds?: string[];
   branchType?: string;
   authorName: string;
@@ -48,6 +49,7 @@ export class ChangeNode {
     currentWorkingCopy: boolean,
     bookmarks: string[],
     tags: string[],
+    workingCopies: string[],
     parentChangeIds: string[] | undefined,
     branchType: string | undefined,
     authorName: string,
@@ -68,6 +70,7 @@ export class ChangeNode {
     this.currentWorkingCopy = currentWorkingCopy;
     this.bookmarks = bookmarks;
     this.tags = tags;
+    this.workingCopies = workingCopies;
     this.parentChangeIds = parentChangeIds;
     this.branchType = branchType;
     this.authorName = authorName;
@@ -334,6 +337,7 @@ export function parseJJLogJson(
       entry.current_working_copy,
       entry.bookmarks.sort(),
       entry.tags.sort(),
+      entry.working_copies.sort(),
       entry.parents,
       branchType,
       entry.author.name,
