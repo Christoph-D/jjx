@@ -23,11 +23,11 @@
     <script>
         const vscode = acquireVsCodeApi();
         const rootChangeId = "z".repeat(32);
-        const SWIMLANE_WIDTH = 12;
+        const SWIMLANE_WIDTH = 14;
         const CIRCLE_RADIUS = 5;
         let selectedNodes = new Set();
         let tooltipTimeout = null;
-        let currentLaneInfo = [];
+        let currentGraph = null;
         let currentChanges = [];
 
         const colorRegistry = [
@@ -144,15 +144,19 @@
             const svg = document.getElementById('connections');
             const svgRect = svg.getBoundingClientRect();
             
-            document.querySelectorAll('.node-circle').forEach(circle => {
+            if (!currentGraph || !currentGraph.nodes) return;
+            
+            document.querySelectorAll('.node-circle').forEach((circle, index) => {
+                const nodeData = currentGraph.nodes[index];
+                if (!nodeData) return;
+                
                 const changeId = circle.dataset.changeId;
-                const nodeLane = parseInt(circle.dataset.nodeLane, 10);
                 const node = document.querySelector(`.change-node[data-change-id="${changeId}"]`);
                 
                 if (!node) return;
                 
                 const nodeRect = node.getBoundingClientRect();
-                const x = getLaneX(nodeLane);
+                const x = getLaneX(nodeData.lane);
                 const y = nodeRect.top - svgRect.top + (nodeRect.height / 2);
                 
                 circle.setAttribute("transform", `translate(${x}, ${y})`);
@@ -163,103 +167,57 @@
             const connectionLines = document.getElementById('connection-lines');
             connectionLines.innerHTML = '';
 
+            if (!currentGraph || !currentGraph.edges) return;
+
             const nodes = document.querySelectorAll('.change-node');
             const svg = document.getElementById('connections');
             const svgRect = svg.getBoundingClientRect();
 
-            // Build ordered list of row Y positions and a map from changeId to Y
-            const nodeYPositions = new Map();
             const rowYList = [];
             nodes.forEach(node => {
                 const nodeRect = node.getBoundingClientRect();
                 const y = nodeRect.top - svgRect.top + (nodeRect.height / 2);
-                nodeYPositions.set(node.dataset.changeId, y);
                 rowYList.push(y);
             });
 
-            const EDGE_EXTENSION = 40; // fallback extension for first/last rows
+            const EDGE_EXTENSION = 20;
+            const ARC_RADIUS_SMALL = 8;
+            const ARC_RADIUS = 12;
 
-            function arcRadius(fromLane, toLane) {
-                if (Math.abs(fromLane - toLane) <= 1)
-                    return 8;
-                else
-                    return 12;
-            }
+            for (const edge of currentGraph.edges) {
+                const fromY = rowYList[edge.fromRow];
+                const toY = rowYList[edge.toRow];
+                if (fromY === undefined || toY === undefined) continue;
 
-            currentLaneInfo.forEach((laneInfo, index) => {
-                const change = currentChanges[index];
-                if (!change) return;
+                const fromX = getLaneX(edge.fromLane);
+                const toX = getLaneX(edge.toLane);
+                const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
 
-                const nodeY = nodeYPositions.get(laneInfo.commitId);
-                if (nodeY === undefined) return;
+                if (edge.fromLane === edge.toLane) {
+                    path.setAttribute('d', `M ${fromX} ${fromY} V ${toY}`);
+                } else {
+                    const prevToY = edge.toRow > 0 ? rowYList[edge.toRow - 1] : toY - EDGE_EXTENSION;
+                    const horizontalY = (toY + prevToY) / 2;
+                    const r = Math.abs(edge.fromLane - edge.toLane) <= 1 ? ARC_RADIUS_SMALL : ARC_RADIUS;
+                    const goingRight = toX > fromX;
 
-                const edges = laneInfo.edges || [];
-
-                // Determine the Y positions of adjacent rows for edge endpoints
-                // For the first row, use nodeY instead of extending above to prevent
-                // drawing lines/circles above the graph where there's no commit
-                const prevY = index > 0 ? rowYList[index - 1] : nodeY;
-                const nextY = index < rowYList.length - 1 ? rowYList[index + 1] : nodeY + EDGE_EXTENSION;
-
-                // Midpoints between rows (where curves transition)
-                const topMidY = (prevY + nodeY) / 2;
-                const bottomMidY = (nodeY + nextY) / 2;
-
-                for (const edge of edges) {
-                    const fromX = getLaneX(edge.fromLane);
-                    const toX = getLaneX(edge.toLane);
-
-                    if (edge.type === 'incoming') {
-                        // Line from previous row's position down to this node
-                        const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
-                        if (edge.fromLane === edge.toLane) {
-                            // Straight vertical into node
-                            path.setAttribute('d', `M ${fromX} ${topMidY} V ${nodeY}`);
-                        } else {
-                            // Curve from input lane column to node column
-                            const d = [];
-                            const r = arcRadius(edge.fromLane, edge.toLane);
-                            const sweepFlag = fromX < toX ? 0 : 1;
-                            d.push(`M ${fromX} ${topMidY}`);
-                            d.push(`V ${nodeY - r}`);
-                            d.push(`A ${r} ${r} 0 0 ${sweepFlag} ${fromX < toX ? fromX + r : fromX - r} ${nodeY}`);
-                            if (Math.abs((fromX < toX ? fromX + r : fromX - r) - toX) > 1) {
-                                d.push(`H ${toX}`);
-                            }
-                            path.setAttribute('d', d.join(' '));
-                        }
-                        connectionLines.appendChild(path);
-                    } else if (edge.type === 'outgoing') {
-                        // Line from this node down to half-way down to the next row's position
-                        const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
-                        path.setAttribute('d', `M ${fromX} ${nodeY} V ${bottomMidY}`);
-                        connectionLines.appendChild(path);
-                    } else if (edge.type === 'merge-outgoing') {
-                        // Fork from node to a secondary parent's lane
-                        const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
-                        const d = [];
-                        const r = arcRadius(edge.fromLane, edge.toLane);
-                        if (fromX === toX) {
-                            // Same column (rare but possible)
-                            path.setAttribute('d', `M ${fromX} ${nodeY} V ${bottomMidY}`);
-                        } else {
-                            const sweepFlag = fromX < toX ? 1 : 0;
-                            d.push(`M ${fromX} ${nodeY}`);
-                            if (Math.abs(fromX - (fromX < toX ? toX - r : toX + r)) > 1) {
-                                d.push(`H ${fromX < toX ? toX - r : toX + r}`);
-                            }
-                            d.push(`A ${r} ${r} 0 0 ${sweepFlag} ${toX} ${nodeY + r}`);
-                            d.push(`V ${nextY}`);
-                            path.setAttribute('d', d.join(' '));
-                        }
-                        connectionLines.appendChild(path);
-                    } else if (edge.type === 'passthrough') {
-                        const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
-                        path.setAttribute('d', `M ${fromX} ${topMidY} V ${bottomMidY}`);
-                        connectionLines.appendChild(path);
+                    const d = [];
+                    d.push(`M ${fromX} ${fromY}`);
+                    d.push(`V ${horizontalY - r}`);
+                    if (goingRight) {
+                        d.push(`A ${r} ${r} 0 0 0 ${fromX + r} ${horizontalY}`);
+                        d.push(`H ${toX - r}`);
+                        d.push(`A ${r} ${r} 0 0 1 ${toX} ${horizontalY + r}`);
+                    } else {
+                        d.push(`A ${r} ${r} 0 0 1 ${fromX - r} ${horizontalY}`);
+                        d.push(`H ${toX + r}`);
+                        d.push(`A ${r} ${r} 0 0 0 ${toX} ${horizontalY + r}`);
                     }
+                    d.push(`V ${toY}`);
+                    path.setAttribute('d', d.join(' '));
                 }
-            });
+                connectionLines.appendChild(path);
+            }
         }
 
         function highlightConnectedNodes(nodeElement, highlight) {
@@ -412,12 +370,12 @@
             return div.innerHTML;
         }
 
-        function updateGraph(changes, laneInfo, changeEditAction, graphStyle, preserveScroll = false) {
+        function updateGraph(changes, graph, changeEditAction, graphStyle, preserveScroll = false) {
             const scrollTop = preserveScroll ?
                 (window.scrollY || document.documentElement.scrollTop) : 0;
 
             currentChanges = changes;
-            currentLaneInfo = laneInfo || [];
+            currentGraph = graph || { nodes: [], edges: [] };
 
             const nodesContainer = document.getElementById('nodes');
             const circlesContainer = document.getElementById('node-circles');
@@ -431,17 +389,12 @@
                 graphContainer.classList.remove('compact');
             }
 
-            const changeToLaneInfo = new Map();
-            currentLaneInfo.forEach((info, index) => {
-                changeToLaneInfo.set(info.commitId, { ...info, changeIndex: index });
-            });
-
             changes.forEach((change, index) => {
                 if (!change.changeId) return;
 
-                const info = changeToLaneInfo.get(change.changeId);
-                const nodeLane = info ? info.nodeLane : 0;
-                const colorIndex = info ? info.colorIndex : 0;
+                const nodeData = currentGraph.nodes[index];
+                const nodeLane = nodeData ? nodeData.lane : 0;
+                const colorIndex = nodeData ? nodeData.colorIndex : 0;
 
                 const node = document.createElement('div');
                 node.className = 'change-node';
@@ -461,8 +414,7 @@
 
                 const textContent = document.createElement('div');
                 textContent.className = 'text-content';
-                const rowLanes = info ? Math.max(info.inputLanes.length, info.outputLanes.length) : 1;
-                textContent.style.setProperty('--graph-width', `${SWIMLANE_WIDTH * rowLanes}px`);
+                textContent.style.setProperty('--graph-width', `${SWIMLANE_WIDTH * nodeData.numLanesActive}px`);
                 const nodeLabel = document.createElement("div");
                 const changeIdPrefix = change.changeIdPrefix;
                 const changeIdSuffix = change.changeIdSuffix || "";

@@ -7,7 +7,7 @@ import { assignLanes } from "./laneAssigner";
 export type {
   LaneNode,
   LaneEdge,
-  CommitLaneInfo,
+  ChangeIdGraph,
 } from "./laneAssigner";
 
 const rootChangeId = "z".repeat(32);

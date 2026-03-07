@@ -3,26 +3,25 @@ import type { LogEntry } from "./repository";
 const colorRegistryLength = 5;
 
 export interface LaneNode {
-  targetId: string | null;
-  sourceId: string | null;
+  lane: number;
+  changeId: string;
   colorIndex: number;
+  // Only for display purposes to calculate where to place the label
+  numLanesActive: number;
 }
 
 export interface LaneEdge {
+  fromRow: number; // The index in ChangeIdGraph.nodes
+  toRow: number; // The index in ChangeIdGraph.nodes
   fromLane: number;
   toLane: number;
-  colorIndex: number;
-  type: "incoming" | "outgoing" | "passthrough" | "merge-outgoing";
   fromId: string;
   toId: string;
+  colorIndex: number;
 }
 
-export interface CommitLaneInfo {
-  commitId: string;
-  nodeLane: number;
-  colorIndex: number;
-  inputLanes: LaneNode[];
-  outputLanes: LaneNode[];
+export interface ChangeIdGraph {
+  nodes: LaneNode[];
   edges: LaneEdge[];
 }
 
@@ -30,158 +29,110 @@ function rot(n: number, length: number): number {
   return ((n % length) + length) % length;
 }
 
-export function assignLanes(entries: LogEntry[]): CommitLaneInfo[] {
-  const results: CommitLaneInfo[] = [];
-  const activeLanes: LaneNode[] = [];
+interface LaneInfo {
+  targetId: string | null;
+  colorIndex: number;
+}
+
+export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
+  const result: ChangeIdGraph = { nodes: [], edges: [] };
+  const lanesByRow: LaneInfo[][] = [[]];
   let colorIndex = 0;
+  const nodeToRow: Record<string, number> = {};
 
+  // Compute nodes
   for (const entry of entries) {
-    const inputLanes = activeLanes.map((l) => ({ ...l }));
-
-    // Find which lane was expecting this commit
-    let nodeLane = activeLanes.findIndex((l) => l.targetId === entry.change_id);
-
+    const lanes = lanesByRow[lanesByRow.length - 1].map((l) => ({
+      ...l,
+    }));
+    let numLanesActive = lanes.length;
+    let nodeLane = lanes.findIndex((l) => l.targetId === entry.change_id);
+    let color: number;
     if (nodeLane === -1) {
-      // This commit wasn't expected by any lane — assign to an empty slot or create a new lane
-      nodeLane = activeLanes.findIndex((l) => l.targetId === null);
-      if (nodeLane === -1) {
-        nodeLane = activeLanes.length;
-        activeLanes.push({
-          targetId: entry.change_id,
-          sourceId: entry.change_id,
-          colorIndex: rot(colorIndex, colorRegistryLength),
-        });
-      } else {
-        activeLanes[nodeLane] = {
-          targetId: entry.change_id,
-          sourceId: entry.change_id,
-          colorIndex: rot(colorIndex, colorRegistryLength),
-        };
-      }
+      color = rot(colorIndex, colorRegistryLength);
       colorIndex++;
-    }
 
-    const nodeColorIndex = activeLanes[nodeLane].colorIndex;
-
-    // Replace this commit's lane with its first parent (or null if no parents)
-    if (entry.parents.length > 0) {
-      activeLanes[nodeLane] = {
-        targetId: entry.parents[0],
-        sourceId: entry.change_id,
-        colorIndex: nodeColorIndex,
-      };
+      nodeLane = lanes.findIndex((l) => l.targetId === null);
+      if (nodeLane === -1) {
+        nodeLane = lanes.length;
+        numLanesActive++;
+      }
     } else {
-      activeLanes[nodeLane] = { targetId: null, sourceId: null, colorIndex: nodeColorIndex };
+      color = lanes[nodeLane].colorIndex;
     }
 
-    // Open new lanes for secondary parents (merge sources)
-    for (let i = 1; i < entry.parents.length; i++) {
+    lanes[nodeLane] = {
+      targetId: entry.parents.length > 0 ? entry.parents[0] : entry.change_id,
+      colorIndex: color,
+    };
+
+    for (let i = 0; i < entry.parents.length; i++) {
       const parentId = entry.parents[i];
-      const existingIndex = activeLanes.findIndex((l) => l.targetId === parentId);
+      const existingIndex = lanes.findIndex((l) => l.targetId === parentId);
       if (existingIndex === -1) {
-        activeLanes.push({
+        lanes.push({
           targetId: parentId,
-          sourceId: entry.change_id,
           colorIndex: rot(colorIndex, colorRegistryLength),
         });
         colorIndex++;
       }
     }
 
-    // When a commit is consumed from lane N, set other lanes tracking it to null (converged)
-    for (let i = 0; i < activeLanes.length; i++) {
-      if (i !== nodeLane && activeLanes[i].targetId === entry.change_id) {
-        activeLanes[i] = { targetId: null, sourceId: null, colorIndex: activeLanes[i].colorIndex };
+    // Close lanes for this change ID
+    for (let i = 0; i < lanes.length; i++) {
+      if (i !== nodeLane && lanes[i].targetId === entry.change_id) {
+        lanes[i] = {
+          targetId: null,
+          colorIndex: lanes[i].colorIndex,
+        };
       }
     }
 
-    while (
-      activeLanes.length > 0 &&
-      activeLanes[activeLanes.length - 1].targetId === null
-    ) {
-      activeLanes.pop();
+    while (lanes.length > 0 && lanes[lanes.length - 1].targetId === null) {
+      lanes.pop();
+      numLanesActive--;
     }
 
-    const outputLanes = activeLanes.map((l) => ({ ...l }));
-
-    // Compute edges for this row
-    const edges: LaneEdge[] = [];
-
-    // 1. Incoming edges: input lanes that were tracking this commit
-    for (let i = 0; i < inputLanes.length; i++) {
-      if (inputLanes[i].targetId === entry.change_id) {
-        edges.push({
-          fromLane: i,
-          toLane: nodeLane,
-          colorIndex: inputLanes[i].colorIndex,
-          type: "incoming",
-          fromId: inputLanes[i].sourceId!,
-          toId: inputLanes[i].targetId!,
-        });
-      }
-    }
-
-    // 2. Outgoing edge to first parent
-    if (entry.parents.length > 0) {
-      const firstParentOutputLane = outputLanes.findIndex(
-        (l) => l.targetId === entry.parents[0],
-      );
-      if (firstParentOutputLane !== -1) {
-        edges.push({
-          fromLane: nodeLane,
-          toLane: firstParentOutputLane,
-          colorIndex: nodeColorIndex,
-          type: "outgoing",
-          fromId: entry.change_id,
-          toId: entry.parents[0],
-        });
-      }
-    }
-
-    // 3. Merge-outgoing edges for secondary parents
-    for (let i = 1; i < entry.parents.length; i++) {
-      const parentId = entry.parents[i];
-      const parentOutputLane = outputLanes.findIndex(
-        (l) => l.targetId === parentId,
-      );
-      if (parentOutputLane !== -1) {
-        edges.push({
-          fromLane: nodeLane,
-          toLane: parentOutputLane,
-          colorIndex: outputLanes[parentOutputLane].colorIndex,
-          type: "merge-outgoing",
-          fromId: entry.change_id,
-          toId: parentId,
-        });
-      }
-    }
-
-    // 4. Pass-through edges: input lanes that are NOT this commit, passing through to output
-    for (let i = 0; i < inputLanes.length; i++) {
-      if (
-        inputLanes[i].targetId !== null &&
-        inputLanes[i].targetId !== entry.change_id
-      ) {
-        edges.push({
-          fromLane: i,
-          toLane: i,
-          colorIndex: inputLanes[i].colorIndex,
-          type: "passthrough",
-          fromId: inputLanes[i].sourceId!,
-          toId: inputLanes[i].targetId!,
-        });
-      }
-    }
-
-    results.push({
-      commitId: entry.change_id,
-      nodeLane,
-      colorIndex: nodeColorIndex,
-      inputLanes,
-      outputLanes,
-      edges,
+    const n = result.nodes.push({
+      changeId: entry.change_id,
+      lane: nodeLane,
+      colorIndex: color,
+      numLanesActive,
     });
+    nodeToRow[entry.change_id] = n - 1;
+    lanesByRow.push(lanes);
   }
 
-  return results;
+  // Compute edges
+  for (let i = 0; i < result.nodes.length; i++) {
+    const node = result.nodes[i];
+    const entry = entries[i];
+
+    let firstParent = true;
+    for (const parent of entry.parents) {
+      const parentRow = nodeToRow[parent];
+      const parentNode = result.nodes[parentRow];
+      for (let j = i; j < parentRow; j++) {
+        const fromLane =
+          j === i
+            ? node.lane
+            : lanesByRow[j].findIndex((l) => l.targetId === parent);
+        const toLane = lanesByRow[j + 1].findIndex(
+          (l) => l.targetId === parent,
+        );
+        result.edges.push({
+          fromRow: j,
+          toRow: j + 1,
+          fromLane,
+          toLane,
+          fromId: entry.change_id,
+          toId: parent,
+          colorIndex: firstParent ? node.colorIndex : parentNode.colorIndex,
+        });
+      }
+      firstParent = false;
+    }
+  }
+
+  return result;
 }
