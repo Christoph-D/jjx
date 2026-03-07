@@ -2,7 +2,7 @@ import winston from "winston";
 import { config } from "./vendor/winston-transport-vscode/logOutputChannelTransport";
 
 export const logger = winston.createLogger({
-  level: "trace",
+  level: "warning",
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
