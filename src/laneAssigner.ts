@@ -39,6 +39,12 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
   let colorIndex = 0;
   const nodeToRow: Record<string, number> = {};
 
+  // We're working with a partial jj log, so some parent changes could be outside the visible set.
+  const visibleChangeIds = new Set<string>();
+  for (const entry of entries) {
+    visibleChangeIds.add(entry.change_id);
+  }
+
   // Compute nodes
   for (const entry of entries) {
     const lanes = lanesByRow[lanesByRow.length - 1].map((l) => ({
@@ -67,6 +73,9 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
 
     for (let i = 0; i < entry.parents.length; i++) {
       const parentId = entry.parents[i];
+      if (!visibleChangeIds.has(parentId)) {
+        continue;
+      }
       const existingIndex = lanes.findIndex((l) => l.targetId === parentId);
       if (existingIndex === -1) {
         lanes.push({
@@ -121,6 +130,9 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
 
     let firstParent = true;
     for (const parent of entry.parents) {
+      if (!visibleChangeIds.has(parent)) {
+        continue;
+      }
       const parentRow = nodeToRow[parent];
       const parentNode = result.nodes[parentRow];
 
