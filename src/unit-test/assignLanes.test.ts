@@ -75,14 +75,12 @@ describe("assignLanes", () => {
     const fromA = findEdgesFrom(result, "aaa");
     assert.strictEqual(fromA.length, 1);
     assert.strictEqual(fromA[0].toId, "bbb");
-    assert.strictEqual(fromA[0].fromLane, 0);
-    assert.strictEqual(fromA[0].toLane, 0);
+    assert.deepStrictEqual(fromA[0].lanePath, [0, 0]);
 
     const toB = findEdgesTo(result, "bbb");
     assert.strictEqual(toB.length, 1);
     assert.strictEqual(toB[0].fromId, "aaa");
-    assert.strictEqual(toB[0].fromLane, 0);
-    assert.strictEqual(toB[0].toLane, 0);
+    assert.deepStrictEqual(toB[0].lanePath, [0, 0]);
 
     assert.strictEqual(findEdgesFrom(result, "ccc").length, 0);
   });
@@ -229,33 +227,46 @@ describe("assignLanes", () => {
 
     const fromA = findEdgesFrom(result, "aaa");
     assert.strictEqual(fromA.length, 2);
-    assert.ok(fromA.some((e) => e.toId === "bbb"));
-    assert.ok(fromA.some((e) => e.toId === "ccc"));
+    const edgeAToBbb = fromA.find((e) => e.toId === "bbb");
+    const edgeAToCcc = fromA.find((e) => e.toId === "ccc");
+    assert.ok(edgeAToBbb);
+    assert.ok(edgeAToCcc);
+    assert.strictEqual(edgeAToBbb.lanePath.length, 5);
+    assert.strictEqual(edgeAToCcc.lanePath.length, 2);
+    assert.strictEqual(edgeAToBbb.lanePath[0], 0);
+    assert.strictEqual(edgeAToCcc.lanePath[0], 0);
 
     const nodeC = findNodeByChangeId(result, "ccc");
     assert.ok(nodeC);
     const fromC = findEdgesFrom(result, "ccc");
     assert.strictEqual(fromC.length, 2);
-    assert.ok(fromC.some((e) => e.toId === "ddd"));
-    assert.ok(fromC.some((e) => e.toId === "eee"));
+    const edgeCToDdd = fromC.find((e) => e.toId === "ddd");
+    const edgeCToEee = fromC.find((e) => e.toId === "eee");
+    assert.ok(edgeCToDdd);
+    assert.ok(edgeCToEee);
+    assert.strictEqual(edgeCToDdd.lanePath.length, 3);
+    assert.strictEqual(edgeCToEee.lanePath.length, 2);
 
     const nodeE = findNodeByChangeId(result, "eee");
     assert.ok(nodeE);
     const fromE = findEdgesFrom(result, "eee");
     assert.strictEqual(fromE.length, 1);
     assert.strictEqual(fromE[0].toId, "hhh");
+    assert.strictEqual(fromE[0].lanePath.length, 6);
 
     const nodeD = findNodeByChangeId(result, "ddd");
     assert.ok(nodeD);
     const fromD = findEdgesFrom(result, "ddd");
     assert.strictEqual(fromD.length, 1);
     assert.strictEqual(fromD[0].toId, "fff");
+    assert.strictEqual(fromD[0].lanePath.length, 3);
 
     const nodeB = findNodeByChangeId(result, "bbb");
     assert.ok(nodeB);
     const fromB = findEdgesFrom(result, "bbb");
     assert.strictEqual(fromB.length, 1);
     assert.strictEqual(fromB[0].toId, "fff");
+    assert.strictEqual(fromB[0].lanePath.length, 2);
 
     const toF = findEdgesTo(result, "fff");
     assert.strictEqual(toF.length, 2);
@@ -265,12 +276,14 @@ describe("assignLanes", () => {
     const fromF = findEdgesFrom(result, "fff");
     assert.strictEqual(fromF.length, 1);
     assert.strictEqual(fromF[0].toId, "ggg");
+    assert.strictEqual(fromF[0].lanePath.length, 2);
 
     const nodeG = findNodeByChangeId(result, "ggg");
     assert.ok(nodeG);
     const fromG = findEdgesFrom(result, "ggg");
     assert.strictEqual(fromG.length, 1);
     assert.strictEqual(fromG[0].toId, "hhh");
+    assert.strictEqual(fromG[0].lanePath.length, 2);
 
     const nodeH = findNodeByChangeId(result, "hhh");
     assert.ok(nodeH);
@@ -278,5 +291,6 @@ describe("assignLanes", () => {
 
     const toH = findEdgesTo(result, "hhh");
     assert.strictEqual(toH.length, 2);
+    assert.ok(toH.every((e) => e.lanePath.length >= 2));
   });
 });

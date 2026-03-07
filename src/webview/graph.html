@@ -188,34 +188,48 @@
                 const fromY = rowYList[edge.fromRow];
                 const toY = rowYList[edge.toRow];
                 if (fromY === undefined || toY === undefined) continue;
+                if (!edge.lanePath || edge.lanePath.length < 2) continue;
 
-                const fromX = getLaneX(edge.fromLane);
-                const toX = getLaneX(edge.toLane);
                 const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
+                const d = [];
 
-                if (edge.fromLane === edge.toLane) {
-                    path.setAttribute('d', `M ${fromX} ${fromY} V ${toY}`);
-                } else {
-                    const prevToY = edge.toRow > 0 ? rowYList[edge.toRow - 1] : toY - EDGE_EXTENSION;
-                    const horizontalY = (toY + prevToY) / 2;
-                    const r = Math.abs(edge.fromLane - edge.toLane) <= 1 ? ARC_RADIUS_SMALL : ARC_RADIUS;
-                    const goingRight = toX > fromX;
+                for (let i = 0; i < edge.lanePath.length - 1; i++) {
+                    const segFromLane = edge.lanePath[i];
+                    const segToLane = edge.lanePath[i + 1];
+                    const segFromRow = edge.fromRow + i;
+                    const segToRow = edge.fromRow + i + 1;
+                    const segFromY = rowYList[segFromRow];
+                    const segToY = rowYList[segToRow];
 
-                    const d = [];
-                    d.push(`M ${fromX} ${fromY}`);
-                    d.push(`V ${horizontalY - r}`);
-                    if (goingRight) {
-                        d.push(`A ${r} ${r} 0 0 0 ${fromX + r} ${horizontalY}`);
-                        d.push(`H ${toX - r}`);
-                        d.push(`A ${r} ${r} 0 0 1 ${toX} ${horizontalY + r}`);
+                    if (segFromY === undefined || segToY === undefined) continue;
+
+                    const fromX = getLaneX(segFromLane);
+                    const toX = getLaneX(segToLane);
+
+                    if (segFromLane === segToLane) {
+                        d.push(`M ${fromX} ${segFromY} V ${segToY}`);
                     } else {
-                        d.push(`A ${r} ${r} 0 0 1 ${fromX - r} ${horizontalY}`);
-                        d.push(`H ${toX + r}`);
-                        d.push(`A ${r} ${r} 0 0 0 ${toX} ${horizontalY + r}`);
+                        const prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
+                        const horizontalY = (segToY + prevToY) / 2;
+                        const r = Math.abs(segFromLane - segToLane) <= 1 ? ARC_RADIUS_SMALL : ARC_RADIUS;
+                        const goingRight = toX > fromX;
+
+                        d.push(`M ${fromX} ${segFromY}`);
+                        d.push(`V ${horizontalY - r}`);
+                        if (goingRight) {
+                            d.push(`A ${r} ${r} 0 0 0 ${fromX + r} ${horizontalY}`);
+                            d.push(`H ${toX - r}`);
+                            d.push(`A ${r} ${r} 0 0 1 ${toX} ${horizontalY + r}`);
+                        } else {
+                            d.push(`A ${r} ${r} 0 0 1 ${fromX - r} ${horizontalY}`);
+                            d.push(`H ${toX + r}`);
+                            d.push(`A ${r} ${r} 0 0 0 ${toX} ${horizontalY + r}`);
+                        }
+                        d.push(`V ${segToY}`);
                     }
-                    d.push(`V ${toY}`);
-                    path.setAttribute('d', d.join(' '));
                 }
+
+                path.setAttribute('d', d.join(' '));
                 connectionLines.appendChild(path);
             }
         }

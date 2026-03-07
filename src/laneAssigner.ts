@@ -13,8 +13,7 @@ export interface LaneNode {
 export interface LaneEdge {
   fromRow: number; // The index in ChangeIdGraph.nodes
   toRow: number; // The index in ChangeIdGraph.nodes
-  fromLane: number;
-  toLane: number;
+  lanePath: number[];
   fromId: string;
   toId: string;
   colorIndex: number;
@@ -112,24 +111,24 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
     for (const parent of entry.parents) {
       const parentRow = nodeToRow[parent];
       const parentNode = result.nodes[parentRow];
-      for (let j = i; j < parentRow; j++) {
-        const fromLane =
+
+      const lanePath: number[] = [];
+      for (let j = i; j <= parentRow; j++) {
+        const lane =
           j === i
             ? node.lane
             : lanesByRow[j].findIndex((l) => l.targetId === parent);
-        const toLane = lanesByRow[j + 1].findIndex(
-          (l) => l.targetId === parent,
-        );
-        result.edges.push({
-          fromRow: j,
-          toRow: j + 1,
-          fromLane,
-          toLane,
-          fromId: entry.change_id,
-          toId: parent,
-          colorIndex: firstParent ? node.colorIndex : parentNode.colorIndex,
-        });
+        lanePath.push(lane);
       }
+
+      result.edges.push({
+        fromRow: i,
+        toRow: parentRow,
+        lanePath,
+        fromId: entry.change_id,
+        toId: parent,
+        colorIndex: firstParent ? node.colorIndex : parentNode.colorIndex,
+      });
       firstParent = false;
     }
   }
