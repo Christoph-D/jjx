@@ -63,6 +63,12 @@
         "icon": "$(request-changes)"
       },
       {
+        "command": "jj.openDiffResourceState",
+        "title": "View as diff",
+        "category": "Jujutsu",
+        "icon": "$(compare-changes)"
+      },
+      {
         "command": "jj.openFileInWorkingCopyEditor",
         "title": "Open file in working copy",
         "category": "Jujutsu",
@@ -318,7 +324,12 @@
       "scm/resourceState/context": [
         {
           "command": "jj.openFileResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @",
+          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjk.openDiffAction == 'diff'",
+          "group": "inline"
+        },
+        {
+          "command": "jj.openDiffResourceState",
+          "when": "scmProvider == jj && config.jjk.openDiffAction == 'file'",
           "group": "inline"
         },
         {
@@ -333,7 +344,7 @@
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjk.openDiffAction == 'diff'",
           "group": "inline"
         },
         {
@@ -378,6 +389,10 @@
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
+          "when": "false"
+        },
+        {
+          "command": "jj.openDiffResourceState",
           "when": "false"
         },
         {
@@ -501,6 +516,17 @@
             "Show compact single line: change ID - first line of description - author email"
           ],
           "description": "Display style for commits in the graph view",
+          "scope": "resource"
+        },
+        "jjk.openDiffAction": {
+          "type": "string",
+          "default": "diff",
+          "enum": ["diff", "file"],
+          "enumDescriptions": [
+            "Open files as diff (comparing to parent)",
+            "Open files directly in working copy"
+          ],
+          "description": "Action when clicking a file in the change view",
           "scope": "resource"
         }
       }

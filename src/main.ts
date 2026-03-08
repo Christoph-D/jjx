@@ -123,6 +123,11 @@ export async function activate(context: vscode.ExtensionContext) {
         repoSCM.updatePlaceholderText(changeEditAction);
       }
     }
+    if (e.affectsConfiguration("jjk.openDiffAction")) {
+      for (const repoSCM of workspaceSCM.repoSCMs) {
+        repoSCM.render();
+      }
+    }
     if (e.affectsConfiguration("jjk.graphStyle")) {
       if (graphWebview) {
         await graphWebview.refresh();
@@ -1632,6 +1637,61 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to open file${error instanceof Error ? `: ${error.message}` : ""}`,
+          );
+        }
+      },
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "jj.openDiffResourceState",
+      async (resourceState: vscode.SourceControlResourceState) => {
+        try {
+          const resourceGroup =
+            workspaceSCM.getResourceGroupFromResourceState(resourceState);
+          if (!resourceGroup) {
+            throw new Error("Resource group not found");
+          }
+
+          const filePath = resourceState.resourceUri.fsPath;
+          const changeId = resourceGroup.id;
+
+          const repo = workspaceSCM.getRepositoryFromUri(
+            resourceState.resourceUri,
+          );
+          if (!repo) {
+            throw new Error("Repository not found");
+          }
+
+          const beforeUri = toJJUri(vscode.Uri.file(filePath), {
+            diffOriginalRev: changeId,
+          });
+          const afterUri =
+            changeId === "@"
+              ? vscode.Uri.file(filePath)
+              : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
+
+          const { fileStatuses } = await repo.show(changeId);
+          const fileStatus = fileStatuses.find((file) =>
+            pathEquals(file.path, filePath),
+          );
+
+          const diffTitleSuffix =
+            changeId === "@"
+              ? "(Working Copy)"
+              : `(${changeId.substring(0, 8)})`;
+
+          await vscode.commands.executeCommand(
+            "vscode.diff",
+            beforeUri,
+            afterUri,
+            (fileStatus?.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") +
+              `${path.relative(repo.repositoryRoot, filePath)} ${diffTitleSuffix}`,
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to open diff${error instanceof Error ? `: ${error.message}` : ""}`,
           );
         }
       },

@@ -717,6 +717,9 @@ class RepositorySourceControlManager {
       );
     }
 
+    const config = vscode.workspace.getConfiguration("jjk", vscode.Uri.file(this.repositoryRoot));
+    const openDiffAction = config.get<"diff" | "file">("openDiffAction") || "diff";
+
     this.workingCopyResourceGroup.label =
       RepositorySourceControlManager.getLabel(
         "Working Copy",
@@ -724,8 +727,9 @@ class RepositorySourceControlManager {
       );
     this.workingCopyResourceGroup.resourceStates = this.status.fileStatuses.map(
       (fileStatus) => {
+        const workingCopyUri = vscode.Uri.file(fileStatus.path);
         return {
-          resourceUri: vscode.Uri.file(fileStatus.path),
+          resourceUri: workingCopyUri,
           decorations: {
             strikeThrough: fileStatus.type === "D",
             tooltip: path.basename(fileStatus.file),
@@ -735,8 +739,10 @@ class RepositorySourceControlManager {
             toJJUri(vscode.Uri.file(`${fileStatus.path}`), {
               diffOriginalRev: "@",
             }),
-            vscode.Uri.file(fileStatus.path),
+            workingCopyUri,
             "(Working Copy)",
+            openDiffAction,
+            workingCopyUri,
           ),
         };
       },
@@ -783,8 +789,9 @@ class RepositorySourceControlManager {
       if (showResult) {
         parentChangeResourceGroup.resourceStates = showResult.fileStatuses.map(
           (parentStatus) => {
+            const workingCopyUri = vscode.Uri.file(parentStatus.path);
             return {
-              resourceUri: toJJUri(vscode.Uri.file(parentStatus.path), {
+              resourceUri: toJJUri(workingCopyUri, {
                 rev: parentChange.changeId,
               }),
               decorations: {
@@ -800,6 +807,8 @@ class RepositorySourceControlManager {
                   rev: parentChange.changeId,
                 }),
                 `(${parentChange.changeId})`,
+                openDiffAction,
+                workingCopyUri,
               ),
             };
           },
@@ -830,6 +839,8 @@ function getResourceStateCommand(
   beforeUri: vscode.Uri,
   afterUri: vscode.Uri,
   diffTitleSuffix: string,
+  openDiffAction: "diff" | "file",
+  workingCopyUri: vscode.Uri,
 ): vscode.Command {
   if (fileStatus.type === "A") {
     return {
@@ -846,6 +857,13 @@ function getResourceStateCommand(
         {} satisfies vscode.TextDocumentShowOptions,
         `${fileStatus.file} (Deleted)`,
       ],
+    };
+  }
+  if (openDiffAction === "file") {
+    return {
+      title: "Open",
+      command: "vscode.open",
+      arguments: [workingCopyUri],
     };
   }
   return {
