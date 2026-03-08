@@ -602,9 +602,69 @@
                     } else {
                         editItem.style.display = 'block';
                     }
-                    contextMenu.style.left = e.pageX + 'px';
-                    contextMenu.style.top = e.pageY + 'px';
+                    contextMenu.style.left = '-9999px';
+                    contextMenu.style.top = '-9999px';
                     contextMenu.style.display = 'block';
+
+                    requestAnimationFrame(() => {
+                        const menuRect = contextMenu.getBoundingClientRect();
+                        const viewportWidth = window.innerWidth;
+                        const viewportHeight = window.innerHeight;
+                        const scrollX = window.scrollX || window.pageXOffset;
+                        const scrollY = window.scrollY || window.pageYOffset;
+
+                        let left = e.pageX;
+                        let top = e.pageY;
+
+                        if (left + menuRect.width > viewportWidth + scrollX - 10) {
+                            left = e.pageX - menuRect.width;
+                        }
+
+                        if (top + menuRect.height > viewportHeight + scrollY - 10) {
+                            top = e.pageY - menuRect.height;
+                        }
+
+                        if (left < scrollX + 10) {
+                            left = scrollX + 10;
+                        }
+
+                        if (top < scrollY + 10) {
+                            top = scrollY + 10;
+                        }
+
+                        contextMenu.style.left = left + 'px';
+                        contextMenu.style.top = top + 'px';
+
+                        document.querySelectorAll('.has-submenu').forEach(item => {
+                            const submenu = item.querySelector('.context-submenu');
+                            if (submenu) {
+                                const itemRect = item.getBoundingClientRect();
+                                submenu.classList.remove('left', 'above', 'below');
+                                submenu.style.display = 'block';
+                                const submenuRect = submenu.getBoundingClientRect();
+                                submenu.style.display = '';
+
+                                const fitsRight = itemRect.right + submenuRect.width <= viewportWidth - 10;
+                                const fitsLeft = itemRect.left - submenuRect.width >= 10;
+
+                                if (fitsRight) {
+                                } else if (fitsLeft) {
+                                    submenu.classList.add('left');
+                                } else {
+                                    const fitsBelow = itemRect.bottom + submenuRect.height <= viewportHeight - 10;
+                                    const fitsAbove = itemRect.top - submenuRect.height >= 10;
+
+                                    if (fitsBelow) {
+                                        submenu.classList.add('below');
+                                    } else if (fitsAbove) {
+                                        submenu.classList.add('above');
+                                    } else {
+                                        submenu.classList.add('below');
+                                    }
+                                }
+                            }
+                        });
+                    });
 
                     const allBookmarks = currentChanges
                         .filter(c => c.localBookmarks && c.localBookmarks.length > 0)

@@ -253,6 +253,22 @@ body {
     display: block;
 }
 
+.context-submenu.left {
+    left: auto;
+    right: 100%;
+}
+
+.context-submenu.above {
+    left: 20px;
+    top: auto;
+    bottom: 100%;
+}
+
+.context-submenu.below {
+    left: 20px;
+    top: 100%;
+}
+
 .context-submenu-item {
     padding: 6px 20px;
     cursor: pointer;
