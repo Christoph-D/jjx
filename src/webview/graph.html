@@ -454,16 +454,17 @@
                 if (change.bookmarks && change.bookmarks.length > 0) {
                     change.bookmarks.forEach(b => {
                         const pill = document.createElement("span");
-                        pill.className = 'pill bookmark-pill';
-                        pill.textContent = b;
+                        pill.className = 'pill bookmark-pill' + (b.synced ? '' : ' unsynced');
+                        pill.textContent = b.name;
+                        pill.dataset.bookmark = b.name;
                         nodeLabel.appendChild(pill);
                     });
                 }
                 if (change.tags && change.tags.length > 0) {
                     change.tags.forEach(t => {
                         const pill = document.createElement("span");
-                        pill.className = 'pill tag-pill';
-                        pill.textContent = t;
+                        pill.className = 'pill tag-pill' + (t.synced ? '' : ' unsynced');
+                        pill.textContent = t.name;
                         nodeLabel.appendChild(pill);
                     });
                 }
@@ -581,7 +582,7 @@
 
                     const allBookmarks = currentChanges
                         .filter(c => c.bookmarks && c.bookmarks.length > 0)
-                        .flatMap(c => c.bookmarks);
+                        .flatMap(c => c.bookmarks.map(b => b.name));
                     const uniqueBookmarks = [...new Set(allBookmarks)].sort();
 
                     const submenu = document.getElementById('bookmark-submenu');
@@ -592,11 +593,11 @@
                         moveBookmarkItem.classList.add('disabled');
                     } else {
                         moveBookmarkItem.classList.remove('disabled');
-                        uniqueBookmarks.forEach(bookmark => {
+                        uniqueBookmarks.forEach(bookmarkName => {
                             const item = document.createElement('div');
                             item.className = 'context-submenu-item';
-                            item.textContent = bookmark;
-                            item.dataset.bookmark = bookmark;
+                            item.textContent = bookmarkName;
+                            item.dataset.bookmark = bookmarkName;
                             submenu.appendChild(item);
                         });
                     }

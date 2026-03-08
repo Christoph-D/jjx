@@ -1998,6 +1998,11 @@ export interface LogEntryFile {
   status_char: FileStatusType;
 }
 
+export interface LogEntryBookmark {
+  name: string;
+  synced: boolean;
+}
+
 export interface LogEntry {
   change_id: string;
   change_id_short: string;
@@ -2026,8 +2031,8 @@ export interface LogEntry {
     files: LogEntryFile[];
   };
   parents: string[];
-  bookmarks: string[];
-  tags: string[];
+  bookmarks: LogEntryBookmark[];
+  tags: LogEntryBookmark[];
   working_copies: string[];
 }
 

@@ -141,6 +141,14 @@ body {
     content: "@";
 }
 
+.bookmark-pill.unsynced::after {
+    content: "*";
+}
+
+.tag-pill.unsynced::after {
+    content: "*";
+}
+
 .edit-button {
     opacity: 0;
     background: none;

@@ -122,10 +122,13 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     },
   },
   bookmarks: {
-    type: "string_array",
+    type: "array",
     expr: "bookmarks",
     loopVar: "b",
-    value: 'b.name() ++ if(b.synced(), "", "*")',
+    contents: {
+      name: { type: "string", expr: "b.name()" },
+      synced: { type: "boolean", expr: "b.synced()" },
+    },
   },
   change_id: { type: "string", expr: "change_id" },
   change_id_short: { type: "string", expr: "change_id.short(8)" },
@@ -181,10 +184,13 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
   },
   root: { type: "boolean", expr: "self.root()" },
   tags: {
-    type: "string_array",
+    type: "array",
     expr: "tags",
     loopVar: "t",
-    value: 't.name() ++ if(t.synced(), "", "*")',
+    contents: {
+      name: { type: "string", expr: "t.name()" },
+      synced: { type: "boolean", expr: "t.synced()" },
+    },
   },
   working_copies: {
     type: "string_array",

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
-import type { JJRepository, LogEntry } from "./repository";
+import type { JJRepository, LogEntry, LogEntryBookmark } from "./repository";
 import path from "path";
 import { assignLanes } from "./laneAssigner";
 
@@ -28,8 +28,8 @@ export class ChangeNode {
   description: string;
   tooltip: string;
   currentWorkingCopy: boolean;
-  bookmarks: string[];
-  tags: string[];
+  bookmarks: LogEntryBookmark[];
+  tags: LogEntryBookmark[];
   workingCopies: string[];
   parentChangeIds?: string[];
   branchType?: string;
@@ -49,8 +49,8 @@ export class ChangeNode {
     description: string,
     tooltip: string,
     currentWorkingCopy: boolean,
-    bookmarks: string[],
-    tags: string[],
+    bookmarks: LogEntryBookmark[],
+    tags: LogEntryBookmark[],
     workingCopies: string[],
     parentChangeIds: string[] | undefined,
     branchType: string | undefined,
@@ -350,8 +350,8 @@ export function parseJJLogJson(
       formattedDescription,
       entry.change_id,
       entry.current_working_copy,
-      entry.bookmarks.sort(),
-      entry.tags.sort(),
+      entry.bookmarks.sort((a, b) => a.name.localeCompare(b.name)),
+      entry.tags.sort((a, b) => a.name.localeCompare(b.name)),
       entry.working_copies.sort(),
       entry.parents,
       branchType,
