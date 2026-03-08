@@ -17,6 +17,7 @@ type Message = {
   changeId: string;
   selectedNodes: string[];
   bookmark: string;
+  tag: string;
   targetChangeId: string;
 };
 
@@ -199,6 +200,19 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           } catch (error: unknown) {
             vscode.window.showErrorMessage(
               `Failed to move bookmark: ${error as string}`,
+            );
+          }
+          break;
+        case "moveTag":
+          try {
+            await this.repository.moveTag(
+              message.tag,
+              message.targetChangeId,
+            );
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to move tag: ${error as string}`,
             );
           }
           break;
