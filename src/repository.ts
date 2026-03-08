@@ -1638,6 +1638,15 @@ export class JJRepository {
     );
   }
 
+  async abandon(rev: string, ignoreImmutable = false) {
+    return await handleJJCommand(
+      this.spawnJJ(
+        ["abandon", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
+        { timeout: 5000, cwd: this.repositoryRoot },
+      ),
+    );
+  }
+
   async restoreRetryImmutable(rev?: string, filepaths?: string[]) {
     try {
       return await this.restore(rev, filepaths);

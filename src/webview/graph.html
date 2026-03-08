@@ -10,6 +10,7 @@
     <div id="context-menu" class="context-menu">
         <div class="context-menu-item" data-action="edit">Edit this change</div>
         <div class="context-menu-item" data-action="copyId">Copy change ID</div>
+        <div class="context-menu-item" data-action="abandon">Abandon change</div>
         <div class="context-menu-item has-submenu" data-action="moveBookmark">
             Move bookmark here
             <div class="context-submenu" id="bookmark-submenu"></div>
@@ -596,6 +597,7 @@
                     }
                     const contextMenu = document.getElementById('context-menu');
                     contextMenu.dataset.changeId = change.changeId;
+                    contextMenu.dataset.immutable = change.branchType === '◆' ? 'true' : 'false';
                     const editItem = contextMenu.querySelector('[data-action="edit"]');
                     if (change.currentWorkingCopy) {
                         editItem.style.display = 'none';
@@ -770,6 +772,7 @@
                 return;
             }
             const action = target.dataset.action;
+            const immutable = contextMenu.dataset.immutable === 'true';
             if (action === 'edit') {
                 vscode.postMessage({
                     command: 'editChangeDirect',
@@ -777,10 +780,15 @@
                 });
             } else if (action === 'copyId') {
                 navigator.clipboard.writeText(changeId);
+            } else if (action === 'abandon') {
+                vscode.postMessage({
+                    command: 'abandonChange',
+                    changeId: changeId,
+                    immutable: immutable
+                });
             }
         });
 
-        // Update the resize handler
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);

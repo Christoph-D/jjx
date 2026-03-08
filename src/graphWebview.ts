@@ -20,6 +20,7 @@ type Message = {
   bookmark: string;
   tag: string;
   targetChangeId: string;
+  immutable: boolean;
 };
 
 export class ChangeNode {
@@ -214,6 +215,27 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           } catch (error: unknown) {
             vscode.window.showErrorMessage(
               `Failed to move tag: ${error as string}`,
+            );
+          }
+          break;
+        case "abandonChange":
+          try {
+            const messageText = message.immutable
+              ? `Are you sure you want to abandon change ${message.changeId}? This change is immutable.`
+              : `Are you sure you want to abandon change ${message.changeId}?`;
+            const confirm = await vscode.window.showWarningMessage(
+              messageText,
+              { modal: true },
+              "Abandon",
+            );
+            if (confirm !== "Abandon") {
+              return;
+            }
+            await this.repository.abandon(message.changeId, message.immutable);
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to abandon change: ${error as string}`,
             );
           }
           break;
