@@ -1602,6 +1602,15 @@ export class JJRepository {
     );
   }
 
+  async moveBookmark(bookmark: string, targetRev: string) {
+    return await handleJJCommand(
+      this.spawnJJ(
+        ["bookmark", "move", bookmark, "-t", targetRev],
+        { timeout: 5000, cwd: this.repositoryRoot },
+      ),
+    );
+  }
+
   async restoreRetryImmutable(rev?: string, filepaths?: string[]) {
     try {
       return await this.restore(rev, filepaths);

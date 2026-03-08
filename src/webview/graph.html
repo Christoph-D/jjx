@@ -10,6 +10,10 @@
     <div id="context-menu" class="context-menu">
         <div class="context-menu-item" data-action="edit">Edit this change</div>
         <div class="context-menu-item" data-action="copyId">Copy change ID</div>
+        <div class="context-menu-item has-submenu" data-action="moveBookmark">
+            Move bookmark here
+            <div class="context-submenu" id="bookmark-submenu"></div>
+        </div>
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="graph">
@@ -574,6 +578,28 @@
                     contextMenu.style.left = e.pageX + 'px';
                     contextMenu.style.top = e.pageY + 'px';
                     contextMenu.style.display = 'block';
+
+                    const allBookmarks = currentChanges
+                        .filter(c => c.bookmarks && c.bookmarks.length > 0)
+                        .flatMap(c => c.bookmarks);
+                    const uniqueBookmarks = [...new Set(allBookmarks)].sort();
+
+                    const submenu = document.getElementById('bookmark-submenu');
+                    const moveBookmarkItem = contextMenu.querySelector('[data-action="moveBookmark"]');
+                    submenu.innerHTML = '';
+
+                    if (uniqueBookmarks.length === 0) {
+                        moveBookmarkItem.classList.add('disabled');
+                    } else {
+                        moveBookmarkItem.classList.remove('disabled');
+                        uniqueBookmarks.forEach(bookmark => {
+                            const item = document.createElement('div');
+                            item.className = 'context-submenu-item';
+                            item.textContent = bookmark;
+                            item.dataset.bookmark = bookmark;
+                            submenu.appendChild(item);
+                        });
+                    }
                 });
             });
 
@@ -600,8 +626,24 @@
         document.getElementById('context-menu').addEventListener('click', (e) => {
             const contextMenu = document.getElementById('context-menu');
             const changeId = contextMenu.dataset.changeId;
+            if (!changeId || changeId === rootChangeId) {
+                return;
+            }
+
+            const submenuItem = e.target.closest('.context-submenu-item');
+            if (submenuItem) {
+                const bookmark = submenuItem.dataset.bookmark;
+                vscode.postMessage({
+                    command: 'moveBookmark',
+                    bookmark: bookmark,
+                    targetChangeId: changeId
+                });
+                contextMenu.style.display = 'none';
+                return;
+            }
+
             const target = e.target.closest('.context-menu-item');
-            if (!target || !changeId || changeId === rootChangeId) {
+            if (!target) {
                 return;
             }
             const action = target.dataset.action;

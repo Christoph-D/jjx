@@ -217,6 +217,52 @@ body {
     color: var(--vscode-menu-selectionForeground);
 }
 
+.has-submenu {
+    position: relative;
+}
+
+.has-submenu::after {
+    content: "▶";
+    position: absolute;
+    right: 8px;
+    font-size: 0.7em;
+}
+
+.context-submenu {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background-color: var(--vscode-menu-background);
+    border: 1px solid var(--vscode-menu-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    min-width: 100px;
+    padding: 4px 0;
+}
+
+.has-submenu:hover > .context-submenu {
+    display: block;
+}
+
+.context-submenu-item {
+    padding: 6px 20px;
+    cursor: pointer;
+    font-size: var(--vscode-font-size);
+    color: var(--vscode-menu-foreground);
+    white-space: nowrap;
+}
+
+.context-submenu-item:hover {
+    background-color: var(--vscode-menu-selectionBackground);
+    color: var(--vscode-menu-selectionForeground);
+}
+
+.has-submenu.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .tooltip {
     display: none;
     position: absolute;

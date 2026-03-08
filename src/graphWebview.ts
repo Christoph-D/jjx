@@ -16,6 +16,8 @@ type Message = {
   command: string;
   changeId: string;
   selectedNodes: string[];
+  bookmark: string;
+  targetChangeId: string;
 };
 
 export class ChangeNode {
@@ -180,6 +182,19 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             "jjGraphView.nodesSelected",
             message.selectedNodes.length,
           );
+          break;
+        case "moveBookmark":
+          try {
+            await this.repository.moveBookmark(
+              message.bookmark,
+              message.targetChangeId,
+            );
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to move bookmark: ${error as string}`,
+            );
+          }
           break;
       }
     });
