@@ -1998,9 +1998,14 @@ export interface LogEntryFile {
   status_char: FileStatusType;
 }
 
-export interface LogEntryBookmark {
+export interface LogEntryLocalRef {
   name: string;
   synced: boolean;
+}
+
+export interface LogEntryRemoteRef {
+  name: string;
+  remote: string;
 }
 
 export interface LogEntry {
@@ -2031,8 +2036,10 @@ export interface LogEntry {
     files: LogEntryFile[];
   };
   parents: string[];
-  bookmarks: LogEntryBookmark[];
-  tags: LogEntryBookmark[];
+  local_bookmarks: LogEntryLocalRef[];
+  remote_bookmarks: LogEntryRemoteRef[];
+  local_tags: LogEntryLocalRef[];
+  remote_tags: LogEntryRemoteRef[];
   working_copies: string[];
 }
 

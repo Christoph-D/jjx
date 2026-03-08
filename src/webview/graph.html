@@ -451,8 +451,8 @@
                         nodeLabel.appendChild(pill);
                     });
                 }
-                if (change.bookmarks && change.bookmarks.length > 0) {
-                    change.bookmarks.forEach(b => {
+                if (change.localBookmarks.length > 0) {
+                    change.localBookmarks.forEach(b => {
                         const pill = document.createElement("span");
                         pill.className = 'pill bookmark-pill' + (b.synced ? '' : ' unsynced');
                         pill.textContent = b.name;
@@ -460,12 +460,34 @@
                         nodeLabel.appendChild(pill);
                     });
                 }
-                if (change.tags && change.tags.length > 0) {
-                    change.tags.forEach(t => {
+                if (change.remoteBookmarks.length > 0) {
+                    const localBookmarkNames = new Set(change.localBookmarks.map(b => b.name));
+                    change.remoteBookmarks.forEach(b => {
+                            if (!localBookmarkNames.has(b.name)) {
+                                const pill = document.createElement("span");
+                                pill.className = 'pill bookmark-pill';
+                                pill.textContent = `${b.name}@${b.remote}`;
+                                nodeLabel.appendChild(pill);
+                            }
+                    });
+                }
+                if (change.localTags.length > 0) {
+                    change.localTags.forEach(t => {
                         const pill = document.createElement("span");
                         pill.className = 'pill tag-pill' + (t.synced ? '' : ' unsynced');
                         pill.textContent = t.name;
                         nodeLabel.appendChild(pill);
+                    });
+                }
+                if (change.remoteTags.length > 0) {
+                    const localTagNames = new Set(change.localTags.map(t => t.name));
+                    change.remoteTags.forEach(t => {
+                        if (!localTagNames.has(t.name)) {
+                            const pill = document.createElement("span");
+                            pill.className = 'pill tag-pill';
+                            pill.textContent = `${t.name}@${t.remote}`;
+                            nodeLabel.appendChild(pill);
+                        }
                     });
                 }
                 const labelText = document.createElement("span");
@@ -581,8 +603,8 @@
                     contextMenu.style.display = 'block';
 
                     const allBookmarks = currentChanges
-                        .filter(c => c.bookmarks && c.bookmarks.length > 0)
-                        .flatMap(c => c.bookmarks.map(b => b.name));
+                        .filter(c => c.localBookmarks && c.localBookmarks.length > 0)
+                        .flatMap(c => c.localBookmarks.map(b => b.name));
                     const uniqueBookmarks = [...new Set(allBookmarks)].sort();
 
                     const submenu = document.getElementById('bookmark-submenu');

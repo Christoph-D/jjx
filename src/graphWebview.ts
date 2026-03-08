@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
-import type { JJRepository, LogEntry, LogEntryBookmark } from "./repository";
+import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef } from "./repository";
 import path from "path";
 import { assignLanes } from "./laneAssigner";
 
@@ -28,8 +28,10 @@ export class ChangeNode {
   description: string;
   tooltip: string;
   currentWorkingCopy: boolean;
-  bookmarks: LogEntryBookmark[];
-  tags: LogEntryBookmark[];
+  localBookmarks: LogEntryLocalRef[];
+  remoteBookmarks: LogEntryRemoteRef[];
+  localTags: LogEntryLocalRef[];
+  remoteTags: LogEntryRemoteRef[];
   workingCopies: string[];
   parentChangeIds?: string[];
   branchType?: string;
@@ -49,8 +51,10 @@ export class ChangeNode {
     description: string,
     tooltip: string,
     currentWorkingCopy: boolean,
-    bookmarks: LogEntryBookmark[],
-    tags: LogEntryBookmark[],
+    localBookmarks: LogEntryLocalRef[],
+    remoteBookmarks: LogEntryRemoteRef[],
+    localTags: LogEntryLocalRef[],
+    remoteTags: LogEntryRemoteRef[],
     workingCopies: string[],
     parentChangeIds: string[] | undefined,
     branchType: string | undefined,
@@ -70,8 +74,10 @@ export class ChangeNode {
     this.description = description;
     this.tooltip = tooltip;
     this.currentWorkingCopy = currentWorkingCopy;
-    this.bookmarks = bookmarks;
-    this.tags = tags;
+    this.localBookmarks = localBookmarks;
+    this.remoteBookmarks = remoteBookmarks;
+    this.localTags = localTags;
+    this.remoteTags = remoteTags;
     this.workingCopies = workingCopies;
     this.parentChangeIds = parentChangeIds;
     this.branchType = branchType;
@@ -350,8 +356,10 @@ export function parseJJLogJson(
       formattedDescription,
       entry.change_id,
       entry.current_working_copy,
-      entry.bookmarks.sort((a, b) => a.name.localeCompare(b.name)),
-      entry.tags.sort((a, b) => a.name.localeCompare(b.name)),
+      entry.local_bookmarks.sort((a, b) => a.name.localeCompare(b.name)),
+      entry.remote_bookmarks.sort((a, b) => a.name.localeCompare(b.name)),
+      entry.local_tags.sort((a, b) => a.name.localeCompare(b.name)),
+      entry.remote_tags.sort((a, b) => a.name.localeCompare(b.name)),
       entry.working_copies.sort(),
       entry.parents,
       branchType,

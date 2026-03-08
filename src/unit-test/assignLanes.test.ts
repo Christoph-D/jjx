@@ -29,8 +29,10 @@ function makeEntry(
     },
     diff: { total_added: 0, total_removed: 0, files: [] },
     parents,
-    bookmarks: [],
-    tags: [],
+    local_bookmarks: [],
+    remote_bookmarks: [],
+    local_tags: [],
+    remote_tags: [],
     working_copies: [],
     ...overrides,
   };

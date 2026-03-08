@@ -121,13 +121,22 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
       },
     },
   },
-  bookmarks: {
+  local_bookmarks: {
     type: "array",
-    expr: "bookmarks",
+    expr: "self.local_bookmarks()",
     loopVar: "b",
     contents: {
       name: { type: "string", expr: "b.name()" },
       synced: { type: "boolean", expr: "b.synced()" },
+    },
+  },
+  remote_bookmarks: {
+    type: "array",
+    expr: "self.remote_bookmarks()",
+    loopVar: "b",
+    contents: {
+      name: { type: "string", expr: "b.name()" },
+      remote: { type: "string", expr: "b.remote()" },
     },
   },
   change_id: { type: "string", expr: "change_id" },
@@ -183,13 +192,22 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     value: "p.change_id()",
   },
   root: { type: "boolean", expr: "self.root()" },
-  tags: {
+  local_tags: {
     type: "array",
-    expr: "tags",
+    expr: "self.local_tags()",
     loopVar: "t",
     contents: {
       name: { type: "string", expr: "t.name()" },
       synced: { type: "boolean", expr: "t.synced()" },
+    },
+  },
+  remote_tags: {
+    type: "array",
+    expr: "self.remote_tags()",
+    loopVar: "t",
+    contents: {
+      name: { type: "string", expr: "t.name()" },
+      remote: { type: "string", expr: "t.remote()" },
     },
   },
   working_copies: {
