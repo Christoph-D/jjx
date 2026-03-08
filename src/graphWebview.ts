@@ -3,6 +3,7 @@ import * as fs from "fs";
 import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef } from "./repository";
 import path from "path";
 import { assignLanes } from "./laneAssigner";
+import { logger } from "./logger";
 
 export type {
   LaneNode,
@@ -238,26 +239,32 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       return;
     }
 
-    const config = vscode.workspace.getConfiguration("jjk");
-    const graphStyle = config.get<string>("graphStyle") || "full";
+    try {
+      const config = vscode.workspace.getConfiguration("jjk");
+      const graphStyle = config.get<string>("graphStyle") || "full";
 
-    const entries = await this.repository.log();
-    const { changes, maxPrefixLength } = parseJJLogJson(entries, graphStyle);
+      const entries = await this.repository.log();
+      const { changes, maxPrefixLength } = parseJJLogJson(entries, graphStyle);
 
-    this.selectedNodes.clear();
-    const changeEditAction = config.get<string>("changeEditAction");
+      this.selectedNodes.clear();
+      const changeEditAction = config.get<string>("changeEditAction");
 
-    const laneInfo = assignLanes(entries);
+      const laneInfo = assignLanes(entries);
 
-    this.panel.webview.postMessage({
-      command: "updateGraph",
-      changes: changes,
-      laneInfo,
-      changeEditAction,
-      graphStyle,
-      maxPrefixLength,
-      preserveScroll: true,
-    });
+      this.panel.webview.postMessage({
+        command: "updateGraph",
+        changes: changes,
+        laneInfo,
+        changeEditAction,
+        graphStyle,
+        maxPrefixLength,
+        preserveScroll: true,
+      });
+    } catch (error) {
+      logger.error(
+        `Failed to refresh graph: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   private getWebviewContent(webview: vscode.Webview) {
