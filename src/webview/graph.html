@@ -732,6 +732,11 @@
             contextMenu.style.display = 'none';
         });
 
+        window.addEventListener('blur', () => {
+            const contextMenu = document.getElementById('context-menu');
+            contextMenu.style.display = 'none';
+        });
+
         document.getElementById('context-menu').addEventListener('click', (e) => {
             const contextMenu = document.getElementById('context-menu');
             const changeId = contextMenu.dataset.changeId;
