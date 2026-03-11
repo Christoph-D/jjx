@@ -566,10 +566,19 @@
                 });
 
                 node.onclick = (e) => {
-                    if (selectedNodes.has(change.changeId)) {
-                        selectedNodes.delete(change.changeId);
-                        node.classList.remove('selected');
+                    if (e.shiftKey) {
+                        if (selectedNodes.has(change.changeId)) {
+                            selectedNodes.delete(change.changeId);
+                            node.classList.remove('selected');
+                        } else {
+                            selectedNodes.add(change.changeId);
+                            node.classList.add('selected');
+                        }
                     } else {
+                        document.querySelectorAll('.change-node.selected').forEach(n => {
+                            n.classList.remove('selected');
+                        });
+                        selectedNodes.clear();
                         selectedNodes.add(change.changeId);
                         node.classList.add('selected');
                     }

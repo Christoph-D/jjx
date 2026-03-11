@@ -9,6 +9,7 @@ body {
 #graph {
     position: relative;
     padding-left: 8px;
+    user-select: none;
 }
 
 #connections {
