@@ -11,6 +11,8 @@
         <div class="context-menu-item" data-action="edit">Edit this change</div>
         <div class="context-menu-item" data-action="copyId">Copy change ID</div>
         <div class="context-menu-item" data-action="abandon">Abandon change</div>
+        <div class="context-menu-item" data-action="createBookmark">Create bookmark...</div>
+        <div class="context-menu-item" data-action="createTag">Create tag...</div>
         <div class="context-menu-item has-submenu" data-action="moveBookmark">
             Move bookmark here
             <div class="context-submenu" id="bookmark-submenu"></div>
@@ -794,6 +796,16 @@
                     command: 'abandonChange',
                     changeId: changeId,
                     immutable: immutable
+                });
+            } else if (action === 'createBookmark') {
+                vscode.postMessage({
+                    command: 'createBookmark',
+                    targetChangeId: changeId
+                });
+            } else if (action === 'createTag') {
+                vscode.postMessage({
+                    command: 'createTag',
+                    targetChangeId: changeId
                 });
             }
         });

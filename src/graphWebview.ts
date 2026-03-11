@@ -218,6 +218,46 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
           }
           break;
+        case "createBookmark":
+          try {
+            const bookmarkName = await vscode.window.showInputBox({
+              prompt: "Enter bookmark name",
+              placeHolder: "bookmark-name",
+            });
+            if (bookmarkName === undefined || bookmarkName === "") {
+              return;
+            }
+            await this.repository.createBookmark(
+              bookmarkName,
+              message.targetChangeId,
+            );
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to create bookmark: ${error as string}`,
+            );
+          }
+          break;
+        case "createTag":
+          try {
+            const tagName = await vscode.window.showInputBox({
+              prompt: "Enter tag name",
+              placeHolder: "v1.0.0",
+            });
+            if (tagName === undefined || tagName === "") {
+              return;
+            }
+            await this.repository.createTag(
+              tagName,
+              message.targetChangeId,
+            );
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to create tag: ${error as string}`,
+            );
+          }
+          break;
         case "abandonChange":
           try {
             const messageText = message.immutable

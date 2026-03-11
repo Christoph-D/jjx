@@ -1638,6 +1638,24 @@ export class JJRepository {
     );
   }
 
+  async createBookmark(bookmark: string, targetRev: string) {
+    return await handleJJCommand(
+      this.spawnJJ(
+        ["bookmark", "create", bookmark, "-r", targetRev],
+        { timeout: 5000, cwd: this.repositoryRoot },
+      ),
+    );
+  }
+
+  async createTag(tag: string, targetRev: string) {
+    return await handleJJCommand(
+      this.spawnJJ(
+        ["tag", "set", tag, "-r", targetRev],
+        { timeout: 5000, cwd: this.repositoryRoot },
+      ),
+    );
+  }
+
   async abandon(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
       this.spawnJJ(
