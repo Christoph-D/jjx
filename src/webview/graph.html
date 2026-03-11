@@ -17,10 +17,7 @@
             Move bookmark here
             <div class="context-submenu" id="bookmark-submenu"></div>
         </div>
-        <div class="context-menu-item has-submenu" data-action="moveTag">
-            Move tag here
-            <div class="context-submenu" id="tag-submenu"></div>
-        </div>
+
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="graph">
@@ -700,28 +697,6 @@
                             bookmarkSubmenu.appendChild(item);
                         });
                     }
-
-                    const allTags = currentChanges
-                        .filter(c => c.localTags && c.localTags.length > 0)
-                        .flatMap(c => c.localTags.map(t => t.name));
-                    const uniqueTags = [...new Set(allTags)].sort();
-
-                    const tagSubmenu = document.getElementById('tag-submenu');
-                    const moveTagItem = contextMenu.querySelector('[data-action="moveTag"]');
-                    tagSubmenu.innerHTML = '';
-
-                    if (uniqueTags.length === 0) {
-                        moveTagItem.classList.add('disabled');
-                    } else {
-                        moveTagItem.classList.remove('disabled');
-                        uniqueTags.forEach(tagName => {
-                            const item = document.createElement('div');
-                            item.className = 'context-submenu-item';
-                            item.textContent = tagName;
-                            item.dataset.tag = tagName;
-                            tagSubmenu.appendChild(item);
-                        });
-                    }
                 });
             });
 
@@ -760,17 +735,10 @@
             const submenuItem = e.target.closest('.context-submenu-item');
             if (submenuItem) {
                 const bookmark = submenuItem.dataset.bookmark;
-                const tag = submenuItem.dataset.tag;
                 if (bookmark) {
                     vscode.postMessage({
                         command: 'moveBookmark',
                         bookmark: bookmark,
-                        targetChangeId: changeId
-                    });
-                } else if (tag) {
-                    vscode.postMessage({
-                        command: 'moveTag',
-                        tag: tag,
                         targetChangeId: changeId
                     });
                 }

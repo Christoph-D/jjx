@@ -205,19 +205,6 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
           }
           break;
-        case "moveTag":
-          try {
-            await this.repository.moveTag(
-              message.tag,
-              message.targetChangeId,
-            );
-            await this.refresh();
-          } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to move tag: ${error as string}`,
-            );
-          }
-          break;
         case "createBookmark":
           try {
             const bookmarkName = await vscode.window.showInputBox({

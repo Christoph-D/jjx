@@ -1629,15 +1629,6 @@ export class JJRepository {
     );
   }
 
-  async moveTag(tag: string, targetRev: string) {
-    return await handleJJCommand(
-      this.spawnJJ(
-        ["tag", "move", tag, "-t", targetRev],
-        { timeout: 5000, cwd: this.repositoryRoot },
-      ),
-    );
-  }
-
   async createBookmark(bookmark: string, targetRev: string) {
     return await handleJJCommand(
       this.spawnJJ(
