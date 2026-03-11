@@ -1656,10 +1656,16 @@ export class JJRepository {
     );
   }
 
-  async rebase(source: string, destination: string, mode: "onto" | "after") {
+  async rebase(
+    source: string,
+    destination: string,
+    mode: "onto" | "after",
+    withDescendants = false,
+  ) {
+    const sourceFlag = withDescendants ? "-s" : "-r";
     const flag = mode === "onto" ? "-o" : "-A";
     return await handleJJCommand(
-      this.spawnJJ(["rebase", "-r", source, flag, destination], {
+      this.spawnJJ(["rebase", sourceFlag, source, flag, destination], {
         timeout: 5000,
         cwd: this.repositoryRoot,
       }),

@@ -288,6 +288,12 @@ body {
     pointer-events: none;
 }
 
+.context-menu-separator {
+    height: 1px;
+    background-color: var(--vscode-menu-separatorBackground);
+    margin: 4px 8px;
+}
+
 .tooltip {
     display: none;
     position: absolute;

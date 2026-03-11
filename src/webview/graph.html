@@ -21,7 +21,10 @@
     </div>
     <div id="rebase-menu" class="context-menu">
         <div class="context-menu-item" data-action="rebaseOnto">Rebase onto this change</div>
+        <div class="context-menu-item" data-action="rebaseOntoWithDescendants">Rebase onto this change (with descendants)</div>
+        <div class="context-menu-separator"></div>
         <div class="context-menu-item" data-action="rebaseAfter">Rebase after this change</div>
+        <div class="context-menu-item" data-action="rebaseAfterWithDescendants">Rebase after this change (with descendants)</div>
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="graph">
@@ -930,17 +933,19 @@
                 return;
             }
             const action = target.dataset.action;
-            if (action === 'rebaseOnto') {
+            if (action === 'rebaseOnto' || action === 'rebaseOntoWithDescendants') {
                 vscode.postMessage({
                     command: 'rebaseOnto',
                     changeId: sourceId,
-                    targetChangeId: targetId
+                    targetChangeId: targetId,
+                    withDescendants: action === 'rebaseOntoWithDescendants'
                 });
-            } else if (action === 'rebaseAfter') {
+            } else if (action === 'rebaseAfter' || action === 'rebaseAfterWithDescendants') {
                 vscode.postMessage({
                     command: 'rebaseAfter',
                     changeId: sourceId,
-                    targetChangeId: targetId
+                    targetChangeId: targetId,
+                    withDescendants: action === 'rebaseAfterWithDescendants'
                 });
             }
             rebaseMenu.style.display = 'none';

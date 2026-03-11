@@ -21,6 +21,7 @@ type Message = {
   tag: string;
   targetChangeId: string;
   immutable: boolean;
+  withDescendants: boolean;
 };
 
 export class ChangeNode {
@@ -272,6 +273,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               message.changeId,
               message.targetChangeId,
               "onto",
+              message.withDescendants,
             );
             await this.refresh();
           } catch (error: unknown) {
@@ -286,6 +288,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               message.changeId,
               message.targetChangeId,
               "after",
+              message.withDescendants,
             );
             await this.refresh();
           } catch (error: unknown) {
