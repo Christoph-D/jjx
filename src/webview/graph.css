@@ -390,3 +390,27 @@ body {
 .change-node.working-copy .text-content {
     font-weight: bold;
 }
+
+.change-node.dragging {
+    opacity: 0.4;
+}
+
+.change-node.drop-target {
+    outline: 2px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
+}
+
+.drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    opacity: 0.8;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-focusBorder);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: var(--vscode-font-size);
+    color: var(--vscode-foreground);
+    z-index: 1100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}

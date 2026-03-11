@@ -19,6 +19,10 @@
         </div>
 
     </div>
+    <div id="rebase-menu" class="context-menu">
+        <div class="context-menu-item" data-action="rebaseOnto">Rebase onto this change</div>
+        <div class="context-menu-item" data-action="rebaseAfter">Rebase after this change</div>
+    </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="graph">
         <svg id="connections">
@@ -40,6 +44,15 @@
         let maxPrefixLength = 4;
         let changeIdHorizontalOffset = 0; // Calculated later
         const CHANGE_ID_RIGHT_PADDING = 6;
+
+        let isDragging = false;
+        let dragStartChangeId = null;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragGhost = null;
+        let dropTargetId = null;
+        let justFinishedDrag = false;
+        const DRAG_THRESHOLD = 5;
 
         const colorRegistry = [
             "rgba(from var(--vscode-charts-blue) r g b / 100%)",
@@ -564,7 +577,22 @@
                     hideTooltip();
                 });
 
+                node.onmousedown = (e) => {
+                    if (e.button !== 0 || e.shiftKey) {
+                        return;
+                    }
+                    if (change.branchType === '◆') {
+                        return;
+                    }
+                    dragStartChangeId = change.changeId;
+                    dragStartX = e.clientX;
+                    dragStartY = e.clientY;
+                };
+
                 node.onclick = (e) => {
+                    if (isDragging || justFinishedDrag) {
+                        return;
+                    }
                     if (e.shiftKey) {
                         if (selectedNodes.has(change.changeId)) {
                             selectedNodes.delete(change.changeId);
@@ -775,6 +803,156 @@
                     command: 'createTag',
                     targetChangeId: changeId
                 });
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!dragStartChangeId) {
+                return;
+            }
+            if (isDragging) {
+                if (dragGhost) {
+                    dragGhost.style.left = (e.clientX + 10) + 'px';
+                    dragGhost.style.top = (e.clientY + 10) + 'px';
+                }
+                return;
+            }
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > DRAG_THRESHOLD) {
+                isDragging = true;
+                const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
+                if (sourceNode) {
+                    sourceNode.classList.add('dragging');
+                }
+                dragGhost = document.createElement('div');
+                dragGhost.className = 'drag-ghost';
+                dragGhost.textContent = dragStartChangeId.substring(0, 8);
+                document.body.appendChild(dragGhost);
+                dragGhost.style.left = (e.clientX + 10) + 'px';
+                dragGhost.style.top = (e.clientY + 10) + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (!isDragging && !dragStartChangeId) {
+                return;
+            }
+            if (isDragging) {
+                if (dragGhost) {
+                    dragGhost.style.display = 'none';
+                }
+                const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+                const targetNode = dropTarget?.closest('.change-node');
+                const targetId = targetNode?.dataset?.changeId;
+                if (targetNode && targetId && targetId !== dragStartChangeId) {
+                    justFinishedDrag = true;
+                    const rebaseMenu = document.getElementById('rebase-menu');
+                    rebaseMenu.dataset.sourceId = dragStartChangeId;
+                    rebaseMenu.dataset.targetId = targetId;
+                    rebaseMenu.style.left = '-9999px';
+                    rebaseMenu.style.top = '-9999px';
+                    rebaseMenu.style.display = 'block';
+                    requestAnimationFrame(() => {
+                        const menuRect = rebaseMenu.getBoundingClientRect();
+                        const viewportWidth = window.innerWidth;
+                        const viewportHeight = window.innerHeight;
+                        const scrollX = window.scrollX || window.pageXOffset;
+                        const scrollY = window.scrollY || window.pageYOffset;
+                        let left = e.pageX;
+                        let top = e.pageY;
+                        if (left + menuRect.width > viewportWidth + scrollX - 10) {
+                            left = e.pageX - menuRect.width;
+                        }
+                        if (top + menuRect.height > viewportHeight + scrollY - 10) {
+                            top = e.pageY - menuRect.height;
+                        }
+                        if (left < scrollX + 10) {
+                            left = scrollX + 10;
+                        }
+                        if (top < scrollY + 10) {
+                            top = scrollY + 10;
+                        }
+                        rebaseMenu.style.left = left + 'px';
+                        rebaseMenu.style.top = top + 'px';
+                        setTimeout(() => { justFinishedDrag = false; }, 100);
+                    });
+                }
+                if (dragGhost) {
+                    dragGhost.remove();
+                    dragGhost = null;
+                }
+                const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
+                if (sourceNode) {
+                    sourceNode.classList.remove('dragging');
+                }
+                document.querySelectorAll('.change-node.drop-target').forEach(n => {
+                    n.classList.remove('drop-target');
+                });
+            }
+            isDragging = false;
+            dragStartChangeId = null;
+            dropTargetId = null;
+        });
+
+        document.addEventListener('mouseover', (e) => {
+            if (!isDragging) {
+                return;
+            }
+            const targetNode = e.target?.closest('.change-node');
+            document.querySelectorAll('.change-node.drop-target').forEach(n => {
+                n.classList.remove('drop-target');
+            });
+            if (targetNode) {
+                const targetId = targetNode.dataset.changeId;
+                if (targetId && targetId !== dragStartChangeId) {
+                    targetNode.classList.add('drop-target');
+                    dropTargetId = targetId;
+                } else {
+                    dropTargetId = null;
+                }
+            } else {
+                dropTargetId = null;
+            }
+        });
+
+        document.getElementById('rebase-menu').addEventListener('click', (e) => {
+            const rebaseMenu = document.getElementById('rebase-menu');
+            const sourceId = rebaseMenu.dataset.sourceId;
+            const targetId = rebaseMenu.dataset.targetId;
+            if (!sourceId || !targetId) {
+                rebaseMenu.style.display = 'none';
+                return;
+            }
+            const target = e.target.closest('.context-menu-item');
+            if (!target) {
+                return;
+            }
+            const action = target.dataset.action;
+            if (action === 'rebaseOnto') {
+                vscode.postMessage({
+                    command: 'rebaseOnto',
+                    changeId: sourceId,
+                    targetChangeId: targetId
+                });
+            } else if (action === 'rebaseAfter') {
+                vscode.postMessage({
+                    command: 'rebaseAfter',
+                    changeId: sourceId,
+                    targetChangeId: targetId
+                });
+            }
+            rebaseMenu.style.display = 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            const rebaseMenu = document.getElementById('rebase-menu');
+            if (justFinishedDrag) {
+                return;
+            }
+            if (!rebaseMenu.contains(e.target)) {
+                rebaseMenu.style.display = 'none';
             }
         });
 

@@ -266,6 +266,34 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
           }
           break;
+        case "rebaseOnto":
+          try {
+            await this.repository.rebase(
+              message.changeId,
+              message.targetChangeId,
+              "onto",
+            );
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to rebase: ${error as string}`,
+            );
+          }
+          break;
+        case "rebaseAfter":
+          try {
+            await this.repository.rebase(
+              message.changeId,
+              message.targetChangeId,
+              "after",
+            );
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to rebase: ${error as string}`,
+            );
+          }
+          break;
       }
     });
 

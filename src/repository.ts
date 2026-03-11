@@ -1656,6 +1656,16 @@ export class JJRepository {
     );
   }
 
+  async rebase(source: string, destination: string, mode: "onto" | "after") {
+    const flag = mode === "onto" ? "-o" : "-A";
+    return await handleJJCommand(
+      this.spawnJJ(["rebase", "-r", source, flag, destination], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
+    );
+  }
+
   async restoreRetryImmutable(rev?: string, filepaths?: string[]) {
     try {
       return await this.restore(rev, filepaths);
