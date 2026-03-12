@@ -58,7 +58,6 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    min-height: 12px;
 }
 
 .change-node:hover {
@@ -98,10 +97,16 @@ body {
 .text-content {
     display: flex;
     flex-direction: column;
-    min-height: 42px;
-    /* Set a consistent minimum height */
+    height: 42px;
     justify-content: center;
+    overflow: hidden;
     margin-left: calc(var(--change-id-ch-width, 4ch) + var(--change-id-right-padding) + var(--graph-width) + 4px);
+}
+
+.text-content > div:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .label-text {
@@ -353,21 +358,13 @@ body {
 
 /* Compact mode styling */
 .compact .change-node {
-    min-height: 8px;
-    padding: 2px 0px;
+    padding: 0px 0px;
 }
 
 .compact .text-content {
-    min-height: 8px;
+    height: 20px;
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-}
-
-.compact .text-content > div:first-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .compact .description {
