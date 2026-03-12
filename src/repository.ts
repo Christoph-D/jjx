@@ -893,13 +893,14 @@ export class JJRepository {
     rev: string,
     operation: () => Promise<T>,
     retryOperation: () => Promise<T>,
+    customMessage?: string,
   ): Promise<T | undefined> {
     try {
       return await operation();
     } catch (e) {
       if (e instanceof ImmutableError) {
         const choice = await vscode.window.showQuickPick(["Continue"], {
-          title: `${rev} is immutable, are you sure?`,
+          title: customMessage ?? `${rev} is immutable, are you sure?`,
         });
         if (!choice) {
           return undefined;
@@ -1658,14 +1659,39 @@ export class JJRepository {
     destination: string,
     mode: "onto" | "after",
     withDescendants = false,
+    ignoreImmutable = false,
   ) {
     const sourceFlag = withDescendants ? "-s" : "-r";
     const flag = mode === "onto" ? "-o" : "-A";
     return await handleJJCommand(
-      this.spawnJJ(["rebase", sourceFlag, source, flag, destination], {
-        timeout: 5000,
-        cwd: this.repositoryRoot,
-      }),
+      this.spawnJJ(
+        [
+          "rebase",
+          sourceFlag,
+          source,
+          flag,
+          destination,
+          ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+        ],
+        {
+          timeout: 5000,
+          cwd: this.repositoryRoot,
+        },
+      ),
+    );
+  }
+
+  async rebaseRetryImmutable(
+    source: string,
+    destination: string,
+    mode: "onto" | "after",
+    withDescendants = false,
+  ) {
+    return this.retryWithImmutable(
+      source,
+      () => this.rebase(source, destination, mode, withDescendants),
+      () => this.rebase(source, destination, mode, withDescendants, true),
+      "This rebase modifies one or more immutable commits, are you sure?",
     );
   }
 

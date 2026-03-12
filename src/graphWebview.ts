@@ -258,7 +258,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "rebaseOnto":
           try {
-            await this.repository.rebase(
+            await this.repository.rebaseRetryImmutable(
               message.changeId,
               message.targetChangeId,
               "onto",
@@ -273,7 +273,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "rebaseAfter":
           try {
-            await this.repository.rebase(
+            await this.repository.rebaseRetryImmutable(
               message.changeId,
               message.targetChangeId,
               "after",
