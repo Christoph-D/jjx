@@ -25,6 +25,8 @@
         <div class="context-menu-separator"></div>
         <div class="context-menu-item" data-action="rebaseAfter">Rebase after this change</div>
         <div class="context-menu-item" data-action="rebaseAfterWithDescendants">Rebase after this change (with descendants)</div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="squashInto">Squash into this change</div>
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="graph">
@@ -857,6 +859,10 @@
                     rebaseMenu.style.left = '-9999px';
                     rebaseMenu.style.top = '-9999px';
                     rebaseMenu.style.display = 'block';
+                    const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
+                    if (squashItem) {
+                        squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
+                    }
                     requestAnimationFrame(() => {
                         const menuRect = rebaseMenu.getBoundingClientRect();
                         const viewportWidth = window.innerWidth;
@@ -946,6 +952,12 @@
                     changeId: sourceId,
                     targetChangeId: targetId,
                     withDescendants: action === 'rebaseAfterWithDescendants'
+                });
+            } else if (action === 'squashInto') {
+                vscode.postMessage({
+                    command: 'squashInto',
+                    changeId: sourceId,
+                    targetChangeId: targetId
                 });
             }
             rebaseMenu.style.display = 'none';

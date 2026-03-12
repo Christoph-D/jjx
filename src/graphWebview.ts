@@ -297,6 +297,19 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
           }
           break;
+        case "squashInto":
+          try {
+            await this.repository.squashRetryImmutable({
+              fromRev: message.changeId,
+              toRev: message.targetChangeId,
+            });
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to squash: ${error as string}`,
+            );
+          }
+          break;
       }
     });
 
