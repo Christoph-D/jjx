@@ -1636,6 +1636,14 @@ export class JJRepository {
     );
   }
 
+  async abandonRetryImmutable(rev: string) {
+    return this.retryWithImmutable(
+      rev,
+      () => this.abandon(rev),
+      () => this.abandon(rev, true),
+    );
+  }
+
   async abandon(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
       this.spawnJJ(
