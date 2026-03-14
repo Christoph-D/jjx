@@ -43,7 +43,7 @@ function escapeTemplateString(str: string): string {
 function generatePrimitiveValue(field: PrimitiveField): string {
   const value = field.expr;
   if (field.type === "string") {
-    return `${value} ++ "\\""`;
+    return `stringify(${value}).escape_json()`;
   }
   if (field.type === "boolean") {
     return `if(${value}, "true", "false")`;
@@ -56,7 +56,7 @@ function generateFieldEntry(name: string, field: TemplateField): string {
 
   switch (field.type) {
     case "string":
-      return `"\\"${escapedName}\\": \\"" ++ ${generatePrimitiveValue(field)}`;
+      return `"\\"${escapedName}\\": " ++ ${generatePrimitiveValue(field)}`;
     case "raw":
       return `"\\"${escapedName}\\": " ++ ${generatePrimitiveValue(field)}`;
     case "number":
@@ -115,7 +115,7 @@ export const SHOW_ENTRY_FIELDS: TemplateFields = {
   author: {
     type: "dict",
     contents: {
-      name: { type: "raw", expr: "author.name().escape_json()" },
+      name: { type: "string", expr: "author.name()" },
       email: { type: "string", expr: "author.email()" },
     },
   },
@@ -123,7 +123,7 @@ export const SHOW_ENTRY_FIELDS: TemplateFields = {
     type: "string",
     expr: 'author.timestamp().local().format("%F %H:%M:%S")',
   },
-  description: { type: "raw", expr: "description.escape_json()" },
+  description: { type: "string", expr: "description" },
   empty: { type: "boolean", expr: "self.empty()" },
   conflict: { type: "boolean", expr: "self.conflict()" },
   diff_files: {
@@ -144,7 +144,7 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     type: "dict",
     contents: {
       email: { type: "string", expr: "author.email()" },
-      name: { type: "raw", expr: "author.name().escape_json()" },
+      name: { type: "string", expr: "author.name()" },
       timestamp: {
         type: "string",
         expr: 'author.timestamp().local().format("%Y-%m-%d %H:%M:%S")',
@@ -177,7 +177,7 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     type: "dict",
     contents: {
       email: { type: "string", expr: "committer.email()" },
-      name: { type: "raw", expr: "committer.name().escape_json()" },
+      name: { type: "string", expr: "committer.name()" },
       timestamp: {
         type: "string",
         expr: 'committer.timestamp().local().format("%Y-%m-%d %H:%M:%S")',
@@ -189,7 +189,7 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     type: "boolean",
     expr: "self.current_working_copy()",
   },
-  description: { type: "raw", expr: "description.escape_json()" },
+  description: { type: "string", expr: "description" },
   diff: {
     type: "dict",
     contents: {

@@ -15,7 +15,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"email\\": \\"" ++ author.email() ++ "\\"" ++ "}\\n"`,
+      `"{" ++ "\\"email\\": " ++ stringify(author.email()).escape_json() ++ "}\\n"`,
     );
   });
 
@@ -27,7 +27,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"alpha\\": \\"" ++ z ++ "\\"" ++ "," ++ "\\"zebra\\": \\"" ++ a ++ "\\"" ++ "}\\n"`,
+      `"{" ++ "\\"alpha\\": " ++ stringify(z).escape_json() ++ "," ++ "\\"zebra\\": " ++ stringify(a).escape_json() ++ "}\\n"`,
     );
   });
 
@@ -77,7 +77,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"author\\": {" ++ "\\"email\\": \\"" ++ author.email() ++ "\\"" ++ "," ++ "\\"name\\": " ++ author.name() ++ "}" ++ "}\\n"`,
+      `"{" ++ "\\"author\\": {" ++ "\\"email\\": " ++ stringify(author.email()).escape_json() ++ "," ++ "\\"name\\": " ++ author.name() ++ "}" ++ "}\\n"`,
     );
   });
 
@@ -95,7 +95,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"files\\": [" ++ self.diff().files().map(|x| "{" ++ "\\"path\\": \\"" ++ x.path() ++ "\\"" ++ "}").join(",") ++ "]" ++ "}\\n"`,
+      `"{" ++ "\\"files\\": [" ++ self.diff().files().map(|x| "{" ++ "\\"path\\": " ++ stringify(x.path()).escape_json() ++ "}").join(",") ++ "]" ++ "}\\n"`,
     );
   });
 
@@ -113,7 +113,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"parents\\": [" ++ parents.map(|p| "{" ++ "\\"id\\": \\"" ++ p.change_id() ++ "\\"" ++ "}").join(",") ++ "]" ++ "}\\n"`,
+      `"{" ++ "\\"parents\\": [" ++ parents.map(|p| "{" ++ "\\"id\\": " ++ stringify(p.change_id()).escape_json() ++ "}").join(",") ++ "]" ++ "}\\n"`,
     );
   });
 
@@ -140,7 +140,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"field\\"with\\"quotes\\": \\"" ++ x ++ "\\"" ++ "}\\n"`,
+      `"{" ++ "\\"field\\"with\\"quotes\\": " ++ stringify(x).escape_json() ++ "}\\n"`,
     );
   });
 
@@ -151,7 +151,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"field\\\\with\\\\backslash\\": \\"" ++ x ++ "\\"" ++ "}\\n"`,
+      `"{" ++ "\\"field\\\\with\\\\backslash\\": " ++ stringify(x).escape_json() ++ "}\\n"`,
     );
   });
 
@@ -170,7 +170,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"author\\": {" ++ "\\"email\\": \\"" ++ author.email() ++ "\\"" ++ "," ++ "\\"name\\": \\"" ++ author.name() ++ "\\"" ++ "}" ++ "," ++ "\\"change_id\\": \\"" ++ change_id ++ "\\"" ++ "," ++ "\\"empty\\": " ++ if(self.empty(), "true", "false") ++ "}\\n"`,
+      `"{" ++ "\\"author\\": {" ++ "\\"email\\": " ++ stringify(author.email()).escape_json() ++ "," ++ "\\"name\\": " ++ stringify(author.name()).escape_json() ++ "}" ++ "," ++ "\\"change_id\\": " ++ stringify(change_id).escape_json() ++ "," ++ "\\"empty\\": " ++ if(self.empty(), "true", "false") ++ "}\\n"`,
     );
   });
 
