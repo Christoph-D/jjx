@@ -49,6 +49,7 @@ export class ChangeNode {
   linesAdded: number;
   linesRemoved: number;
   mine: boolean;
+  conflict: boolean;
   constructor(
     changeId: string,
     changeIdPrefix: string,
@@ -73,6 +74,7 @@ export class ChangeNode {
     linesAdded: number,
     linesRemoved: number,
     mine: boolean,
+    conflict: boolean,
   ) {
     this.changeId = changeId;
     this.changeIdPrefix = changeIdPrefix;
@@ -97,6 +99,7 @@ export class ChangeNode {
     this.linesAdded = linesAdded;
     this.linesRemoved = linesRemoved;
     this.mine = mine;
+    this.conflict = conflict;
   }
 }
 
@@ -478,7 +481,7 @@ export function parseJJLogJson(
       .filter((e) => e.divergent && e.change_offset)
       .map((e) => e.change_offset.length + 1),
   );
-  const maxPrefixLength = Math.max(
+  let maxPrefixLength = Math.max(
     4,
     ...entries.map((e) => e.change_id_shortest.length),
   );
@@ -525,7 +528,7 @@ export function parseJJLogJson(
       p.divergent && p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id
     );
 
-    return new ChangeNode(
+     return new ChangeNode(
       uniqueChangeId,
       changeIdShortest,
       changeIdSuffix,
@@ -549,8 +552,14 @@ export function parseJJLogJson(
       linesAdded,
       linesRemoved,
       entry.mine,
+      entry.conflict,
     );
   });
+
+  const hasConflict = entries.some((e) => e.conflict);
+  if (hasConflict) {
+    maxPrefixLength += 2;
+  }
 
   return { changes, maxPrefixLength, offsetWidth };
 }

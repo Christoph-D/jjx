@@ -478,6 +478,7 @@
                 node.dataset.mine = change.mine || false;
                 node.dataset.nodeLane = nodeLane;
                 node.dataset.changeOffset = change.changeOffset || '';
+                node.dataset.conflict = change.conflict || false;
 
                 const textContent = document.createElement('div');
                 textContent.className = 'text-content';
@@ -489,7 +490,11 @@
                 const changeIdPrefix = change.changeIdPrefix;
                 const changeIdSuffix = change.changeIdSuffix || "";
                 const changeOffset = change.changeOffset;
-                let changeIdHtml = `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span>`;
+                let changeIdHtml = '';
+                if (change.conflict) {
+                    changeIdHtml += '<span class="conflict-indicator">✗</span>';
+                }
+                changeIdHtml += `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span>`;
                 if (changeOffset) {
                     changeIdHtml += `<span class="change-id-offset">/${changeOffset}</span>`;
                 }

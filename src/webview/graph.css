@@ -472,3 +472,9 @@ body {
 .update-stale-button .codicon {
     font-size: 1.1em;
 }
+
+.conflict-indicator {
+    color: var(--vscode-errorForeground, #f48771);
+    font-weight: bold;
+    margin-right: 2px;
+}
