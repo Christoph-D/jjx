@@ -709,7 +709,8 @@ class RepositorySourceControlManager {
 
     const parentShowPromises = status.parentChanges.map(
       async (parentChange) => {
-        const showResult = await this.repository.show(parentChange.changeId);
+        const rev = getRevFromChange(parentChange);
+        const showResult = await this.repository.show(rev);
         return { changeId: parentChange.changeId, showResult };
       },
     );
@@ -730,7 +731,10 @@ class RepositorySourceControlManager {
   }
 
   static getLabel(prefix: string, change: Change) {
-    return `${prefix} [${change.changeId.substring(0, 8)}]${
+    const changeIdDisplay = change.divergent && change.changeOffset
+      ? `${change.changeId.substring(0, 8)}/${change.changeOffset}`
+      : change.changeId.substring(0, 8);
+    return `${prefix} [${changeIdDisplay}]${
       change.description ? ` • ${change.description}` : ""
     }${change.isEmpty ? " (empty)" : ""}${
       change.isConflict ? " (conflict)" : ""
@@ -844,7 +848,7 @@ class RepositorySourceControlManager {
     }
 
     if (this.selectedCommitShowResult) {
-      const changeId = this.selectedCommitShowResult.change.changeId;
+      const changeId = getRevFromChange(this.selectedCommitShowResult.change);
       this.selectedCommitChangeId = changeId;
       if (!this.selectedCommitResourceGroup) {
         this.selectedCommitResourceGroup =
@@ -1053,6 +1057,8 @@ export class JJRepository {
     const entry = JSON.parse(output.trim()) as {
       change_id: string;
       commit_id: string;
+      divergent: boolean;
+      change_offset: string;
       description: string;
       empty: boolean;
       conflict: boolean;
@@ -1060,6 +1066,8 @@ export class JJRepository {
       parents: Array<{
         change_id: string;
         commit_id: string;
+        divergent: boolean;
+        change_offset: string;
         description: string;
         empty: boolean;
         conflict: boolean;
@@ -1112,6 +1120,8 @@ export class JJRepository {
       isEmpty: entry.empty,
       isConflict: entry.conflict,
       bookmarks: entry.local_bookmarks,
+      divergent: entry.divergent,
+      changeOffset: entry.change_offset || undefined,
     };
 
     const parentChanges: Change[] = entry.parents.map((p) => ({
@@ -1121,6 +1131,8 @@ export class JJRepository {
       isEmpty: p.empty,
       isConflict: p.conflict,
       bookmarks: p.local_bookmarks,
+      divergent: p.divergent,
+      changeOffset: p.change_offset || undefined,
     }));
 
     const status: RepositoryStatus = {
@@ -1199,6 +1211,8 @@ export class JJRepository {
       const entry = JSON.parse(line) as {
         change_id: string;
         commit_id: string;
+        divergent: boolean;
+        change_offset: string;
         author: { name: string; email: string };
         authored_date: string;
         description: string;
@@ -1256,6 +1270,8 @@ export class JJRepository {
           authoredDate: entry.authored_date,
           isEmpty: entry.empty,
           isConflict: entry.conflict,
+          divergent: entry.divergent,
+          changeOffset: entry.change_offset || undefined,
         },
         fileStatuses,
         conflictedFiles,
@@ -2111,6 +2127,15 @@ export interface Change {
   description: string;
   isEmpty: boolean;
   isConflict: boolean;
+  divergent?: boolean;
+  changeOffset?: string;
+}
+
+function getRevFromChange(change: Change): string {
+  if (change.divergent && change.changeOffset) {
+    return `${change.changeId}/${change.changeOffset}`;
+  }
+  return change.changeId;
 }
 
 export interface ChangeWithDetails extends Change {

@@ -112,6 +112,11 @@ export function generateTemplate(fields: TemplateFields): string {
 export const SHOW_ENTRY_FIELDS: TemplateFields = {
   change_id: { type: "string", expr: "change_id" },
   commit_id: { type: "string", expr: "commit_id" },
+  divergent: { type: "boolean", expr: "self.divergent()" },
+  change_offset: {
+    type: "string",
+    expr: 'if(self.change_offset(), self.change_offset(), "")',
+  },
   author: {
     type: "dict",
     contents: {
@@ -142,6 +147,11 @@ export const SHOW_ENTRY_FIELDS: TemplateFields = {
 export const STATUS_ENTRY_FIELDS: TemplateFields = {
   change_id: { type: "string", expr: "change_id" },
   commit_id: { type: "string", expr: "commit_id" },
+  divergent: { type: "boolean", expr: "self.divergent()" },
+  change_offset: {
+    type: "string",
+    expr: 'if(self.change_offset(), self.change_offset(), "")',
+  },
   description: { type: "string", expr: "description" },
   empty: { type: "boolean", expr: "self.empty()" },
   conflict: { type: "boolean", expr: "self.conflict()" },
@@ -158,6 +168,11 @@ export const STATUS_ENTRY_FIELDS: TemplateFields = {
     contents: {
       change_id: { type: "string", expr: "p.change_id()" },
       commit_id: { type: "string", expr: "p.commit_id()" },
+      divergent: { type: "boolean", expr: "p.divergent()" },
+      change_offset: {
+        type: "string",
+        expr: 'if(p.change_offset(), p.change_offset(), "")',
+      },
       description: { type: "string", expr: "p.description()" },
       empty: { type: "boolean", expr: "p.empty()" },
       conflict: { type: "boolean", expr: "p.conflict()" },
