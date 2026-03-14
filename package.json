@@ -295,11 +295,6 @@
       ],
       "scm/resourceGroup/context": [
         {
-          "command": "jj.restoreResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != selected",
-          "group": "inline"
-        },
-        {
           "command": "jj.squashToParentResourceGroup",
           "when": "scmProvider == jj && scmResourceGroup == @",
           "group": "inline"
