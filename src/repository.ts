@@ -1848,19 +1848,16 @@ export class JJRepository {
   }
 
   async operationLog(): Promise<Operation[]> {
-    const operationSeparator = "ඞඞඞ\n";
-    const fieldSeparator = "kjjඞ";
-    const templateFields = [
-      "self.id()",
-      "self.description()",
-      "self.tags()",
-      "self.time().start()",
-      "self.user()",
-      "self.snapshot()",
-    ];
-    const template =
-      templateFields.join(` ++ "${fieldSeparator}" ++ `) +
-      ` ++ "${operationSeparator}"`;
+    const OPERATION_ENTRY_FIELDS: import("./templateBuilder").TemplateFields = {
+      id: { type: "string", expr: "self.id()" },
+      description: { type: "string", expr: "self.description()" },
+      tags: { type: "string", expr: "self.tags()" },
+      start: { type: "string", expr: "self.time().start()" },
+      user: { type: "string", expr: "self.user()" },
+      snapshot: { type: "boolean", expr: "self.snapshot()" },
+    };
+
+    const template = generateTemplate(OPERATION_ENTRY_FIELDS);
 
     const output = (
       await handleJJCommand(
@@ -1884,50 +1881,26 @@ export class JJRepository {
     ).toString();
 
     const ret: Operation[] = [];
-    const lines = output.split(operationSeparator).slice(0, -1); // the output ends in a separator so remove the empty string at the end
-    for (const line of lines) {
-      const results = line.split(fieldSeparator);
-      if (results.length > templateFields.length) {
-        throw new Error(
-          "Separator found in a field value. This is not supported.",
-        );
-      } else if (results.length < templateFields.length) {
-        throw new Error("Missing fields in the output.");
+    for (const line of output.trim().split("\n")) {
+      if (!line.trim()) {
+        continue;
       }
-      const op: Operation = {
-        id: "",
-        description: "",
-        tags: "",
-        start: "",
-        user: "",
-        snapshot: false,
+      const entry = JSON.parse(line) as {
+        id: string;
+        description: string;
+        tags: string;
+        start: string;
+        user: string;
+        snapshot: boolean;
       };
-
-      for (let i = 0; i < results.length; i++) {
-        const field = results[i];
-        const value = field.trim();
-        switch (templateFields[i]) {
-          case "self.id()":
-            op.id = value;
-            break;
-          case "self.description()":
-            op.description = value;
-            break;
-          case "self.tags()":
-            op.tags = value;
-            break;
-          case "self.time().start()":
-            op.start = value;
-            break;
-          case "self.user()":
-            op.user = value;
-            break;
-          case "self.snapshot()":
-            op.snapshot = value === "true";
-            break;
-        }
-      }
-      ret.push(op);
+      ret.push({
+        id: entry.id,
+        description: entry.description,
+        tags: entry.tags,
+        start: entry.start,
+        user: entry.user,
+        snapshot: entry.snapshot,
+      });
     }
 
     return ret;
