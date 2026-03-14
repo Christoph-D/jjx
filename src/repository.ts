@@ -1277,7 +1277,7 @@ export class JJRepository {
     );
   }
 
-  async describeRetryImmutable(rev: string, message: string) {
+  async describeRetryImmutable(rev: string, message?: string) {
     return this.retryWithImmutable(
       rev,
       () => this.describe(rev, message),
@@ -1285,14 +1285,13 @@ export class JJRepository {
     );
   }
 
-  async describe(rev: string, message: string, ignoreImmutable = false) {
+  async describe(rev: string, message?: string, ignoreImmutable = false) {
     return (
       await handleJJCommand(
         this.spawnJJ(
           [
             "describe",
-            "-m",
-            message,
+            ...(message ? ["-m", message] : []),
             rev,
             ...(ignoreImmutable ? ["--ignore-immutable"] : []),
           ],

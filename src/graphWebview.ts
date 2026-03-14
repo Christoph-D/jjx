@@ -257,19 +257,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "describeChange":
           try {
-            const showResult = await this.repository.show(message.changeId);
-            const newDescription = await vscode.window.showInputBox({
-              prompt: "Enter change description",
-              placeHolder: "Change description...",
-              value: showResult.change.description,
-            });
-            if (newDescription === undefined) {
-              return;
-            }
-            await this.repository.describeRetryImmutable(
-              message.changeId,
-              newDescription,
-            );
+            await this.repository.describeRetryImmutable(message.changeId);
             await this.refresh();
           } catch (error: unknown) {
             vscode.window.showErrorMessage(

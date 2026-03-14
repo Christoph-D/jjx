@@ -803,20 +803,8 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("Repository not found");
           }
 
-          const showResult = await repository.show(resourceGroup.id);
-
-          const message = await vscode.window.showInputBox({
-            prompt: "Provide a description",
-            placeHolder: "Change description here...",
-            value: showResult.change.description,
-          });
-
-          if (message === undefined) {
-            return;
-          }
-
           try {
-            await repository.describeRetryImmutable(resourceGroup.id, message);
+            await repository.describeRetryImmutable(resourceGroup.id);
           } catch (error) {
             vscode.window.showErrorMessage(
               `Failed to update description${error instanceof Error ? `: ${error.message}` : ""}`,
