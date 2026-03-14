@@ -919,7 +919,9 @@
                         rebaseBeforeItems.forEach(item => {
                             item.style.display = targetId === rootChangeId ? 'none' : 'block';
                         });
-                        separators.forEach(sep => sep.style.display = 'block');
+                        separators.forEach((sep, index) => {
+                            sep.style.display = targetId === rootChangeId && index >= 1 ? 'none' : 'block';
+                        });
                         if (squashItem) {
                             squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
                         }
