@@ -99,7 +99,7 @@
                     });
                     document.getElementById('stale-state').style.display = 'none';
                     document.getElementById('graph').style.display = 'block';
-                    updateGraph(message.changes, message.laneInfo, message.changeEditAction, message.graphStyle, message.maxPrefixLength, message.preserveScroll);
+                    updateGraph(message.changes, message.laneInfo, message.changeEditAction, message.graphStyle, message.maxPrefixLength, message.offsetWidth, message.preserveScroll);
                     break;
                 case 'showStaleState':
                     document.getElementById('graph').style.display = 'none';
@@ -425,7 +425,7 @@
             return div.innerHTML;
         }
 
-        function updateGraph(changes, graph, changeEditAction, graphStyle, maxPrefixLengthArg, preserveScroll = false) {
+        function updateGraph(changes, graph, changeEditAction, graphStyle, maxPrefixLengthArg, offsetWidthArg, preserveScroll = false) {
             const scrollTop = preserveScroll ?
                 (window.scrollY || document.documentElement.scrollTop) : 0;
 
@@ -434,6 +434,7 @@
             maxPrefixLength = maxPrefixLengthArg || 4;
 
             document.getElementById('graph').style.setProperty('--change-id-ch-width', `${maxPrefixLength}ch`);
+            document.getElementById('graph').style.setProperty('--change-id-offset-width', `${offsetWidthArg || 0}ch`);
 
             const nodesContainer = document.getElementById('nodes');
             const circlesContainer = document.getElementById('node-circles');
@@ -469,6 +470,7 @@
                 node.dataset.linesRemoved = change.linesRemoved || 0;
                 node.dataset.mine = change.mine || false;
                 node.dataset.nodeLane = nodeLane;
+                node.dataset.changeOffset = change.changeOffset || '';
 
                 const textContent = document.createElement('div');
                 textContent.className = 'text-content';
@@ -479,7 +481,12 @@
                 changeIdLeft.className = 'change-id-left';
                 const changeIdPrefix = change.changeIdPrefix;
                 const changeIdSuffix = change.changeIdSuffix || "";
-                changeIdLeft.innerHTML = `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span>`;
+                const changeOffset = change.changeOffset;
+                let changeIdHtml = `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span>`;
+                if (changeOffset) {
+                    changeIdHtml += `<span class="change-id-offset">/${changeOffset}</span>`;
+                }
+                changeIdLeft.innerHTML = changeIdHtml;
                 node.appendChild(changeIdLeft);
 
                 const nodeLabel = document.createElement("div");
@@ -882,10 +889,30 @@
                     rebaseMenu.style.left = '-9999px';
                     rebaseMenu.style.top = '-9999px';
                     rebaseMenu.style.display = 'block';
+                    
+                    const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
+                    const sourceIsDivergent = sourceNode?.dataset?.changeOffset && sourceNode.dataset.changeOffset !== '';
+                    const targetIsDivergent = targetNode?.dataset?.changeOffset && targetNode.dataset.changeOffset !== '';
+                    const isDivergent = sourceIsDivergent || targetIsDivergent;
+                    
+                    const rebaseItems = rebaseMenu.querySelectorAll('[data-action="rebaseOnto"], [data-action="rebaseOntoWithDescendants"], [data-action="rebaseAfter"], [data-action="rebaseAfterWithDescendants"]');
                     const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
-                    if (squashItem) {
-                        squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
+                    const separators = rebaseMenu.querySelectorAll('.context-menu-separator');
+                    
+                    if (isDivergent) {
+                        rebaseItems.forEach(item => item.style.display = 'none');
+                        separators.forEach(sep => sep.style.display = 'none');
+                        if (squashItem) {
+                            squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
+                        }
+                    } else {
+                        rebaseItems.forEach(item => item.style.display = 'block');
+                        separators.forEach(sep => sep.style.display = 'block');
+                        if (squashItem) {
+                            squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
+                        }
                     }
+                    
                     requestAnimationFrame(() => {
                         const menuRect = rebaseMenu.getBoundingClientRect();
                         const viewportWidth = window.innerWidth;

@@ -90,7 +90,7 @@ body {
 
 .change-id-left {
     position: absolute;
-    width: var(--change-id-ch-width, 4ch);
+    width: calc(var(--change-id-ch-width, 4ch) + var(--change-id-offset-width, 0ch));
     font-family: var(--vscode-editor-font-family, monospace);
 }
 
@@ -100,7 +100,7 @@ body {
     height: 42px;
     justify-content: center;
     overflow: hidden;
-    margin-left: calc(var(--change-id-ch-width, 4ch) + var(--change-id-right-padding) + var(--graph-width) + 4px);
+    margin-left: calc(var(--change-id-ch-width, 4ch) + var(--change-id-offset-width, 0ch) + var(--change-id-right-padding) + var(--graph-width) + 4px);
 }
 
 .text-content > div:first-child {
@@ -388,6 +388,11 @@ body {
 .change-id-suffix {
     font-family: var(--vscode-editor-font-family, monospace);
     opacity: 0.5;
+}
+
+.change-id-offset {
+    font-family: var(--vscode-editor-font-family, monospace);
+    color: var(--vscode-errorForeground, #f48771);
 }
 
 .change-node.working-copy .text-content {

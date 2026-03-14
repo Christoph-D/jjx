@@ -216,10 +216,17 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
   immutable: { type: "boolean", expr: "self.immutable()" },
   mine: { type: "boolean", expr: "self.mine()" },
   parents: {
-    type: "string_array",
+    type: "array",
     expr: "parents",
     loopVar: "p",
-    value: "p.change_id()",
+    contents: {
+      change_id: { type: "string", expr: "p.change_id()" },
+      divergent: { type: "boolean", expr: "p.divergent()" },
+      change_offset: {
+        type: "string",
+        expr: 'if(p.change_offset(), p.change_offset(), "")',
+      },
+    },
   },
   root: { type: "boolean", expr: "self.root()" },
   local_tags: {
@@ -245,5 +252,10 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     expr: "self.working_copies()",
     loopVar: "wc",
     value: "wc.name()",
+  },
+  divergent: { type: "boolean", expr: "self.divergent()" },
+  change_offset: {
+    type: "string",
+    expr: 'if(self.change_offset(), self.change_offset(), "")',
   },
 };

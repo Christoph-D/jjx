@@ -2,13 +2,16 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { assignLanes } from "../laneAssigner";
-import type { LogEntry } from "../repository";
+import type { LogEntry, ParentRef } from "../repository";
 
 function makeEntry(
   change_id: string,
-  parents: string[],
+  parents: string[] | ParentRef[],
   overrides: Partial<LogEntry> = {},
 ): LogEntry {
+  const parentRefs: ParentRef[] = parents.map((p) =>
+    typeof p === "string" ? { change_id: p, divergent: false, change_offset: "" } : p,
+  );
   return {
     change_id,
     change_id_short: change_id.slice(0, 8),
@@ -20,6 +23,8 @@ function makeEntry(
     current_working_copy: false,
     root: false,
     conflict: false,
+    divergent: false,
+    change_offset: "",
     description: `commit ${change_id}`,
     author: { name: "Test", email: "test@test.com", timestamp: "2025-01-01" },
     committer: {
@@ -28,7 +33,7 @@ function makeEntry(
       timestamp: "2025-01-01",
     },
     diff: { total_added: 0, total_removed: 0, files: [] },
-    parents,
+    parents: parentRefs,
     local_bookmarks: [],
     remote_bookmarks: [],
     local_tags: [],

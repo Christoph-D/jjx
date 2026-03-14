@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
-import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef } from "./repository";
+import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef, ParentRef } from "./repository";
 import { StaleWorkingCopyError } from "./repository";
 import path from "path";
 import { assignLanes } from "./laneAssigner";
@@ -29,6 +29,7 @@ export class ChangeNode {
   changeId: string;
   changeIdPrefix: string;
   changeIdSuffix: string;
+  changeOffset: string | null;
   label: string;
   description: string;
   tooltip: string;
@@ -52,6 +53,7 @@ export class ChangeNode {
     changeId: string,
     changeIdPrefix: string,
     changeIdSuffix: string,
+    changeOffset: string | null,
     label: string,
     description: string,
     tooltip: string,
@@ -75,6 +77,7 @@ export class ChangeNode {
     this.changeId = changeId;
     this.changeIdPrefix = changeIdPrefix;
     this.changeIdSuffix = changeIdSuffix;
+    this.changeOffset = changeOffset;
     this.label = label;
     this.description = description;
     this.tooltip = tooltip;
@@ -364,7 +367,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const graphStyle = config.get<string>("graphStyle") || "full";
 
       const entries = await this.repository.log();
-      const { changes, maxPrefixLength } = parseJJLogJson(entries, graphStyle);
+      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entries, graphStyle);
 
       this.selectedNodes.clear();
       const changeEditAction = config.get<string>("changeEditAction");
@@ -378,6 +381,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         changeEditAction,
         graphStyle,
         maxPrefixLength,
+        offsetWidth,
         preserveScroll: true,
       });
     } catch (error) {
@@ -456,7 +460,13 @@ function description(entry: LogEntry) {
 export function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
-): { changes: ChangeNode[]; maxPrefixLength: number } {
+): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
+  const offsetWidth = Math.max(
+    0,
+    ...entries
+      .filter((e) => e.divergent && e.change_offset)
+      .map((e) => e.change_offset.length + 1),
+  );
   const maxPrefixLength = Math.max(
     4,
     ...entries.map((e) => e.change_id_shortest.length),
@@ -470,6 +480,11 @@ export function parseJJLogJson(
     const email = entry.author.email;
     const timestamp = entry.author.timestamp;
     const commitId = entry.commit_id_short;
+
+    const changeOffset = entry.divergent && entry.change_offset ? entry.change_offset : null;
+    const uniqueChangeId = entry.divergent && changeOffset
+      ? `${entry.change_id}/${changeOffset}`
+      : entry.change_id;
 
     let branchType: string | undefined;
     if (entry.current_working_copy) {
@@ -495,10 +510,15 @@ export function parseJJLogJson(
     const linesAdded = entry.diff?.total_added ?? 0;
     const linesRemoved = entry.diff?.total_removed ?? 0;
 
+    const uniqueParentIds = entry.parents.map((p: ParentRef) =>
+      p.divergent && p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id
+    );
+
     return new ChangeNode(
-      entry.change_id,
+      uniqueChangeId,
       changeIdShortest,
       changeIdSuffix,
+      changeOffset,
       formattedLine,
       formattedDescription,
       entry.change_id,
@@ -508,7 +528,7 @@ export function parseJJLogJson(
       entry.local_tags.sort((a, b) => a.name.localeCompare(b.name)),
       entry.remote_tags.sort((a, b) => a.name.localeCompare(b.name)),
       entry.working_copies.sort(),
-      entry.parents,
+      uniqueParentIds,
       branchType,
       entry.author.name,
       entry.author.email,
@@ -521,5 +541,5 @@ export function parseJJLogJson(
     );
   });
 
-  return { changes, maxPrefixLength };
+  return { changes, maxPrefixLength, offsetWidth };
 }

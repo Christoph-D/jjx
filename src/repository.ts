@@ -2084,6 +2084,12 @@ export interface LogEntryRemoteRef {
   remote: string;
 }
 
+export interface ParentRef {
+  change_id: string;
+  divergent: boolean;
+  change_offset: string;
+}
+
 export interface LogEntry {
   change_id: string;
   change_id_short: string;
@@ -2095,6 +2101,8 @@ export interface LogEntry {
   current_working_copy: boolean;
   root: boolean;
   conflict: boolean;
+  divergent: boolean;
+  change_offset: string;
   description: string;
   author: {
     name: string;
@@ -2111,7 +2119,7 @@ export interface LogEntry {
     total_removed: number;
     files: LogEntryFile[];
   };
-  parents: string[];
+  parents: ParentRef[];
   local_bookmarks: LogEntryLocalRef[];
   remote_bookmarks: LogEntryRemoteRef[];
   local_tags: LogEntryLocalRef[];

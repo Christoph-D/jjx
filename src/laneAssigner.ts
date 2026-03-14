@@ -1,4 +1,4 @@
-import type { LogEntry } from "./repository";
+import type { LogEntry, ParentRef } from "./repository";
 
 const colorRegistryLength = 5;
 
@@ -33,7 +33,29 @@ interface LaneInfo {
   colorIndex: number;
 }
 
+function getParentUniqueId(parent: ParentRef): string {
+  return parent.divergent && parent.change_offset
+    ? `${parent.change_id}/${parent.change_offset}`
+    : parent.change_id;
+}
+
+interface NormalizedEntry {
+  changeId: string;
+  parentIds: string[];
+}
+
+function normalizeEntries(entries: LogEntry[]): NormalizedEntry[] {
+  return entries.map((entry) => ({
+    changeId:
+      entry.divergent && entry.change_offset
+        ? `${entry.change_id}/${entry.change_offset}`
+        : entry.change_id,
+    parentIds: entry.parents.map(getParentUniqueId),
+  }));
+}
+
 export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
+  const normalized = normalizeEntries(entries);
   const result: ChangeIdGraph = { nodes: [], edges: [] };
   const lanesByRow: LaneInfo[][] = [[]];
   let colorIndex = 0;
@@ -41,17 +63,18 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
 
   // We're working with a partial jj log, so some parent changes could be outside the visible set.
   const visibleChangeIds = new Set<string>();
-  for (const entry of entries) {
-    visibleChangeIds.add(entry.change_id);
+  for (const norm of normalized) {
+    visibleChangeIds.add(norm.changeId);
   }
 
   // Compute nodes
-  for (const entry of entries) {
+  for (let idx = 0; idx < normalized.length; idx++) {
+    const norm = normalized[idx];
     const lanes = lanesByRow[lanesByRow.length - 1].map((l) => ({
       ...l,
     }));
     let numLanesActiveVisually = lanes.length;
-    let nodeLane = lanes.findIndex((l) => l.targetId === entry.change_id);
+    let nodeLane = lanes.findIndex((l) => l.targetId === norm.changeId);
     let color: number;
     if (nodeLane === -1) {
       color = rot(colorIndex, colorRegistryLength);
@@ -67,12 +90,11 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
     }
 
     lanes[nodeLane] = {
-      targetId: entry.parents.length > 0 ? entry.parents[0] : entry.change_id,
+      targetId: norm.parentIds.length > 0 ? norm.parentIds[0] : norm.changeId,
       colorIndex: color,
     };
 
-    for (let i = 0; i < entry.parents.length; i++) {
-      const parentId = entry.parents[i];
+    for (const parentId of norm.parentIds) {
       if (!visibleChangeIds.has(parentId)) {
         continue;
       }
@@ -88,7 +110,7 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
 
     // Close lanes for this change ID
     for (let i = 0; i < lanes.length; i++) {
-      if (i !== nodeLane && lanes[i].targetId === entry.change_id) {
+      if (i !== nodeLane && lanes[i].targetId === norm.changeId) {
         lanes[i] = {
           targetId: null,
           colorIndex: lanes[i].colorIndex,
@@ -114,26 +136,26 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
     }
 
     const n = result.nodes.push({
-      changeId: entry.change_id,
+      changeId: norm.changeId,
       lane: nodeLane,
       colorIndex: color,
       numLanesActiveVisually,
     });
-    nodeToRow[entry.change_id] = n - 1;
+    nodeToRow[norm.changeId] = n - 1;
     lanesByRow.push(lanes);
   }
 
   // Compute edges
   for (let i = 0; i < result.nodes.length; i++) {
     const node = result.nodes[i];
-    const entry = entries[i];
+    const norm = normalized[i];
 
     let firstParent = true;
-    for (const parent of entry.parents) {
-      if (!visibleChangeIds.has(parent)) {
+    for (const parentId of norm.parentIds) {
+      if (!visibleChangeIds.has(parentId)) {
         continue;
       }
-      const parentRow = nodeToRow[parent];
+      const parentRow = nodeToRow[parentId];
       const parentNode = result.nodes[parentRow];
 
       const lanePath: number[] = [];
@@ -141,7 +163,7 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
         const lane =
           j === i
             ? node.lane
-            : lanesByRow[j].findIndex((l) => l.targetId === parent);
+            : lanesByRow[j].findIndex((l) => l.targetId === parentId);
         lanePath.push(lane);
       }
 
@@ -149,8 +171,8 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
         fromRow: i,
         toRow: parentRow,
         lanePath,
-        fromId: entry.change_id,
-        toId: parent,
+        fromId: norm.changeId,
+        toId: parentId,
         colorIndex: firstParent ? node.colorIndex : parentNode.colorIndex,
       });
       firstParent = false;
