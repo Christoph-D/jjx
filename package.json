@@ -313,6 +313,11 @@
           "command": "jj.editResourceGroup",
           "when": "scmProvider == jj && scmResourceGroup != @",
           "group": "inline"
+        },
+        {
+          "command": "jj.describe",
+          "when": "scmProvider == jj",
+          "group": "inline"
         }
       ],
       "scm/resourceState/context": [
