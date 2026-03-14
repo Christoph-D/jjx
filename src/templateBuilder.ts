@@ -109,6 +109,36 @@ export function generateTemplate(fields: TemplateFields): string {
   return `"{" ++ ${fieldsStr} ++ "}\\n"`;
 }
 
+export const SHOW_ENTRY_FIELDS: TemplateFields = {
+  change_id: { type: "string", expr: "change_id" },
+  commit_id: { type: "string", expr: "commit_id" },
+  author: {
+    type: "dict",
+    contents: {
+      name: { type: "raw", expr: "author.name().escape_json()" },
+      email: { type: "string", expr: "author.email()" },
+    },
+  },
+  authored_date: {
+    type: "string",
+    expr: 'author.timestamp().local().format("%F %H:%M:%S")',
+  },
+  description: { type: "raw", expr: "description.escape_json()" },
+  empty: { type: "boolean", expr: "self.empty()" },
+  conflict: { type: "boolean", expr: "self.conflict()" },
+  diff_files: {
+    type: "array",
+    expr: "self.diff().files()",
+    loopVar: "entry",
+    contents: {
+      status_char: { type: "string", expr: "entry.status_char()" },
+      source_path: { type: "string", expr: "entry.source().path().display()" },
+      target_path: { type: "string", expr: "entry.target().path().display()" },
+      is_conflict: { type: "boolean", expr: "entry.target().conflict()" },
+    },
+  },
+};
+
 export const LOG_ENTRY_FIELDS: TemplateFields = {
   author: {
     type: "dict",

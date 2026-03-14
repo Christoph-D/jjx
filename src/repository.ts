@@ -11,7 +11,7 @@ import { JJFileSystemProvider } from "./fileSystemProvider";
 import * as os from "os";
 import * as crypto from "crypto";
 import which from "which";
-import { generateTemplate, LOG_ENTRY_FIELDS } from "./templateBuilder";
+import { generateTemplate, LOG_ENTRY_FIELDS, SHOW_ENTRY_FIELDS } from "./templateBuilder";
 
 async function getJJVersion(jjPath: string): Promise<string> {
   try {
@@ -1085,26 +1085,7 @@ export class JJRepository {
   }
 
   async showAll(revsets: string[]) {
-    const revSeparator = "jjkඞ\n";
-    const fieldSeparator = "ඞjjk";
-    const summarySeparator = "@?!"; // characters that are illegal in filepaths
-    const isConflictDetectionSupported = this.jjVersion >= "jj 0.26.0";
-    const templateFields = [
-      "change_id",
-      "commit_id",
-      "author.name()",
-      "author.email()",
-      'author.timestamp().local().format("%F %H:%M:%S")',
-      "description",
-      "empty",
-      "conflict",
-      isConflictDetectionSupported
-        ? `diff.files().map(|entry| entry.status() ++ "${summarySeparator}" ++ entry.source().path().display() ++ "${summarySeparator}" ++ entry.target().path().display() ++ "${summarySeparator}" ++ entry.target().conflict()).join("\n")`
-        : "diff.summary()",
-    ];
-    const template =
-      templateFields.join(` ++ "${fieldSeparator}" ++ `) +
-      ` ++ "${revSeparator}"`;
+    const template = generateTemplate(SHOW_ENTRY_FIELDS);
 
     const output = (
       await handleJJCommand(
@@ -1124,161 +1105,84 @@ export class JJRepository {
       )
     ).toString();
 
-    if (!output) {
+    if (!output.trim()) {
       throw new Error(
         "No output from jj log. Maybe the revision couldn't be found?",
       );
     }
 
-    const revResults = output.split(revSeparator).slice(0, -1); // the output ends in a separator so remove the empty string at the end
-    return revResults.map((revResult) => {
-      const fields = revResult.split(fieldSeparator);
-      if (fields.length > templateFields.length) {
-        throw new Error(
-          "Separator found in a field value. This is not supported.",
-        );
-      } else if (fields.length < templateFields.length) {
-        throw new Error("Missing fields in the output.");
+    const results: Show[] = [];
+    for (const line of output.trim().split("\n")) {
+      if (!line.trim()) {
+        continue;
       }
-      const ret: Show = {
-        change: {
-          changeId: "",
-          commitId: "",
-          description: "",
-          author: {
-            email: "",
-            name: "",
-          },
-          authoredDate: "",
-          isEmpty: false,
-          isConflict: false,
-        },
-        fileStatuses: [],
-        conflictedFiles: new Set<string>(),
+      const entry = JSON.parse(line) as {
+        change_id: string;
+        commit_id: string;
+        author: { name: string; email: string };
+        authored_date: string;
+        description: string;
+        empty: boolean;
+        conflict: boolean;
+        diff_files: Array<{
+          status_char: string;
+          source_path: string;
+          target_path: string;
+          is_conflict: boolean;
+        }>;
       };
 
-      for (let i = 0; i < fields.length; i++) {
-        const field = fields[i];
-        const value = field.trim();
-        switch (templateFields[i]) {
-          case "change_id":
-            ret.change.changeId = value;
-            break;
-          case "commit_id":
-            ret.change.commitId = value;
-            break;
-          case "author.name()":
-            ret.change.author.name = value;
-            break;
-          case "author.email()":
-            ret.change.author.email = value;
-            break;
-          case 'author.timestamp().local().format("%F %H:%M:%S")':
-            ret.change.authoredDate = value;
-            break;
-          case "description":
-            ret.change.description = value;
-            break;
-          case "empty":
-            ret.change.isEmpty = value === "true";
-            break;
-          case "conflict":
-            ret.change.isConflict = value === "true";
-            break;
-          default: {
-            const changeRegex = /^(A|M|D|R|C) (.+)$/;
-            for (const line of value.split("\n").filter(Boolean)) {
-              if (isConflictDetectionSupported) {
-                const [status, rawSourcePath, rawTargetPath, conflict] =
-                  line.split(summarySeparator);
-                const sourcePath = path
-                  .normalize(rawSourcePath)
-                  .replace(/\\/g, "/");
-                const targetPath = path
-                  .normalize(rawTargetPath)
-                  .replace(/\\/g, "/");
-                if (
-                  [
-                    "modified",
-                    "added",
-                    "removed",
-                    "copied",
-                    "renamed",
-                  ].includes(status)
-                ) {
-                  if (status === "renamed" || status === "copied") {
-                    ret.fileStatuses.push({
-                      type: status === "renamed" ? "R" : "C",
-                      file: path.basename(targetPath),
-                      path: path.join(this.repositoryRoot, targetPath),
-                      renamedFrom: sourcePath,
-                    });
-                  } else {
-                    ret.fileStatuses.push({
-                      type:
-                        status === "added"
-                          ? "A"
-                          : status === "removed"
-                            ? "D"
-                            : "M",
-                      file: path.basename(targetPath),
-                      path: path.join(this.repositoryRoot, targetPath),
-                    });
-                  }
-                  if (conflict === "true") {
-                    ret.conflictedFiles.add(
-                      path.join(this.repositoryRoot, targetPath),
-                    );
-                  }
-                } else {
-                  throw new Error(
-                    `Unexpected diff custom summary line: ${line}`,
-                  );
-                }
-              } else {
-                const changeMatch = changeRegex.exec(line);
-                if (changeMatch) {
-                  const [_, type, file] = changeMatch;
+      const fileStatuses: FileStatus[] = [];
+      const conflictedFiles = new Set<string>();
 
-                  if (type === "R" || type === "C") {
-                    const parsedPaths = parseRenamePaths(file);
-                    if (parsedPaths) {
-                      ret.fileStatuses.push({
-                        type: type,
-                        file: parsedPaths.toPath,
-                        path: path.join(
-                          this.repositoryRoot,
-                          parsedPaths.toPath,
-                        ),
-                        renamedFrom: parsedPaths.fromPath,
-                      });
-                    } else {
-                      throw new Error(
-                        `Unexpected ${type === "R" ? "rename" : "copy"} line: ${line}`,
-                      );
-                    }
-                  } else {
-                    const normalizedFile = path
-                      .normalize(file)
-                      .replace(/\\/g, "/");
-                    ret.fileStatuses.push({
-                      type: type as "A" | "M" | "D",
-                      file: normalizedFile,
-                      path: path.join(this.repositoryRoot, normalizedFile),
-                    });
-                  }
-                } else {
-                  throw new Error(`Unexpected diff summary line: ${line}`);
-                }
-              }
-            }
-            break;
-          }
+      for (const diffFile of entry.diff_files) {
+        const statusChar = diffFile.status_char as FileStatusType;
+        const targetPath = path
+          .normalize(diffFile.target_path)
+          .replace(/\\/g, "/");
+        const sourcePath = path
+          .normalize(diffFile.source_path)
+          .replace(/\\/g, "/");
+
+        if (statusChar === "R" || statusChar === "C") {
+          fileStatuses.push({
+            type: statusChar,
+            file: path.basename(targetPath),
+            path: path.join(this.repositoryRoot, targetPath),
+            renamedFrom: sourcePath,
+          });
+        } else {
+          fileStatuses.push({
+            type: statusChar,
+            file: path.basename(targetPath),
+            path: path.join(this.repositoryRoot, targetPath),
+          });
+        }
+
+        if (diffFile.is_conflict) {
+          conflictedFiles.add(path.join(this.repositoryRoot, targetPath));
         }
       }
 
-      return ret;
-    });
+      results.push({
+        change: {
+          changeId: entry.change_id,
+          commitId: entry.commit_id,
+          description: entry.description,
+          author: {
+            name: entry.author.name,
+            email: entry.author.email,
+          },
+          authoredDate: entry.authored_date,
+          isEmpty: entry.empty,
+          isConflict: entry.conflict,
+        },
+        fileStatuses,
+        conflictedFiles,
+      });
+    }
+
+    return results;
   }
 
   readFile(rev: string, filepath: string) {
