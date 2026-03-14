@@ -108,6 +108,10 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   public repository: JJRepository;
   public selectedNodes: Set<string> = new Set();
 
+  private _onDidChangeSelection = new vscode.EventEmitter<string[]>();
+  readonly onDidChangeSelection: vscode.Event<string[]> =
+    this._onDidChangeSelection.event;
+
   constructor(
     private readonly extensionUri: vscode.Uri,
     repo: JJRepository,
@@ -193,6 +197,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             "jjGraphView.nodesSelected",
             message.selectedNodes.length,
           );
+          this._onDidChangeSelection.fire(message.selectedNodes);
           break;
         case "moveBookmark":
           try {

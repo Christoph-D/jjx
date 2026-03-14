@@ -295,8 +295,8 @@
       ],
       "scm/resourceGroup/context": [
         {
-          "command": "jj.describe",
-          "when": "scmProvider == jj",
+          "command": "jj.restoreResourceState",
+          "when": "scmProvider == jj && scmResourceGroup != selected",
           "group": "inline"
         },
         {
@@ -306,12 +306,12 @@
         },
         {
           "command": "jj.squashToWorkingCopyResourceGroup",
-          "when": "scmProvider == jj && scmResourceGroup != @",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
           "group": "inline"
         },
         {
           "command": "jj.restoreResourceGroup",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && scmResourceGroup != selected",
           "group": "inline"
         },
         {
@@ -333,7 +333,7 @@
         },
         {
           "command": "jj.restoreResourceState",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && scmResourceGroup != selected",
           "group": "inline"
         },
         {
@@ -348,14 +348,14 @@
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
           "group": "inline"
         }
       ],
       "scm/resourceFolder/context": [
         {
           "command": "jj.restoreResourceState",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && scmResourceGroup != selected",
           "group": "inline"
         },
         {
@@ -365,7 +365,7 @@
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
           "group": "inline"
         }
       ],

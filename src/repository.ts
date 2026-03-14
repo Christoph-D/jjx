@@ -486,8 +486,19 @@ export class WorkspaceSourceControlManager {
     return this.repoSCMs.find(
       (repo) =>
         repo.workingCopyResourceGroup === resourceGroup ||
-        repo.parentResourceGroups.includes(resourceGroup),
+        repo.parentResourceGroups.includes(resourceGroup) ||
+        repo.selectedCommitResourceGroup === resourceGroup,
     );
+  }
+
+  getSelectedCommitChangeId(
+    resourceGroup: vscode.SourceControlResourceGroup,
+  ): string | undefined {
+    const repo = this.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
+    if (repo?.selectedCommitResourceGroup === resourceGroup) {
+      return repo.selectedCommitChangeId;
+    }
+    return undefined;
   }
 
   getResourceGroupFromResourceState(
@@ -499,6 +510,9 @@ export class WorkspaceSourceControlManager {
       const groups = [
         repo.workingCopyResourceGroup,
         ...repo.parentResourceGroups,
+        ...(repo.selectedCommitResourceGroup
+          ? [repo.selectedCommitResourceGroup]
+          : []),
       ];
 
       for (const group of groups) {
@@ -554,6 +568,9 @@ class RepositorySourceControlManager {
   sourceControl: vscode.SourceControl;
   workingCopyResourceGroup: vscode.SourceControlResourceGroup;
   parentResourceGroups: vscode.SourceControlResourceGroup[] = [];
+  selectedCommitResourceGroup: vscode.SourceControlResourceGroup | undefined;
+  selectedCommitShowResult: Show | undefined;
+  selectedCommitChangeId: string | undefined;
   repository: JJRepository;
   checkForUpdatesPromise: Promise<void> | undefined;
 
@@ -826,12 +843,72 @@ class RepositorySourceControlManager {
       }
     }
 
+    if (this.selectedCommitShowResult) {
+      const changeId = this.selectedCommitShowResult.change.changeId;
+      this.selectedCommitChangeId = changeId;
+      if (!this.selectedCommitResourceGroup) {
+        this.selectedCommitResourceGroup =
+          this.sourceControl.createResourceGroup("selected", "Selected Commit");
+      }
+      this.selectedCommitResourceGroup.label =
+        RepositorySourceControlManager.getLabel(
+          "Selected Commit",
+          this.selectedCommitShowResult.change,
+        );
+      this.selectedCommitResourceGroup.resourceStates =
+        this.selectedCommitShowResult.fileStatuses.map((fileStatus) => {
+          const workingCopyUri = vscode.Uri.file(fileStatus.path);
+          return {
+            resourceUri: toJJUri(workingCopyUri, { rev: changeId }),
+            decorations: {
+              strikeThrough: fileStatus.type === "D",
+              tooltip: path.basename(fileStatus.file),
+            },
+            command: getResourceStateCommand(
+              fileStatus,
+              toJJUri(vscode.Uri.file(fileStatus.path), {
+                diffOriginalRev: changeId,
+              }),
+              toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
+              `(${changeId})`,
+              openDiffAction,
+              workingCopyUri,
+            ),
+          };
+        });
+    } else {
+      this.selectedCommitResourceGroup?.dispose();
+      this.selectedCommitResourceGroup = undefined;
+      this.selectedCommitChangeId = undefined;
+    }
+
+    const combinedFileStatusesByChange = new Map(this.fileStatusesByChange);
+    if (this.selectedCommitShowResult) {
+      combinedFileStatusesByChange.set(
+        this.selectedCommitShowResult.change.changeId,
+        this.selectedCommitShowResult.fileStatuses,
+      );
+    }
     this.decorationProvider.onRefresh(
       this.repositoryRoot,
-      this.fileStatusesByChange,
+      combinedFileStatusesByChange,
       this.trackedFiles,
       this.conflictedFilesByChange,
     );
+  }
+
+  async setSelectedCommit(changeId: string | undefined) {
+    if (
+      !changeId ||
+      changeId === "@" ||
+      (this.status &&
+        this.status.parentChanges.some((p) => p.changeId === changeId))
+    ) {
+      this.selectedCommitShowResult = undefined;
+    } else {
+      this.selectedCommitShowResult = await this.repository.show(changeId);
+    }
+    this.render();
   }
 
   dispose() {
@@ -841,6 +918,7 @@ class RepositorySourceControlManager {
     for (const group of this.parentResourceGroups) {
       group.dispose();
     }
+    this.selectedCommitResourceGroup?.dispose();
   }
 }
 

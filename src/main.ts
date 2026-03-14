@@ -153,6 +153,19 @@ export async function activate(context: vscode.ExtensionContext) {
       context.subscriptions,
     );
 
+    context.subscriptions.push(
+      graphWebview.onDidChangeSelection(async (selectedNodes) => {
+        const repoSCM = workspaceSCM.repoSCMs.find(
+          (r) => r.repositoryRoot === graphWebview!.repository.repositoryRoot,
+        );
+        if (repoSCM) {
+          const changeId =
+            selectedNodes.length === 1 ? selectedNodes[0] : undefined;
+          await repoSCM.setSelectedCommit(changeId);
+        }
+      }),
+    );
+
     const operationLogTreeDataProvider = new OperationLogTreeDataProvider(
       initialSelectedRepo,
     );
@@ -612,6 +625,11 @@ export async function activate(context: vscode.ExtensionContext) {
                   }
                   return foundStatus;
                 });
+              } else if (
+                scm.selectedCommitResourceGroup &&
+                scm.selectedCommitResourceGroup === resourceGroup
+              ) {
+                return;
               } else {
                 throw new Error("Resource group was not found in the SCM");
               }
@@ -713,6 +731,16 @@ export async function activate(context: vscode.ExtensionContext) {
           async (...resourceStates: vscode.SourceControlResourceState[]) => {
             try {
               const resourceGroup = getSharedResourceGroup(resourceStates);
+              const scm =
+                workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(
+                  resourceGroup,
+                );
+              if (
+                scm?.selectedCommitResourceGroup &&
+                scm.selectedCommitResourceGroup === resourceGroup
+              ) {
+                return;
+              }
               const repository =
                 workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
               if (!repository) {
@@ -869,6 +897,16 @@ export async function activate(context: vscode.ExtensionContext) {
         "jj.squashToWorkingCopyResourceGroup",
         showLoading(
           async (resourceGroup: vscode.SourceControlResourceGroup) => {
+            const scm =
+              workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(
+                resourceGroup,
+              );
+            if (
+              scm?.selectedCommitResourceGroup &&
+              scm.selectedCommitResourceGroup === resourceGroup
+            ) {
+              return;
+            }
             const repository =
               workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
             if (!repository) {
@@ -924,6 +962,16 @@ export async function activate(context: vscode.ExtensionContext) {
         showLoading(
           async (resourceGroup: vscode.SourceControlResourceGroup) => {
             try {
+              const scm =
+                workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(
+                  resourceGroup,
+                );
+              if (
+                scm?.selectedCommitResourceGroup &&
+                scm.selectedCommitResourceGroup === resourceGroup
+              ) {
+                return;
+              }
               const repository =
                 workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
               if (!repository) {
@@ -1655,7 +1703,9 @@ export async function activate(context: vscode.ExtensionContext) {
           }
 
           const filePath = resourceState.resourceUri.fsPath;
-          const changeId = resourceGroup.id;
+          const selectedCommitChangeId =
+            workspaceSCM.getSelectedCommitChangeId(resourceGroup);
+          const changeId = selectedCommitChangeId ?? resourceGroup.id;
 
           const repo = workspaceSCM.getRepositoryFromUri(
             resourceState.resourceUri,
