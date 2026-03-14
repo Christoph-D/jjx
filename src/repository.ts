@@ -1296,7 +1296,7 @@ export class JJRepository {
             ...(ignoreImmutable ? ["--ignore-immutable"] : []),
           ],
           {
-            timeout: 5000,
+            ...(message ? { timeout: 5000 } : {}),
             cwd: this.repositoryRoot,
           },
         ),

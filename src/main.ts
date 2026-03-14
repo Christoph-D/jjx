@@ -641,6 +641,20 @@ export async function activate(context: vscode.ExtensionContext) {
                   : []),
               ]);
 
+              const fileCount = resourceStates.length;
+              const confirmMessage =
+                fileCount === 1
+                  ? `Are you sure you want to discard changes in '${path.relative(repository.repositoryRoot, statuses[0].path)}'?`
+                  : `Are you sure you want to discard changes in ${fileCount} files?`;
+              const confirm = await vscode.window.showWarningMessage(
+                confirmMessage,
+                { modal: true },
+                "Discard",
+              );
+              if (confirm !== "Discard") {
+                return;
+              }
+
               await repository.restoreRetryImmutable(resourceGroup.id, paths);
             } catch (error) {
               vscode.window.showErrorMessage(
@@ -964,6 +978,14 @@ export async function activate(context: vscode.ExtensionContext) {
                 workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
               if (!repository) {
                 throw new Error("Repository not found");
+              }
+              const confirm = await vscode.window.showWarningMessage(
+                "Are you sure you want to discard changes in this change?",
+                { modal: true },
+                "Discard",
+              );
+              if (confirm !== "Discard") {
+                return;
               }
               await repository.restoreRetryImmutable(resourceGroup.id);
             } catch (error) {
