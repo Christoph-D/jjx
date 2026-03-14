@@ -27,6 +27,9 @@
         <div class="context-menu-item" data-action="rebaseAfter">Rebase after this change</div>
         <div class="context-menu-item" data-action="rebaseAfterWithDescendants">Rebase after this change (with descendants)</div>
         <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="rebaseBefore">Rebase before this change</div>
+        <div class="context-menu-item" data-action="rebaseBeforeWithDescendants">Rebase before this change (with descendants)</div>
+        <div class="context-menu-separator"></div>
         <div class="context-menu-item" data-action="squashInto">Squash into this change</div>
     </div>
     <div id="tooltip" class="tooltip"></div>
@@ -900,23 +903,28 @@
                     const isDivergent = sourceIsDivergent || targetIsDivergent;
                     
                     const rebaseItems = rebaseMenu.querySelectorAll('[data-action="rebaseOnto"], [data-action="rebaseOntoWithDescendants"], [data-action="rebaseAfter"], [data-action="rebaseAfterWithDescendants"]');
+                    const rebaseBeforeItems = rebaseMenu.querySelectorAll('[data-action="rebaseBefore"], [data-action="rebaseBeforeWithDescendants"]');
                     const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
                     const separators = rebaseMenu.querySelectorAll('.context-menu-separator');
-                    
+
                     if (isDivergent) {
                         rebaseItems.forEach(item => item.style.display = 'none');
+                        rebaseBeforeItems.forEach(item => item.style.display = 'none');
                         separators.forEach(sep => sep.style.display = 'none');
                         if (squashItem) {
                             squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
                         }
                     } else {
                         rebaseItems.forEach(item => item.style.display = 'block');
+                        rebaseBeforeItems.forEach(item => {
+                            item.style.display = targetId === rootChangeId ? 'none' : 'block';
+                        });
                         separators.forEach(sep => sep.style.display = 'block');
                         if (squashItem) {
                             squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
                         }
                     }
-                    
+
                     requestAnimationFrame(() => {
                         const menuRect = rebaseMenu.getBoundingClientRect();
                         const viewportWidth = window.innerWidth;
@@ -1006,6 +1014,13 @@
                     changeId: sourceId,
                     targetChangeId: targetId,
                     withDescendants: action === 'rebaseAfterWithDescendants'
+                });
+            } else if (action === 'rebaseBefore' || action === 'rebaseBeforeWithDescendants') {
+                vscode.postMessage({
+                    command: 'rebaseBefore',
+                    changeId: sourceId,
+                    targetChangeId: targetId,
+                    withDescendants: action === 'rebaseBeforeWithDescendants'
                 });
             } else if (action === 'squashInto') {
                 vscode.postMessage({

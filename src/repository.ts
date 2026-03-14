@@ -1649,12 +1649,12 @@ export class JJRepository {
   async rebase(
     source: string,
     destination: string,
-    mode: "onto" | "after",
+    mode: "onto" | "after" | "before",
     withDescendants = false,
     ignoreImmutable = false,
   ) {
     const sourceFlag = withDescendants ? "-s" : "-r";
-    const flag = mode === "onto" ? "-o" : "-A";
+    const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
     return await handleJJCommand(
       this.spawnJJ(
         [
@@ -1676,7 +1676,7 @@ export class JJRepository {
   async rebaseRetryImmutable(
     source: string,
     destination: string,
-    mode: "onto" | "after",
+    mode: "onto" | "after" | "before",
     withDescendants = false,
   ) {
     return this.retryWithImmutable(
