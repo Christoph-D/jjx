@@ -951,7 +951,7 @@ function getResourceStateCommand(
     return {
       title: "Open",
       command: "vscode.open",
-      arguments: [workingCopyUri],
+      arguments: [workingCopyUri, {}],
     };
   }
   return {
