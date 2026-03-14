@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef } from "./repository";
+import { StaleWorkingCopyError } from "./repository";
 import path from "path";
 import { assignLanes } from "./laneAssigner";
 import { logger } from "./logger";
@@ -321,6 +322,16 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
           }
           break;
+        case "updateStale":
+          try {
+            await this.repository.updateStale();
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to update stale working copy: ${error as string}`,
+            );
+          }
+          break;
       }
     });
 
@@ -365,6 +376,12 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         preserveScroll: true,
       });
     } catch (error) {
+      if (error instanceof StaleWorkingCopyError) {
+        this.panel.webview.postMessage({
+          command: "showStaleState",
+        });
+        return;
+      }
       logger.error(
         `Failed to refresh graph: ${error instanceof Error ? error.message : String(error)}`,
       );

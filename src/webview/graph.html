@@ -30,6 +30,17 @@
         <div class="context-menu-item" data-action="squashInto">Squash into this change</div>
     </div>
     <div id="tooltip" class="tooltip"></div>
+    <div id="stale-state" class="stale-state">
+        <div class="stale-state-icon">
+            <i class="codicon codicon-refresh"></i>
+        </div>
+        <div class="stale-state-message">Working copy is stale</div>
+        <div class="stale-state-description">The working copy state is outdated and needs to be refreshed.</div>
+        <button id="update-stale-button" class="update-stale-button">
+            <i class="codicon codicon-sync"></i>
+            Update Working Copy
+        </button>
+    </div>
     <div id="graph">
         <svg id="connections">
             <defs id="svg-defs"></defs>
@@ -86,7 +97,13 @@
                         command: 'selectChange',
                         selectedNodes: []
                     });
+                    document.getElementById('stale-state').style.display = 'none';
+                    document.getElementById('graph').style.display = 'block';
                     updateGraph(message.changes, message.laneInfo, message.changeEditAction, message.graphStyle, message.maxPrefixLength, message.preserveScroll);
+                    break;
+                case 'showStaleState':
+                    document.getElementById('graph').style.display = 'none';
+                    document.getElementById('stale-state').style.display = 'flex';
                     break;
             }
         });
@@ -992,6 +1009,10 @@
 
         window.addEventListener('load', () => {
             vscode.postMessage({ command: 'webviewReady' });
+        });
+
+        document.getElementById('update-stale-button').addEventListener('click', () => {
+            vscode.postMessage({ command: 'updateStale' });
         });
     </script>
 </body>

@@ -270,6 +270,13 @@ export class ImmutableError extends Error {
   }
 }
 
+export class StaleWorkingCopyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StaleWorkingCopyError";
+  }
+}
+
 /**
  * Detects common error messages from jj and converts them to custom error instances to make them easier to selectively
  * handle.
@@ -278,6 +285,9 @@ function convertJJErrors(e: unknown): never {
   if (e instanceof Error) {
     if (e.message.includes("is immutable")) {
       throw new ImmutableError(e.message);
+    }
+    if (e.message.includes("working copy is stale")) {
+      throw new StaleWorkingCopyError(e.message);
     }
   }
   throw e;
@@ -1739,6 +1749,15 @@ export class JJRepository {
       })();
     }
     return this.gitFetchPromise;
+  }
+
+  async updateStale(): Promise<void> {
+    await handleJJCommand(
+      this.spawnJJ(["workspace", "update-stale"], {
+        timeout: 30_000,
+        cwd: this.repositoryRoot,
+      }),
+    );
   }
 
   async annotate(filepath: string, rev: string): Promise<string[]> {
