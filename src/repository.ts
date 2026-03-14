@@ -11,7 +11,7 @@ import { JJFileSystemProvider } from "./fileSystemProvider";
 import * as os from "os";
 import * as crypto from "crypto";
 import which from "which";
-import { generateTemplate, LOG_ENTRY_FIELDS, SHOW_ENTRY_FIELDS } from "./templateBuilder";
+import { generateTemplate, LOG_ENTRY_FIELDS, SHOW_ENTRY_FIELDS, STATUS_ENTRY_FIELDS } from "./templateBuilder";
 
 async function getJJVersion(jjPath: string): Promise<string> {
   try {
@@ -1040,15 +1040,95 @@ export class JJRepository {
       return this.statusCache;
     }
 
+    const template = generateTemplate(STATUS_ENTRY_FIELDS);
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(["status", "--color=always"], {
+        this.spawnJJRead(["log", "-r", "@", "-T", template, "--no-graph"], {
           timeout: 5000,
           cwd: this.repositoryRoot,
         }),
       )
     ).toString();
-    const status = await parseJJStatus(this.repositoryRoot, output);
+
+    const entry = JSON.parse(output.trim()) as {
+      change_id: string;
+      commit_id: string;
+      description: string;
+      empty: boolean;
+      conflict: boolean;
+      local_bookmarks: string[];
+      parents: Array<{
+        change_id: string;
+        commit_id: string;
+        description: string;
+        empty: boolean;
+        conflict: boolean;
+        local_bookmarks: string[];
+      }>;
+      diff_files: Array<{
+        status_char: string;
+        source_path: string;
+        target_path: string;
+        is_conflict: boolean;
+      }>;
+    };
+
+    const fileStatuses: FileStatus[] = [];
+    const conflictedFiles = new Set<string>();
+
+    for (const diffFile of entry.diff_files) {
+      const statusChar = diffFile.status_char as FileStatusType;
+      const targetPath = path
+        .normalize(diffFile.target_path)
+        .replace(/\\/g, "/");
+      const sourcePath = path
+        .normalize(diffFile.source_path)
+        .replace(/\\/g, "/");
+
+      if (statusChar === "R" || statusChar === "C") {
+        fileStatuses.push({
+          type: statusChar,
+          file: path.basename(targetPath),
+          path: path.join(this.repositoryRoot, targetPath),
+          renamedFrom: sourcePath,
+        });
+      } else {
+        fileStatuses.push({
+          type: statusChar,
+          file: path.basename(targetPath),
+          path: path.join(this.repositoryRoot, targetPath),
+        });
+      }
+
+      if (diffFile.is_conflict) {
+        conflictedFiles.add(path.join(this.repositoryRoot, targetPath));
+      }
+    }
+
+    const workingCopy: Change = {
+      changeId: entry.change_id,
+      commitId: entry.commit_id,
+      description: entry.description,
+      isEmpty: entry.empty,
+      isConflict: entry.conflict,
+      bookmarks: entry.local_bookmarks,
+    };
+
+    const parentChanges: Change[] = entry.parents.map((p) => ({
+      changeId: p.change_id,
+      commitId: p.commit_id,
+      description: p.description,
+      isEmpty: p.empty,
+      isConflict: p.conflict,
+      bookmarks: p.local_bookmarks,
+    }));
+
+    const status: RepositoryStatus = {
+      workingCopy,
+      parentChanges,
+      fileStatuses,
+      conflictedFiles,
+    };
 
     this.statusCache = status;
     return status;
@@ -2148,222 +2228,6 @@ export type Operation = {
   user: string;
   snapshot: boolean;
 };
-
-async function parseJJStatus(
-  repositoryRoot: string,
-  output: string,
-): Promise<RepositoryStatus> {
-  const lines = output.split("\n");
-  const fileStatuses: FileStatus[] = [];
-  const conflictedFiles = new Set<string>();
-  let workingCopy: Change = {
-    changeId: "",
-    commitId: "",
-    description: "",
-    isEmpty: false,
-    isConflict: false,
-  };
-  const parentCommits: Change[] = [];
-
-  const changeRegex = /^(A|M|D|R|C) (.+)$/;
-  const commitRegex =
-    /^(Working copy|Parent commit)\s*(\(@-?\))?\s*:\s+(\S+)\s+(\S+)(?:\s+(.+?)\s+\|)?(?:\s+(.*))?$/;
-
-  let isParsingConflicts = false;
-
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    const ansiStrippedTrimmedLine = await stripAnsiCodes(trimmedLine);
-
-    if (
-      ansiStrippedTrimmedLine === "" ||
-      ansiStrippedTrimmedLine.startsWith("Working copy changes:") ||
-      ansiStrippedTrimmedLine.startsWith("The working copy is clean")
-    ) {
-      continue;
-    }
-
-    if (
-      ansiStrippedTrimmedLine.includes(
-        "There are unresolved conflicts at these paths:",
-      )
-    ) {
-      isParsingConflicts = true;
-      continue;
-    }
-
-    if (isParsingConflicts) {
-      const regions = await extractColoredRegions(trimmedLine);
-      let filePath = "";
-      let firstColoredRegionIndex = -1;
-      for (let i = 0; i < regions.length; i++) {
-        if (regions[i].colored) {
-          firstColoredRegionIndex = i;
-          break;
-        }
-        filePath += regions[i].text;
-      }
-      filePath = filePath.trim();
-
-      if (ansiStrippedTrimmedLine.includes("To resolve the conflicts")) {
-        isParsingConflicts = false;
-        continue;
-      }
-
-      // If filePath is non-empty and we found a colored region after it, it's a conflict line
-      if (filePath && firstColoredRegionIndex !== -1) {
-        const normalizedFile = path.normalize(filePath).replace(/\\/g, "/");
-        conflictedFiles.add(path.join(repositoryRoot, normalizedFile));
-      } else {
-        isParsingConflicts = false;
-      }
-    }
-
-    const changeMatch = changeRegex.exec(ansiStrippedTrimmedLine);
-    if (changeMatch) {
-      const [_, type, file] = changeMatch;
-
-      if (type === "R" || type === "C") {
-        const parsedPaths = parseRenamePaths(file);
-        if (parsedPaths) {
-          fileStatuses.push({
-            type: type,
-            file: parsedPaths.toPath,
-            path: path.join(repositoryRoot, parsedPaths.toPath),
-            renamedFrom: parsedPaths.fromPath,
-          });
-        } else {
-          throw new Error(
-            `Unexpected ${type === "R" ? "rename" : "copy"} line: ${line}`,
-          );
-        }
-      } else {
-        const normalizedFile = path.normalize(file).replace(/\\/g, "/");
-        fileStatuses.push({
-          type: type as "A" | "M" | "D",
-          file: normalizedFile,
-          path: path.join(repositoryRoot, normalizedFile),
-        });
-      }
-      continue;
-    }
-
-    const commitMatch = commitRegex.exec(line);
-    if (commitMatch) {
-      isParsingConflicts = false;
-      const [
-        _firstMatch,
-        type,
-        _at,
-        changeId,
-        commitId,
-        bookmarks,
-        descriptionSection,
-      ] = commitMatch as unknown as [string, ...(string | undefined)[]];
-
-      if (!type || !changeId || !commitId || !descriptionSection) {
-        throw new Error(`Unexpected commit line: ${line}`);
-      }
-
-      const descriptionRegions = await extractColoredRegions(
-        descriptionSection.trim(),
-      );
-      const cleanedDescription = descriptionRegions
-        .filter((region) => !region.colored)
-        .map((region) => region.text)
-        .join("")
-        .trim();
-      const jjDescriptors = descriptionRegions
-        .filter((region) => region.colored)
-        .map((region) => region.text)
-        .join("");
-      const isEmpty = jjDescriptors.includes("(empty)");
-      const isConflict = jjDescriptors.includes("(conflict)");
-
-      const commitDetails: Change = {
-        changeId: await stripAnsiCodes(changeId),
-        commitId: await stripAnsiCodes(commitId),
-        bookmarks: bookmarks
-          ? (await stripAnsiCodes(bookmarks)).split(/\s+/)
-          : undefined,
-        description: cleanedDescription,
-        isEmpty,
-        isConflict,
-      };
-
-      if ((await stripAnsiCodes(type)) === "Working copy") {
-        workingCopy = commitDetails;
-      } else if ((await stripAnsiCodes(type)) === "Parent commit") {
-        parentCommits.push(commitDetails);
-      }
-      continue;
-    }
-  }
-
-  return {
-    fileStatuses: fileStatuses,
-    workingCopy,
-    parentChanges: parentCommits,
-    conflictedFiles: conflictedFiles,
-  };
-}
-
-async function extractColoredRegions(input: string) {
-  const { default: ansiRegex } = await import("ansi-regex");
-  const regex = ansiRegex();
-  let isColored = false;
-  const result: { text: string; colored: boolean }[] = [];
-
-  let lastIndex = 0;
-
-  for (const match of input.matchAll(regex)) {
-    const matchStart = match.index;
-    const matchEnd = match.index + match[0].length;
-
-    if (matchStart > lastIndex) {
-      result.push({
-        text: input.slice(lastIndex, matchStart),
-        colored: isColored,
-      });
-    }
-
-    const code = match[0];
-    // Update color state
-    if (code === "\x1b[0m" || code === "\x1b[39m") {
-      isColored = false;
-    } else if (
-      // standard foreground colors (30–37)
-      /\x1b\[3[0-7]m/.test(code) || // eslint-disable-line no-control-regex
-      // bright foreground (90–97)
-      /\x1b\[9[0-7]m/.test(code) || // eslint-disable-line no-control-regex
-      // 256-color foreground
-      /\x1b\[38;5;\d+m/.test(code) || // eslint-disable-line no-control-regex
-      // 256-color background
-      /\x1b\[48;5;\d+m/.test(code) || // eslint-disable-line no-control-regex
-      // truecolor fg
-      /\x1b\[38;2;\d+;\d+;\d+m/.test(code) || // eslint-disable-line no-control-regex
-      // truecolor bg
-      /\x1b\[48;2;\d+;\d+;\d+m/.test(code) // eslint-disable-line no-control-regex
-    ) {
-      isColored = true;
-    }
-
-    lastIndex = matchEnd;
-  }
-
-  // Remaining text after the last match
-  if (lastIndex < input.length) {
-    result.push({ text: input.slice(lastIndex), colored: isColored });
-  }
-
-  return result;
-}
-
-async function stripAnsiCodes(input: string) {
-  const { default: ansiRegex } = await import("ansi-regex");
-  const regex = ansiRegex();
-  return input.replace(regex, "");
-}
 
 const renameRegex = /^(.*)\{\s*(.*?)\s*=>\s*(.*?)\s*\}(.*)$/;
 

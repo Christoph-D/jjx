@@ -139,6 +139,49 @@ export const SHOW_ENTRY_FIELDS: TemplateFields = {
   },
 };
 
+export const STATUS_ENTRY_FIELDS: TemplateFields = {
+  change_id: { type: "string", expr: "change_id" },
+  commit_id: { type: "string", expr: "commit_id" },
+  description: { type: "string", expr: "description" },
+  empty: { type: "boolean", expr: "self.empty()" },
+  conflict: { type: "boolean", expr: "self.conflict()" },
+  local_bookmarks: {
+    type: "string_array",
+    expr: "self.local_bookmarks()",
+    loopVar: "b",
+    value: "b.name()",
+  },
+  parents: {
+    type: "array",
+    expr: "parents",
+    loopVar: "p",
+    contents: {
+      change_id: { type: "string", expr: "p.change_id()" },
+      commit_id: { type: "string", expr: "p.commit_id()" },
+      description: { type: "string", expr: "p.description()" },
+      empty: { type: "boolean", expr: "p.empty()" },
+      conflict: { type: "boolean", expr: "p.conflict()" },
+      local_bookmarks: {
+        type: "string_array",
+        expr: "p.local_bookmarks()",
+        loopVar: "b",
+        value: "b.name()",
+      },
+    },
+  },
+  diff_files: {
+    type: "array",
+    expr: "self.diff().files()",
+    loopVar: "entry",
+    contents: {
+      status_char: { type: "string", expr: "entry.status_char()" },
+      source_path: { type: "string", expr: "entry.source().path().display()" },
+      target_path: { type: "string", expr: "entry.target().path().display()" },
+      is_conflict: { type: "boolean", expr: "entry.target().conflict()" },
+    },
+  },
+};
+
 export const LOG_ENTRY_FIELDS: TemplateFields = {
   author: {
     type: "dict",
