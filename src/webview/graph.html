@@ -255,10 +255,14 @@
 
                     if (segFromLane === segToLane) {
                         d.push(`M ${fromX} ${segFromY} V ${segToY}`);
+                    } else if (Math.abs(segFromLane - segToLane) === 1) {
+                        const c = 18;
+                        d.push(`M ${fromX} ${segFromY}`);
+                        d.push(`C ${fromX} ${segFromY + c} ${toX} ${segToY - c} ${toX} ${segToY}`);
                     } else {
                         const prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
                         const horizontalY = (segToY + prevToY) / 2;
-                        const r = Math.abs(segFromLane - segToLane) <= 1 ? ARC_RADIUS_SMALL : ARC_RADIUS;
+                        const r = ARC_RADIUS;
                         const goingRight = toX > fromX;
 
                         d.push(`M ${fromX} ${segFromY}`);
