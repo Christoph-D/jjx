@@ -730,7 +730,7 @@ class RepositorySourceControlManager {
   }
 
   static getLabel(prefix: string, change: Change) {
-    return `${prefix} [${change.changeId}]${
+    return `${prefix} [${change.changeId.substring(0, 8)}]${
       change.description ? ` • ${change.description}` : ""
     }${change.isEmpty ? " (empty)" : ""}${
       change.isConflict ? " (conflict)" : ""
