@@ -1703,7 +1703,7 @@ export class JJRepository {
     }).catch(convertJJErrors);
   }
 
-  async log(rev: string = "::", limit: number = 50): Promise<LogEntry[]> {
+  async log(rev: string = "::", limit: number = 100): Promise<LogEntry[]> {
     const template = generateTemplate(LOG_ENTRY_FIELDS);
 
     const output = (
