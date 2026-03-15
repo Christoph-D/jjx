@@ -388,7 +388,7 @@ export class StringText extends AbstractText {
 
 	constructor(public readonly value: string) {
 		super();
-		this._t = new PositionOffsetTransformer(this.value); // this line was changed from vscode source due to useDefineWithClassFields being true in jjk's tsconfig - see https://github.com/microsoft/TypeScript/issues/50971
+		this._t = new PositionOffsetTransformer(this.value); // this line was changed from vscode source due to useDefineWithClassFields being true in jjx's tsconfig - see https://github.com/microsoft/TypeScript/issues/50971
 	}
 
 	getValueOfRange(range: Range): string {

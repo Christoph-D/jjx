@@ -1,10 +1,10 @@
 {
-  "name": "jjk",
-  "displayName": "Jujutsu Kaizen",
-  "publisher": "jjk",
+  "name": "jjx",
+  "displayName": "Jujutsu X",
+  "publisher": "jjx",
   "description": "Jujutsu (jj) version control system for VS Code",
   "icon": "images/logo.png",
-  "version": "0.9.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.96.0"
   },
@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/keanemind/jjk.git"
+    "url": "https://github.com/Christoph-D/jjx.git"
   },
   "activationEvents": [
     "workspaceContains:.jj/"
@@ -457,7 +457,7 @@
       ]
     },
     "configuration": {
-      "title": "Jujutsu Kaizen",
+      "title": "Jujutsu X",
       "properties": {
         "jjk.enableAnnotations": {
           "type": "boolean",
@@ -498,7 +498,10 @@
         "jjk.changeEditAction": {
           "type": "string",
           "default": "edit",
-          "enum": ["edit", "new"],
+          "enum": [
+            "edit",
+            "new"
+          ],
           "enumDescriptions": [
             "Edits the change (jj edit)",
             "Creates an empty change on top and switches to it (jj new)"
@@ -509,7 +512,10 @@
         "jjk.graphStyle": {
           "type": "string",
           "default": "full",
-          "enum": ["full", "compact"],
+          "enum": [
+            "full",
+            "compact"
+          ],
           "enumDescriptions": [
             "Show full commit details: description, change ID, commit ID, author, and timestamp",
             "Show compact single line: change ID - first line of description - author email"
@@ -520,7 +526,10 @@
         "jjk.openDiffAction": {
           "type": "string",
           "default": "diff",
-          "enum": ["diff", "file"],
+          "enum": [
+            "diff",
+            "file"
+          ],
           "enumDescriptions": [
             "Open files as diff (comparing to parent)",
             "Open files directly in working copy"
@@ -691,13 +700,13 @@
     "@types/vscode": "^1.96.0",
     "@types/which": "^3.0.4",
     "@vscode/test-cli": "^0.0.10",
-    "tsx": "^4.19.0",
     "@vscode/test-electron": "^2.4.1",
     "esbuild": "^0.24.0",
     "eslint": "^9.16.0",
     "globals": "^15.14.0",
     "npm-run-all": "^4.1.5",
-    "prettier": "3.4.2",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.20.0"
   },

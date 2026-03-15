@@ -1,4 +1,4 @@
-# Jujutsu Kaizen (jjk)
+# Jujutsu X (jjx)
 
 A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version control system.
 

@@ -22,7 +22,7 @@ function isExecException(e: unknown): e is ExecException {
 }
 
 suite("fakeeditor", () => {
-  initExtensionDir(vscode.extensions.getExtension("jjk.jjk")!.extensionUri);
+  initExtensionDir(vscode.extensions.getExtension("jjx.jjx")!.extensionUri);
 
   test("fails when JJ_FAKEEDITOR_SIGNAL_DIR is missing", async () => {
     await assert.rejects(

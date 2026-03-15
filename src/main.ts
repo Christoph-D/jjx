@@ -28,7 +28,7 @@ import { getActiveTextEditorDiff, pathEquals } from "./utils";
 import { openMergeEditor } from "./conflictResolver";
 
 export async function activate(context: vscode.ExtensionContext) {
-  const outputChannel = vscode.window.createOutputChannel("Jujutsu Kaizen", {
+  const outputChannel = vscode.window.createOutputChannel("Jujutsu X", {
     log: true,
   });
   const loggerTransport = new LogOutputChannelTransport({
@@ -1598,7 +1598,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       if (reposWithWarnings.size > 0) {
         const count = reposWithWarnings.size;
-        statusBarItem.text = `$(warning) JJK Issues (${count})`;
+        statusBarItem.text = `$(warning) jjx issues (${count})`;
         statusBarItem.tooltip = "Click to view colocated repository warnings";
         statusBarItem.command = "jj.showColocatedWarnings";
         statusBarItem.show();
