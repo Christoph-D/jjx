@@ -959,7 +959,16 @@ export class JJRepository {
     args: string[],
     options: Parameters<typeof spawn>[2] & { cwd: string },
   ) {
-    return spawnJJ(this.jjPath, [...args, ...this.jjConfigArgs], options);
+    const separatorIndex = args.indexOf("--");
+    const finalArgs =
+      separatorIndex === -1
+        ? [...args, ...this.jjConfigArgs]
+        : [
+            ...args.slice(0, separatorIndex),
+            ...this.jjConfigArgs,
+            ...args.slice(separatorIndex),
+          ];
+    return spawnJJ(this.jjPath, finalArgs, options);
   }
 
   spawnJJRead(
