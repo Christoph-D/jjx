@@ -812,14 +812,24 @@ export async function activate(context: vscode.ExtensionContext) {
       vscode.commands.registerCommand(
         "jj.describe",
         async (resourceGroup: vscode.SourceControlResourceGroup) => {
-          const repository =
-            workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
+          const scm =
+            workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(
+              resourceGroup,
+            );
+          const repository = scm?.repository;
           if (!repository) {
             throw new Error("Repository not found");
           }
 
           try {
-            await repository.describeRetryImmutable(resourceGroup.id);
+            const selectedCommitChangeId =
+              workspaceSCM.getSelectedCommitChangeId(resourceGroup);
+            await repository.describeRetryImmutable(
+              selectedCommitChangeId ?? resourceGroup.id,
+            );
+            if (selectedCommitChangeId && scm) {
+              await scm.setSelectedCommit(selectedCommitChangeId);
+            }
           } catch (error) {
             vscode.window.showErrorMessage(
               `Failed to update description${error instanceof Error ? `: ${error.message}` : ""}`,
