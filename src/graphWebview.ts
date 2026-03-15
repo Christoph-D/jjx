@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef, ParentRef } from "./repository";
-import { BookmarkBackwardsError, StaleWorkingCopyError } from "./repository";
+import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { assignLanes } from "./laneAssigner";
 import { logger } from "./logger";

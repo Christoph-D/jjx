@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { parseRenamePaths } from "../repository"; // Adjust path as needed
+import { parseRenamePaths } from "../fakeeditor";
 
 suite("parseRenamePaths", () => {
   test("should handle rename with no prefix or suffix", () => {

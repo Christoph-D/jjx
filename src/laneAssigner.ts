@@ -1,4 +1,4 @@
-import type { LogEntry, ParentRef } from "./repository";
+import type { LogEntry, ParentRef } from "./types";
 
 const colorRegistryLength = 5;
 

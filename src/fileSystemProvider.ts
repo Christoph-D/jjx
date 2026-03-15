@@ -14,7 +14,7 @@ import {
 } from "vscode";
 import path from "path";
 import { getParams } from "./uri";
-import type { WorkspaceSourceControlManager } from "./repository";
+import type { WorkspaceSourceControlManager } from "./sourceControl";
 import {
   createThrottledAsyncFn,
   eventToPromise,
