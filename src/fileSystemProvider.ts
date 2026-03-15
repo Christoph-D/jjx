@@ -12,6 +12,7 @@ import {
   FileChangeType,
   workspace,
 } from "vscode";
+import path from "path";
 import { getParams } from "./uri";
 import type { WorkspaceSourceControlManager } from "./repository";
 import {
@@ -124,6 +125,10 @@ export class JJFileSystemProvider implements FileSystemProvider {
   async readFile(uri: Uri): Promise<Uint8Array> {
     const params = getParams(uri);
 
+    if ("deleted" in params) {
+      return new Uint8Array(0);
+    }
+
     const repository = this.repositories.getRepositoryFromUri(uri);
     if (!repository) {
       throw FileSystemError.FileNotFound();
@@ -134,7 +139,18 @@ export class JJFileSystemProvider implements FileSystemProvider {
 
     this.cache.set(uri.toString(), cacheValue);
 
-    if ("diffOriginalRev" in params) {
+    if ("fileId" in params) {
+      const relativePath = path.relative(repository.repositoryRoot, uri.fsPath);
+      try {
+        const data = await repository.readFileByFileId(relativePath, params.fileId);
+        return data;
+      } catch (e) {
+        if (e instanceof Error && e.message.includes("No such path")) {
+          throw FileSystemError.FileNotFound();
+        }
+        throw e;
+      }
+    } else if ("diffOriginalRev" in params) {
       const originalContent = await repository.getDiffOriginal(
         params.diffOriginalRev,
         uri.fsPath,
@@ -154,7 +170,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
         }
       }
       return originalContent;
-    } else {
+    } else if ("rev" in params) {
       try {
         const data = await repository.readFile(params.rev, uri.fsPath);
         return data;
@@ -165,6 +181,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
         throw e;
       }
     }
+    throw new Error("Unknown URI params");
   }
 
   writeFile(): void {

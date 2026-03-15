@@ -130,6 +130,9 @@ export class JJDecorationProvider implements FileDecorationProvider {
         // single rev, because we never show the left side of a diff by itself; it'll always be part of a diff view.
         return undefined;
       }
+      if ("fileId" in params || "deleted" in params) {
+        return undefined;
+      }
       rev = params.rev;
     }
     const key = getKey(uri.fsPath, rev);

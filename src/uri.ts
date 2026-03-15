@@ -5,7 +5,9 @@ const RevUriParams = type({ rev: "string" });
 const DiffOriginalRevUriParams = type({
   diffOriginalRev: "string",
 });
-const JJUriParams = type(RevUriParams, "|", DiffOriginalRevUriParams);
+const FileIdUriParams = type({ fileId: "string" });
+const DeletedUriParams = type({ deleted: "boolean" });
+const JJUriParams = RevUriParams.or(DiffOriginalRevUriParams).or(FileIdUriParams).or(DeletedUriParams);
 
 export type JJUriParams = typeof JJUriParams.infer;
 

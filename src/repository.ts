@@ -506,6 +506,9 @@ export function provideOriginalResource(uri: vscode.Uri) {
       // It doesn't make sense to show a quick diff for the left side of a diff. Diffception?
       return undefined;
     }
+    if ("fileId" in params || "deleted" in params) {
+      return undefined;
+    }
     rev = params.rev;
   }
   const filePath = uri.fsPath;
@@ -712,6 +715,7 @@ class RepositorySourceControlManager {
     this.workingCopyResourceGroup.resourceStates = this.status.fileStatuses.map(
       (fileStatus) => {
         const workingCopyUri = vscode.Uri.file(fileStatus.path);
+        const isConflicted = this.status?.conflictedFiles?.has(fileStatus.path) ?? false;
         return {
           resourceUri: workingCopyUri,
           decorations: {
@@ -727,6 +731,7 @@ class RepositorySourceControlManager {
             "(Working Copy)",
             openDiffAction,
             workingCopyUri,
+            isConflicted,
           ),
         };
       },
@@ -793,6 +798,7 @@ class RepositorySourceControlManager {
                 `(${parentChange.changeId})`,
                 openDiffAction,
                 workingCopyUri,
+                false,
               ),
             };
           },
@@ -830,6 +836,7 @@ class RepositorySourceControlManager {
               `(${changeId})`,
               openDiffAction,
               workingCopyUri,
+              false,
             ),
           };
         });
@@ -886,7 +893,15 @@ function getResourceStateCommand(
   diffTitleSuffix: string,
   openDiffAction: "diff" | "file",
   workingCopyUri: vscode.Uri,
+  isConflicted: boolean,
 ): vscode.Command {
+  if (isConflicted) {
+    return {
+      title: "Resolve Conflict",
+      command: "jj.openMergeEditor",
+      arguments: [workingCopyUri],
+    };
+  }
   if (fileStatus.type === "A") {
     return {
       title: "Open",
@@ -1290,6 +1305,45 @@ export class JJRepository {
         },
       ),
     );
+  }
+
+  readFileByFileId(filepath: string, fileId: string) {
+    return handleJJCommand(
+      this.spawnJJRead(
+        ["debug", "object", "file", "--", filepath, fileId],
+        {
+          timeout: 5000,
+          cwd: this.repositoryRoot,
+        },
+      ),
+    );
+  }
+
+  showTemplate(rev: string, template: string): Promise<string> {
+    return handleJJCommand(
+      this.spawnJJRead(["show", "-r", rev, "-T", template, "--no-patch"], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
+    ).then((buf) => buf.toString());
+  }
+
+  debugObject(objectType: string, objectId: string): Promise<string> {
+    return handleJJCommand(
+      this.spawnJJRead(["debug", "object", objectType, objectId], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
+    ).then((buf) => buf.toString());
+  }
+
+  debugTree(treeId: string, filepath: string): Promise<string> {
+    return handleJJCommand(
+      this.spawnJJRead(["debug", "tree", "--id", treeId, "--", filepath], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
+    ).then((buf) => buf.toString());
   }
 
   async describeRetryImmutable(rev: string, message?: string) {

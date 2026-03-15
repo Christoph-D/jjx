@@ -25,6 +25,7 @@ import {
 } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
 import { match } from "arktype";
 import { getActiveTextEditorDiff, pathEquals } from "./utils";
+import { openMergeEditor } from "./conflictResolver";
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Jujutsu Kaizen", {
@@ -323,7 +324,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const params = getParams(uri);
         if ("diffOriginalRev" in params) {
           rev = `${params.diffOriginalRev}-`; // note that this may refer to multiple revs, which we handle below
-        } else {
+        } else if ("rev" in params) {
           rev = params.rev;
         }
       }
@@ -465,7 +466,7 @@ export async function activate(context: vscode.ExtensionContext) {
               const params = getParams(uri);
               if ("diffOriginalRev" in params) {
                 rev = params.diffOriginalRev;
-              } else {
+              } else if ("rev" in params) {
                 rev = params.rev;
               }
             }
@@ -1349,7 +1350,7 @@ export async function activate(context: vscode.ExtensionContext) {
               const params = getParams(uri);
               if ("diffOriginalRev" in params) {
                 currentRev = params.diffOriginalRev;
-              } else {
+              } else if ("rev" in params) {
                 currentRev = params.rev;
               }
             }
@@ -1430,7 +1431,7 @@ export async function activate(context: vscode.ExtensionContext) {
               const params = getParams(uri);
               if ("diffOriginalRev" in params) {
                 currentRev = params.diffOriginalRev;
-              } else {
+              } else if ("rev" in params) {
                 currentRev = params.rev;
               }
             }
@@ -1771,6 +1772,25 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           vscode.window.showErrorMessage(
             `Failed to open file${error instanceof Error ? `: ${error.message}` : ""}`,
+          );
+        }
+      },
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "jj.openMergeEditor",
+      async (uri: vscode.Uri) => {
+        try {
+          const repo = workspaceSCM.getRepositoryFromUri(uri);
+          if (!repo) {
+            throw new Error("Repository not found");
+          }
+          await openMergeEditor(repo, uri.fsPath);
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to open merge editor${error instanceof Error ? `: ${error.message}` : ""}`,
           );
         }
       },
