@@ -15,6 +15,7 @@
     "type": "git",
     "url": "https://github.com/Christoph-D/jjx.git"
   },
+  "extensionKind": ["workspace"],
   "activationEvents": [
     "workspaceContains:.jj/"
   ],
