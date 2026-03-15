@@ -1417,7 +1417,7 @@ export class JJRepository {
     try {
       return await handleJJCommand(
         this.spawnJJ(["commit", ...(message ? ["-m", message] : [])], {
-          timeout: 5000,
+          ...(message ? { timeout: 5000 } : {}),
           cwd: this.repositoryRoot,
         }),
       );
