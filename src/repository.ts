@@ -13,27 +13,6 @@ import * as crypto from "crypto";
 import which from "which";
 import { generateTemplate, LOG_ENTRY_FIELDS, SHOW_ENTRY_FIELDS, STATUS_ENTRY_FIELDS } from "./templateBuilder";
 
-async function getJJVersion(jjPath: string): Promise<string> {
-  try {
-    const version = (
-      await handleCommand(
-        spawn(jjPath, ["version"], {
-          timeout: 5000,
-        }),
-      )
-    )
-      .toString()
-      .trim();
-
-    if (version.startsWith("jj")) {
-      return version;
-    }
-  } catch {
-    // Assume the version
-  }
-  return "jj 0.28.0";
-}
-
 export let extensionDir = "";
 export let fakeEditorPath = "";
 export function initExtensionDir(extensionUri: vscode.Uri) {
@@ -97,27 +76,9 @@ export function initExtensionDir(extensionUri: vscode.Uri) {
   }
 }
 
-async function getConfigArgs(
-  extensionDir: string,
-  jjVersion: string,
-): Promise<string[]> {
+function getConfigArgs(extensionDir: string): string[] {
   const configPath = path.join(extensionDir, "config.toml");
-
-  // Determine the config option and value based on jj version
-  const configOption =
-    jjVersion >= "jj 0.25.0" ? "--config-file" : "--config-toml";
-
-  if (configOption === "--config-toml") {
-    try {
-      const configValue = await fs.readFile(configPath, "utf8");
-      return [configOption, configValue];
-    } catch (e) {
-      logger.error(`Failed to read config file at ${configPath}: ${String(e)}`);
-      throw e;
-    }
-  } else {
-    return [configOption, configPath];
-  }
+  return ["--config-file", configPath];
 }
 
 /**
@@ -299,7 +260,6 @@ export class WorkspaceSourceControlManager {
         string,
         {
           jjPath: Awaited<ReturnType<typeof getJJPath>>;
-          jjVersion: string;
           jjConfigArgs: string[];
           repoRoot: string;
         }
@@ -338,7 +298,6 @@ export class WorkspaceSourceControlManager {
       string,
       {
         jjPath: Awaited<ReturnType<typeof getJJPath>>;
-        jjVersion: string;
         jjConfigArgs: string[];
         repoRoot: string;
       }
@@ -346,8 +305,7 @@ export class WorkspaceSourceControlManager {
     for (const workspaceFolder of vscode.workspace.workspaceFolders || []) {
       try {
         const jjPath = await getJJPath(workspaceFolder.uri.fsPath);
-        const jjVersion = await getJJVersion(jjPath.filepath);
-        const jjConfigArgs = await getConfigArgs(extensionDir, jjVersion);
+        const jjConfigArgs = getConfigArgs(extensionDir);
 
         const repoRoot = (
           await handleCommand(
@@ -371,7 +329,6 @@ export class WorkspaceSourceControlManager {
         if (!newRepoInfos.has(repoUri)) {
           newRepoInfos.set(repoUri, {
             jjPath,
-            jjVersion,
             jjConfigArgs,
             repoRoot,
           });
@@ -395,7 +352,6 @@ export class WorkspaceSourceControlManager {
         isAnyRepoChanged = true;
         logger.info(`Detected new jj repo in workspace: ${key}`);
       } else if (
-        oldValue.jjVersion !== value.jjVersion ||
         oldValue.jjPath.filepath !== value.jjPath.filepath ||
         oldValue.jjConfigArgs.join(" ") !== value.jjConfigArgs.join(" ") ||
         oldValue.repoRoot !== value.repoRoot
@@ -421,17 +377,16 @@ export class WorkspaceSourceControlManager {
       const repoSCMs: RepositorySourceControlManager[] = [];
       for (const [
         workspaceFolder,
-        { repoRoot, jjPath, jjVersion, jjConfigArgs },
+        { repoRoot, jjPath, jjConfigArgs },
       ] of newRepoInfos.entries()) {
         logger.info(
-          `Initializing jjk in workspace ${workspaceFolder}. Using ${jjVersion} at ${jjPath.filepath} (${jjPath.source}).`,
+          `Initializing jjk in workspace ${workspaceFolder}. Using jj at ${jjPath.filepath} (${jjPath.source}).`,
         );
         const repoSCM = new RepositorySourceControlManager(
           repoRoot,
           this.decorationProvider,
           this.fileSystemProvider,
           jjPath.filepath,
-          jjVersion,
           jjConfigArgs,
         );
         repoSCM.onDidUpdate(
@@ -589,13 +544,11 @@ class RepositorySourceControlManager {
     private decorationProvider: JJDecorationProvider,
     private fileSystemProvider: JJFileSystemProvider,
     jjPath: string,
-    jjVersion: string,
     jjConfigArgs: string[],
   ) {
     this.repository = new JJRepository(
       repositoryRoot,
       jjPath,
-      jjVersion,
       jjConfigArgs,
     );
 
@@ -977,7 +930,6 @@ export class JJRepository {
   constructor(
     public repositoryRoot: string,
     private jjPath: string,
-    private jjVersion: string,
     private jjConfigArgs: string[],
   ) {}
 
