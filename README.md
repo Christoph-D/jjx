@@ -53,4 +53,6 @@ If you encounter any problems, please [report them on GitHub](https://github.com
 
 ## 📝 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [AGPL-3.0 License](LICENSE). Code from the
+original project [Jujutsu Kaizen](https://github.com/keanemind/jjk) is licensed
+under the MIT License. See [LICENSE.md](LICENSE.md) for details.
