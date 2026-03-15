@@ -874,9 +874,9 @@ class RepositorySourceControlManager {
   async setSelectedCommit(changeId: string | undefined) {
     if (
       !changeId ||
-      changeId === "@" ||
       (this.status &&
-        this.status.parentChanges.some((p) => p.changeId === changeId))
+        (this.status.workingCopy.changeId === changeId ||
+          this.status.parentChanges.some((p) => p.changeId === changeId)))
     ) {
       this.selectedCommitShowResult = undefined;
     } else {
