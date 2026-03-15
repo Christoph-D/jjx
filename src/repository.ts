@@ -1777,6 +1777,24 @@ export class JJRepository {
     );
   }
 
+  async deleteBookmark(bookmark: string) {
+    return await handleJJCommand(
+      this.spawnJJ(
+        ["bookmark", "delete", bookmark],
+        { timeout: 5000, cwd: this.repositoryRoot },
+      ),
+    );
+  }
+
+  async deleteTag(tag: string) {
+    return await handleJJCommand(
+      this.spawnJJ(
+        ["tag", "remove", tag],
+        { timeout: 5000, cwd: this.repositoryRoot },
+      ),
+    );
+  }
+
   async abandonRetryImmutable(rev: string) {
     return this.retryWithImmutable(
       rev,

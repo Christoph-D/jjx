@@ -18,6 +18,14 @@
             Move bookmark here
             <div class="context-submenu" id="bookmark-submenu"></div>
         </div>
+        <div class="context-menu-item has-submenu" data-action="deleteBookmark">
+            Delete bookmark
+            <div class="context-submenu" id="delete-bookmark-submenu"></div>
+        </div>
+        <div class="context-menu-item has-submenu" data-action="deleteTag">
+            Delete tag
+            <div class="context-submenu" id="delete-tag-submenu"></div>
+        </div>
 
     </div>
     <div id="rebase-menu" class="context-menu">
@@ -767,6 +775,42 @@
                             bookmarkSubmenu.appendChild(item);
                         });
                     }
+
+                    const deleteBookmarkSubmenu = document.getElementById('delete-bookmark-submenu');
+                    const deleteBookmarkItem = contextMenu.querySelector('[data-action="deleteBookmark"]');
+                    const localBookmarks = change.localBookmarks || [];
+                    deleteBookmarkSubmenu.innerHTML = '';
+
+                    if (localBookmarks.length === 0) {
+                        deleteBookmarkItem.classList.add('disabled');
+                    } else {
+                        deleteBookmarkItem.classList.remove('disabled');
+                        localBookmarks.forEach(b => {
+                            const item = document.createElement('div');
+                            item.className = 'context-submenu-item';
+                            item.textContent = b.name;
+                            item.dataset.deleteBookmark = b.name;
+                            deleteBookmarkSubmenu.appendChild(item);
+                        });
+                    }
+
+                    const deleteTagSubmenu = document.getElementById('delete-tag-submenu');
+                    const deleteTagItem = contextMenu.querySelector('[data-action="deleteTag"]');
+                    const localTags = change.localTags || [];
+                    deleteTagSubmenu.innerHTML = '';
+
+                    if (localTags.length === 0) {
+                        deleteTagItem.classList.add('disabled');
+                    } else {
+                        deleteTagItem.classList.remove('disabled');
+                        localTags.forEach(t => {
+                            const item = document.createElement('div');
+                            item.className = 'context-submenu-item';
+                            item.textContent = t.name;
+                            item.dataset.deleteTag = t.name;
+                            deleteTagSubmenu.appendChild(item);
+                        });
+                    }
                 });
             });
 
@@ -810,6 +854,20 @@
                         command: 'moveBookmark',
                         bookmark: bookmark,
                         targetChangeId: changeId
+                    });
+                }
+                const deleteBookmark = submenuItem.dataset.deleteBookmark;
+                if (deleteBookmark) {
+                    vscode.postMessage({
+                        command: 'deleteBookmark',
+                        bookmark: deleteBookmark
+                    });
+                }
+                const deleteTag = submenuItem.dataset.deleteTag;
+                if (deleteTag) {
+                    vscode.postMessage({
+                        command: 'deleteTag',
+                        tag: deleteTag
                     });
                 }
                 contextMenu.style.display = 'none';

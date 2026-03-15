@@ -258,6 +258,26 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
           }
           break;
+        case "deleteBookmark":
+          try {
+            await this.repository.deleteBookmark(message.bookmark);
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to delete bookmark: ${error as string}`,
+            );
+          }
+          break;
+        case "deleteTag":
+          try {
+            await this.repository.deleteTag(message.tag);
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(
+              `Failed to delete tag: ${error as string}`,
+            );
+          }
+          break;
         case "describeChange":
           try {
             await this.repository.describeRetryImmutable(message.changeId);
