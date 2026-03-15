@@ -38,4 +38,5 @@ Key types used: `Commit`, `ChangeId`, `CommitId`, `Signature`, `Timestamp`.
 - TypeScript strict mode, ES2022 target
 - ES modules with bundler resolution
 - No comments unless requested
+- Existing comments should remain in place unless they become incorrect
 - Follow existing patterns in neighboring files
