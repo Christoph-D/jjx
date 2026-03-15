@@ -411,29 +411,29 @@
 
             requestAnimationFrame(() => {
                 const tooltipRect = tooltip.getBoundingClientRect();
-                const mouseX = e.clientX;
-                const mouseY = e.clientY;
+                const scrollX = window.scrollX || window.pageXOffset;
+                const scrollY = window.scrollY || window.pageYOffset;
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
 
                 const offset = 15;
-                let left = mouseX + offset;
-                let top = mouseY + offset;
+                let left = e.pageX + offset;
+                let top = e.pageY + offset;
 
-                if (left + tooltipRect.width > viewportWidth - 10) {
-                    left = mouseX - tooltipRect.width - offset;
+                if (left + tooltipRect.width > viewportWidth + scrollX - 10) {
+                    left = e.pageX - tooltipRect.width - offset;
                 }
 
-                if (top + tooltipRect.height > viewportHeight - 10) {
-                    top = mouseY - tooltipRect.height - offset;
+                if (top + tooltipRect.height > viewportHeight + scrollY - 10) {
+                    top = e.pageY - tooltipRect.height - offset;
                 }
 
-                if (top < 10) {
-                    top = 10;
+                if (top < scrollY + 10) {
+                    top = scrollY + 10;
                 }
 
-                if (left < 10) {
-                    left = 10;
+                if (left < scrollX + 10) {
+                    left = scrollX + 10;
                 }
 
                 tooltip.style.left = left + 'px';
