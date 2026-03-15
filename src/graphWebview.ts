@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef, ParentRef } from "./repository";
-import { StaleWorkingCopyError } from "./repository";
+import { BookmarkBackwardsError, StaleWorkingCopyError } from "./repository";
 import path from "path";
 import { assignLanes } from "./laneAssigner";
 import { logger } from "./logger";
@@ -213,9 +213,29 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to move bookmark: ${error as string}`,
-            );
+            if (error instanceof BookmarkBackwardsError) {
+              const choice = await vscode.window.showQuickPick(["Continue"], {
+                title: "Moving bookmark backwards or sideways, are you sure?",
+              });
+              if (choice) {
+                try {
+                  await this.repository.moveBookmark(
+                    message.bookmark,
+                    message.targetChangeId,
+                    true,
+                  );
+                  await this.refresh();
+                } catch (retryError: unknown) {
+                  vscode.window.showErrorMessage(
+                    `Failed to move bookmark: ${retryError as string}`,
+                  );
+                }
+              }
+            } else {
+              vscode.window.showErrorMessage(
+                `Failed to move bookmark: ${error as string}`,
+              );
+            }
           }
           break;
         case "createBookmark":

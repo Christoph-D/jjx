@@ -231,6 +231,13 @@ export class ImmutableError extends Error {
   }
 }
 
+export class BookmarkBackwardsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BookmarkBackwardsError";
+  }
+}
+
 export class StaleWorkingCopyError extends Error {
   constructor(message: string) {
     super(message);
@@ -246,6 +253,9 @@ function convertJJErrors(e: unknown): never {
   if (e instanceof Error) {
     if (e.message.includes("is immutable")) {
       throw new ImmutableError(e.message);
+    }
+    if (e.message.includes("Refusing to move bookmark backwards")) {
+      throw new BookmarkBackwardsError(e.message);
     }
     if (e.message.includes("working copy is stale")) {
       throw new StaleWorkingCopyError(e.message);
@@ -1750,10 +1760,10 @@ export class JJRepository {
     );
   }
 
-  async moveBookmark(bookmark: string, targetRev: string) {
+  async moveBookmark(bookmark: string, targetRev: string, allowBackwards = false) {
     return await handleJJCommand(
       this.spawnJJ(
-        ["bookmark", "move", bookmark, "-t", targetRev],
+        ["bookmark", "move", bookmark, "-t", targetRev, ...(allowBackwards ? ["--allow-backwards"] : [])],
         { timeout: 5000, cwd: this.repositoryRoot },
       ),
     );
