@@ -20,6 +20,8 @@ const colorOfType = (type: FileStatusType) => {
       return new ThemeColor("jjDecoration.deletedResourceForeground");
     case "R":
       return new ThemeColor("jjDecoration.modifiedResourceForeground");
+    case "X":
+      return new ThemeColor("gitDecoration.conflictingResourceForeground");
   }
 };
 

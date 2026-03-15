@@ -1079,10 +1079,11 @@ export class JJRepository {
         target_path: string;
         is_conflict: boolean;
       }>;
+      conflicted_files: string[];
     };
 
     const fileStatuses: FileStatus[] = [];
-    const conflictedFiles = new Set<string>();
+    const fileStatusesByPath = new Map<string, FileStatus>();
 
     for (const diffFile of entry.diff_files) {
       const statusChar = diffFile.status_char as FileStatusType;
@@ -1092,24 +1093,42 @@ export class JJRepository {
       const sourcePath = path
         .normalize(diffFile.source_path)
         .replace(/\\/g, "/");
+      const fullPath = path.join(this.repositoryRoot, targetPath);
 
+      let fileStatus: FileStatus;
       if (statusChar === "R" || statusChar === "C") {
-        fileStatuses.push({
+        fileStatus = {
           type: statusChar,
           file: path.basename(targetPath),
-          path: path.join(this.repositoryRoot, targetPath),
+          path: fullPath,
           renamedFrom: sourcePath,
-        });
+        };
       } else {
-        fileStatuses.push({
+        fileStatus = {
           type: statusChar,
           file: path.basename(targetPath),
-          path: path.join(this.repositoryRoot, targetPath),
-        });
+          path: fullPath,
+        };
       }
+      fileStatuses.push(fileStatus);
+      fileStatusesByPath.set(fullPath, fileStatus);
+    }
 
-      if (diffFile.is_conflict) {
-        conflictedFiles.add(path.join(this.repositoryRoot, targetPath));
+    const conflictedFiles = new Set<string>();
+    for (const conflictedPath of entry.conflicted_files || []) {
+      const normalizedPath = path
+        .normalize(conflictedPath)
+        .replace(/\\/g, "/");
+      const fullPath = path.join(this.repositoryRoot, normalizedPath);
+      conflictedFiles.add(fullPath);
+
+      if (!fileStatusesByPath.has(fullPath)) {
+        fileStatuses.push({
+          type: "X",
+          file: path.basename(normalizedPath),
+          path: fullPath,
+        });
+        fileStatusesByPath.set(fullPath, fileStatuses[fileStatuses.length - 1]);
       }
     }
 
@@ -1224,10 +1243,11 @@ export class JJRepository {
           target_path: string;
           is_conflict: boolean;
         }>;
+        conflicted_files: string[];
       };
 
       const fileStatuses: FileStatus[] = [];
-      const conflictedFiles = new Set<string>();
+      const fileStatusesByPath = new Map<string, FileStatus>();
 
       for (const diffFile of entry.diff_files) {
         const statusChar = diffFile.status_char as FileStatusType;
@@ -1237,24 +1257,42 @@ export class JJRepository {
         const sourcePath = path
           .normalize(diffFile.source_path)
           .replace(/\\/g, "/");
+        const fullPath = path.join(this.repositoryRoot, targetPath);
 
+        let fileStatus: FileStatus;
         if (statusChar === "R" || statusChar === "C") {
-          fileStatuses.push({
+          fileStatus = {
             type: statusChar,
             file: path.basename(targetPath),
-            path: path.join(this.repositoryRoot, targetPath),
+            path: fullPath,
             renamedFrom: sourcePath,
-          });
+          };
         } else {
-          fileStatuses.push({
+          fileStatus = {
             type: statusChar,
             file: path.basename(targetPath),
-            path: path.join(this.repositoryRoot, targetPath),
-          });
+            path: fullPath,
+          };
         }
+        fileStatuses.push(fileStatus);
+        fileStatusesByPath.set(fullPath, fileStatus);
+      }
 
-        if (diffFile.is_conflict) {
-          conflictedFiles.add(path.join(this.repositoryRoot, targetPath));
+      const conflictedFiles = new Set<string>();
+      for (const conflictedPath of entry.conflicted_files || []) {
+        const normalizedPath = path
+          .normalize(conflictedPath)
+          .replace(/\\/g, "/");
+        const fullPath = path.join(this.repositoryRoot, normalizedPath);
+        conflictedFiles.add(fullPath);
+
+        if (!fileStatusesByPath.has(fullPath)) {
+          fileStatuses.push({
+            type: "X",
+            file: path.basename(normalizedPath),
+            path: fullPath,
+          });
+          fileStatusesByPath.set(fullPath, fileStatuses[fileStatuses.length - 1]);
         }
       }
 
@@ -2111,7 +2149,7 @@ export class JJRepository {
   }
 }
 
-export type FileStatusType = "A" | "M" | "D" | "R" | "C";
+export type FileStatusType = "A" | "M" | "D" | "R" | "C" | "X";
 
 export type FileStatus = {
   type: FileStatusType;

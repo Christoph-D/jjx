@@ -142,6 +142,12 @@ export const SHOW_ENTRY_FIELDS: TemplateFields = {
       is_conflict: { type: "boolean", expr: "entry.target().conflict()" },
     },
   },
+  conflicted_files: {
+    type: "string_array",
+    expr: "self.conflicted_files()",
+    loopVar: "f",
+    value: "f.path().display()",
+  },
 };
 
 export const STATUS_ENTRY_FIELDS: TemplateFields = {
@@ -194,6 +200,12 @@ export const STATUS_ENTRY_FIELDS: TemplateFields = {
       target_path: { type: "string", expr: "entry.target().path().display()" },
       is_conflict: { type: "boolean", expr: "entry.target().conflict()" },
     },
+  },
+  conflicted_files: {
+    type: "string_array",
+    expr: "self.conflicted_files()",
+    loopVar: "f",
+    value: "f.path().display()",
   },
 };
 
