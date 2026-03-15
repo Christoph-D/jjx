@@ -11,12 +11,13 @@ export interface LaneNode {
 }
 
 export interface LaneEdge {
-  fromRow: number; // The index in ChangeIdGraph.nodes
-  toRow: number; // The index in ChangeIdGraph.nodes
+  fromRow: number;
+  toRow: number;
   lanePath: number[];
   fromId: string;
   toId: string;
   colorIndex: number;
+  extendsToBottom?: boolean;
 }
 
 export interface ChangeIdGraph {
@@ -95,9 +96,6 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
     };
 
     for (const parentId of norm.parentIds) {
-      if (!visibleChangeIds.has(parentId)) {
-        continue;
-      }
       const existingIndex = lanes.findIndex((l) => l.targetId === parentId);
       if (existingIndex === -1) {
         lanes.push({
@@ -152,14 +150,12 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
 
     let firstParent = true;
     for (const parentId of norm.parentIds) {
-      if (!visibleChangeIds.has(parentId)) {
-        continue;
-      }
-      const parentRow = nodeToRow[parentId];
-      const parentNode = result.nodes[parentRow];
+      const isVisible = visibleChangeIds.has(parentId);
+      const parentRow = isVisible ? nodeToRow[parentId] : result.nodes.length;
+      const endRow = isVisible ? parentRow : result.nodes.length;
 
       const lanePath: number[] = [];
-      for (let j = i; j <= parentRow; j++) {
+      for (let j = i; j <= endRow; j++) {
         const lane =
           j === i
             ? node.lane
@@ -167,13 +163,18 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
         lanePath.push(lane);
       }
 
+      const parentColorIndex = isVisible
+        ? result.nodes[parentRow].colorIndex
+        : lanesByRow[i].find((l) => l.targetId === parentId)?.colorIndex ?? rot(colorIndex, colorRegistryLength);
+
       result.edges.push({
         fromRow: i,
         toRow: parentRow,
         lanePath,
         fromId: norm.changeId,
         toId: parentId,
-        colorIndex: firstParent ? node.colorIndex : parentNode.colorIndex,
+        colorIndex: firstParent ? node.colorIndex : parentColorIndex,
+        extendsToBottom: !isVisible,
       });
       firstParent = false;
     }

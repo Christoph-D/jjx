@@ -238,26 +238,33 @@
                 rowYList.push(y);
             });
 
+            const bottomY = Math.max(...rowYList) + 50;
             const EDGE_EXTENSION = 20;
             const ARC_RADIUS_SMALL = 8;
             const ARC_RADIUS = 12;
 
             for (const edge of currentGraph.edges) {
                 const fromY = rowYList[edge.fromRow];
-                const toY = rowYList[edge.toRow];
-                if (fromY === undefined || toY === undefined) continue;
+                if (fromY === undefined) continue;
                 if (!edge.lanePath || edge.lanePath.length < 2) continue;
 
                 const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
                 const d = [];
 
-                for (let i = 0; i < edge.lanePath.length - 1; i++) {
+                const lastSegmentIndex = edge.lanePath.length - 2;
+                for (let i = 0; i <= lastSegmentIndex; i++) {
                     const segFromLane = edge.lanePath[i];
                     const segToLane = edge.lanePath[i + 1];
                     const segFromRow = edge.fromRow + i;
                     const segToRow = edge.fromRow + i + 1;
                     const segFromY = rowYList[segFromRow];
-                    const segToY = rowYList[segToRow];
+                    
+                    let segToY;
+                    if (edge.extendsToBottom && i === lastSegmentIndex) {
+                        segToY = bottomY;
+                    } else {
+                        segToY = rowYList[segToRow];
+                    }
 
                     if (segFromY === undefined || segToY === undefined) continue;
 
@@ -271,7 +278,12 @@
                         d.push(`M ${fromX} ${segFromY}`);
                         d.push(`C ${fromX} ${segFromY + c} ${toX} ${segToY - c} ${toX} ${segToY}`);
                     } else {
-                        const prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
+                        let prevToY;
+                        if (edge.extendsToBottom && i === lastSegmentIndex) {
+                            prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
+                        } else {
+                            prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
+                        }
                         const horizontalY = (segToY + prevToY) / 2;
                         const r = ARC_RADIUS;
                         const goingRight = toX > fromX;
