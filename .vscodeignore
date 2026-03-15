@@ -5,6 +5,7 @@ node_modules/**
 src/**
 !dist/**
 !images/**
+AGENTS.md
 .gitignore
 .yarnrc
 esbuild.js
