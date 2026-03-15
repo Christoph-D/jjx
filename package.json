@@ -325,49 +325,49 @@
         {
           "command": "jj.openFileResourceState",
           "when": "scmProvider == jj && scmResourceGroup == @ && config.jjk.openDiffAction == 'diff'",
-          "group": "inline"
+          "group": "inline@1"
         },
         {
           "command": "jj.openDiffResourceState",
           "when": "scmProvider == jj && config.jjk.openDiffAction == 'file'",
-          "group": "inline"
-        },
-        {
-          "command": "jj.restoreResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != selected",
-          "group": "inline"
-        },
-        {
-          "command": "jj.squashToParentResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @",
-          "group": "inline"
+          "group": "inline@1"
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
           "when": "scmProvider == jj && scmResourceGroup != @ && config.jjk.openDiffAction == 'diff'",
-          "group": "inline"
+          "group": "inline@1"
+        },
+        {
+          "command": "jj.restoreResourceState",
+          "when": "scmProvider == jj && scmResourceGroup != selected",
+          "group": "inline@2"
+        },
+        {
+          "command": "jj.squashToParentResourceState",
+          "when": "scmProvider == jj && scmResourceGroup == @",
+          "group": "inline@3"
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
           "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
-          "group": "inline"
+          "group": "inline@3"
         }
       ],
       "scm/resourceFolder/context": [
         {
           "command": "jj.restoreResourceState",
           "when": "scmProvider == jj && scmResourceGroup != selected",
-          "group": "inline"
+          "group": "inline@2"
         },
         {
           "command": "jj.squashToParentResourceState",
           "when": "scmProvider == jj && scmResourceGroup == @",
-          "group": "inline"
+          "group": "inline@3"
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
           "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
-          "group": "inline"
+          "group": "inline@3"
         }
       ],
       "commandPalette": [
