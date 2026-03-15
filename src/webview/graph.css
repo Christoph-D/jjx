@@ -1,3 +1,7 @@
+:root {
+    --dimmed-opacity: 0.3;
+}
+
 body {
     padding: 0;
     color: var(--vscode-foreground);
@@ -72,7 +76,7 @@ body {
 /* Dimming and highlighting effects */
 .node-circle.dimmed circle,
 .node-circle.dimmed .heart-path {
-    opacity: 0.1;
+    opacity: var(--dimmed-opacity);
 }
 
 .node-circle.highlighted circle,
@@ -81,7 +85,7 @@ body {
 }
 
 .connection-line.dimmed {
-    opacity: 0.1;
+    opacity: var(--dimmed-opacity);
 }
 
 .connection-line.highlighted {
@@ -200,7 +204,7 @@ body {
 }
 
 .node-circle.dimmed .diamond-path {
-    opacity: 0.1;
+    opacity: var(--dimmed-opacity);
 }
 
 .node-circle.highlighted .diamond-path {
