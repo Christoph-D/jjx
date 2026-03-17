@@ -13,7 +13,7 @@ import { initLogger, logger } from "./logger";
 import { linesDiffComputers } from "./vendor/vscode/editor/common/diff/linesDiffComputers";
 import { ILinesDiffComputer, LinesDiff } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
 import { match } from "arktype";
-import { getActiveTextEditorDiff, pathEquals } from "./utils";
+import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals } from "./utils";
 import { openMergeEditor } from "./conflictResolver";
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -1259,10 +1259,12 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(workspaceSCM.repoSCMs.map((repoSCM) => repoSCM.checkForUpdates()));
   }
 
+  const throttledPoll = createThrottledAsyncFn(poll);
+
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "jj.refresh",
-      showLoading(() => poll()),
+      showLoading(() => throttledPoll()),
     ),
   );
 
@@ -1378,12 +1380,14 @@ export async function activate(context: vscode.ExtensionContext) {
       return;
     }
     try {
-      await poll();
+      await throttledPoll();
     } catch (err) {
       logger.error(`Error during background poll: ${String(err)}`);
     } finally {
-      // Schedule the next poll even if the current one fails.
-      pollTimeoutId = setTimeout(() => void scheduleNextPoll(), 5_000);
+      const pollInterval = vscode.workspace.getConfiguration("jjx").get<number>("pollInterval") ?? 1000;
+      if (pollInterval > 0) {
+        pollTimeoutId = setTimeout(() => void scheduleNextPoll(), pollInterval);
+      }
     }
   };
 
