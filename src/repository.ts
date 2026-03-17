@@ -733,7 +733,7 @@ export class JJRepository {
 
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(["log", "-r", rev, "-n", limit.toString(), "-T", template, "--no-graph"], {
+        this.spawnJJRead(["log", "-r", rev, "-n", limit.toString(), "-T", template], {
           timeout: 5000,
           cwd: this.repositoryRoot,
         }),
@@ -746,9 +746,11 @@ export class JJRepository {
 
     const entries: LogEntry[] = [];
     for (const line of output.trim().split("\n")) {
-      if (line.trim()) {
-        entries.push(JSON.parse(line) as LogEntry);
+      const jsonStart = line.indexOf("{");
+      if (jsonStart === -1) {
+        continue;
       }
+      entries.push(JSON.parse(line.slice(jsonStart)) as LogEntry);
     }
     return entries;
   }
