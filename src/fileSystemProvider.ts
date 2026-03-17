@@ -33,12 +33,18 @@ export class JJFileSystemProvider implements FileSystemProvider {
   private cache = new Map<string, CacheRow>();
   private mtime = Date.now();
   private disposables: Disposable[] = [];
+  private cleanupInterval?: ReturnType<typeof setInterval>;
 
   constructor(private repositories: WorkspaceSourceControlManager) {
-    setInterval(() => this.cleanup(), FIVE_MINUTES);
+    this.cleanupInterval = setInterval(() => this.cleanup(), FIVE_MINUTES);
   }
 
-  dispose() {}
+  dispose() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    this.disposables.forEach((d) => d.dispose());
+  }
 
   onDidChangeRepository({ repositoryRoot }: { repositoryRoot: string }): void {
     this.changedRepositoryRoots.add(repositoryRoot);
