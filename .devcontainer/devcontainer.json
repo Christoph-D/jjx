@@ -1,36 +1,36 @@
 {
-    "name": "jjx",
-    "build": {
-        "dockerfile": "Dockerfile"
-    },
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "DavidAnson.vscode-markdownlint",
-                "ms-vscode.extension-test-runner",
-                "esbenp.prettier-vscode",
-                "dbaeumer.vscode-eslint"
-            ],
-            "settings": {
-                "[markdown]": {
-                    "editor.defaultFormatter": "esbenp.prettier-vscode"
-                },
-                "prettier.proseWrap": "always",
-                "markdownlint.config": {
-                    "no-duplicate-heading": {
-                        "siblings_only": true
-                    }
-                },
-                "files.insertFinalNewline": true
-            }
-        }
-    },
-    "workspaceFolder": "/workspaces/jjx",
-    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/jjx,type=bind,consistency=cached",
-    "remoteUser": "node",
-    "mounts": [
-        "source=config-jjx,target=/home/node/persistent-config,type=volume",
-        "source=/etc/localtime,target=/usr/share/zoneinfo/hostlocaltime,type=bind,readonly"
-    ],
-    "postCreateCommand": "bash .devcontainer/setup.sh"
+  "name": "jjx",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "DavidAnson.vscode-markdownlint",
+        "ms-vscode.extension-test-runner",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "[markdown]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "prettier.proseWrap": "always",
+        "markdownlint.config": {
+          "no-duplicate-heading": {
+            "siblings_only": true
+          }
+        },
+        "files.insertFinalNewline": true
+      }
+    }
+  },
+  "workspaceFolder": "/workspaces/jjx",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/jjx,type=bind,consistency=cached",
+  "remoteUser": "node",
+  "mounts": [
+    "source=config-jjx,target=/home/node/persistent-config,type=volume",
+    "source=/etc/localtime,target=/usr/share/zoneinfo/hostlocaltime,type=bind,readonly"
+  ],
+  "postCreateCommand": "bash .devcontainer/setup.sh"
 }
