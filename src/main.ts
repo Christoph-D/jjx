@@ -9,9 +9,7 @@ import { JJDecorationProvider } from "./decorationProvider";
 import { OperationLogManager, OperationLogTreeDataProvider, OperationTreeItem } from "./operationLogTreeView";
 import { JJGraphWebview } from "./graphWebview";
 import { getParams, toJJUri } from "./uri";
-import { logger } from "./logger";
-import { LogOutputChannelTransport } from "./vendor/winston-transport-vscode/logOutputChannelTransport";
-import winston from "winston";
+import { initLogger, logger } from "./logger";
 import { linesDiffComputers } from "./vendor/vscode/editor/common/diff/linesDiffComputers";
 import { ILinesDiffComputer, LinesDiff } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
 import { match } from "arktype";
@@ -22,17 +20,8 @@ export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Jujutsu X", {
     log: true,
   });
-  const loggerTransport = new LogOutputChannelTransport({
-    outputChannel,
-    format: winston.format.simple(),
-  });
-  logger.add(loggerTransport);
-  context.subscriptions.push({
-    dispose() {
-      logger.remove(loggerTransport);
-      outputChannel.dispose();
-    },
-  });
+  initLogger(outputChannel);
+  context.subscriptions.push(outputChannel);
 
   logger.info("Extension activated");
 

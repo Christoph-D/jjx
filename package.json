@@ -720,10 +720,6 @@
     "ansi-regex": "^6.1.0",
     "arktype": "^2.1.19",
     "cross-spawn": "^7.0.6",
-    "logform": "^2.7.0",
-    "triple-beam": "^1.4.1",
-    "which": "^5.0.0",
-    "winston": "^3.17.0",
-    "winston-transport": "^4.9.0"
+    "which": "^5.0.0"
   }
 }

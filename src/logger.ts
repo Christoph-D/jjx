@@ -1,12 +1,32 @@
-import winston from "winston";
-import { config } from "./vendor/winston-transport-vscode/logOutputChannelTransport";
+import * as vscode from "vscode";
 
-export const logger = winston.createLogger({
-  level: "info",
-  transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
-    }),
-  ],
-  levels: config.levels,
-});
+let _outputChannel: vscode.LogOutputChannel | undefined;
+
+export function initLogger(outputChannel: vscode.LogOutputChannel): void {
+  _outputChannel = outputChannel;
+}
+
+function getChannel(): vscode.LogOutputChannel {
+  if (!_outputChannel) {
+    throw new Error("Logger not initialized. Call initLogger first.");
+  }
+  return _outputChannel;
+}
+
+export const logger = {
+  info(message: string): void {
+    getChannel().info(message);
+  },
+  error(message: string): void {
+    getChannel().error(message);
+  },
+  warn(message: string): void {
+    getChannel().warn(message);
+  },
+  debug(message: string): void {
+    getChannel().debug(message);
+  },
+  trace(message: string): void {
+    getChannel().trace(message);
+  },
+};
