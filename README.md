@@ -83,7 +83,7 @@ Here's what you can do so far:
 ## 📋 Prerequisites
 
 - Ensure `jj` is installed and available in your system's `$PATH`, or configure
-  a custom path using the `jjk.jjPath` setting
+  a custom path using the `jjx.jjPath` setting
 - Ensure `jj` is of a recent version (>=0.38.0)
 
 ## 🐛 Known Issues

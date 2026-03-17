@@ -326,7 +326,7 @@ export class RepositorySourceControlManager {
     );
     this.subscriptions.push(this.workingCopyResourceGroup);
 
-    const config = vscode.workspace.getConfiguration("jjk");
+    const config = vscode.workspace.getConfiguration("jjx");
     const changeEditAction = config.get<string>("changeEditAction") || "edit";
     this.updatePlaceholderText(changeEditAction);
 
@@ -462,7 +462,7 @@ export class RepositorySourceControlManager {
       );
     }
 
-    const config = vscode.workspace.getConfiguration("jjk", vscode.Uri.file(this.repositoryRoot));
+    const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
     const openDiffAction = config.get<"diff" | "file">("openDiffAction") || "diff";
 
     this.workingCopyResourceGroup.label =

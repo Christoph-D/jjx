@@ -324,17 +324,17 @@
       "scm/resourceState/context": [
         {
           "command": "jj.openFileResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjk.openDiffAction == 'diff'",
+          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.openDiffAction == 'diff'",
           "group": "inline@1"
         },
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && config.jjk.openDiffAction == 'file'",
+          "when": "scmProvider == jj && config.jjx.openDiffAction == 'file'",
           "group": "inline@1"
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjk.openDiffAction == 'diff'",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.openDiffAction == 'diff'",
           "group": "inline@1"
         },
         {
@@ -460,13 +460,13 @@
     "configuration": {
       "title": "Jujutsu X",
       "properties": {
-        "jjk.enableAnnotations": {
+        "jjx.enableAnnotations": {
           "type": "boolean",
           "default": true,
           "description": "Enables in-line blame annotations",
           "scope": "resource"
         },
-        "jjk.commandTimeout": {
+        "jjx.commandTimeout": {
           "type": [
             "number",
             "null"
@@ -476,13 +476,13 @@
           "scope": "resource",
           "minimum": 1000
         },
-        "jjk.jjPath": {
+        "jjx.jjPath": {
           "type": "string",
           "default": "",
           "description": "Path to the jj executable. If not set, your PATH and common locations will be searched for a jj executable.",
           "scope": "resource"
         },
-        "jjk.fakeEditorPath": {
+        "jjx.fakeEditorPath": {
           "type": [
             "string",
             "null"
@@ -490,13 +490,13 @@
           "default": null,
           "description": "Path to the fake editor executable. If not set, use bundled prebuilt binaries for the current platform."
         },
-        "jjk.ignoreWorkingCopy": {
+        "jjx.ignoreWorkingCopy": {
           "type": "boolean",
           "default": false,
           "description": "Use --ignore-working-copy for read-only commands to prevent automatic working copy snapshots. This prevents divergent changesets from passive monitoring, but modified files may not auto-update until the next manual jj command.",
           "scope": "resource"
         },
-        "jjk.changeEditAction": {
+        "jjx.changeEditAction": {
           "type": "string",
           "default": "edit",
           "enum": [
@@ -510,7 +510,7 @@
           "description": "Action to perform when clicking the edit button on a change in the graph view",
           "scope": "resource"
         },
-        "jjk.graphStyle": {
+        "jjx.graphStyle": {
           "type": "string",
           "default": "full",
           "enum": [
@@ -524,7 +524,7 @@
           "description": "Display style for commits in the graph view",
           "scope": "resource"
         },
-        "jjk.openDiffAction": {
+        "jjx.openDiffAction": {
           "type": "string",
           "default": "diff",
           "enum": [

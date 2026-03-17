@@ -163,7 +163,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       switch (message.command) {
         case "editChange":
           try {
-            const config = vscode.workspace.getConfiguration("jjk");
+            const config = vscode.workspace.getConfiguration("jjx");
             const changeEditAction =
               config.get<string>("changeEditAction") || "edit";
             if (changeEditAction === "new") {
@@ -417,7 +417,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     }
 
     try {
-      const config = vscode.workspace.getConfiguration("jjk");
+      const config = vscode.workspace.getConfiguration("jjx");
       const graphStyle = config.get<string>("graphStyle") || "full";
 
       const entries = await this.repository.log();

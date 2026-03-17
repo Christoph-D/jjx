@@ -114,20 +114,20 @@ export async function activate(context: vscode.ExtensionContext) {
         await checkReposFunction(affectedFolders);
       }
     }
-    if (e.affectsConfiguration("jjk.changeEditAction")) {
-      const config = vscode.workspace.getConfiguration("jjk");
+    if (e.affectsConfiguration("jjx.changeEditAction")) {
+      const config = vscode.workspace.getConfiguration("jjx");
       const changeEditAction =
         config.get<string>("changeEditAction") || "edit";
       for (const repoSCM of workspaceSCM.repoSCMs) {
         repoSCM.updatePlaceholderText(changeEditAction);
       }
     }
-    if (e.affectsConfiguration("jjk.openDiffAction")) {
+    if (e.affectsConfiguration("jjx.openDiffAction")) {
       for (const repoSCM of workspaceSCM.repoSCMs) {
         repoSCM.render();
       }
     }
-    if (e.affectsConfiguration("jjk.graphStyle")) {
+    if (e.affectsConfiguration("jjx.graphStyle")) {
       if (graphWebview) {
         await graphWebview.refresh();
       }
@@ -246,7 +246,7 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
       const config = vscode.workspace.getConfiguration(
-        "jjk",
+        "jjx",
         vscode.Uri.file(repository.repositoryRoot),
       );
       if (!config.get("enableAnnotations")) {
@@ -332,7 +332,7 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
       const config = vscode.workspace.getConfiguration(
-        "jjk",
+        "jjx",
         vscode.Uri.file(repository.repositoryRoot),
       );
       if (!config.get("enableAnnotations")) {
@@ -405,7 +405,7 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!repository) {
               throw new Error("Repository not found");
             }
-            const config = vscode.workspace.getConfiguration("jjk");
+            const config = vscode.workspace.getConfiguration("jjx");
             const changeEditAction =
               config.get<string>("changeEditAction") || "edit";
             const message = sourceControl.inputBox.value.trim() || undefined;
