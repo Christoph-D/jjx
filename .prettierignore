@@ -1,1 +1,4 @@
-src/vendor
+dist/
+src/vendor/
+.jj-workspaces/
+.vscode
