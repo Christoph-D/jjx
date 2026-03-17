@@ -17,7 +17,7 @@ RUN mkdir -p /home/node/persistent-config
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/home/node/persistent-config/.bash_history" \
   && echo "$SNIPPET" >> "/home/node/.bashrc"
 
-WORKDIR /workspaces/jjk
+WORKDIR /workspaces/jjx
 
 ENV EDITOR='code --wait'
 EXPOSE 8000
