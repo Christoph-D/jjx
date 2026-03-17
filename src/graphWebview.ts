@@ -6,11 +6,7 @@ import path from "path";
 import { assignLanes } from "./laneAssigner";
 import { logger } from "./logger";
 
-export type {
-  LaneNode,
-  LaneEdge,
-  ChangeIdGraph,
-} from "./laneAssigner";
+export type { LaneNode, LaneEdge, ChangeIdGraph } from "./laneAssigner";
 
 const rootChangeId = "z".repeat(32);
 
@@ -115,8 +111,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   public selectedNodes: Set<string> = new Set();
 
   private _onDidChangeSelection = new vscode.EventEmitter<string[]>();
-  readonly onDidChangeSelection: vscode.Event<string[]> =
-    this._onDidChangeSelection.event;
+  readonly onDidChangeSelection: vscode.Event<string[]> = this._onDidChangeSelection.event;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -135,9 +130,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     );
   }
 
-  public async resolveWebviewView(
-    webviewView: vscode.WebviewView,
-  ): Promise<void> {
+  public async resolveWebviewView(webviewView: vscode.WebviewView): Promise<void> {
     this.panel = webviewView;
     this.panel.title = `Source Control Graph (${path.basename(this.repository.repositoryRoot)})`;
 
@@ -149,14 +142,12 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     webviewView.webview.html = this.getWebviewContent(webviewView.webview);
 
     await new Promise<void>((resolve) => {
-      const messageListener = webviewView.webview.onDidReceiveMessage(
-        (message: Message) => {
-          if (message.command === "webviewReady") {
-            messageListener.dispose();
-            resolve();
-          }
-        },
-      );
+      const messageListener = webviewView.webview.onDidReceiveMessage((message: Message) => {
+        if (message.command === "webviewReady") {
+          messageListener.dispose();
+          resolve();
+        }
+      });
     });
 
     webviewView.webview.onDidReceiveMessage(async (message: Message) => {
@@ -164,8 +155,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "editChange":
           try {
             const config = vscode.workspace.getConfiguration("jjx");
-            const changeEditAction =
-              config.get<string>("changeEditAction") || "edit";
+            const changeEditAction = config.get<string>("changeEditAction") || "edit";
             if (changeEditAction === "new") {
               await this.repository.new(undefined, [message.changeId]);
             } else {
@@ -175,9 +165,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               await this.repository.editRetryImmutable(message.changeId);
             }
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to switch to change: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to switch to change: ${error as string}`);
           }
           break;
         case "editChangeDirect":
@@ -191,26 +179,17 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             }
             await this.repository.editRetryImmutable(message.changeId);
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to switch to change: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to switch to change: ${error as string}`);
           }
           break;
         case "selectChange":
           this.selectedNodes = new Set(message.selectedNodes);
-          vscode.commands.executeCommand(
-            "setContext",
-            "jjGraphView.nodesSelected",
-            message.selectedNodes.length,
-          );
+          vscode.commands.executeCommand("setContext", "jjGraphView.nodesSelected", message.selectedNodes.length);
           this._onDidChangeSelection.fire(message.selectedNodes);
           break;
         case "moveBookmark":
           try {
-            await this.repository.moveBookmark(
-              message.bookmark,
-              message.targetChangeId,
-            );
+            await this.repository.moveBookmark(message.bookmark, message.targetChangeId);
             await this.refresh();
           } catch (error: unknown) {
             if (error instanceof BookmarkBackwardsError) {
@@ -219,22 +198,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               });
               if (choice) {
                 try {
-                  await this.repository.moveBookmark(
-                    message.bookmark,
-                    message.targetChangeId,
-                    true,
-                  );
+                  await this.repository.moveBookmark(message.bookmark, message.targetChangeId, true);
                   await this.refresh();
                 } catch (retryError: unknown) {
-                  vscode.window.showErrorMessage(
-                    `Failed to move bookmark: ${retryError as string}`,
-                  );
+                  vscode.window.showErrorMessage(`Failed to move bookmark: ${retryError as string}`);
                 }
               }
             } else {
-              vscode.window.showErrorMessage(
-                `Failed to move bookmark: ${error as string}`,
-              );
+              vscode.window.showErrorMessage(`Failed to move bookmark: ${error as string}`);
             }
           }
           break;
@@ -247,15 +218,10 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (bookmarkName === undefined || bookmarkName === "") {
               return;
             }
-            await this.repository.createBookmark(
-              bookmarkName,
-              message.targetChangeId,
-            );
+            await this.repository.createBookmark(bookmarkName, message.targetChangeId);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to create bookmark: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to create bookmark: ${error as string}`);
           }
           break;
         case "createTag":
@@ -267,15 +233,10 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (tagName === undefined || tagName === "") {
               return;
             }
-            await this.repository.createTag(
-              tagName,
-              message.targetChangeId,
-            );
+            await this.repository.createTag(tagName, message.targetChangeId);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to create tag: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to create tag: ${error as string}`);
           }
           break;
         case "deleteBookmark":
@@ -283,9 +244,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.deleteBookmark(message.bookmark);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to delete bookmark: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to delete bookmark: ${error as string}`);
           }
           break;
         case "deleteTag":
@@ -293,9 +252,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.deleteTag(message.tag);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to delete tag: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to delete tag: ${error as string}`);
           }
           break;
         case "describeChange":
@@ -303,9 +260,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.describeRetryImmutable(message.changeId);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to describe change: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to describe change: ${error as string}`);
           }
           break;
         case "abandonChange":
@@ -321,9 +276,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.abandonRetryImmutable(message.changeId);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to abandon change: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to abandon change: ${error as string}`);
           }
           break;
         case "rebaseOnto":
@@ -336,9 +289,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to rebase: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to rebase: ${error as string}`);
           }
           break;
         case "rebaseAfter":
@@ -351,9 +302,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to rebase: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to rebase: ${error as string}`);
           }
           break;
         case "rebaseBefore":
@@ -366,9 +315,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to rebase: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to rebase: ${error as string}`);
           }
           break;
         case "squashInto":
@@ -379,9 +326,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             });
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to squash: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to squash: ${error as string}`);
           }
           break;
         case "updateStale":
@@ -389,9 +334,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.updateStale();
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to update stale working copy: ${error as string}`,
-            );
+            vscode.window.showErrorMessage(`Failed to update stale working copy: ${error as string}`);
           }
           break;
       }
@@ -445,42 +388,26 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         });
         return;
       }
-      logger.error(
-        `Failed to refresh graph: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      logger.error(`Failed to refresh graph: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   private getWebviewContent(webview: vscode.Webview) {
     // In development, files are in src/webview
     // In production (bundled extension), files are in dist/webview
-    const webviewPath = this.extensionUri.fsPath.includes("extensions")
-      ? "dist"
-      : "src";
+    const webviewPath = this.extensionUri.fsPath.includes("extensions") ? "dist" : "src";
 
-    const cssPath = vscode.Uri.joinPath(
-      this.extensionUri,
-      webviewPath,
-      "webview",
-      "graph.css",
-    );
+    const cssPath = vscode.Uri.joinPath(this.extensionUri, webviewPath, "webview", "graph.css");
     const cssUri = webview.asWebviewUri(cssPath);
 
     const codiconPath = vscode.Uri.joinPath(
       this.extensionUri,
-      webviewPath === "dist"
-        ? "dist/codicons"
-        : "node_modules/@vscode/codicons/dist",
+      webviewPath === "dist" ? "dist/codicons" : "node_modules/@vscode/codicons/dist",
       "codicon.css",
     );
     const codiconUri = webview.asWebviewUri(codiconPath);
 
-    const htmlPath = vscode.Uri.joinPath(
-      this.extensionUri,
-      webviewPath,
-      "webview",
-      "graph.html",
-    );
+    const htmlPath = vscode.Uri.joinPath(this.extensionUri, webviewPath, "webview", "graph.html");
     let html = fs.readFileSync(htmlPath.fsPath, "utf8");
 
     // Replace placeholders in the HTML
@@ -517,14 +444,9 @@ export function parseJJLogJson(
 ): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
   const offsetWidth = Math.max(
     0,
-    ...entries
-      .filter((e) => e.divergent && e.change_offset)
-      .map((e) => e.change_offset.length + 1),
+    ...entries.filter((e) => e.divergent && e.change_offset).map((e) => e.change_offset.length + 1),
   );
-  let maxPrefixLength = Math.max(
-    4,
-    ...entries.map((e) => e.change_id_shortest.length),
-  );
+  let maxPrefixLength = Math.max(4, ...entries.map((e) => e.change_id_shortest.length));
 
   const changes = entries.map((entry) => {
     const changeIdShortest = entry.change_id_shortest;
@@ -536,9 +458,7 @@ export function parseJJLogJson(
     const commitId = entry.commit_id_short;
 
     const changeOffset = entry.divergent && entry.change_offset ? entry.change_offset : null;
-    const uniqueChangeId = entry.divergent && changeOffset
-      ? `${entry.change_id}/${changeOffset}`
-      : entry.change_id;
+    const uniqueChangeId = entry.divergent && changeOffset ? `${entry.change_id}/${changeOffset}` : entry.change_id;
 
     let branchType: string | undefined;
     if (entry.current_working_copy) {
@@ -557,18 +477,17 @@ export function parseJJLogJson(
     } else {
       formattedLine = `${desc} • ${commitId}`;
     }
-    const formattedDescription =
-      entry.mine || entry.root ? timestamp : `${email} ${timestamp}`;
+    const formattedDescription = entry.mine || entry.root ? timestamp : `${email} ${timestamp}`;
 
     const filesChanged = entry.diff?.files?.length ?? 0;
     const linesAdded = entry.diff?.total_added ?? 0;
     const linesRemoved = entry.diff?.total_removed ?? 0;
 
     const uniqueParentIds = entry.parents.map((p: ParentRef) =>
-      p.divergent && p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id
+      p.divergent && p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
     );
 
-     return new ChangeNode(
+    return new ChangeNode(
       uniqueChangeId,
       changeIdShortest,
       changeIdSuffix,

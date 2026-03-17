@@ -4,11 +4,7 @@ import assert from "node:assert/strict";
 import { assignLanes } from "../laneAssigner";
 import type { LogEntry, ParentRef } from "../repository";
 
-function makeEntry(
-  change_id: string,
-  parents: string[] | ParentRef[],
-  overrides: Partial<LogEntry> = {},
-): LogEntry {
+function makeEntry(change_id: string, parents: string[] | ParentRef[], overrides: Partial<LogEntry> = {}): LogEntry {
   const parentRefs: ParentRef[] = parents.map((p) =>
     typeof p === "string" ? { change_id: p, divergent: false, change_offset: "" } : p,
   );
@@ -43,10 +39,7 @@ function makeEntry(
   };
 }
 
-function findNodeByChangeId(
-  graph: ReturnType<typeof assignLanes>,
-  changeId: string,
-) {
+function findNodeByChangeId(graph: ReturnType<typeof assignLanes>, changeId: string) {
   return graph.nodes.find((n) => n.changeId === changeId);
 }
 
@@ -61,9 +54,9 @@ function findEdgesTo(graph: ReturnType<typeof assignLanes>, toId: string) {
 describe("assignLanes", () => {
   it("linear chain: all commits in lane 0", () => {
     const entries = [
-      makeEntry("aaa", ["bbb"]),
-      makeEntry("bbb", ["ccc"]),
-      makeEntry("ccc", []),
+      makeEntry("aaa", ["bbb"]), //
+      makeEntry("bbb", ["ccc"]), //
+      makeEntry("ccc", []), //
     ];
     const result = assignLanes(entries);
 
@@ -95,9 +88,9 @@ describe("assignLanes", () => {
 
   it("fork: commit with two children opens two lanes", () => {
     const entries = [
-      makeEntry("aaa", ["ccc"]),
-      makeEntry("bbb", ["ccc"]),
-      makeEntry("ccc", []),
+      makeEntry("aaa", ["ccc"]), //
+      makeEntry("bbb", ["ccc"]), //
+      makeEntry("ccc", []), //
     ];
     const result = assignLanes(entries);
 
@@ -180,17 +173,14 @@ describe("assignLanes", () => {
 
   it("colors are distinct for independent branches", () => {
     const entries = [
-      makeEntry("aaa", ["ccc"]),
-      makeEntry("bbb", ["ddd"]),
-      makeEntry("ccc", []),
-      makeEntry("ddd", []),
+      makeEntry("aaa", ["ccc"]), //
+      makeEntry("bbb", ["ddd"]), //
+      makeEntry("ccc", []), //
+      makeEntry("ddd", []), //
     ];
     const result = assignLanes(entries);
 
-    assert.notStrictEqual(
-      result.nodes[0].colorIndex,
-      result.nodes[1].colorIndex,
-    );
+    assert.notStrictEqual(result.nodes[0].colorIndex, result.nodes[1].colorIndex);
   });
 
   it("lanes converge when commit is consumed", () => {

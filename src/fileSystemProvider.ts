@@ -15,13 +15,7 @@ import {
 import path from "path";
 import { getParams } from "./uri";
 import type { WorkspaceSourceControlManager } from "./sourceControl";
-import {
-  createThrottledAsyncFn,
-  eventToPromise,
-  filterEvent,
-  isDescendant,
-  pathEquals,
-} from "./utils";
+import { createThrottledAsyncFn, eventToPromise, filterEvent, isDescendant, pathEquals } from "./utils";
 
 interface CacheRow {
   uri: Uri;
@@ -33,8 +27,7 @@ const FIVE_MINUTES = 1000 * 60 * 5;
 
 export class JJFileSystemProvider implements FileSystemProvider {
   private _onDidChangeFile = new EventEmitter<FileChangeEvent[]>();
-  readonly onDidChangeFile: Event<FileChangeEvent[]> =
-    this._onDidChangeFile.event;
+  readonly onDidChangeFile: Event<FileChangeEvent[]> = this._onDidChangeFile.event;
 
   private changedRepositoryRoots = new Set<string>();
   private cache = new Map<string, CacheRow>();
@@ -55,10 +48,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
   fireChangeEvents = createThrottledAsyncFn(this._fireChangeEvents.bind(this));
   private async _fireChangeEvents(): Promise<void> {
     if (!window.state.focused) {
-      const onDidFocusWindow = filterEvent(
-        window.onDidChangeWindowState,
-        (e) => e.focused,
-      );
+      const onDidFocusWindow = filterEvent(window.onDidChangeWindowState, (e) => e.focused);
       await eventToPromise(onDidFocusWindow);
     }
 
@@ -151,16 +141,10 @@ export class JJFileSystemProvider implements FileSystemProvider {
         throw e;
       }
     } else if ("diffOriginalRev" in params) {
-      const originalContent = await repository.getDiffOriginal(
-        params.diffOriginalRev,
-        uri.fsPath,
-      );
+      const originalContent = await repository.getDiffOriginal(params.diffOriginalRev, uri.fsPath);
       if (!originalContent) {
         try {
-          const data = await repository.readFile(
-            params.diffOriginalRev,
-            uri.fsPath,
-          );
+          const data = await repository.readFile(params.diffOriginalRev, uri.fsPath);
           return data;
         } catch (e) {
           if (e instanceof Error && e.message.includes("No such path")) {

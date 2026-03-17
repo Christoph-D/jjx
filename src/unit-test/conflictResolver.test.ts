@@ -89,10 +89,7 @@ describe("conflictResolver", () => {
         ),
     }`;
 
-    assert.throws(
-      () => parseTreeInfo(invalidCommitInfo),
-      /Could not parse tree IDs from commit info/,
-    );
+    assert.throws(() => parseTreeInfo(invalidCommitInfo), /Could not parse tree IDs from commit info/);
   });
 
   it("parseTreeInfo uses default labels when conflict_labels not found", () => {

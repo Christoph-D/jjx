@@ -5,9 +5,7 @@ import fs from "fs/promises";
 
 const renameRegex = /^(.*)\{\s*(.*?)\s*=>\s*(.*?)\s*\}(.*)$/;
 
-export function parseRenamePaths(
-  file: string,
-): { fromPath: string; toPath: string } | null {
+export function parseRenamePaths(file: string): { fromPath: string; toPath: string } | null {
   const renameMatch = renameRegex.exec(file);
   if (renameMatch) {
     const [_, prefix, fromPart, toPart, suffix] = renameMatch;

@@ -4,19 +4,13 @@ import { logger } from "./logger";
 import { getCommandTimeout } from "./config";
 import { convertJJErrors } from "./errors";
 
-export function spawnJJ(
-  jjPath: string,
-  args: string[],
-  options: Parameters<typeof spawn>[2] & { cwd: string },
-) {
+export function spawnJJ(jjPath: string, args: string[], options: Parameters<typeof spawn>[2] & { cwd: string }) {
   const finalOptions = {
     ...options,
     timeout: getCommandTimeout(options.cwd, options.timeout),
   };
 
-  logger.info(
-    `spawn: ${JSON.stringify([jjPath, ...args])} ${JSON.stringify({ spawnOptions: finalOptions })}`,
-  );
+  logger.info(`spawn: ${JSON.stringify([jjPath, ...args])} ${JSON.stringify({ spawnOptions: finalOptions })}`);
 
   return spawn(jjPath, args, finalOptions);
 }

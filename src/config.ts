@@ -7,10 +7,7 @@ export let extensionDir = "";
 export let fakeEditorPath = "";
 
 export function initExtensionDir(extensionUri: vscode.Uri) {
-  extensionDir = vscode.Uri.joinPath(
-    extensionUri,
-    extensionUri.fsPath.includes("extensions") ? "dist" : "src",
-  ).fsPath;
+  extensionDir = vscode.Uri.joinPath(extensionUri, extensionUri.fsPath.includes("extensions") ? "dist" : "src").fsPath;
 
   const config = vscode.workspace.getConfiguration("jjx");
   const customPath = config.get<string | null>("fakeEditorPath");
@@ -54,16 +51,9 @@ export function initExtensionDir(extensionUri: vscode.Uri) {
     },
   };
 
-  const fakeEditorExecutableName =
-    fakeEditorExecutables[process.platform]?.[process.arch];
+  const fakeEditorExecutableName = fakeEditorExecutables[process.platform]?.[process.arch];
   if (fakeEditorExecutableName) {
-    fakeEditorPath = path.join(
-      extensionDir,
-      "fakeeditor",
-      "zig-out",
-      "bin",
-      fakeEditorExecutableName,
-    );
+    fakeEditorPath = path.join(extensionDir, "fakeeditor", "zig-out", "bin", fakeEditorExecutableName);
   }
 }
 
@@ -76,14 +66,8 @@ export function getConfigArgs(extensionDir: string): string[] {
  * If jjx.commandTimeout is set, returns that value.
  * Otherwise, returns the provided default timeout, or 30 seconds if no default is provided.
  */
-export function getCommandTimeout(
-  repositoryRoot: string,
-  defaultTimeout: number | undefined,
-): number {
-  const config = vscode.workspace.getConfiguration(
-    "jjx",
-    vscode.Uri.file(repositoryRoot),
-  );
+export function getCommandTimeout(repositoryRoot: string, defaultTimeout: number | undefined): number {
+  const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
   const configuredTimeout = config.get<number | null>("commandTimeout");
   if (configuredTimeout !== null && configuredTimeout !== undefined) {
     return configuredTimeout;
@@ -96,10 +80,7 @@ export function getCommandTimeout(
  * This allows the flag to be conditionally included using the spread operator.
  */
 export function getIgnoreWorkingCopyArgs(repositoryRoot: string): string[] {
-  const config = vscode.workspace.getConfiguration(
-    "jjx",
-    vscode.Uri.file(repositoryRoot),
-  );
+  const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
   const ignoreWorkingCopy = config.get<boolean>("ignoreWorkingCopy");
   if (ignoreWorkingCopy) {
     return ["--ignore-working-copy"];
@@ -116,9 +97,7 @@ export async function getJJPath(
 ): Promise<{ filepath: string; source: "configured" | "path" | "common" }> {
   const config = vscode.workspace.getConfiguration(
     "jjx",
-    workspaceFolder !== undefined
-      ? vscode.Uri.file(workspaceFolder)
-      : undefined,
+    workspaceFolder !== undefined ? vscode.Uri.file(workspaceFolder) : undefined,
   );
   const configuredPath = config.get<string>("jjPath");
 
@@ -126,9 +105,7 @@ export async function getJJPath(
     if (await which(configuredPath, { nothrow: true })) {
       return { filepath: configuredPath, source: "configured" };
     } else {
-      throw new Error(
-        `Configured jjx.jjPath is not an executable file: ${configuredPath}`,
-      );
+      throw new Error(`Configured jjx.jjPath is not an executable file: ${configuredPath}`);
     }
   }
 

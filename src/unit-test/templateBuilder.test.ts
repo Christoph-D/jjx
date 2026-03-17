@@ -1,11 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  generateTemplate,
-  TemplateFields,
-  LOG_ENTRY_FIELDS,
-} from "../templateBuilder";
+import { generateTemplate, TemplateFields, LOG_ENTRY_FIELDS } from "../templateBuilder";
 
 describe("TemplateBuilder Test Suite", () => {
   it("generateTemplate with string field", () => {
@@ -13,10 +9,7 @@ describe("TemplateBuilder Test Suite", () => {
       email: { type: "string", expr: "author.email()" },
     };
     const result = generateTemplate(fields);
-    assert.strictEqual(
-      result,
-      `"{" ++ "\\"email\\": " ++ stringify(author.email()).escape_json() ++ "}\\n"`,
-    );
+    assert.strictEqual(result, `"{" ++ "\\"email\\": " ++ stringify(author.email()).escape_json() ++ "}\\n"`);
   });
 
   it("generateTemplate with multiple string fields (sorted alphabetically)", () => {
@@ -36,10 +29,7 @@ describe("TemplateBuilder Test Suite", () => {
       description: { type: "raw", expr: "description.escape_json()" },
     };
     const result = generateTemplate(fields);
-    assert.strictEqual(
-      result,
-      `"{" ++ "\\"description\\": " ++ description.escape_json() ++ "}\\n"`,
-    );
+    assert.strictEqual(result, `"{" ++ "\\"description\\": " ++ description.escape_json() ++ "}\\n"`);
   });
 
   it("generateTemplate with boolean field", () => {
@@ -47,10 +37,7 @@ describe("TemplateBuilder Test Suite", () => {
       conflict: { type: "boolean", expr: "self.conflict()" },
     };
     const result = generateTemplate(fields);
-    assert.strictEqual(
-      result,
-      `"{" ++ "\\"conflict\\": " ++ if(self.conflict(), "true", "false") ++ "}\\n"`,
-    );
+    assert.strictEqual(result, `"{" ++ "\\"conflict\\": " ++ if(self.conflict(), "true", "false") ++ "}\\n"`);
   });
 
   it("generateTemplate with number field", () => {
@@ -58,10 +45,7 @@ describe("TemplateBuilder Test Suite", () => {
       count: { type: "number", expr: "files.len()" },
     };
     const result = generateTemplate(fields);
-    assert.strictEqual(
-      result,
-      `"{" ++ "\\"count\\": " ++ files.len() ++ "}\\n"`,
-    );
+    assert.strictEqual(result, `"{" ++ "\\"count\\": " ++ files.len() ++ "}\\n"`);
   });
 
   it("generateTemplate with dict field", () => {
@@ -138,10 +122,7 @@ describe("TemplateBuilder Test Suite", () => {
       'field"with"quotes': { type: "string", expr: "x" },
     };
     const result = generateTemplate(fields);
-    assert.strictEqual(
-      result,
-      `"{" ++ "\\"field\\"with\\"quotes\\": " ++ stringify(x).escape_json() ++ "}\\n"`,
-    );
+    assert.strictEqual(result, `"{" ++ "\\"field\\"with\\"quotes\\": " ++ stringify(x).escape_json() ++ "}\\n"`);
   });
 
   it("generateTemplate escapes backslashes in field names", () => {
@@ -149,10 +130,7 @@ describe("TemplateBuilder Test Suite", () => {
       "field\\with\\backslash": { type: "string", expr: "x" },
     };
     const result = generateTemplate(fields);
-    assert.strictEqual(
-      result,
-      `"{" ++ "\\"field\\\\with\\\\backslash\\": " ++ stringify(x).escape_json() ++ "}\\n"`,
-    );
+    assert.strictEqual(result, `"{" ++ "\\"field\\\\with\\\\backslash\\": " ++ stringify(x).escape_json() ++ "}\\n"`);
   });
 
   it("generateTemplate with complex nested structure", () => {

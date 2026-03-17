@@ -28,10 +28,7 @@ suite("fakeeditor", () => {
     await assert.rejects(
       async () => execPromise(fakeEditorPath, { timeout: 6000 }),
       (err: unknown) => {
-        assert.ok(
-          isExecException(err),
-          "Expected error to be an ExecException",
-        );
+        assert.ok(isExecException(err), "Expected error to be an ExecException");
         assert.ok(err.code !== undefined, "Expected error to have a code");
         assert.strictEqual(err.code, 1);
         return true;
@@ -47,10 +44,7 @@ suite("fakeeditor", () => {
           timeout: 6000,
         }),
       (err: unknown) => {
-        assert.ok(
-          isExecException(err),
-          "Expected error to be an ExecException",
-        );
+        assert.ok(isExecException(err), "Expected error to be an ExecException");
         assert.ok(err.code !== undefined, "Expected error to have a code");
         assert.strictEqual(err.code, 1);
         return true;
@@ -100,10 +94,7 @@ suite("fakeeditor", () => {
 
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 
-    assert.ok(
-      isProcessRunning(child.pid),
-      "Process should still be running before file is created",
-    );
+    assert.ok(isProcessRunning(child.pid), "Process should still be running before file is created");
 
     const beforeWrite = Date.now();
     fs.writeFileSync(signalPath, "");
@@ -114,10 +105,7 @@ suite("fakeeditor", () => {
     assert.strictEqual(exitCode, 0);
     assert.ok(stdout.includes("FAKEEDITOR_OUTPUT_END"));
     // Should detect and respond to the file within about 2 polling intervals
-    assert.ok(
-      responseTime <= 150,
-      `Should exit quickly after file creation (took ${responseTime}ms)`,
-    );
+    assert.ok(responseTime <= 150, `Should exit quickly after file creation (took ${responseTime}ms)`);
   });
 
   test("exits with error after timeout when no signal file", async () => {
@@ -132,10 +120,7 @@ suite("fakeeditor", () => {
         }),
       (err: unknown) => {
         const elapsed = Date.now() - startTime;
-        assert.ok(
-          isExecException(err),
-          "Expected error to be an ExecException",
-        );
+        assert.ok(isExecException(err), "Expected error to be an ExecException");
         assert.ok(err.code !== undefined, "Expected error to have a code");
         assert.strictEqual(err.code, 1);
         assert.ok(elapsed >= 5000, "Should wait for TOTAL_TIMEOUT");
@@ -161,10 +146,7 @@ suite("fakeeditor", () => {
           timeout: 6000,
         }),
       (err: unknown) => {
-        assert.ok(
-          isExecException(err),
-          "Expected error to be an ExecException",
-        );
+        assert.ok(isExecException(err), "Expected error to be an ExecException");
         assert.ok(err.code !== undefined, "Expected error to have a code");
         assert.strictEqual(err.code, 1);
         return true;

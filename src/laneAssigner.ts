@@ -35,9 +35,7 @@ interface LaneInfo {
 }
 
 function getParentUniqueId(parent: ParentRef): string {
-  return parent.divergent && parent.change_offset
-    ? `${parent.change_id}/${parent.change_offset}`
-    : parent.change_id;
+  return parent.divergent && parent.change_offset ? `${parent.change_id}/${parent.change_offset}` : parent.change_id;
 }
 
 interface NormalizedEntry {
@@ -47,10 +45,7 @@ interface NormalizedEntry {
 
 function normalizeEntries(entries: LogEntry[]): NormalizedEntry[] {
   return entries.map((entry) => ({
-    changeId:
-      entry.divergent && entry.change_offset
-        ? `${entry.change_id}/${entry.change_offset}`
-        : entry.change_id,
+    changeId: entry.divergent && entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
     parentIds: entry.parents.map(getParentUniqueId),
   }));
 }
@@ -156,16 +151,13 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
 
       const lanePath: number[] = [];
       for (let j = i; j <= endRow; j++) {
-        const lane =
-          j === i
-            ? node.lane
-            : lanesByRow[j].findIndex((l) => l.targetId === parentId);
+        const lane = j === i ? node.lane : lanesByRow[j].findIndex((l) => l.targetId === parentId);
         lanePath.push(lane);
       }
 
       const parentColorIndex = isVisible
         ? result.nodes[parentRow].colorIndex
-        : lanesByRow[i].find((l) => l.targetId === parentId)?.colorIndex ?? rot(colorIndex, colorRegistryLength);
+        : (lanesByRow[i].find((l) => l.targetId === parentId)?.colorIndex ?? rot(colorIndex, colorRegistryLength));
 
       result.edges.push({
         fromRow: i,

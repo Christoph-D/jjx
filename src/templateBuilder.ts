@@ -28,11 +28,7 @@ export interface StringArrayField {
   value: string;
 }
 
-export type TemplateField =
-  | PrimitiveField
-  | DictField
-  | ArrayField
-  | StringArrayField;
+export type TemplateField = PrimitiveField | DictField | ArrayField | StringArrayField;
 
 export type TemplateFields = Record<string, TemplateField>;
 
@@ -79,8 +75,7 @@ function generateFieldEntry(name: string, field: TemplateField): string {
 function applyPrefix(field: TemplateField, prefix: string): TemplateField {
   if (prefix && field.type !== "dict" && field.type !== "array" && field.type !== "string_array") {
     const value = field.expr;
-    const prefixedValue =
-      value.includes(".") || value.includes("(") ? value : `${prefix}.${value}`;
+    const prefixedValue = value.includes(".") || value.includes("(") ? value : `${prefix}.${value}`;
     return { ...field, expr: prefixedValue };
   }
   return field;
@@ -89,13 +84,13 @@ function applyPrefix(field: TemplateField, prefix: string): TemplateField {
 function generateFields(fields: TemplateFields, prefix?: string): string {
   const entries: string[] = [];
   const sortedKeys = Object.keys(fields).sort();
-  
+
   for (let i = 0; i < sortedKeys.length; i++) {
     const name = sortedKeys[i];
     const field = applyPrefix(fields[name], prefix ?? "");
     entries.push(generateFieldEntry(name, field));
   }
-  
+
   return entries.join(` ++ "," ++ `);
 }
 

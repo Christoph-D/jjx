@@ -1,11 +1,4 @@
-import {
-  FileDecorationProvider,
-  FileDecoration,
-  Uri,
-  EventEmitter,
-  Event,
-  ThemeColor,
-} from "vscode";
+import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, ThemeColor } from "vscode";
 import { FileStatus, FileStatusType } from "./types";
 import { getParams, toJJUri } from "./uri";
 import { normalizePath } from "./utils";
@@ -27,14 +20,10 @@ const colorOfType = (type: FileStatusType) => {
 
 export class JJDecorationProvider implements FileDecorationProvider {
   private readonly _onDidChangeDecorations = new EventEmitter<Uri[]>();
-  readonly onDidChangeFileDecorations: Event<Uri[]> =
-    this._onDidChangeDecorations.event;
+  readonly onDidChangeFileDecorations: Event<Uri[]> = this._onDidChangeDecorations.event;
   private decorations = new Map<string, FileDecoration>();
   private trackedFiles = new Set<string>();
-  private decorationsByRepository = new Map<
-    string,
-    Map<string, FileDecoration>
-  >();
+  private decorationsByRepository = new Map<string, Map<string, FileDecoration>>();
   private trackedFilesByRepository = new Map<string, Set<string>>();
   private hasData = false;
 
@@ -76,17 +65,13 @@ export class JJDecorationProvider implements FileDecorationProvider {
         if (!existingDecoration) {
           nextRepositoryDecorations.set(key, {
             badge: "!",
-            color: new ThemeColor(
-              "gitDecoration.conflictingResourceForeground",
-            ),
+            color: new ThemeColor("gitDecoration.conflictingResourceForeground"),
           });
         } else {
           nextRepositoryDecorations.set(key, {
             ...existingDecoration,
             badge: `${existingDecoration.badge}!`,
-            color: new ThemeColor(
-              "gitDecoration.conflictingResourceForeground",
-            ),
+            color: new ThemeColor("gitDecoration.conflictingResourceForeground"),
           });
         }
       }
@@ -99,9 +84,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
   }
 
   removeStaleRepositories(repositoryRoots: Iterable<string>) {
-    const activeRepositoryKeys = new Set(
-      [...repositoryRoots].map(normalizePath),
-    );
+    const activeRepositoryKeys = new Set([...repositoryRoots].map(normalizePath));
     let hasChanges = false;
     for (const repositoryKey of [...this.decorationsByRepository.keys()]) {
       if (activeRepositoryKeys.has(repositoryKey)) {
@@ -118,9 +101,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
 
   provideFileDecoration(uri: Uri): FileDecoration | undefined {
     if (!this.hasData) {
-      throw new Error(
-        "provideFileDecoration was called before data was available",
-      );
+      throw new Error("provideFileDecoration was called before data was available");
     }
     let rev = "@";
     if (uri.scheme === "jj") {
@@ -137,8 +118,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     }
     const key = getKey(uri.fsPath, rev);
     if (rev === "@" && !this.decorations.has(key)) {
-      const fsPath =
-        process.platform === "win32" ? uri.fsPath.toLowerCase() : uri.fsPath;
+      const fsPath = process.platform === "win32" ? uri.fsPath.toLowerCase() : uri.fsPath;
       if (!this.trackedFiles.has(fsPath)) {
         return {
           color: new ThemeColor("jjDecoration.ignoredResourceForeground"),
@@ -165,10 +145,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
 
     const changedDecorationKeys = new Set<string>();
     for (const [key, fileDecoration] of nextDecorations) {
-      if (
-        !this.decorations.has(key) ||
-        this.decorations.get(key)!.badge !== fileDecoration.badge
-      ) {
+      if (!this.decorations.has(key) || this.decorations.get(key)!.badge !== fileDecoration.badge) {
         changedDecorationKeys.add(key);
       }
     }
@@ -179,12 +156,8 @@ export class JJDecorationProvider implements FileDecorationProvider {
     }
 
     const changedTrackedFiles = new Set<string>([
-      ...[...nextTrackedFiles.values()].filter(
-        (file) => !this.trackedFiles.has(file),
-      ),
-      ...[...this.trackedFiles.values()].filter(
-        (file) => !nextTrackedFiles.has(file),
-      ),
+      ...[...nextTrackedFiles.values()].filter((file) => !this.trackedFiles.has(file)),
+      ...[...this.trackedFiles.values()].filter((file) => !nextTrackedFiles.has(file)),
     ]);
 
     this.decorations = nextDecorations;

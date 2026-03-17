@@ -16,10 +16,7 @@ interface ConflictData {
   rightLabel: string;
 }
 
-export async function openMergeEditor(
-  repo: JJRepository,
-  absoluteFilePath: string,
-): Promise<void> {
+export async function openMergeEditor(repo: JJRepository, absoluteFilePath: string): Promise<void> {
   const relativePath = path.relative(repo.repositoryRoot, absoluteFilePath);
   const conflictData = await getConflictData(repo, relativePath);
 
@@ -52,10 +49,7 @@ function toMergeUri(fileUri: vscode.Uri, fileId: string | null): vscode.Uri {
   return toJJUri(fileUri, { fileId });
 }
 
-async function getConflictData(
-  repo: JJRepository,
-  relativePath: string,
-): Promise<ConflictData> {
+async function getConflictData(repo: JJRepository, relativePath: string): Promise<ConflictData> {
   const treeInfo = await getTreeInfo(repo);
 
   const [leftFileId, baseFileId, rightFileId] = await Promise.all([
@@ -85,19 +79,12 @@ async function getCommitId(repo: JJRepository): Promise<string> {
   return output.trim();
 }
 
-async function getCommitDebugInfo(
-  repo: JJRepository,
-  commitId: string,
-): Promise<string> {
+async function getCommitDebugInfo(repo: JJRepository, commitId: string): Promise<string> {
   const output = await repo.debugObject("commit", commitId);
   return output;
 }
 
-async function getFileId(
-  repo: JJRepository,
-  treeId: string,
-  relativePath: string,
-): Promise<string | null> {
+async function getFileId(repo: JJRepository, treeId: string, relativePath: string): Promise<string | null> {
   const output = await repo.debugTree(treeId, relativePath);
   const match = output.match(/FileId\("([^"]+)"\)/);
   return match ? match[1] : null;

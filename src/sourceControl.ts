@@ -40,14 +40,10 @@ export class WorkspaceSourceControlManager {
     this.fileSystemProvider = new JJFileSystemProvider(this);
     this.subscriptions.push(this.fileSystemProvider);
     this.subscriptions.push(
-      vscode.workspace.registerFileSystemProvider(
-        "jj",
-        this.fileSystemProvider,
-        {
-          isReadonly: true,
-          isCaseSensitive: true,
-        },
-      ),
+      vscode.workspace.registerFileSystemProvider("jj", this.fileSystemProvider, {
+        isReadonly: true,
+        isCaseSensitive: true,
+      }),
     );
   }
 
@@ -67,22 +63,16 @@ export class WorkspaceSourceControlManager {
 
         const repoRoot = (
           await handleCommand(
-            spawnJJ(
-              jjPath.filepath,
-              [...getIgnoreWorkingCopyArgs(workspaceFolder.uri.fsPath), "root"],
-              {
-                timeout: 5000,
-                cwd: workspaceFolder.uri.fsPath,
-              },
-            ),
+            spawnJJ(jjPath.filepath, [...getIgnoreWorkingCopyArgs(workspaceFolder.uri.fsPath), "root"], {
+              timeout: 5000,
+              cwd: workspaceFolder.uri.fsPath,
+            }),
           )
         )
           .toString()
           .trim();
 
-        const repoUri = vscode.Uri.file(
-          repoRoot.replace(/^\\\\\?\\UNC\\/, "\\\\"),
-        ).toString();
+        const repoUri = vscode.Uri.file(repoRoot.replace(/^\\\\\?\\UNC\\/, "\\\\")).toString();
 
         if (!newRepoInfos.has(repoUri)) {
           newRepoInfos.set(repoUri, {
@@ -95,9 +85,7 @@ export class WorkspaceSourceControlManager {
         if (e instanceof Error && e.message.includes("no jj repo in")) {
           logger.debug(`No jj repo in ${workspaceFolder.uri.fsPath}`);
         } else {
-          logger.error(
-            `Error while initializing jjx in workspace ${workspaceFolder.uri.fsPath}: ${String(e)}`,
-          );
+          logger.error(`Error while initializing jjx in workspace ${workspaceFolder.uri.fsPath}: ${String(e)}`);
         }
         continue;
       }
@@ -115,9 +103,7 @@ export class WorkspaceSourceControlManager {
         oldValue.repoRoot !== value.repoRoot
       ) {
         isAnyRepoChanged = true;
-        logger.info(
-          `Detected change that requires reinitialization in workspace: ${key}`,
-        );
+        logger.info(`Detected change that requires reinitialization in workspace: ${key}`);
       }
     }
     for (const key of this.repoInfos?.keys() || []) {
@@ -127,16 +113,11 @@ export class WorkspaceSourceControlManager {
       }
     }
     this.repoInfos = newRepoInfos;
-    this.decorationProvider.removeStaleRepositories(
-      [...newRepoInfos.values()].map(({ repoRoot }) => repoRoot),
-    );
+    this.decorationProvider.removeStaleRepositories([...newRepoInfos.values()].map(({ repoRoot }) => repoRoot));
 
     if (isAnyRepoChanged) {
       const repoSCMs: RepositorySourceControlManager[] = [];
-      for (const [
-        workspaceFolder,
-        { repoRoot, jjPath, jjConfigArgs },
-      ] of newRepoInfos.entries()) {
+      for (const [workspaceFolder, { repoRoot, jjPath, jjConfigArgs }] of newRepoInfos.entries()) {
         logger.info(
           `Initializing jjx in workspace ${workspaceFolder}. Using jj at ${jjPath.filepath} (${jjPath.source}).`,
         );
@@ -171,20 +152,14 @@ export class WorkspaceSourceControlManager {
     })?.repository;
   }
 
-  getRepositoryFromResourceGroup(
-    resourceGroup: vscode.SourceControlResourceGroup,
-  ) {
+  getRepositoryFromResourceGroup(resourceGroup: vscode.SourceControlResourceGroup) {
     return this.repoSCMs.find((repo) => {
-      return (
-        resourceGroup === repo.workingCopyResourceGroup ||
-        repo.parentResourceGroups.includes(resourceGroup)
-      );
+      return resourceGroup === repo.workingCopyResourceGroup || repo.parentResourceGroups.includes(resourceGroup);
     })?.repository;
   }
 
   getRepositoryFromSourceControl(sourceControl: vscode.SourceControl) {
-    return this.repoSCMs.find((repo) => repo.sourceControl === sourceControl)
-      ?.repository;
+    return this.repoSCMs.find((repo) => repo.sourceControl === sourceControl)?.repository;
   }
 
   getRepositorySourceControlManagerFromUri(uri: vscode.Uri) {
@@ -193,9 +168,7 @@ export class WorkspaceSourceControlManager {
     });
   }
 
-  getRepositorySourceControlManagerFromResourceGroup(
-    resourceGroup: vscode.SourceControlResourceGroup,
-  ) {
+  getRepositorySourceControlManagerFromResourceGroup(resourceGroup: vscode.SourceControlResourceGroup) {
     return this.repoSCMs.find(
       (repo) =>
         repo.workingCopyResourceGroup === resourceGroup ||
@@ -204,9 +177,7 @@ export class WorkspaceSourceControlManager {
     );
   }
 
-  getSelectedCommitChangeId(
-    resourceGroup: vscode.SourceControlResourceGroup,
-  ): string | undefined {
+  getSelectedCommitChangeId(resourceGroup: vscode.SourceControlResourceGroup): string | undefined {
     const repo = this.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
     if (repo?.selectedCommitResourceGroup === resourceGroup) {
       return repo.selectedCommitChangeId;
@@ -214,26 +185,18 @@ export class WorkspaceSourceControlManager {
     return undefined;
   }
 
-  getResourceGroupFromResourceState(
-    resourceState: vscode.SourceControlResourceState,
-  ) {
+  getResourceGroupFromResourceState(resourceState: vscode.SourceControlResourceState) {
     const resourceUri = resourceState.resourceUri;
 
     for (const repo of this.repoSCMs) {
       const groups = [
         repo.workingCopyResourceGroup,
         ...repo.parentResourceGroups,
-        ...(repo.selectedCommitResourceGroup
-          ? [repo.selectedCommitResourceGroup]
-          : []),
+        ...(repo.selectedCommitResourceGroup ? [repo.selectedCommitResourceGroup] : []),
       ];
 
       for (const group of groups) {
-        if (
-          group.resourceStates.some(
-            (state) => state.resourceUri.toString() === resourceUri.toString(),
-          )
-        ) {
+        if (group.resourceStates.some((state) => state.resourceUri.toString() === resourceUri.toString())) {
           return group;
         }
       }
@@ -307,11 +270,7 @@ export class RepositorySourceControlManager {
     jjPath: string,
     jjConfigArgs: string[],
   ) {
-    this.repository = new JJRepository(
-      repositoryRoot,
-      jjPath,
-      jjConfigArgs,
-    );
+    this.repository = new JJRepository(repositoryRoot, jjPath, jjConfigArgs);
 
     this.sourceControl = vscode.scm.createSourceControl(
       "jj",
@@ -320,10 +279,7 @@ export class RepositorySourceControlManager {
     );
     this.subscriptions.push(this.sourceControl);
 
-    this.workingCopyResourceGroup = this.sourceControl.createResourceGroup(
-      "@",
-      "Working Copy",
-    );
+    this.workingCopyResourceGroup = this.sourceControl.createResourceGroup("@", "Working Copy");
     this.subscriptions.push(this.workingCopyResourceGroup);
 
     const config = vscode.workspace.getConfiguration("jjx");
@@ -341,10 +297,7 @@ export class RepositorySourceControlManager {
     };
 
     const watcherOperations = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(
-        path.join(this.repositoryRoot, ".jj/repo/op_store/operations"),
-        "*",
-      ),
+      new vscode.RelativePattern(path.join(this.repositoryRoot, ".jj/repo/op_store/operations"), "*"),
     );
     this.subscriptions.push(watcherOperations);
     const repoChangedWatchEvent = anyEvent(
@@ -366,9 +319,7 @@ export class RepositorySourceControlManager {
 
   updatePlaceholderText(changeEditAction: string) {
     this.sourceControl.inputBox.placeholder =
-      changeEditAction === "new"
-        ? "Describe current change (Ctrl+Enter)"
-        : "Describe new change (Ctrl+Enter)";
+      changeEditAction === "new" ? "Describe current change (Ctrl+Enter)" : "Describe new change (Ctrl+Enter)";
   }
 
   async checkForUpdates() {
@@ -403,12 +354,8 @@ export class RepositorySourceControlManager {
   async updateState(status: RepositoryStatus) {
     const newTrackedFiles = new Set<string>();
     const newParentShowResults = new Map<string, Show>();
-    const newFileStatusesByChange = new Map<string, FileStatus[]>([
-      ["@", status.fileStatuses],
-    ]);
-    const newConflictedFilesByChange = new Map<string, Set<string>>([
-      ["@", status.conflictedFiles],
-    ]);
+    const newFileStatusesByChange = new Map<string, FileStatus[]>([["@", status.fileStatuses]]);
+    const newConflictedFilesByChange = new Map<string, Set<string>>([["@", status.conflictedFiles]]);
 
     const trackedFilesList = await this.repository.fileList();
     for (const t of trackedFilesList) {
@@ -421,13 +368,11 @@ export class RepositorySourceControlManager {
       }
     }
 
-    const parentShowPromises = status.parentChanges.map(
-      async (parentChange) => {
-        const rev = getRevFromChange(parentChange);
-        const showResult = await this.repository.show(rev);
-        return { changeId: parentChange.changeId, showResult };
-      },
-    );
+    const parentShowPromises = status.parentChanges.map(async (parentChange) => {
+      const rev = getRevFromChange(parentChange);
+      const showResult = await this.repository.show(rev);
+      return { changeId: parentChange.changeId, showResult };
+    });
 
     const parentShowResultsArray = await Promise.all(parentShowPromises);
 
@@ -445,9 +390,10 @@ export class RepositorySourceControlManager {
   }
 
   static getLabel(prefix: string, change: Change) {
-    const changeIdDisplay = change.divergent && change.changeOffset
-      ? `${change.changeId.substring(0, 8)}/${change.changeOffset}`
-      : change.changeId.substring(0, 8);
+    const changeIdDisplay =
+      change.divergent && change.changeOffset
+        ? `${change.changeId.substring(0, 8)}/${change.changeOffset}`
+        : change.changeId.substring(0, 8);
     return `${prefix} [${changeIdDisplay}]${
       change.description ? ` • ${change.description}` : ""
     }${change.isEmpty ? " (empty)" : ""}${
@@ -457,57 +403,47 @@ export class RepositorySourceControlManager {
 
   render() {
     if (!this.status?.workingCopy) {
-      throw new Error(
-        "Cannot render source control without a current working copy change.",
-      );
+      throw new Error("Cannot render source control without a current working copy change.");
     }
 
     const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
     const openDiffAction = config.get<"diff" | "file">("openDiffAction") || "diff";
 
-    this.workingCopyResourceGroup.label =
-      RepositorySourceControlManager.getLabel(
-        "Working Copy",
-        this.status.workingCopy,
-      );
-    this.workingCopyResourceGroup.resourceStates = this.status.fileStatuses.map(
-      (fileStatus) => {
-        const workingCopyUri = vscode.Uri.file(fileStatus.path);
-        const isConflicted = this.status?.conflictedFiles?.has(fileStatus.path) ?? false;
-        return {
-          resourceUri: workingCopyUri,
-          decorations: {
-            strikeThrough: fileStatus.type === "D",
-            tooltip: path.basename(fileStatus.file),
-          },
-          command: getResourceStateCommand(
-            fileStatus,
-            toJJUri(vscode.Uri.file(`${fileStatus.path}`), {
-              diffOriginalRev: "@",
-            }),
-            workingCopyUri,
-            "(Working Copy)",
-            openDiffAction,
-            workingCopyUri,
-            isConflicted,
-          ),
-        };
-      },
+    this.workingCopyResourceGroup.label = RepositorySourceControlManager.getLabel(
+      "Working Copy",
+      this.status.workingCopy,
     );
+    this.workingCopyResourceGroup.resourceStates = this.status.fileStatuses.map((fileStatus) => {
+      const workingCopyUri = vscode.Uri.file(fileStatus.path);
+      const isConflicted = this.status?.conflictedFiles?.has(fileStatus.path) ?? false;
+      return {
+        resourceUri: workingCopyUri,
+        decorations: {
+          strikeThrough: fileStatus.type === "D",
+          tooltip: path.basename(fileStatus.file),
+        },
+        command: getResourceStateCommand(
+          fileStatus,
+          toJJUri(vscode.Uri.file(`${fileStatus.path}`), {
+            diffOriginalRev: "@",
+          }),
+          workingCopyUri,
+          "(Working Copy)",
+          openDiffAction,
+          workingCopyUri,
+          isConflicted,
+        ),
+      };
+    });
     this.sourceControl.count = this.status.fileStatuses.length;
 
     const updatedGroups: vscode.SourceControlResourceGroup[] = [];
     for (const group of this.parentResourceGroups) {
-      const parentChange = this.status.parentChanges.find(
-        (change) => change.changeId === group.id,
-      );
+      const parentChange = this.status.parentChanges.find((change) => change.changeId === group.id);
       if (!parentChange) {
         group.dispose();
       } else {
-        group.label = RepositorySourceControlManager.getLabel(
-          "Parent Commit",
-          parentChange,
-        );
+        group.label = RepositorySourceControlManager.getLabel("Parent Commit", parentChange);
         updatedGroups.push(group);
       }
     }
@@ -516,16 +452,11 @@ export class RepositorySourceControlManager {
     for (const parentChange of this.status.parentChanges) {
       let parentChangeResourceGroup!: vscode.SourceControlResourceGroup;
 
-      const parentGroup = this.parentResourceGroups.find(
-        (group) => group.id === parentChange.changeId,
-      );
+      const parentGroup = this.parentResourceGroups.find((group) => group.id === parentChange.changeId);
       if (!parentGroup) {
         parentChangeResourceGroup = this.sourceControl.createResourceGroup(
           parentChange.changeId,
-          RepositorySourceControlManager.getLabel(
-            "Parent Commit",
-            parentChange,
-          ),
+          RepositorySourceControlManager.getLabel("Parent Commit", parentChange),
         );
         this.parentResourceGroups.push(parentChangeResourceGroup);
       } else {
@@ -534,33 +465,31 @@ export class RepositorySourceControlManager {
 
       const showResult = this.parentShowResults.get(parentChange.changeId);
       if (showResult) {
-        parentChangeResourceGroup.resourceStates = showResult.fileStatuses.map(
-          (parentStatus) => {
-            const workingCopyUri = vscode.Uri.file(parentStatus.path);
-            return {
-              resourceUri: toJJUri(workingCopyUri, {
+        parentChangeResourceGroup.resourceStates = showResult.fileStatuses.map((parentStatus) => {
+          const workingCopyUri = vscode.Uri.file(parentStatus.path);
+          return {
+            resourceUri: toJJUri(workingCopyUri, {
+              rev: parentChange.changeId,
+            }),
+            decorations: {
+              strikeThrough: parentStatus.type === "D",
+              tooltip: path.basename(parentStatus.file),
+            },
+            command: getResourceStateCommand(
+              parentStatus,
+              toJJUri(vscode.Uri.file(parentStatus.path), {
+                diffOriginalRev: parentChange.changeId,
+              }),
+              toJJUri(vscode.Uri.file(parentStatus.path), {
                 rev: parentChange.changeId,
               }),
-              decorations: {
-                strikeThrough: parentStatus.type === "D",
-                tooltip: path.basename(parentStatus.file),
-              },
-              command: getResourceStateCommand(
-                parentStatus,
-                toJJUri(vscode.Uri.file(parentStatus.path), {
-                  diffOriginalRev: parentChange.changeId,
-                }),
-                toJJUri(vscode.Uri.file(parentStatus.path), {
-                  rev: parentChange.changeId,
-                }),
-                `(${parentChange.changeId})`,
-                openDiffAction,
-                workingCopyUri,
-                false,
-              ),
-            };
-          },
-        );
+              `(${parentChange.changeId})`,
+              openDiffAction,
+              workingCopyUri,
+              false,
+            ),
+          };
+        });
       }
     }
 
@@ -568,36 +497,33 @@ export class RepositorySourceControlManager {
       const changeId = getRevFromChange(this.selectedCommitShowResult.change);
       this.selectedCommitChangeId = changeId;
       if (!this.selectedCommitResourceGroup) {
-        this.selectedCommitResourceGroup =
-          this.sourceControl.createResourceGroup("selected", "Selected Commit");
+        this.selectedCommitResourceGroup = this.sourceControl.createResourceGroup("selected", "Selected Commit");
       }
-      this.selectedCommitResourceGroup.label =
-        RepositorySourceControlManager.getLabel(
-          "Selected Commit",
-          this.selectedCommitShowResult.change,
-        );
-      this.selectedCommitResourceGroup.resourceStates =
-        this.selectedCommitShowResult.fileStatuses.map((fileStatus) => {
-          const workingCopyUri = vscode.Uri.file(fileStatus.path);
-          return {
-            resourceUri: toJJUri(workingCopyUri, { rev: changeId }),
-            decorations: {
-              strikeThrough: fileStatus.type === "D",
-              tooltip: path.basename(fileStatus.file),
-            },
-            command: getResourceStateCommand(
-              fileStatus,
-              toJJUri(vscode.Uri.file(fileStatus.path), {
-                diffOriginalRev: changeId,
-              }),
-              toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
-              `(${changeId})`,
-              openDiffAction,
-              workingCopyUri,
-              false,
-            ),
-          };
-        });
+      this.selectedCommitResourceGroup.label = RepositorySourceControlManager.getLabel(
+        "Selected Commit",
+        this.selectedCommitShowResult.change,
+      );
+      this.selectedCommitResourceGroup.resourceStates = this.selectedCommitShowResult.fileStatuses.map((fileStatus) => {
+        const workingCopyUri = vscode.Uri.file(fileStatus.path);
+        return {
+          resourceUri: toJJUri(workingCopyUri, { rev: changeId }),
+          decorations: {
+            strikeThrough: fileStatus.type === "D",
+            tooltip: path.basename(fileStatus.file),
+          },
+          command: getResourceStateCommand(
+            fileStatus,
+            toJJUri(vscode.Uri.file(fileStatus.path), {
+              diffOriginalRev: changeId,
+            }),
+            toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
+            `(${changeId})`,
+            openDiffAction,
+            workingCopyUri,
+            false,
+          ),
+        };
+      });
     } else {
       this.selectedCommitResourceGroup?.dispose();
       this.selectedCommitResourceGroup = undefined;
@@ -670,11 +596,7 @@ function getResourceStateCommand(
     return {
       title: "Open",
       command: "vscode.open",
-      arguments: [
-        beforeUri,
-        {} satisfies vscode.TextDocumentShowOptions,
-        `${fileStatus.file} (Deleted)`,
-      ],
+      arguments: [beforeUri, {} satisfies vscode.TextDocumentShowOptions, `${fileStatus.file} (Deleted)`],
     };
   }
   if (openDiffAction === "file") {
@@ -690,8 +612,7 @@ function getResourceStateCommand(
     arguments: [
       beforeUri,
       afterUri,
-      (fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") +
-        `${fileStatus.file} ${diffTitleSuffix}`,
+      (fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") + `${fileStatus.file} ${diffTitleSuffix}`,
     ],
   };
 }

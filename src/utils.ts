@@ -17,10 +17,7 @@ export function combinedDisposable(disposables: Disposable[]): Disposable {
   return toDisposable(() => dispose(disposables));
 }
 
-export function filterEvent<T>(
-  event: Event<T>,
-  filter: (e: T) => boolean,
-): Event<T> {
+export function filterEvent<T>(event: Event<T>, filter: (e: T) => boolean): Event<T> {
   return (
     listener: (e: T) => any, // eslint-disable-line @typescript-eslint/no-explicit-any
     thisArgs?: any, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -29,14 +26,8 @@ export function filterEvent<T>(
 }
 
 export function anyEvent<T>(...events: Event<T>[]): Event<T> {
-  return (
-    listener: (e: T) => unknown,
-    thisArgs?: unknown,
-    disposables?: Disposable[],
-  ) => {
-    const result = combinedDisposable(
-      events.map((event) => event((i) => listener.call(thisArgs, i))),
-    );
+  return (listener: (e: T) => unknown, thisArgs?: unknown, disposables?: Disposable[]) => {
+    const result = combinedDisposable(events.map((event) => event((i) => listener.call(thisArgs, i))));
 
     disposables?.push(result);
 
@@ -45,11 +36,7 @@ export function anyEvent<T>(...events: Event<T>[]): Event<T> {
 }
 
 export function onceEvent<T>(event: Event<T>): Event<T> {
-  return (
-    listener: (e: T) => unknown,
-    thisArgs?: unknown,
-    disposables?: Disposable[],
-  ) => {
+  return (listener: (e: T) => unknown, thisArgs?: unknown, disposables?: Disposable[]) => {
     const result = event(
       (e) => {
         result.dispose();
@@ -123,9 +110,7 @@ export function createThrottledAsyncFn<T, A extends unknown[]>(
   // Promise returned to callers who triggered the queued run
   let queuedRunPromise: Promise<T> | null = null;
   let queuedRunResolver: ((value: T) => void) | null = null;
-  let queuedRunRejector:
-    | Parameters<ConstructorParameters<typeof Promise>["0"]>["1"]
-    | null = null;
+  let queuedRunRejector: Parameters<ConstructorParameters<typeof Promise>["0"]>["1"] | null = null;
 
   const throttledFn = (...args: A): Promise<T> => {
     queuedArgs = args; // Always store the latest args for a potential queued run
@@ -219,10 +204,8 @@ export function getActiveTextEditorDiff(): TabInputTextDiff | undefined {
   // detecting a diff editor: https://github.com/microsoft/vscode/issues/15513
   const isDiff =
     activeTab.input instanceof TabInputTextDiff &&
-    (activeTab.input.modified?.toString() ===
-      activeTextEditor.document.uri.toString() ||
-      activeTab.input.original?.toString() ===
-        activeTextEditor.document.uri.toString());
+    (activeTab.input.modified?.toString() === activeTextEditor.document.uri.toString() ||
+      activeTab.input.original?.toString() === activeTextEditor.document.uri.toString());
 
   if (!isDiff) {
     return undefined;

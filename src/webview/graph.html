@@ -1,1143 +1,1167 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+  <head>
+    <link rel="stylesheet" href="${cssUri}" />
+    <link rel="stylesheet" href="${codiconUri}" />
+  </head>
 
-<head>
-    <link rel="stylesheet" href="${cssUri}">
-    <link rel="stylesheet" href="${codiconUri}">
-</head>
-
-<body>
+  <body>
     <div id="context-menu" class="context-menu">
-        <div class="context-menu-item" data-action="edit">Edit this change</div>
-        <div class="context-menu-item" data-action="copyId">Copy change ID</div>
-        <div class="context-menu-item" data-action="abandon">Abandon change</div>
-        <div class="context-menu-item" data-action="describe">Describe change...</div>
-        <div class="context-menu-item" data-action="createBookmark">Create bookmark...</div>
-        <div class="context-menu-item" data-action="createTag">Create tag...</div>
-        <div class="context-menu-item has-submenu" data-action="moveBookmark">
-            Move bookmark here
-            <div class="context-submenu" id="bookmark-submenu"></div>
-        </div>
-        <div class="context-menu-item has-submenu" data-action="deleteBookmark">
-            Delete bookmark
-            <div class="context-submenu" id="delete-bookmark-submenu"></div>
-        </div>
-        <div class="context-menu-item has-submenu" data-action="deleteTag">
-            Delete tag
-            <div class="context-submenu" id="delete-tag-submenu"></div>
-        </div>
-
+      <div class="context-menu-item" data-action="edit">Edit this change</div>
+      <div class="context-menu-item" data-action="copyId">Copy change ID</div>
+      <div class="context-menu-item" data-action="abandon">Abandon change</div>
+      <div class="context-menu-item" data-action="describe">Describe change...</div>
+      <div class="context-menu-item" data-action="createBookmark">Create bookmark...</div>
+      <div class="context-menu-item" data-action="createTag">Create tag...</div>
+      <div class="context-menu-item has-submenu" data-action="moveBookmark">
+        Move bookmark here
+        <div class="context-submenu" id="bookmark-submenu"></div>
+      </div>
+      <div class="context-menu-item has-submenu" data-action="deleteBookmark">
+        Delete bookmark
+        <div class="context-submenu" id="delete-bookmark-submenu"></div>
+      </div>
+      <div class="context-menu-item has-submenu" data-action="deleteTag">
+        Delete tag
+        <div class="context-submenu" id="delete-tag-submenu"></div>
+      </div>
     </div>
     <div id="rebase-menu" class="context-menu">
-        <div class="context-menu-item" data-action="rebaseOnto">Rebase onto this change</div>
-        <div class="context-menu-item" data-action="rebaseOntoWithDescendants">Rebase onto this change (with descendants)</div>
-        <div class="context-menu-separator"></div>
-        <div class="context-menu-item" data-action="rebaseAfter">Rebase after this change</div>
-        <div class="context-menu-item" data-action="rebaseAfterWithDescendants">Rebase after this change (with descendants)</div>
-        <div class="context-menu-separator"></div>
-        <div class="context-menu-item" data-action="rebaseBefore">Rebase before this change</div>
-        <div class="context-menu-item" data-action="rebaseBeforeWithDescendants">Rebase before this change (with descendants)</div>
-        <div class="context-menu-separator"></div>
-        <div class="context-menu-item" data-action="squashInto">Squash into this change</div>
+      <div class="context-menu-item" data-action="rebaseOnto">Rebase onto this change</div>
+      <div class="context-menu-item" data-action="rebaseOntoWithDescendants">
+        Rebase onto this change (with descendants)
+      </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" data-action="rebaseAfter">Rebase after this change</div>
+      <div class="context-menu-item" data-action="rebaseAfterWithDescendants">
+        Rebase after this change (with descendants)
+      </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" data-action="rebaseBefore">Rebase before this change</div>
+      <div class="context-menu-item" data-action="rebaseBeforeWithDescendants">
+        Rebase before this change (with descendants)
+      </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" data-action="squashInto">Squash into this change</div>
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="stale-state" class="stale-state">
-        <div class="stale-state-icon">
-            <i class="codicon codicon-refresh"></i>
-        </div>
-        <div class="stale-state-message">Working copy is stale</div>
-        <div class="stale-state-description">The working copy state is outdated and needs to be refreshed.</div>
-        <button id="update-stale-button" class="update-stale-button">
-            <i class="codicon codicon-sync"></i>
-            Update Working Copy
-        </button>
+      <div class="stale-state-icon">
+        <i class="codicon codicon-refresh"></i>
+      </div>
+      <div class="stale-state-message">Working copy is stale</div>
+      <div class="stale-state-description">The working copy state is outdated and needs to be refreshed.</div>
+      <button id="update-stale-button" class="update-stale-button">
+        <i class="codicon codicon-sync"></i>
+        Update Working Copy
+      </button>
     </div>
     <div id="graph">
-        <svg id="connections">
-            <defs id="svg-defs"></defs>
-            <g id="connection-lines"></g>
-            <g id="node-circles"></g>
-        </svg>
-        <div id="nodes"></div>
+      <svg id="connections">
+        <defs id="svg-defs"></defs>
+        <g id="connection-lines"></g>
+        <g id="node-circles"></g>
+      </svg>
+      <div id="nodes"></div>
     </div>
     <script>
-        const vscode = acquireVsCodeApi();
-        const rootChangeId = "z".repeat(32);
-        const SWIMLANE_WIDTH = 14;
-        const CIRCLE_RADIUS = 5;
-        let selectedNodes = new Set();
-        let tooltipTimeout = null;
-        let currentGraph = null;
-        let currentChanges = [];
-        let maxPrefixLength = 4;
-        let changeIdHorizontalOffset = 0; // Calculated later
-        const CHANGE_ID_RIGHT_PADDING = 6;
+      const vscode = acquireVsCodeApi();
+      const rootChangeId = "z".repeat(32);
+      const SWIMLANE_WIDTH = 14;
+      const CIRCLE_RADIUS = 5;
+      let selectedNodes = new Set();
+      let tooltipTimeout = null;
+      let currentGraph = null;
+      let currentChanges = [];
+      let maxPrefixLength = 4;
+      let changeIdHorizontalOffset = 0; // Calculated later
+      const CHANGE_ID_RIGHT_PADDING = 6;
 
-        let isDragging = false;
-        let dragStartChangeId = null;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let dragGhost = null;
-        let dropTargetId = null;
-        let justFinishedDrag = false;
-        const DRAG_THRESHOLD = 5;
+      let isDragging = false;
+      let dragStartChangeId = null;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let dragGhost = null;
+      let dropTargetId = null;
+      let justFinishedDrag = false;
+      const DRAG_THRESHOLD = 5;
 
-        const colorRegistry = [
-            "rgba(from var(--vscode-charts-blue) r g b / 100%)",
-            "rgba(from var(--vscode-charts-purple) r g b / 100%)",
-            "rgba(from var(--vscode-charts-orange) r g b / 100%)",
-            "rgba(from var(--vscode-charts-green) r g b / 100%)",
-            "rgba(from var(--vscode-charts-red) r g b / 100%)",
-        ];
+      const colorRegistry = [
+        "rgba(from var(--vscode-charts-blue) r g b / 100%)",
+        "rgba(from var(--vscode-charts-purple) r g b / 100%)",
+        "rgba(from var(--vscode-charts-orange) r g b / 100%)",
+        "rgba(from var(--vscode-charts-green) r g b / 100%)",
+        "rgba(from var(--vscode-charts-red) r g b / 100%)",
+      ];
 
-        window.addEventListener('message', event => {
-            const message = event.data;
-            switch (message.command) {
-                case 'updateGraph':
-                    selectedNodes.clear();
-                    document.querySelectorAll('.change-node').forEach(n => {
-                        n.classList.remove('selected', 'highlighted', 'dimmed');
-                    });
-                    document.querySelectorAll('.node-circle').forEach(circle => {
-                        circle.classList.remove('dimmed');
-                    });
-                    document.querySelectorAll('.connection-line').forEach(line => {
-                        line.classList.remove('highlighted', 'dimmed');
-                    });
-                    vscode.postMessage({
-                        command: 'selectChange',
-                        selectedNodes: []
-                    });
-                    document.getElementById('stale-state').style.display = 'none';
-                    document.getElementById('graph').style.display = 'block';
-                    updateGraph(message.changes, message.laneInfo, message.changeEditAction, message.graphStyle, message.maxPrefixLength, message.offsetWidth, message.preserveScroll);
-                    break;
-                case 'showStaleState':
-                    document.getElementById('graph').style.display = 'none';
-                    document.getElementById('stale-state').style.display = 'flex';
-                    break;
-            }
+      window.addEventListener("message", (event) => {
+        const message = event.data;
+        switch (message.command) {
+          case "updateGraph":
+            selectedNodes.clear();
+            document.querySelectorAll(".change-node").forEach((n) => {
+              n.classList.remove("selected", "highlighted", "dimmed");
+            });
+            document.querySelectorAll(".node-circle").forEach((circle) => {
+              circle.classList.remove("dimmed");
+            });
+            document.querySelectorAll(".connection-line").forEach((line) => {
+              line.classList.remove("highlighted", "dimmed");
+            });
+            vscode.postMessage({
+              command: "selectChange",
+              selectedNodes: [],
+            });
+            document.getElementById("stale-state").style.display = "none";
+            document.getElementById("graph").style.display = "block";
+            updateGraph(
+              message.changes,
+              message.laneInfo,
+              message.changeEditAction,
+              message.graphStyle,
+              message.maxPrefixLength,
+              message.offsetWidth,
+              message.preserveScroll,
+            );
+            break;
+          case "showStaleState":
+            document.getElementById("graph").style.display = "none";
+            document.getElementById("stale-state").style.display = "flex";
+            break;
+        }
+      });
+
+      function getPathBounds(pathData) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", pathData);
+        svg.appendChild(path);
+        document.body.appendChild(svg);
+
+        const bbox = path.getBBox();
+
+        document.body.removeChild(svg);
+
+        return bbox;
+      }
+
+      function getLaneColor(colorIndex) {
+        return colorRegistry[colorIndex % colorRegistry.length];
+      }
+
+      function getLaneX(laneIndex) {
+        return changeIdHorizontalOffset + CHANGE_ID_RIGHT_PADDING + SWIMLANE_WIDTH * (laneIndex + 1);
+      }
+
+      function createCircle(change, colorIndex) {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("class", "node-circle");
+        g.style.setProperty("--lane-color", getLaneColor(colorIndex));
+
+        const radius = change.currentWorkingCopy ? 7 : CIRCLE_RADIUS;
+
+        if (change.branchType === "◆") {
+          const diamond = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          const size = 5;
+          const d = `M 0 ${-size} L ${size} 0 L 0 ${size} L ${-size} 0 Z`;
+          diamond.setAttribute("d", d);
+          diamond.setAttribute("class", "diamond-path");
+          g.appendChild(diamond);
+        } else if (change.currentWorkingCopy) {
+          const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          circle.setAttribute("cx", "0");
+          circle.setAttribute("cy", "0");
+          circle.setAttribute("r", radius + 3);
+          circle.style.fill = "var(--vscode-editor-background)";
+          circle.setAttribute("stroke-width", "0");
+          g.appendChild(circle);
+
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", "0");
+          text.setAttribute("y", "0");
+          text.setAttribute("class", "working-copy");
+          text.textContent = "@";
+          g.appendChild(text);
+        } else {
+          const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          circle.setAttribute("cx", "0");
+          circle.setAttribute("cy", "0");
+          circle.setAttribute("r", radius);
+
+          if (change.branchType === "○") {
+            circle.style.fill = "var(--vscode-editor-background)";
+            circle.setAttribute("stroke-width", "1.5");
+          }
+          g.appendChild(circle);
+        }
+
+        return g;
+      }
+
+      function createPath(colorIndex, fromId, toId) {
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke-width", "2");
+        path.setAttribute("stroke-linecap", "round");
+        path.classList.add("connection-line");
+        path.style.stroke = getLaneColor(colorIndex);
+        if (fromId) path.dataset.fromId = fromId;
+        if (toId) path.dataset.toId = toId;
+        return path;
+      }
+
+      function updateCirclePositions() {
+        const svg = document.getElementById("connections");
+        const svgRect = svg.getBoundingClientRect();
+
+        if (!currentGraph || !currentGraph.nodes) return;
+
+        document.querySelectorAll(".node-circle").forEach((circle, index) => {
+          const nodeData = currentGraph.nodes[index];
+          if (!nodeData) return;
+
+          const changeId = circle.dataset.changeId;
+          const node = document.querySelector(`.change-node[data-change-id="${changeId}"]`);
+
+          if (!node) return;
+
+          const nodeRect = node.getBoundingClientRect();
+          const x = getLaneX(nodeData.lane);
+          const y = nodeRect.top - svgRect.top + nodeRect.height / 2;
+
+          circle.setAttribute("transform", `translate(${x}, ${y})`);
+        });
+      }
+
+      function updateConnections() {
+        const connectionLines = document.getElementById("connection-lines");
+        connectionLines.innerHTML = "";
+
+        if (!currentGraph || !currentGraph.edges) return;
+
+        const nodes = document.querySelectorAll(".change-node");
+        const svg = document.getElementById("connections");
+        const svgRect = svg.getBoundingClientRect();
+
+        const rowYList = [];
+        nodes.forEach((node) => {
+          const nodeRect = node.getBoundingClientRect();
+          const y = nodeRect.top - svgRect.top + nodeRect.height / 2;
+          rowYList.push(y);
         });
 
-        function getPathBounds(pathData) {
-            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", pathData);
-            svg.appendChild(path);
-            document.body.appendChild(svg);
+        const bottomY = Math.max(...rowYList) + 50;
+        const EDGE_EXTENSION = 20;
+        const ARC_RADIUS_SMALL = 8;
+        const ARC_RADIUS = 12;
 
-            const bbox = path.getBBox();
+        for (const edge of currentGraph.edges) {
+          const fromY = rowYList[edge.fromRow];
+          if (fromY === undefined) continue;
+          if (!edge.lanePath || edge.lanePath.length < 2) continue;
 
-            document.body.removeChild(svg);
+          const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
+          const d = [];
 
-            return bbox;
+          const lastSegmentIndex = edge.lanePath.length - 2;
+          for (let i = 0; i <= lastSegmentIndex; i++) {
+            const segFromLane = edge.lanePath[i];
+            const segToLane = edge.lanePath[i + 1];
+            const segFromRow = edge.fromRow + i;
+            const segToRow = edge.fromRow + i + 1;
+            const segFromY = rowYList[segFromRow];
+
+            let segToY;
+            if (edge.extendsToBottom && i === lastSegmentIndex) {
+              segToY = bottomY;
+            } else {
+              segToY = rowYList[segToRow];
+            }
+
+            if (segFromY === undefined || segToY === undefined) continue;
+
+            const fromX = getLaneX(segFromLane);
+            const toX = getLaneX(segToLane);
+
+            if (segFromLane === segToLane) {
+              d.push(`M ${fromX} ${segFromY} V ${segToY}`);
+            } else if (Math.abs(segFromLane - segToLane) === 1) {
+              const c = 18;
+              d.push(`M ${fromX} ${segFromY}`);
+              d.push(`C ${fromX} ${segFromY + c} ${toX} ${segToY - c} ${toX} ${segToY}`);
+            } else {
+              let prevToY;
+              if (edge.extendsToBottom && i === lastSegmentIndex) {
+                prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
+              } else {
+                prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
+              }
+              const horizontalY = (segToY + prevToY) / 2;
+              const r = ARC_RADIUS;
+              const goingRight = toX > fromX;
+
+              d.push(`M ${fromX} ${segFromY}`);
+              d.push(`V ${horizontalY - r}`);
+              if (goingRight) {
+                d.push(`A ${r} ${r} 0 0 0 ${fromX + r} ${horizontalY}`);
+                d.push(`H ${toX - r}`);
+                d.push(`A ${r} ${r} 0 0 1 ${toX} ${horizontalY + r}`);
+              } else {
+                d.push(`A ${r} ${r} 0 0 1 ${fromX - r} ${horizontalY}`);
+                d.push(`H ${toX + r}`);
+                d.push(`A ${r} ${r} 0 0 0 ${toX} ${horizontalY + r}`);
+              }
+              d.push(`V ${segToY}`);
+            }
+          }
+
+          path.setAttribute("d", d.join(" "));
+          connectionLines.appendChild(path);
+        }
+      }
+
+      function highlightConnectedNodes(nodeElement, highlight) {
+        const nodes = document.querySelectorAll(".change-node");
+        const nodeCircles = document.querySelectorAll("#node-circles .node-circle");
+
+        if (highlight) {
+          const nodeId = nodeElement.dataset.changeId;
+          const parentIds = JSON.parse(nodeElement.dataset.parentIds || "[]");
+
+          const childNodes = Array.from(nodes).filter((node) => {
+            const nodeParentIds = JSON.parse(node.dataset.parentIds || "[]");
+            return nodeParentIds.includes(nodeId);
+          });
+          const childIds = childNodes.map((node) => node.dataset.changeId);
+
+          nodes.forEach((node) => node.classList.add("dimmed"));
+          nodeCircles.forEach((circle) => circle.classList.add("dimmed"));
+          document.querySelectorAll(".connection-line").forEach((line) => line.classList.add("dimmed"));
+
+          nodeElement.classList.remove("dimmed");
+          nodeElement.classList.add("highlighted");
+
+          parentIds.forEach((parentId) => {
+            const parentNode = document.querySelector(`.change-node[data-change-id="${parentId}"]`);
+            if (parentNode) {
+              parentNode.classList.remove("dimmed");
+              parentNode.classList.add("highlighted");
+            }
+          });
+
+          childNodes.forEach((node) => {
+            node.classList.remove("dimmed");
+            node.classList.add("highlighted");
+          });
+
+          nodeCircles.forEach((circle) => {
+            const circleData = circle.dataset.changeId;
+            if (circleData === nodeId || parentIds.includes(circleData) || childIds.includes(circleData)) {
+              circle.classList.remove("dimmed");
+            }
+          });
+
+          const connectedIds = new Set([...parentIds, ...childIds]);
+          document.querySelectorAll(".connection-line").forEach((line) => {
+            const fromId = line.dataset.fromId;
+            const toId = line.dataset.toId;
+
+            if ((fromId === nodeId && connectedIds.has(toId)) || (toId === nodeId && connectedIds.has(fromId))) {
+              line.classList.remove("dimmed");
+              line.classList.add("highlighted");
+            }
+          });
+        } else {
+          nodes.forEach((node) => {
+            node.classList.remove("dimmed", "highlighted");
+          });
+          nodeCircles.forEach((circle) => {
+            circle.classList.remove("dimmed");
+          });
+          document.querySelectorAll(".connection-line").forEach((line) => {
+            line.classList.remove("highlighted", "dimmed");
+          });
+        }
+      }
+
+      function showTooltip(nodeElement, e) {
+        const tooltip = document.getElementById("tooltip");
+        const authorName = nodeElement.dataset.authorName;
+        const authorEmail = nodeElement.dataset.authorEmail;
+        const authorTimestamp = nodeElement.dataset.authorTimestamp;
+        const fullDescription = nodeElement.dataset.fullDescription;
+        const filesChanged = parseInt(nodeElement.dataset.filesChanged) || 0;
+        const linesAdded = parseInt(nodeElement.dataset.linesAdded) || 0;
+        const linesRemoved = parseInt(nodeElement.dataset.linesRemoved) || 0;
+
+        let html = "";
+        if (authorName || authorEmail || authorTimestamp) {
+          html += `<div class="tooltip-header">`;
+          if (authorName) {
+            html += `<span class="tooltip-author">${authorName}</span>`;
+            if (authorEmail) {
+              html += ` <span class="tooltip-email">&lt;${authorEmail}&gt;</span>`;
+            }
+          }
+          html += `</div>`;
+          if (authorTimestamp) {
+            html += `<div class="tooltip-timestamp">${authorTimestamp}</div>`;
+          }
         }
 
-        function getLaneColor(colorIndex) {
-            return colorRegistry[colorIndex % colorRegistry.length];
+        html += `<div class="tooltip-summary">${filesChanged} file${filesChanged !== 1 ? "s" : ""} changed, <span class="tooltip-added">+${linesAdded}</span> <span class="tooltip-removed">-${linesRemoved}</span></div>`;
+
+        if (fullDescription) {
+          html += `<div class="tooltip-description">${escapeHtml(fullDescription)}</div>`;
         }
 
-        function getLaneX(laneIndex) {
-            return changeIdHorizontalOffset + CHANGE_ID_RIGHT_PADDING + SWIMLANE_WIDTH * (laneIndex + 1);
+        tooltip.innerHTML = html;
+        tooltip.style.display = "block";
+        tooltip.style.left = "-9999px";
+        tooltip.style.top = "-9999px";
+
+        requestAnimationFrame(() => {
+          const tooltipRect = tooltip.getBoundingClientRect();
+          const scrollX = window.scrollX || window.pageXOffset;
+          const scrollY = window.scrollY || window.pageYOffset;
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+
+          const offset = 15;
+          let left = e.pageX + offset;
+          let top = e.pageY + offset;
+
+          if (left + tooltipRect.width > viewportWidth + scrollX - 10) {
+            left = e.pageX - tooltipRect.width - offset;
+          }
+
+          if (top + tooltipRect.height > viewportHeight + scrollY - 10) {
+            top = e.pageY - tooltipRect.height - offset;
+          }
+
+          if (top < scrollY + 10) {
+            top = scrollY + 10;
+          }
+
+          if (left < scrollX + 10) {
+            left = scrollX + 10;
+          }
+
+          tooltip.style.left = left + "px";
+          tooltip.style.top = top + "px";
+        });
+      }
+
+      function hideTooltip() {
+        const tooltip = document.getElementById("tooltip");
+        tooltip.style.display = "none";
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function updateGraph(
+        changes,
+        graph,
+        changeEditAction,
+        graphStyle,
+        maxPrefixLengthArg,
+        offsetWidthArg,
+        preserveScroll = false,
+      ) {
+        const scrollTop = preserveScroll ? window.scrollY || document.documentElement.scrollTop : 0;
+
+        currentChanges = changes;
+        currentGraph = graph || { nodes: [], edges: [] };
+        maxPrefixLength = maxPrefixLengthArg || 4;
+
+        document.getElementById("graph").style.setProperty("--change-id-ch-width", `${maxPrefixLength}ch`);
+        document.getElementById("graph").style.setProperty("--change-id-offset-width", `${offsetWidthArg || 0}ch`);
+
+        const nodesContainer = document.getElementById("nodes");
+        const circlesContainer = document.getElementById("node-circles");
+        nodesContainer.innerHTML = "";
+        circlesContainer.innerHTML = "";
+
+        const graphContainer = document.getElementById("graph");
+        if (graphStyle === "compact") {
+          graphContainer.classList.add("compact");
+        } else {
+          graphContainer.classList.remove("compact");
         }
 
-        function createCircle(change, colorIndex) {
-            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            g.setAttribute("class", "node-circle");
-            g.style.setProperty('--lane-color', getLaneColor(colorIndex));
+        changes.forEach((change, index) => {
+          if (!change.changeId) return;
 
-            const radius = change.currentWorkingCopy ? 7 : CIRCLE_RADIUS;
+          const nodeData = currentGraph.nodes[index];
+          const nodeLane = nodeData ? nodeData.lane : 0;
+          const colorIndex = nodeData ? nodeData.colorIndex : 0;
 
+          const node = document.createElement("div");
+          node.className = "change-node" + (change.currentWorkingCopy ? " working-copy" : "");
+          node.dataset.changeId = change.changeId;
+          node.dataset.parentIds = JSON.stringify(change.parentChangeIds || []);
+          node.dataset.branchType = change.branchType;
+          node.dataset.currentWorkingCopy = change.currentWorkingCopy;
+          node.dataset.authorName = change.authorName || "";
+          node.dataset.authorEmail = change.authorEmail || "";
+          node.dataset.authorTimestamp = change.authorTimestamp || "";
+          node.dataset.fullDescription = change.fullDescription || "";
+          node.dataset.filesChanged = change.filesChanged || 0;
+          node.dataset.linesAdded = change.linesAdded || 0;
+          node.dataset.linesRemoved = change.linesRemoved || 0;
+          node.dataset.mine = change.mine || false;
+          node.dataset.nodeLane = nodeLane;
+          node.dataset.changeOffset = change.changeOffset || "";
+          node.dataset.conflict = change.conflict || false;
+
+          const textContent = document.createElement("div");
+          textContent.className = "text-content";
+          textContent.style.setProperty("--graph-width", `${SWIMLANE_WIDTH * nodeData.numLanesActiveVisually}px`);
+          textContent.style.setProperty("--change-id-right-padding", `${CHANGE_ID_RIGHT_PADDING}px`);
+
+          const changeIdLeft = document.createElement("div");
+          changeIdLeft.className = "change-id-left";
+          const changeIdPrefix = change.changeIdPrefix;
+          const changeIdSuffix = change.changeIdSuffix || "";
+          const changeOffset = change.changeOffset;
+          let changeIdHtml = "";
+          if (change.conflict) {
+            changeIdHtml += '<span class="conflict-indicator">✗</span>';
+          }
+          changeIdHtml += `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span>`;
+          if (changeOffset) {
+            changeIdHtml += `<span class="change-id-offset">/${changeOffset}</span>`;
+          }
+          changeIdLeft.innerHTML = changeIdHtml;
+          node.appendChild(changeIdLeft);
+
+          const nodeLabel = document.createElement("div");
+          if (change.workingCopies && change.workingCopies.length > 0) {
+            change.workingCopies.forEach((wc) => {
+              const pill = document.createElement("span");
+              pill.className = "pill workspace-pill";
+              pill.textContent = wc;
+              nodeLabel.appendChild(pill);
+            });
+          }
+          if (change.localBookmarks.length > 0) {
+            change.localBookmarks.forEach((b) => {
+              const pill = document.createElement("span");
+              pill.className = "pill bookmark-pill" + (b.synced ? "" : " unsynced");
+              pill.textContent = b.name;
+              pill.dataset.bookmark = b.name;
+              nodeLabel.appendChild(pill);
+            });
+          }
+          if (change.remoteBookmarks.length > 0) {
+            const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
+            change.remoteBookmarks.forEach((b) => {
+              if (!localBookmarkNames.has(b.name)) {
+                const pill = document.createElement("span");
+                pill.className = "pill bookmark-pill";
+                pill.textContent = `${b.name}@${b.remote}`;
+                nodeLabel.appendChild(pill);
+              }
+            });
+          }
+          if (change.localTags.length > 0) {
+            change.localTags.forEach((t) => {
+              const pill = document.createElement("span");
+              pill.className = "pill tag-pill" + (t.synced ? "" : " unsynced");
+              pill.textContent = t.name;
+              nodeLabel.appendChild(pill);
+            });
+          }
+          if (change.remoteTags.length > 0) {
+            const localTagNames = new Set(change.localTags.map((t) => t.name));
+            change.remoteTags.forEach((t) => {
+              if (!localTagNames.has(t.name)) {
+                const pill = document.createElement("span");
+                pill.className = "pill tag-pill";
+                pill.textContent = `${t.name}@${t.remote}`;
+                nodeLabel.appendChild(pill);
+              }
+            });
+          }
+          const labelText = document.createElement("span");
+          labelText.textContent = change.label;
+          nodeLabel.appendChild(labelText);
+          if (graphStyle === "compact" && !change.mine && change.authorName) {
+            const authorSpan = document.createElement("span");
+            authorSpan.className = "author-subdued";
+            authorSpan.textContent = change.authorName;
+            nodeLabel.appendChild(authorSpan);
+          }
+          textContent.append(nodeLabel);
+          if (graphStyle !== "compact") {
+            const nodeDescription = document.createElement("div");
+            nodeDescription.className = "description";
+            nodeDescription.textContent = change.description;
+            textContent.append(nodeDescription);
+          }
+          node.appendChild(textContent);
+
+          const editButton = document.createElement("button");
+          editButton.className = "edit-button";
+          editButton.innerHTML = '<i class="codicon codicon-log-in"></i>';
+          editButton.title =
+            changeEditAction === "new" ? "Create and edit a new empty change on top" : "Edit this change";
+          editButton.onclick = async (e) => {
+            e.stopPropagation();
+            await vscode.postMessage({
+              command: "editChange",
+              changeId: change.changeId,
+            });
+          };
+
+          if (change.currentWorkingCopy || (changeEditAction === "edit" && change.changeId === rootChangeId)) {
+            editButton.style.display = "none";
+          }
+          node.appendChild(editButton);
+          nodesContainer.appendChild(node);
+
+          const circle = createCircle(change, colorIndex);
+          circle.dataset.changeId = change.changeId;
+          circle.dataset.nodeLane = nodeLane;
+          circlesContainer.appendChild(circle);
+
+          node.addEventListener("mouseenter", (e) => {
+            highlightConnectedNodes(node, true);
+            if (change.changeId !== rootChangeId) {
+              tooltipTimeout = setTimeout(() => {
+                showTooltip(node, e);
+              }, 500);
+            }
+          });
+
+          node.addEventListener("mousemove", (e) => {
+            if (tooltipTimeout) {
+              clearTimeout(tooltipTimeout);
+            }
+            if (change.changeId !== rootChangeId) {
+              tooltipTimeout = setTimeout(() => {
+                showTooltip(node, e);
+              }, 500);
+            }
+          });
+
+          node.addEventListener("mouseleave", () => {
+            highlightConnectedNodes(node, false);
+            if (tooltipTimeout) {
+              clearTimeout(tooltipTimeout);
+              tooltipTimeout = null;
+            }
+            hideTooltip();
+          });
+
+          node.onmousedown = (e) => {
+            if (e.button !== 0 || e.shiftKey) {
+              return;
+            }
             if (change.branchType === "◆") {
-                const diamond = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                const size = 5;
-                const d = `M 0 ${-size} L ${size} 0 L 0 ${size} L ${-size} 0 Z`;
-                diamond.setAttribute("d", d);
-                diamond.setAttribute("class", "diamond-path");
-                g.appendChild(diamond);
-            } else if (change.currentWorkingCopy) {
-                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circle.setAttribute("cx", "0");
-                circle.setAttribute("cy", "0");
-                circle.setAttribute("r", radius + 3);
-                circle.style.fill = "var(--vscode-editor-background)";
-                circle.setAttribute("stroke-width", "0");
-                g.appendChild(circle);
+              return;
+            }
+            dragStartChangeId = change.changeId;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+          };
 
-                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                text.setAttribute("x", "0");
-                text.setAttribute("y", "0");
-                text.setAttribute("class", "working-copy");
-                text.textContent = "@";
-                g.appendChild(text);
+          node.onclick = (e) => {
+            if (isDragging || justFinishedDrag) {
+              return;
+            }
+            if (e.shiftKey) {
+              if (selectedNodes.has(change.changeId)) {
+                selectedNodes.delete(change.changeId);
+                node.classList.remove("selected");
+              } else {
+                selectedNodes.add(change.changeId);
+                node.classList.add("selected");
+              }
             } else {
-                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circle.setAttribute("cx", "0");
-                circle.setAttribute("cy", "0");
-                circle.setAttribute("r", radius);
-
-                if (change.branchType === "○") {
-                    circle.style.fill = "var(--vscode-editor-background)";
-                    circle.setAttribute("stroke-width", "1.5");
-                }
-                g.appendChild(circle);
+              document.querySelectorAll(".change-node.selected").forEach((n) => {
+                n.classList.remove("selected");
+              });
+              selectedNodes.clear();
+              selectedNodes.add(change.changeId);
+              node.classList.add("selected");
             }
 
-            return g;
-        }
-
-        function createPath(colorIndex, fromId, toId) {
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('fill', 'none');
-            path.setAttribute('stroke-width', '2');
-            path.setAttribute('stroke-linecap', 'round');
-            path.classList.add('connection-line');
-            path.style.stroke = getLaneColor(colorIndex);
-            if (fromId) path.dataset.fromId = fromId;
-            if (toId) path.dataset.toId = toId;
-            return path;
-        }
-
-        function updateCirclePositions() {
-            const svg = document.getElementById('connections');
-            const svgRect = svg.getBoundingClientRect();
-            
-            if (!currentGraph || !currentGraph.nodes) return;
-            
-            document.querySelectorAll('.node-circle').forEach((circle, index) => {
-                const nodeData = currentGraph.nodes[index];
-                if (!nodeData) return;
-                
-                const changeId = circle.dataset.changeId;
-                const node = document.querySelector(`.change-node[data-change-id="${changeId}"]`);
-                
-                if (!node) return;
-                
-                const nodeRect = node.getBoundingClientRect();
-                const x = getLaneX(nodeData.lane);
-                const y = nodeRect.top - svgRect.top + (nodeRect.height / 2);
-                
-                circle.setAttribute("transform", `translate(${x}, ${y})`);
+            vscode.postMessage({
+              command: "selectChange",
+              selectedNodes: Array.from(selectedNodes),
             });
-        }
+          };
 
-        function updateConnections() {
-            const connectionLines = document.getElementById('connection-lines');
-            connectionLines.innerHTML = '';
-
-            if (!currentGraph || !currentGraph.edges) return;
-
-            const nodes = document.querySelectorAll('.change-node');
-            const svg = document.getElementById('connections');
-            const svgRect = svg.getBoundingClientRect();
-
-            const rowYList = [];
-            nodes.forEach(node => {
-                const nodeRect = node.getBoundingClientRect();
-                const y = nodeRect.top - svgRect.top + (nodeRect.height / 2);
-                rowYList.push(y);
-            });
-
-            const bottomY = Math.max(...rowYList) + 50;
-            const EDGE_EXTENSION = 20;
-            const ARC_RADIUS_SMALL = 8;
-            const ARC_RADIUS = 12;
-
-            for (const edge of currentGraph.edges) {
-                const fromY = rowYList[edge.fromRow];
-                if (fromY === undefined) continue;
-                if (!edge.lanePath || edge.lanePath.length < 2) continue;
-
-                const path = createPath(edge.colorIndex, edge.fromId, edge.toId);
-                const d = [];
-
-                const lastSegmentIndex = edge.lanePath.length - 2;
-                for (let i = 0; i <= lastSegmentIndex; i++) {
-                    const segFromLane = edge.lanePath[i];
-                    const segToLane = edge.lanePath[i + 1];
-                    const segFromRow = edge.fromRow + i;
-                    const segToRow = edge.fromRow + i + 1;
-                    const segFromY = rowYList[segFromRow];
-                    
-                    let segToY;
-                    if (edge.extendsToBottom && i === lastSegmentIndex) {
-                        segToY = bottomY;
-                    } else {
-                        segToY = rowYList[segToRow];
-                    }
-
-                    if (segFromY === undefined || segToY === undefined) continue;
-
-                    const fromX = getLaneX(segFromLane);
-                    const toX = getLaneX(segToLane);
-
-                    if (segFromLane === segToLane) {
-                        d.push(`M ${fromX} ${segFromY} V ${segToY}`);
-                    } else if (Math.abs(segFromLane - segToLane) === 1) {
-                        const c = 18;
-                        d.push(`M ${fromX} ${segFromY}`);
-                        d.push(`C ${fromX} ${segFromY + c} ${toX} ${segToY - c} ${toX} ${segToY}`);
-                    } else {
-                        let prevToY;
-                        if (edge.extendsToBottom && i === lastSegmentIndex) {
-                            prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
-                        } else {
-                            prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
-                        }
-                        const horizontalY = (segToY + prevToY) / 2;
-                        const r = ARC_RADIUS;
-                        const goingRight = toX > fromX;
-
-                        d.push(`M ${fromX} ${segFromY}`);
-                        d.push(`V ${horizontalY - r}`);
-                        if (goingRight) {
-                            d.push(`A ${r} ${r} 0 0 0 ${fromX + r} ${horizontalY}`);
-                            d.push(`H ${toX - r}`);
-                            d.push(`A ${r} ${r} 0 0 1 ${toX} ${horizontalY + r}`);
-                        } else {
-                            d.push(`A ${r} ${r} 0 0 1 ${fromX - r} ${horizontalY}`);
-                            d.push(`H ${toX + r}`);
-                            d.push(`A ${r} ${r} 0 0 0 ${toX} ${horizontalY + r}`);
-                        }
-                        d.push(`V ${segToY}`);
-                    }
-                }
-
-                path.setAttribute('d', d.join(' '));
-                connectionLines.appendChild(path);
+          node.ondblclick = (e) => {
+            if (change.currentWorkingCopy) {
+              return;
             }
-        }
+            vscode.postMessage({
+              command: "editChange",
+              changeId: change.changeId,
+            });
+          };
 
-        function highlightConnectedNodes(nodeElement, highlight) {
-            const nodes = document.querySelectorAll('.change-node');
-            const nodeCircles = document.querySelectorAll('#node-circles .node-circle');
-
-            if (highlight) {
-                const nodeId = nodeElement.dataset.changeId;
-                const parentIds = JSON.parse(nodeElement.dataset.parentIds || '[]');
-
-                const childNodes = Array.from(nodes).filter(node => {
-                    const nodeParentIds = JSON.parse(node.dataset.parentIds || '[]');
-                    return nodeParentIds.includes(nodeId);
-                });
-                const childIds = childNodes.map(node => node.dataset.changeId);
-
-                nodes.forEach(node => node.classList.add('dimmed'));
-                nodeCircles.forEach(circle => circle.classList.add('dimmed'));
-                document.querySelectorAll('.connection-line').forEach(line => line.classList.add('dimmed'));
-
-                nodeElement.classList.remove('dimmed');
-                nodeElement.classList.add('highlighted');
-
-                parentIds.forEach(parentId => {
-                    const parentNode = document.querySelector(`.change-node[data-change-id="${parentId}"]`);
-                    if (parentNode) {
-                        parentNode.classList.remove('dimmed');
-                        parentNode.classList.add('highlighted');
-                    }
-                });
-
-                childNodes.forEach(node => {
-                    node.classList.remove('dimmed');
-                    node.classList.add('highlighted');
-                });
-
-                nodeCircles.forEach(circle => {
-                    const circleData = circle.dataset.changeId;
-                    if (circleData === nodeId || parentIds.includes(circleData) || childIds.includes(circleData)) {
-                        circle.classList.remove('dimmed');
-                    }
-                });
-
-                const connectedIds = new Set([...parentIds, ...childIds]);
-                document.querySelectorAll('.connection-line').forEach(line => {
-                    const fromId = line.dataset.fromId;
-                    const toId = line.dataset.toId;
-
-                    if ((fromId === nodeId && connectedIds.has(toId)) ||
-                        (toId === nodeId && connectedIds.has(fromId))) {
-                        line.classList.remove('dimmed');
-                        line.classList.add('highlighted');
-                    }
-                });
+          node.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            if (change.changeId === rootChangeId) {
+              return;
+            }
+            const contextMenu = document.getElementById("context-menu");
+            contextMenu.dataset.changeId = change.changeId;
+            contextMenu.dataset.immutable = change.branchType === "◆" ? "true" : "false";
+            const editItem = contextMenu.querySelector('[data-action="edit"]');
+            if (change.currentWorkingCopy) {
+              editItem.style.display = "none";
             } else {
-                nodes.forEach(node => {
-                    node.classList.remove('dimmed', 'highlighted');
-                });
-                nodeCircles.forEach(circle => {
-                    circle.classList.remove('dimmed');
-                });
-                document.querySelectorAll('.connection-line').forEach(line => {
-                    line.classList.remove('highlighted', 'dimmed');
-                });
+              editItem.style.display = "block";
             }
-        }
-
-        function showTooltip(nodeElement, e) {
-            const tooltip = document.getElementById('tooltip');
-            const authorName = nodeElement.dataset.authorName;
-            const authorEmail = nodeElement.dataset.authorEmail;
-            const authorTimestamp = nodeElement.dataset.authorTimestamp;
-            const fullDescription = nodeElement.dataset.fullDescription;
-            const filesChanged = parseInt(nodeElement.dataset.filesChanged) || 0;
-            const linesAdded = parseInt(nodeElement.dataset.linesAdded) || 0;
-            const linesRemoved = parseInt(nodeElement.dataset.linesRemoved) || 0;
-
-            let html = '';
-            if (authorName || authorEmail || authorTimestamp) {
-                html += `<div class="tooltip-header">`;
-                if (authorName) {
-                    html += `<span class="tooltip-author">${authorName}</span>`;
-                    if (authorEmail) {
-                        html += ` <span class="tooltip-email">&lt;${authorEmail}&gt;</span>`;
-                    }
-                }
-                html += `</div>`;
-                if (authorTimestamp) {
-                    html += `<div class="tooltip-timestamp">${authorTimestamp}</div>`;
-                }
-            }
-
-            html += `<div class="tooltip-summary">${filesChanged} file${filesChanged !== 1 ? 's' : ''} changed, <span class="tooltip-added">+${linesAdded}</span> <span class="tooltip-removed">-${linesRemoved}</span></div>`;
-
-            if (fullDescription) {
-                html += `<div class="tooltip-description">${escapeHtml(fullDescription)}</div>`;
-            }
-
-            tooltip.innerHTML = html;
-            tooltip.style.display = 'block';
-            tooltip.style.left = '-9999px';
-            tooltip.style.top = '-9999px';
+            contextMenu.style.left = "-9999px";
+            contextMenu.style.top = "-9999px";
+            contextMenu.style.display = "block";
 
             requestAnimationFrame(() => {
-                const tooltipRect = tooltip.getBoundingClientRect();
-                const scrollX = window.scrollX || window.pageXOffset;
-                const scrollY = window.scrollY || window.pageYOffset;
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
+              const menuRect = contextMenu.getBoundingClientRect();
+              const viewportWidth = window.innerWidth;
+              const viewportHeight = window.innerHeight;
+              const scrollX = window.scrollX || window.pageXOffset;
+              const scrollY = window.scrollY || window.pageYOffset;
 
-                const offset = 15;
-                let left = e.pageX + offset;
-                let top = e.pageY + offset;
+              let left = e.pageX;
+              let top = e.pageY;
 
-                if (left + tooltipRect.width > viewportWidth + scrollX - 10) {
-                    left = e.pageX - tooltipRect.width - offset;
+              if (left + menuRect.width > viewportWidth + scrollX - 10) {
+                left = e.pageX - menuRect.width;
+              }
+
+              if (top + menuRect.height > viewportHeight + scrollY - 10) {
+                top = e.pageY - menuRect.height;
+              }
+
+              if (left < scrollX + 10) {
+                left = scrollX + 10;
+              }
+
+              if (top < scrollY + 10) {
+                top = scrollY + 10;
+              }
+
+              contextMenu.style.left = left + "px";
+              contextMenu.style.top = top + "px";
+
+              document.querySelectorAll(".has-submenu").forEach((item) => {
+                const submenu = item.querySelector(".context-submenu");
+                if (submenu) {
+                  const itemRect = item.getBoundingClientRect();
+                  submenu.classList.remove("left", "above", "below");
+                  submenu.style.display = "block";
+                  const submenuRect = submenu.getBoundingClientRect();
+                  submenu.style.display = "";
+
+                  const fitsRight = itemRect.right + submenuRect.width <= viewportWidth - 10;
+                  const fitsLeft = itemRect.left - submenuRect.width >= 10;
+
+                  if (fitsRight) {
+                  } else if (fitsLeft) {
+                    submenu.classList.add("left");
+                  } else {
+                    const fitsBelow = itemRect.bottom + submenuRect.height <= viewportHeight - 10;
+                    const fitsAbove = itemRect.top - submenuRect.height >= 10;
+
+                    if (fitsBelow) {
+                      submenu.classList.add("below");
+                    } else if (fitsAbove) {
+                      submenu.classList.add("above");
+                    } else {
+                      submenu.classList.add("below");
+                    }
+                  }
                 }
-
-                if (top + tooltipRect.height > viewportHeight + scrollY - 10) {
-                    top = e.pageY - tooltipRect.height - offset;
-                }
-
-                if (top < scrollY + 10) {
-                    top = scrollY + 10;
-                }
-
-                if (left < scrollX + 10) {
-                    left = scrollX + 10;
-                }
-
-                tooltip.style.left = left + 'px';
-                tooltip.style.top = top + 'px';
+              });
             });
-        }
 
-        function hideTooltip() {
-            const tooltip = document.getElementById('tooltip');
-            tooltip.style.display = 'none';
-        }
+            const allBookmarks = currentChanges
+              .filter((c) => c.localBookmarks && c.localBookmarks.length > 0)
+              .flatMap((c) => c.localBookmarks.map((b) => b.name));
+            const uniqueBookmarks = [...new Set(allBookmarks)].sort();
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+            const bookmarkSubmenu = document.getElementById("bookmark-submenu");
+            const moveBookmarkItem = contextMenu.querySelector('[data-action="moveBookmark"]');
+            bookmarkSubmenu.innerHTML = "";
 
-        function updateGraph(changes, graph, changeEditAction, graphStyle, maxPrefixLengthArg, offsetWidthArg, preserveScroll = false) {
-            const scrollTop = preserveScroll ?
-                (window.scrollY || document.documentElement.scrollTop) : 0;
-
-            currentChanges = changes;
-            currentGraph = graph || { nodes: [], edges: [] };
-            maxPrefixLength = maxPrefixLengthArg || 4;
-
-            document.getElementById('graph').style.setProperty('--change-id-ch-width', `${maxPrefixLength}ch`);
-            document.getElementById('graph').style.setProperty('--change-id-offset-width', `${offsetWidthArg || 0}ch`);
-
-            const nodesContainer = document.getElementById('nodes');
-            const circlesContainer = document.getElementById('node-circles');
-            nodesContainer.innerHTML = '';
-            circlesContainer.innerHTML = '';
-
-            const graphContainer = document.getElementById('graph');
-            if (graphStyle === 'compact') {
-                graphContainer.classList.add('compact');
+            if (uniqueBookmarks.length === 0) {
+              moveBookmarkItem.classList.add("disabled");
             } else {
-                graphContainer.classList.remove('compact');
+              moveBookmarkItem.classList.remove("disabled");
+              uniqueBookmarks.forEach((bookmarkName) => {
+                const item = document.createElement("div");
+                item.className = "context-submenu-item";
+                item.textContent = bookmarkName;
+                item.dataset.bookmark = bookmarkName;
+                bookmarkSubmenu.appendChild(item);
+              });
             }
 
-            changes.forEach((change, index) => {
-                if (!change.changeId) return;
+            const deleteBookmarkSubmenu = document.getElementById("delete-bookmark-submenu");
+            const deleteBookmarkItem = contextMenu.querySelector('[data-action="deleteBookmark"]');
+            const localBookmarks = change.localBookmarks || [];
+            deleteBookmarkSubmenu.innerHTML = "";
 
-                const nodeData = currentGraph.nodes[index];
-                const nodeLane = nodeData ? nodeData.lane : 0;
-                const colorIndex = nodeData ? nodeData.colorIndex : 0;
+            if (localBookmarks.length === 0) {
+              deleteBookmarkItem.classList.add("disabled");
+            } else {
+              deleteBookmarkItem.classList.remove("disabled");
+              localBookmarks.forEach((b) => {
+                const item = document.createElement("div");
+                item.className = "context-submenu-item";
+                item.textContent = b.name;
+                item.dataset.deleteBookmark = b.name;
+                deleteBookmarkSubmenu.appendChild(item);
+              });
+            }
 
-                const node = document.createElement('div');
-                node.className = 'change-node' + (change.currentWorkingCopy ? ' working-copy' : '');
-                node.dataset.changeId = change.changeId;
-                node.dataset.parentIds = JSON.stringify(change.parentChangeIds || []);
-                node.dataset.branchType = change.branchType;
-                node.dataset.currentWorkingCopy = change.currentWorkingCopy;
-                node.dataset.authorName = change.authorName || '';
-                node.dataset.authorEmail = change.authorEmail || '';
-                node.dataset.authorTimestamp = change.authorTimestamp || '';
-                node.dataset.fullDescription = change.fullDescription || '';
-                node.dataset.filesChanged = change.filesChanged || 0;
-                node.dataset.linesAdded = change.linesAdded || 0;
-                node.dataset.linesRemoved = change.linesRemoved || 0;
-                node.dataset.mine = change.mine || false;
-                node.dataset.nodeLane = nodeLane;
-                node.dataset.changeOffset = change.changeOffset || '';
-                node.dataset.conflict = change.conflict || false;
+            const deleteTagSubmenu = document.getElementById("delete-tag-submenu");
+            const deleteTagItem = contextMenu.querySelector('[data-action="deleteTag"]');
+            const localTags = change.localTags || [];
+            deleteTagSubmenu.innerHTML = "";
 
-                const textContent = document.createElement('div');
-                textContent.className = 'text-content';
-                textContent.style.setProperty('--graph-width', `${SWIMLANE_WIDTH * nodeData.numLanesActiveVisually}px`);
-                textContent.style.setProperty('--change-id-right-padding', `${CHANGE_ID_RIGHT_PADDING}px`);
+            if (localTags.length === 0) {
+              deleteTagItem.classList.add("disabled");
+            } else {
+              deleteTagItem.classList.remove("disabled");
+              localTags.forEach((t) => {
+                const item = document.createElement("div");
+                item.className = "context-submenu-item";
+                item.textContent = t.name;
+                item.dataset.deleteTag = t.name;
+                deleteTagSubmenu.appendChild(item);
+              });
+            }
+          });
+        });
 
-                const changeIdLeft = document.createElement('div');
-                changeIdLeft.className = 'change-id-left';
-                const changeIdPrefix = change.changeIdPrefix;
-                const changeIdSuffix = change.changeIdSuffix || "";
-                const changeOffset = change.changeOffset;
-                let changeIdHtml = '';
-                if (change.conflict) {
-                    changeIdHtml += '<span class="conflict-indicator">✗</span>';
-                }
-                changeIdHtml += `<span class="change-id-prefix">${changeIdPrefix}</span><span class="change-id-suffix">${changeIdSuffix}</span>`;
-                if (changeOffset) {
-                    changeIdHtml += `<span class="change-id-offset">/${changeOffset}</span>`;
-                }
-                changeIdLeft.innerHTML = changeIdHtml;
-                node.appendChild(changeIdLeft);
+        document.fonts.ready.then(() => {
+          requestAnimationFrame(() => {
+            const firstChangeId = document.querySelector(".change-id-left");
+            if (firstChangeId) {
+              changeIdHorizontalOffset = firstChangeId.offsetWidth;
+            }
+            updateCirclePositions();
+            updateConnections();
+            if (scrollTop > 0) {
+              window.scrollTo(0, scrollTop);
+            }
+          });
+        });
+      }
 
-                const nodeLabel = document.createElement("div");
-                if (change.workingCopies && change.workingCopies.length > 0) {
-                    change.workingCopies.forEach(wc => {
-                        const pill = document.createElement("span");
-                        pill.className = 'pill workspace-pill';
-                        pill.textContent = wc;
-                        nodeLabel.appendChild(pill);
-                    });
-                }
-                if (change.localBookmarks.length > 0) {
-                    change.localBookmarks.forEach(b => {
-                        const pill = document.createElement("span");
-                        pill.className = 'pill bookmark-pill' + (b.synced ? '' : ' unsynced');
-                        pill.textContent = b.name;
-                        pill.dataset.bookmark = b.name;
-                        nodeLabel.appendChild(pill);
-                    });
-                }
-                if (change.remoteBookmarks.length > 0) {
-                    const localBookmarkNames = new Set(change.localBookmarks.map(b => b.name));
-                    change.remoteBookmarks.forEach(b => {
-                            if (!localBookmarkNames.has(b.name)) {
-                                const pill = document.createElement("span");
-                                pill.className = 'pill bookmark-pill';
-                                pill.textContent = `${b.name}@${b.remote}`;
-                                nodeLabel.appendChild(pill);
-                            }
-                    });
-                }
-                if (change.localTags.length > 0) {
-                    change.localTags.forEach(t => {
-                        const pill = document.createElement("span");
-                        pill.className = 'pill tag-pill' + (t.synced ? '' : ' unsynced');
-                        pill.textContent = t.name;
-                        nodeLabel.appendChild(pill);
-                    });
-                }
-                if (change.remoteTags.length > 0) {
-                    const localTagNames = new Set(change.localTags.map(t => t.name));
-                    change.remoteTags.forEach(t => {
-                        if (!localTagNames.has(t.name)) {
-                            const pill = document.createElement("span");
-                            pill.className = 'pill tag-pill';
-                            pill.textContent = `${t.name}@${t.remote}`;
-                            nodeLabel.appendChild(pill);
-                        }
-                    });
-                }
-                const labelText = document.createElement("span");
-                labelText.textContent = change.label;
-                nodeLabel.appendChild(labelText);
-                if (graphStyle === 'compact' && !change.mine && change.authorName) {
-                    const authorSpan = document.createElement("span");
-                    authorSpan.className = 'author-subdued';
-                    authorSpan.textContent = change.authorName;
-                    nodeLabel.appendChild(authorSpan);
-                }
-                textContent.append(nodeLabel);
-                if (graphStyle !== 'compact') {
-                    const nodeDescription = document.createElement("div");
-                    nodeDescription.className = 'description';
-                    nodeDescription.textContent = change.description;
-                    textContent.append(nodeDescription);
-                }
-                node.appendChild(textContent);
+      document.addEventListener("click", () => {
+        const contextMenu = document.getElementById("context-menu");
+        contextMenu.style.display = "none";
+      });
 
-                const editButton = document.createElement('button');
-                editButton.className = 'edit-button';
-                editButton.innerHTML = '<i class="codicon codicon-log-in"></i>';
-                editButton.title = changeEditAction === 'new' ? 'Create and edit a new empty change on top' : 'Edit this change';
-                editButton.onclick = async (e) => {
-                    e.stopPropagation();
-                    await vscode.postMessage({
-                        command: 'editChange',
-                        changeId: change.changeId
-                    });
-                };
+      window.addEventListener("blur", () => {
+        const contextMenu = document.getElementById("context-menu");
+        contextMenu.style.display = "none";
+      });
 
-                if (change.currentWorkingCopy || (changeEditAction === 'edit' && change.changeId === rootChangeId)) {
-                    editButton.style.display = 'none';
-                }
-                node.appendChild(editButton);
-                nodesContainer.appendChild(node);
-
-                const circle = createCircle(change, colorIndex);
-                circle.dataset.changeId = change.changeId;
-                circle.dataset.nodeLane = nodeLane;
-                circlesContainer.appendChild(circle);
-
-                node.addEventListener('mouseenter', (e) => {
-                    highlightConnectedNodes(node, true);
-                    if (change.changeId !== rootChangeId) {
-                        tooltipTimeout = setTimeout(() => {
-                            showTooltip(node, e);
-                        }, 500);
-                    }
-                });
-
-                node.addEventListener('mousemove', (e) => {
-                    if (tooltipTimeout) {
-                        clearTimeout(tooltipTimeout);
-                    }
-                    if (change.changeId !== rootChangeId) {
-                        tooltipTimeout = setTimeout(() => {
-                            showTooltip(node, e);
-                        }, 500);
-                    }
-                });
-
-                node.addEventListener('mouseleave', () => {
-                    highlightConnectedNodes(node, false);
-                    if (tooltipTimeout) {
-                        clearTimeout(tooltipTimeout);
-                        tooltipTimeout = null;
-                    }
-                    hideTooltip();
-                });
-
-                node.onmousedown = (e) => {
-                    if (e.button !== 0 || e.shiftKey) {
-                        return;
-                    }
-                    if (change.branchType === '◆') {
-                        return;
-                    }
-                    dragStartChangeId = change.changeId;
-                    dragStartX = e.clientX;
-                    dragStartY = e.clientY;
-                };
-
-                node.onclick = (e) => {
-                    if (isDragging || justFinishedDrag) {
-                        return;
-                    }
-                    if (e.shiftKey) {
-                        if (selectedNodes.has(change.changeId)) {
-                            selectedNodes.delete(change.changeId);
-                            node.classList.remove('selected');
-                        } else {
-                            selectedNodes.add(change.changeId);
-                            node.classList.add('selected');
-                        }
-                    } else {
-                        document.querySelectorAll('.change-node.selected').forEach(n => {
-                            n.classList.remove('selected');
-                        });
-                        selectedNodes.clear();
-                        selectedNodes.add(change.changeId);
-                        node.classList.add('selected');
-                    }
-
-                    vscode.postMessage({
-                        command: 'selectChange',
-                        selectedNodes: Array.from(selectedNodes)
-                    });
-                };
-
-                node.ondblclick = (e) => {
-                    if (change.currentWorkingCopy) {
-                        return;
-                    }
-                    vscode.postMessage({
-                        command: 'editChange',
-                        changeId: change.changeId
-                    });
-                };
-
-                node.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    if (change.changeId === rootChangeId) {
-                        return;
-                    }
-                    const contextMenu = document.getElementById('context-menu');
-                    contextMenu.dataset.changeId = change.changeId;
-                    contextMenu.dataset.immutable = change.branchType === '◆' ? 'true' : 'false';
-                    const editItem = contextMenu.querySelector('[data-action="edit"]');
-                    if (change.currentWorkingCopy) {
-                        editItem.style.display = 'none';
-                    } else {
-                        editItem.style.display = 'block';
-                    }
-                    contextMenu.style.left = '-9999px';
-                    contextMenu.style.top = '-9999px';
-                    contextMenu.style.display = 'block';
-
-                    requestAnimationFrame(() => {
-                        const menuRect = contextMenu.getBoundingClientRect();
-                        const viewportWidth = window.innerWidth;
-                        const viewportHeight = window.innerHeight;
-                        const scrollX = window.scrollX || window.pageXOffset;
-                        const scrollY = window.scrollY || window.pageYOffset;
-
-                        let left = e.pageX;
-                        let top = e.pageY;
-
-                        if (left + menuRect.width > viewportWidth + scrollX - 10) {
-                            left = e.pageX - menuRect.width;
-                        }
-
-                        if (top + menuRect.height > viewportHeight + scrollY - 10) {
-                            top = e.pageY - menuRect.height;
-                        }
-
-                        if (left < scrollX + 10) {
-                            left = scrollX + 10;
-                        }
-
-                        if (top < scrollY + 10) {
-                            top = scrollY + 10;
-                        }
-
-                        contextMenu.style.left = left + 'px';
-                        contextMenu.style.top = top + 'px';
-
-                        document.querySelectorAll('.has-submenu').forEach(item => {
-                            const submenu = item.querySelector('.context-submenu');
-                            if (submenu) {
-                                const itemRect = item.getBoundingClientRect();
-                                submenu.classList.remove('left', 'above', 'below');
-                                submenu.style.display = 'block';
-                                const submenuRect = submenu.getBoundingClientRect();
-                                submenu.style.display = '';
-
-                                const fitsRight = itemRect.right + submenuRect.width <= viewportWidth - 10;
-                                const fitsLeft = itemRect.left - submenuRect.width >= 10;
-
-                                if (fitsRight) {
-                                } else if (fitsLeft) {
-                                    submenu.classList.add('left');
-                                } else {
-                                    const fitsBelow = itemRect.bottom + submenuRect.height <= viewportHeight - 10;
-                                    const fitsAbove = itemRect.top - submenuRect.height >= 10;
-
-                                    if (fitsBelow) {
-                                        submenu.classList.add('below');
-                                    } else if (fitsAbove) {
-                                        submenu.classList.add('above');
-                                    } else {
-                                        submenu.classList.add('below');
-                                    }
-                                }
-                            }
-                        });
-                    });
-
-                    const allBookmarks = currentChanges
-                        .filter(c => c.localBookmarks && c.localBookmarks.length > 0)
-                        .flatMap(c => c.localBookmarks.map(b => b.name));
-                    const uniqueBookmarks = [...new Set(allBookmarks)].sort();
-
-                    const bookmarkSubmenu = document.getElementById('bookmark-submenu');
-                    const moveBookmarkItem = contextMenu.querySelector('[data-action="moveBookmark"]');
-                    bookmarkSubmenu.innerHTML = '';
-
-                    if (uniqueBookmarks.length === 0) {
-                        moveBookmarkItem.classList.add('disabled');
-                    } else {
-                        moveBookmarkItem.classList.remove('disabled');
-                        uniqueBookmarks.forEach(bookmarkName => {
-                            const item = document.createElement('div');
-                            item.className = 'context-submenu-item';
-                            item.textContent = bookmarkName;
-                            item.dataset.bookmark = bookmarkName;
-                            bookmarkSubmenu.appendChild(item);
-                        });
-                    }
-
-                    const deleteBookmarkSubmenu = document.getElementById('delete-bookmark-submenu');
-                    const deleteBookmarkItem = contextMenu.querySelector('[data-action="deleteBookmark"]');
-                    const localBookmarks = change.localBookmarks || [];
-                    deleteBookmarkSubmenu.innerHTML = '';
-
-                    if (localBookmarks.length === 0) {
-                        deleteBookmarkItem.classList.add('disabled');
-                    } else {
-                        deleteBookmarkItem.classList.remove('disabled');
-                        localBookmarks.forEach(b => {
-                            const item = document.createElement('div');
-                            item.className = 'context-submenu-item';
-                            item.textContent = b.name;
-                            item.dataset.deleteBookmark = b.name;
-                            deleteBookmarkSubmenu.appendChild(item);
-                        });
-                    }
-
-                    const deleteTagSubmenu = document.getElementById('delete-tag-submenu');
-                    const deleteTagItem = contextMenu.querySelector('[data-action="deleteTag"]');
-                    const localTags = change.localTags || [];
-                    deleteTagSubmenu.innerHTML = '';
-
-                    if (localTags.length === 0) {
-                        deleteTagItem.classList.add('disabled');
-                    } else {
-                        deleteTagItem.classList.remove('disabled');
-                        localTags.forEach(t => {
-                            const item = document.createElement('div');
-                            item.className = 'context-submenu-item';
-                            item.textContent = t.name;
-                            item.dataset.deleteTag = t.name;
-                            deleteTagSubmenu.appendChild(item);
-                        });
-                    }
-                });
-            });
-
-            document.fonts.ready.then(() => {
-                requestAnimationFrame(() => {
-                    const firstChangeId = document.querySelector('.change-id-left');
-                    if (firstChangeId) {
-                        changeIdHorizontalOffset = firstChangeId.offsetWidth;
-                    }
-                    updateCirclePositions();
-                    updateConnections();
-                    if (scrollTop > 0) {
-                        window.scrollTo(0, scrollTop);
-                    }
-                });
-            });
+      document.getElementById("context-menu").addEventListener("click", (e) => {
+        const contextMenu = document.getElementById("context-menu");
+        const changeId = contextMenu.dataset.changeId;
+        if (!changeId || changeId === rootChangeId) {
+          return;
         }
 
-        document.addEventListener('click', () => {
-            const contextMenu = document.getElementById('context-menu');
-            contextMenu.style.display = 'none';
+        const submenuItem = e.target.closest(".context-submenu-item");
+        if (submenuItem) {
+          const bookmark = submenuItem.dataset.bookmark;
+          if (bookmark) {
+            vscode.postMessage({
+              command: "moveBookmark",
+              bookmark: bookmark,
+              targetChangeId: changeId,
+            });
+          }
+          const deleteBookmark = submenuItem.dataset.deleteBookmark;
+          if (deleteBookmark) {
+            vscode.postMessage({
+              command: "deleteBookmark",
+              bookmark: deleteBookmark,
+            });
+          }
+          const deleteTag = submenuItem.dataset.deleteTag;
+          if (deleteTag) {
+            vscode.postMessage({
+              command: "deleteTag",
+              tag: deleteTag,
+            });
+          }
+          contextMenu.style.display = "none";
+          return;
+        }
+
+        const target = e.target.closest(".context-menu-item");
+        if (!target) {
+          return;
+        }
+        const action = target.dataset.action;
+        const immutable = contextMenu.dataset.immutable === "true";
+        if (action === "edit") {
+          vscode.postMessage({
+            command: "editChangeDirect",
+            changeId: changeId,
+          });
+        } else if (action === "copyId") {
+          navigator.clipboard.writeText(changeId);
+        } else if (action === "abandon") {
+          vscode.postMessage({
+            command: "abandonChange",
+            changeId: changeId,
+            immutable: immutable,
+          });
+        } else if (action === "createBookmark") {
+          vscode.postMessage({
+            command: "createBookmark",
+            targetChangeId: changeId,
+          });
+        } else if (action === "createTag") {
+          vscode.postMessage({
+            command: "createTag",
+            targetChangeId: changeId,
+          });
+        } else if (action === "describe") {
+          vscode.postMessage({
+            command: "describeChange",
+            changeId: changeId,
+          });
+        }
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (!dragStartChangeId) {
+          return;
+        }
+        if (isDragging) {
+          if (dragGhost) {
+            dragGhost.style.left = e.clientX + 10 + "px";
+            dragGhost.style.top = e.clientY + 10 + "px";
+          }
+          return;
+        }
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > DRAG_THRESHOLD) {
+          isDragging = true;
+          const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
+          if (sourceNode) {
+            sourceNode.classList.add("dragging");
+          }
+          dragGhost = document.createElement("div");
+          dragGhost.className = "drag-ghost";
+          dragGhost.textContent = dragStartChangeId.substring(0, 8);
+          document.body.appendChild(dragGhost);
+          dragGhost.style.left = e.clientX + 10 + "px";
+          dragGhost.style.top = e.clientY + 10 + "px";
+        }
+      });
+
+      document.addEventListener("mouseup", (e) => {
+        if (!isDragging && !dragStartChangeId) {
+          return;
+        }
+        if (isDragging) {
+          if (dragGhost) {
+            dragGhost.style.display = "none";
+          }
+          const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+          const targetNode = dropTarget?.closest(".change-node");
+          const targetId = targetNode?.dataset?.changeId;
+          if (targetNode && targetId && targetId !== dragStartChangeId) {
+            justFinishedDrag = true;
+            const rebaseMenu = document.getElementById("rebase-menu");
+            rebaseMenu.dataset.sourceId = dragStartChangeId;
+            rebaseMenu.dataset.targetId = targetId;
+            rebaseMenu.style.left = "-9999px";
+            rebaseMenu.style.top = "-9999px";
+            rebaseMenu.style.display = "block";
+
+            const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
+            const sourceIsDivergent = sourceNode?.dataset?.changeOffset && sourceNode.dataset.changeOffset !== "";
+            const targetIsDivergent = targetNode?.dataset?.changeOffset && targetNode.dataset.changeOffset !== "";
+            const isDivergent = sourceIsDivergent || targetIsDivergent;
+
+            const rebaseItems = rebaseMenu.querySelectorAll(
+              '[data-action="rebaseOnto"], [data-action="rebaseOntoWithDescendants"], [data-action="rebaseAfter"], [data-action="rebaseAfterWithDescendants"]',
+            );
+            const rebaseBeforeItems = rebaseMenu.querySelectorAll(
+              '[data-action="rebaseBefore"], [data-action="rebaseBeforeWithDescendants"]',
+            );
+            const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
+            const separators = rebaseMenu.querySelectorAll(".context-menu-separator");
+
+            if (isDivergent) {
+              rebaseItems.forEach((item) => (item.style.display = "none"));
+              rebaseBeforeItems.forEach((item) => (item.style.display = "none"));
+              separators.forEach((sep) => (sep.style.display = "none"));
+              if (squashItem) {
+                squashItem.style.display = targetId === rootChangeId ? "none" : "block";
+              }
+            } else {
+              rebaseItems.forEach((item) => (item.style.display = "block"));
+              rebaseBeforeItems.forEach((item) => {
+                item.style.display = targetId === rootChangeId ? "none" : "block";
+              });
+              separators.forEach((sep, index) => {
+                sep.style.display = targetId === rootChangeId && index >= 1 ? "none" : "block";
+              });
+              if (squashItem) {
+                squashItem.style.display = targetId === rootChangeId ? "none" : "block";
+              }
+            }
+
+            requestAnimationFrame(() => {
+              const menuRect = rebaseMenu.getBoundingClientRect();
+              const viewportWidth = window.innerWidth;
+              const viewportHeight = window.innerHeight;
+              const scrollX = window.scrollX || window.pageXOffset;
+              const scrollY = window.scrollY || window.pageYOffset;
+              let left = e.pageX;
+              let top = e.pageY;
+              if (left + menuRect.width > viewportWidth + scrollX - 10) {
+                left = e.pageX - menuRect.width;
+              }
+              if (top + menuRect.height > viewportHeight + scrollY - 10) {
+                top = e.pageY - menuRect.height;
+              }
+              if (left < scrollX + 10) {
+                left = scrollX + 10;
+              }
+              if (top < scrollY + 10) {
+                top = scrollY + 10;
+              }
+              rebaseMenu.style.left = left + "px";
+              rebaseMenu.style.top = top + "px";
+              setTimeout(() => {
+                justFinishedDrag = false;
+              }, 100);
+            });
+          }
+          if (dragGhost) {
+            dragGhost.remove();
+            dragGhost = null;
+          }
+          const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
+          if (sourceNode) {
+            sourceNode.classList.remove("dragging");
+          }
+          document.querySelectorAll(".change-node.drop-target").forEach((n) => {
+            n.classList.remove("drop-target");
+          });
+        }
+        isDragging = false;
+        dragStartChangeId = null;
+        dropTargetId = null;
+      });
+
+      document.addEventListener("mouseover", (e) => {
+        if (!isDragging) {
+          return;
+        }
+        const targetNode = e.target?.closest(".change-node");
+        document.querySelectorAll(".change-node.drop-target").forEach((n) => {
+          n.classList.remove("drop-target");
         });
-
-        window.addEventListener('blur', () => {
-            const contextMenu = document.getElementById('context-menu');
-            contextMenu.style.display = 'none';
-        });
-
-        document.getElementById('context-menu').addEventListener('click', (e) => {
-            const contextMenu = document.getElementById('context-menu');
-            const changeId = contextMenu.dataset.changeId;
-            if (!changeId || changeId === rootChangeId) {
-                return;
-            }
-
-            const submenuItem = e.target.closest('.context-submenu-item');
-            if (submenuItem) {
-                const bookmark = submenuItem.dataset.bookmark;
-                if (bookmark) {
-                    vscode.postMessage({
-                        command: 'moveBookmark',
-                        bookmark: bookmark,
-                        targetChangeId: changeId
-                    });
-                }
-                const deleteBookmark = submenuItem.dataset.deleteBookmark;
-                if (deleteBookmark) {
-                    vscode.postMessage({
-                        command: 'deleteBookmark',
-                        bookmark: deleteBookmark
-                    });
-                }
-                const deleteTag = submenuItem.dataset.deleteTag;
-                if (deleteTag) {
-                    vscode.postMessage({
-                        command: 'deleteTag',
-                        tag: deleteTag
-                    });
-                }
-                contextMenu.style.display = 'none';
-                return;
-            }
-
-            const target = e.target.closest('.context-menu-item');
-            if (!target) {
-                return;
-            }
-            const action = target.dataset.action;
-            const immutable = contextMenu.dataset.immutable === 'true';
-            if (action === 'edit') {
-                vscode.postMessage({
-                    command: 'editChangeDirect',
-                    changeId: changeId
-                });
-            } else if (action === 'copyId') {
-                navigator.clipboard.writeText(changeId);
-            } else if (action === 'abandon') {
-                vscode.postMessage({
-                    command: 'abandonChange',
-                    changeId: changeId,
-                    immutable: immutable
-                });
-            } else if (action === 'createBookmark') {
-                vscode.postMessage({
-                    command: 'createBookmark',
-                    targetChangeId: changeId
-                });
-            } else if (action === 'createTag') {
-                vscode.postMessage({
-                    command: 'createTag',
-                    targetChangeId: changeId
-                });
-            } else if (action === 'describe') {
-                vscode.postMessage({
-                    command: 'describeChange',
-                    changeId: changeId
-                });
-            }
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!dragStartChangeId) {
-                return;
-            }
-            if (isDragging) {
-                if (dragGhost) {
-                    dragGhost.style.left = (e.clientX + 10) + 'px';
-                    dragGhost.style.top = (e.clientY + 10) + 'px';
-                }
-                return;
-            }
-            const dx = e.clientX - dragStartX;
-            const dy = e.clientY - dragStartY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance > DRAG_THRESHOLD) {
-                isDragging = true;
-                const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
-                if (sourceNode) {
-                    sourceNode.classList.add('dragging');
-                }
-                dragGhost = document.createElement('div');
-                dragGhost.className = 'drag-ghost';
-                dragGhost.textContent = dragStartChangeId.substring(0, 8);
-                document.body.appendChild(dragGhost);
-                dragGhost.style.left = (e.clientX + 10) + 'px';
-                dragGhost.style.top = (e.clientY + 10) + 'px';
-            }
-        });
-
-        document.addEventListener('mouseup', (e) => {
-            if (!isDragging && !dragStartChangeId) {
-                return;
-            }
-            if (isDragging) {
-                if (dragGhost) {
-                    dragGhost.style.display = 'none';
-                }
-                const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-                const targetNode = dropTarget?.closest('.change-node');
-                const targetId = targetNode?.dataset?.changeId;
-                if (targetNode && targetId && targetId !== dragStartChangeId) {
-                    justFinishedDrag = true;
-                    const rebaseMenu = document.getElementById('rebase-menu');
-                    rebaseMenu.dataset.sourceId = dragStartChangeId;
-                    rebaseMenu.dataset.targetId = targetId;
-                    rebaseMenu.style.left = '-9999px';
-                    rebaseMenu.style.top = '-9999px';
-                    rebaseMenu.style.display = 'block';
-                    
-                    const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
-                    const sourceIsDivergent = sourceNode?.dataset?.changeOffset && sourceNode.dataset.changeOffset !== '';
-                    const targetIsDivergent = targetNode?.dataset?.changeOffset && targetNode.dataset.changeOffset !== '';
-                    const isDivergent = sourceIsDivergent || targetIsDivergent;
-                    
-                    const rebaseItems = rebaseMenu.querySelectorAll('[data-action="rebaseOnto"], [data-action="rebaseOntoWithDescendants"], [data-action="rebaseAfter"], [data-action="rebaseAfterWithDescendants"]');
-                    const rebaseBeforeItems = rebaseMenu.querySelectorAll('[data-action="rebaseBefore"], [data-action="rebaseBeforeWithDescendants"]');
-                    const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
-                    const separators = rebaseMenu.querySelectorAll('.context-menu-separator');
-
-                    if (isDivergent) {
-                        rebaseItems.forEach(item => item.style.display = 'none');
-                        rebaseBeforeItems.forEach(item => item.style.display = 'none');
-                        separators.forEach(sep => sep.style.display = 'none');
-                        if (squashItem) {
-                            squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
-                        }
-                    } else {
-                        rebaseItems.forEach(item => item.style.display = 'block');
-                        rebaseBeforeItems.forEach(item => {
-                            item.style.display = targetId === rootChangeId ? 'none' : 'block';
-                        });
-                        separators.forEach((sep, index) => {
-                            sep.style.display = targetId === rootChangeId && index >= 1 ? 'none' : 'block';
-                        });
-                        if (squashItem) {
-                            squashItem.style.display = targetId === rootChangeId ? 'none' : 'block';
-                        }
-                    }
-
-                    requestAnimationFrame(() => {
-                        const menuRect = rebaseMenu.getBoundingClientRect();
-                        const viewportWidth = window.innerWidth;
-                        const viewportHeight = window.innerHeight;
-                        const scrollX = window.scrollX || window.pageXOffset;
-                        const scrollY = window.scrollY || window.pageYOffset;
-                        let left = e.pageX;
-                        let top = e.pageY;
-                        if (left + menuRect.width > viewportWidth + scrollX - 10) {
-                            left = e.pageX - menuRect.width;
-                        }
-                        if (top + menuRect.height > viewportHeight + scrollY - 10) {
-                            top = e.pageY - menuRect.height;
-                        }
-                        if (left < scrollX + 10) {
-                            left = scrollX + 10;
-                        }
-                        if (top < scrollY + 10) {
-                            top = scrollY + 10;
-                        }
-                        rebaseMenu.style.left = left + 'px';
-                        rebaseMenu.style.top = top + 'px';
-                        setTimeout(() => { justFinishedDrag = false; }, 100);
-                    });
-                }
-                if (dragGhost) {
-                    dragGhost.remove();
-                    dragGhost = null;
-                }
-                const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
-                if (sourceNode) {
-                    sourceNode.classList.remove('dragging');
-                }
-                document.querySelectorAll('.change-node.drop-target').forEach(n => {
-                    n.classList.remove('drop-target');
-                });
-            }
-            isDragging = false;
-            dragStartChangeId = null;
+        if (targetNode) {
+          const targetId = targetNode.dataset.changeId;
+          if (targetId && targetId !== dragStartChangeId) {
+            targetNode.classList.add("drop-target");
+            dropTargetId = targetId;
+          } else {
             dropTargetId = null;
-        });
+          }
+        } else {
+          dropTargetId = null;
+        }
+      });
 
-        document.addEventListener('mouseover', (e) => {
-            if (!isDragging) {
-                return;
-            }
-            const targetNode = e.target?.closest('.change-node');
-            document.querySelectorAll('.change-node.drop-target').forEach(n => {
-                n.classList.remove('drop-target');
-            });
-            if (targetNode) {
-                const targetId = targetNode.dataset.changeId;
-                if (targetId && targetId !== dragStartChangeId) {
-                    targetNode.classList.add('drop-target');
-                    dropTargetId = targetId;
-                } else {
-                    dropTargetId = null;
-                }
-            } else {
-                dropTargetId = null;
-            }
-        });
+      document.getElementById("rebase-menu").addEventListener("click", (e) => {
+        const rebaseMenu = document.getElementById("rebase-menu");
+        const sourceId = rebaseMenu.dataset.sourceId;
+        const targetId = rebaseMenu.dataset.targetId;
+        if (!sourceId || !targetId) {
+          rebaseMenu.style.display = "none";
+          return;
+        }
+        const target = e.target.closest(".context-menu-item");
+        if (!target) {
+          return;
+        }
+        const action = target.dataset.action;
+        if (action === "rebaseOnto" || action === "rebaseOntoWithDescendants") {
+          vscode.postMessage({
+            command: "rebaseOnto",
+            changeId: sourceId,
+            targetChangeId: targetId,
+            withDescendants: action === "rebaseOntoWithDescendants",
+          });
+        } else if (action === "rebaseAfter" || action === "rebaseAfterWithDescendants") {
+          vscode.postMessage({
+            command: "rebaseAfter",
+            changeId: sourceId,
+            targetChangeId: targetId,
+            withDescendants: action === "rebaseAfterWithDescendants",
+          });
+        } else if (action === "rebaseBefore" || action === "rebaseBeforeWithDescendants") {
+          vscode.postMessage({
+            command: "rebaseBefore",
+            changeId: sourceId,
+            targetChangeId: targetId,
+            withDescendants: action === "rebaseBeforeWithDescendants",
+          });
+        } else if (action === "squashInto") {
+          vscode.postMessage({
+            command: "squashInto",
+            changeId: sourceId,
+            targetChangeId: targetId,
+          });
+        }
+        rebaseMenu.style.display = "none";
+      });
 
-        document.getElementById('rebase-menu').addEventListener('click', (e) => {
-            const rebaseMenu = document.getElementById('rebase-menu');
-            const sourceId = rebaseMenu.dataset.sourceId;
-            const targetId = rebaseMenu.dataset.targetId;
-            if (!sourceId || !targetId) {
-                rebaseMenu.style.display = 'none';
-                return;
-            }
-            const target = e.target.closest('.context-menu-item');
-            if (!target) {
-                return;
-            }
-            const action = target.dataset.action;
-            if (action === 'rebaseOnto' || action === 'rebaseOntoWithDescendants') {
-                vscode.postMessage({
-                    command: 'rebaseOnto',
-                    changeId: sourceId,
-                    targetChangeId: targetId,
-                    withDescendants: action === 'rebaseOntoWithDescendants'
-                });
-            } else if (action === 'rebaseAfter' || action === 'rebaseAfterWithDescendants') {
-                vscode.postMessage({
-                    command: 'rebaseAfter',
-                    changeId: sourceId,
-                    targetChangeId: targetId,
-                    withDescendants: action === 'rebaseAfterWithDescendants'
-                });
-            } else if (action === 'rebaseBefore' || action === 'rebaseBeforeWithDescendants') {
-                vscode.postMessage({
-                    command: 'rebaseBefore',
-                    changeId: sourceId,
-                    targetChangeId: targetId,
-                    withDescendants: action === 'rebaseBeforeWithDescendants'
-                });
-            } else if (action === 'squashInto') {
-                vscode.postMessage({
-                    command: 'squashInto',
-                    changeId: sourceId,
-                    targetChangeId: targetId
-                });
-            }
-            rebaseMenu.style.display = 'none';
-        });
+      document.addEventListener("click", (e) => {
+        const rebaseMenu = document.getElementById("rebase-menu");
+        if (justFinishedDrag) {
+          return;
+        }
+        if (!rebaseMenu.contains(e.target)) {
+          rebaseMenu.style.display = "none";
+        }
+      });
 
-        document.addEventListener('click', (e) => {
-            const rebaseMenu = document.getElementById('rebase-menu');
-            if (justFinishedDrag) {
-                return;
-            }
-            if (!rebaseMenu.contains(e.target)) {
-                rebaseMenu.style.display = 'none';
-            }
-        });
+      let resizeTimeout;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          requestAnimationFrame(() => {
+            updateCirclePositions();
+            updateConnections();
+          });
+        }, 2);
+      });
 
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                requestAnimationFrame(() => {
-                    updateCirclePositions();
-                    updateConnections();
-                });
-            }, 2);
-        });
+      window.addEventListener("load", () => {
+        vscode.postMessage({ command: "webviewReady" });
+      });
 
-        window.addEventListener('load', () => {
-            vscode.postMessage({ command: 'webviewReady' });
-        });
-
-        document.getElementById('update-stale-button').addEventListener('click', () => {
-            vscode.postMessage({ command: 'updateStale' });
-        });
+      document.getElementById("update-stale-button").addEventListener("click", () => {
+        vscode.postMessage({ command: "updateStale" });
+      });
     </script>
-</body>
-
+  </body>
 </html>

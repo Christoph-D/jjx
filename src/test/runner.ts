@@ -11,10 +11,7 @@ export function run(
   });
 
   // Path to the bundled file containing all tests
-  const allTestsBundlePath = path.resolve(
-    path.dirname(testsRoot),
-    "all-tests.js",
-  );
+  const allTestsBundlePath = path.resolve(path.dirname(testsRoot), "all-tests.js");
 
   mocha.addFile(allTestsBundlePath);
 

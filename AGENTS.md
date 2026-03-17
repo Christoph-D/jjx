@@ -17,14 +17,14 @@ A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version
 
 ## Architecture
 
-| File | Purpose |
-|------|---------|
-| `src/main.ts` | Extension entry point, command registration |
-| `src/repository.ts` | Core JJ command execution, repository state |
-| `src/templateBuilder.ts` | JJ template string generation for JSON output |
-| `src/graphWebview.ts` | Interactive commit graph visualization |
-| `src/laneAssigner.ts` | Algorithm for commit graph lane layout |
-| `src/fileSystemProvider.ts` | Virtual file system for `jj://` URIs |
+| File                        | Purpose                                       |
+| --------------------------- | --------------------------------------------- |
+| `src/main.ts`               | Extension entry point, command registration   |
+| `src/repository.ts`         | Core JJ command execution, repository state   |
+| `src/templateBuilder.ts`    | JJ template string generation for JSON output |
+| `src/graphWebview.ts`       | Interactive commit graph visualization        |
+| `src/laneAssigner.ts`       | Algorithm for commit graph lane layout        |
+| `src/fileSystemProvider.ts` | Virtual file system for `jj://` URIs          |
 
 ## JJ Templating Reference
 

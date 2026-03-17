@@ -40,10 +40,7 @@ export default tseslint.config(
           format: ["camelCase", "PascalCase"],
         },
       ],
-      "@typescript-eslint/prefer-promise-reject-errors": [
-        "error",
-        { allowThrowingUnknown: true },
-      ],
+      "@typescript-eslint/prefer-promise-reject-errors": ["error", { allowThrowingUnknown: true }],
       "@typescript-eslint/no-unused-vars": [
         "error",
         {

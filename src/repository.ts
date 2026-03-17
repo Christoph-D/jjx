@@ -69,30 +69,17 @@ export class JJRepository {
     }
   }
 
-  spawnJJ(
-    args: string[],
-    options: Parameters<typeof spawn>[2] & { cwd: string },
-  ) {
+  spawnJJ(args: string[], options: Parameters<typeof spawn>[2] & { cwd: string }) {
     const separatorIndex = args.indexOf("--");
     const finalArgs =
       separatorIndex === -1
         ? [...args, ...this.jjConfigArgs]
-        : [
-            ...args.slice(0, separatorIndex),
-            ...this.jjConfigArgs,
-            ...args.slice(separatorIndex),
-          ];
+        : [...args.slice(0, separatorIndex), ...this.jjConfigArgs, ...args.slice(separatorIndex)];
     return spawnJJ(this.jjPath, finalArgs, options);
   }
 
-  spawnJJRead(
-    args: string[],
-    options: Parameters<typeof spawn>[2] & { cwd: string },
-  ) {
-    return this.spawnJJ(
-      [...getIgnoreWorkingCopyArgs(this.repositoryRoot), ...args],
-      options,
-    );
+  spawnJJRead(args: string[], options: Parameters<typeof spawn>[2] & { cwd: string }) {
+    return this.spawnJJ([...getIgnoreWorkingCopyArgs(this.repositoryRoot), ...args], options);
   }
 
   /**
@@ -102,12 +89,9 @@ export class JJRepository {
   async getLatestOperationId() {
     return (
       await handleJJCommand(
-        this.spawnJJRead(
-          ["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"],
-          {
-            cwd: this.repositoryRoot,
-          },
-        ),
+        this.spawnJJRead(["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"], {
+          cwd: this.repositoryRoot,
+        }),
       )
     )
       .toString()
@@ -162,12 +146,8 @@ export class JJRepository {
 
     for (const diffFile of entry.diff_files) {
       const statusChar = diffFile.status_char as FileStatusType;
-      const targetPath = path
-        .normalize(diffFile.target_path)
-        .replace(/\\/g, "/");
-      const sourcePath = path
-        .normalize(diffFile.source_path)
-        .replace(/\\/g, "/");
+      const targetPath = path.normalize(diffFile.target_path).replace(/\\/g, "/");
+      const sourcePath = path.normalize(diffFile.source_path).replace(/\\/g, "/");
       const fullPath = path.join(this.repositoryRoot, targetPath);
 
       let fileStatus: FileStatus;
@@ -191,9 +171,7 @@ export class JJRepository {
 
     const conflictedFiles = new Set<string>();
     for (const conflictedPath of entry.conflicted_files || []) {
-      const normalizedPath = path
-        .normalize(conflictedPath)
-        .replace(/\\/g, "/");
+      const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
       const fullPath = path.join(this.repositoryRoot, normalizedPath);
       conflictedFiles.add(fullPath);
 
@@ -275,26 +253,15 @@ export class JJRepository {
 
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(
-          [
-            "log",
-            "-T",
-            template,
-            "--no-graph",
-            ...revsets.flatMap((revset) => ["-r", revset]),
-          ],
-          {
-            timeout: 5000,
-            cwd: this.repositoryRoot,
-          },
-        ),
+        this.spawnJJRead(["log", "-T", template, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])], {
+          timeout: 5000,
+          cwd: this.repositoryRoot,
+        }),
       )
     ).toString();
 
     if (!output.trim()) {
-      throw new Error(
-        "No output from jj log. Maybe the revision couldn't be found?",
-      );
+      throw new Error("No output from jj log. Maybe the revision couldn't be found?");
     }
 
     const results: Show[] = [];
@@ -326,12 +293,8 @@ export class JJRepository {
 
       for (const diffFile of entry.diff_files) {
         const statusChar = diffFile.status_char as FileStatusType;
-        const targetPath = path
-          .normalize(diffFile.target_path)
-          .replace(/\\/g, "/");
-        const sourcePath = path
-          .normalize(diffFile.source_path)
-          .replace(/\\/g, "/");
+        const targetPath = path.normalize(diffFile.target_path).replace(/\\/g, "/");
+        const sourcePath = path.normalize(diffFile.source_path).replace(/\\/g, "/");
         const fullPath = path.join(this.repositoryRoot, targetPath);
 
         let fileStatus: FileStatus;
@@ -355,9 +318,7 @@ export class JJRepository {
 
       const conflictedFiles = new Set<string>();
       for (const conflictedPath of entry.conflicted_files || []) {
-        const normalizedPath = path
-          .normalize(conflictedPath)
-          .replace(/\\/g, "/");
+        const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
         const fullPath = path.join(this.repositoryRoot, normalizedPath);
         conflictedFiles.add(fullPath);
 
@@ -396,25 +357,19 @@ export class JJRepository {
 
   readFile(rev: string, filepath: string) {
     return handleJJCommand(
-      this.spawnJJRead(
-        ["file", "show", "--revision", rev, filepathToFileset(filepath)],
-        {
-          timeout: 5000,
-          cwd: this.repositoryRoot,
-        },
-      ),
+      this.spawnJJRead(["file", "show", "--revision", rev, filepathToFileset(filepath)], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
     );
   }
 
   readFileByFileId(filepath: string, fileId: string) {
     return handleJJCommand(
-      this.spawnJJRead(
-        ["debug", "object", "file", "--", filepath, fileId],
-        {
-          timeout: 5000,
-          cwd: this.repositoryRoot,
-        },
-      ),
+      this.spawnJJRead(["debug", "object", "file", "--", filepath, fileId], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
     );
   }
 
@@ -457,12 +412,7 @@ export class JJRepository {
     return (
       await handleJJCommand(
         this.spawnJJ(
-          [
-            "describe",
-            ...(message ? ["-m", message] : []),
-            rev,
-            ...(ignoreImmutable ? ["--ignore-immutable"] : []),
-          ],
+          ["describe", ...(message ? ["-m", message] : []), rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
           {
             ...(message ? { timeout: 5000 } : {}),
             cwd: this.repositoryRoot,
@@ -475,17 +425,10 @@ export class JJRepository {
   async new(message?: string, revs?: string[]) {
     try {
       return await handleJJCommand(
-        this.spawnJJ(
-          [
-            "new",
-            ...(message ? ["-m", message] : []),
-            ...(revs ? ["-r", ...revs] : []),
-          ],
-          {
-            timeout: 5000,
-            cwd: this.repositoryRoot,
-          },
-        ),
+        this.spawnJJ(["new", ...(message ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])], {
+          timeout: 5000,
+          cwd: this.repositoryRoot,
+        }),
       );
     } catch (error) {
       if (error instanceof Error) {
@@ -579,9 +522,7 @@ export class JJRepository {
             "--into",
             toRev,
             ...(message ? ["-m", message] : []),
-            ...(filepaths
-              ? filepaths.map((filepath) => filepathToFileset(filepath))
-              : []),
+            ...(filepaths ? filepaths.map((filepath) => filepathToFileset(filepath)) : []),
             ...(ignoreImmutable ? ["--ignore-immutable"] : []),
           ],
           {
@@ -679,10 +620,7 @@ export class JJRepository {
           return;
         }
 
-        const output = fakeEditorOutputBuffer.substring(
-          0,
-          fakeEditorOutputBuffer.indexOf(FAKEEDITOR_SENTINEL),
-        );
+        const output = fakeEditorOutputBuffer.substring(0, fakeEditorOutputBuffer.indexOf(FAKEEDITOR_SENTINEL));
 
         const lines = output.trim().split("\n");
         const fakeEditorPID = lines[0];
@@ -781,9 +719,7 @@ export class JJRepository {
           );
         } else if (signal) {
           reject(
-            new Error(
-              `Command failed with signal ${signal}.\nstdout: ${fakeEditorOutputBuffer}\nstderr: ${errOutput}`,
-            ),
+            new Error(`Command failed with signal ${signal}.\nstdout: ${fakeEditorOutputBuffer}\nstderr: ${errOutput}`),
           );
         } else {
           resolve();
@@ -797,22 +733,10 @@ export class JJRepository {
 
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(
-          [
-            "log",
-            "-r",
-            rev,
-            "-n",
-            limit.toString(),
-            "-T",
-            template,
-            "--no-graph",
-          ],
-          {
-            timeout: 5000,
-            cwd: this.repositoryRoot,
-          },
-        ),
+        this.spawnJJRead(["log", "-r", rev, "-n", limit.toString(), "-T", template, "--no-graph"], {
+          timeout: 5000,
+          cwd: this.repositoryRoot,
+        }),
       )
     ).toString();
 
@@ -839,59 +763,42 @@ export class JJRepository {
 
   async edit(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
-      this.spawnJJ(
-        ["edit", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
-        {
-          timeout: 5000,
-          cwd: this.repositoryRoot,
-        },
-      ),
+      this.spawnJJ(["edit", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
     );
   }
 
   async moveBookmark(bookmark: string, targetRev: string, allowBackwards = false) {
     return await handleJJCommand(
-      this.spawnJJ(
-        ["bookmark", "move", bookmark, "-t", targetRev, ...(allowBackwards ? ["--allow-backwards"] : [])],
-        { timeout: 5000, cwd: this.repositoryRoot },
-      ),
+      this.spawnJJ(["bookmark", "move", bookmark, "-t", targetRev, ...(allowBackwards ? ["--allow-backwards"] : [])], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
     );
   }
 
   async createBookmark(bookmark: string, targetRev: string) {
     return await handleJJCommand(
-      this.spawnJJ(
-        ["bookmark", "create", bookmark, "-r", targetRev],
-        { timeout: 5000, cwd: this.repositoryRoot },
-      ),
+      this.spawnJJ(["bookmark", "create", bookmark, "-r", targetRev], { timeout: 5000, cwd: this.repositoryRoot }),
     );
   }
 
   async createTag(tag: string, targetRev: string) {
     return await handleJJCommand(
-      this.spawnJJ(
-        ["tag", "set", tag, "-r", targetRev],
-        { timeout: 5000, cwd: this.repositoryRoot },
-      ),
+      this.spawnJJ(["tag", "set", tag, "-r", targetRev], { timeout: 5000, cwd: this.repositoryRoot }),
     );
   }
 
   async deleteBookmark(bookmark: string) {
     return await handleJJCommand(
-      this.spawnJJ(
-        ["bookmark", "delete", bookmark],
-        { timeout: 5000, cwd: this.repositoryRoot },
-      ),
+      this.spawnJJ(["bookmark", "delete", bookmark], { timeout: 5000, cwd: this.repositoryRoot }),
     );
   }
 
   async deleteTag(tag: string) {
-    return await handleJJCommand(
-      this.spawnJJ(
-        ["tag", "remove", tag],
-        { timeout: 5000, cwd: this.repositoryRoot },
-      ),
-    );
+    return await handleJJCommand(this.spawnJJ(["tag", "remove", tag], { timeout: 5000, cwd: this.repositoryRoot }));
   }
 
   async abandonRetryImmutable(rev: string) {
@@ -904,10 +811,10 @@ export class JJRepository {
 
   async abandon(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
-      this.spawnJJ(
-        ["abandon", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
-        { timeout: 5000, cwd: this.repositoryRoot },
-      ),
+      this.spawnJJ(["abandon", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
+        timeout: 5000,
+        cwd: this.repositoryRoot,
+      }),
     );
   }
 
@@ -922,14 +829,7 @@ export class JJRepository {
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
     return await handleJJCommand(
       this.spawnJJ(
-        [
-          "rebase",
-          sourceFlag,
-          source,
-          flag,
-          destination,
-          ...(ignoreImmutable ? ["--ignore-immutable"] : []),
-        ],
+        ["rebase", sourceFlag, source, flag, destination, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
         {
           timeout: 5000,
           cwd: this.repositoryRoot,
@@ -967,9 +867,7 @@ export class JJRepository {
           "restore",
           "--changes-in",
           rev ? rev : "@",
-          ...(filepaths
-            ? filepaths.map((filepath) => filepathToFileset(filepath))
-            : []),
+          ...(filepaths ? filepaths.map((filepath) => filepathToFileset(filepath)) : []),
           ...(ignoreImmutable ? ["--ignore-immutable"] : []),
         ],
         {
@@ -1047,22 +945,10 @@ export class JJRepository {
 
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(
-          [
-            "operation",
-            "log",
-            "--limit",
-            "10",
-            "--no-graph",
-            "--at-operation=@",
-            "-T",
-            template,
-          ],
-          {
-            timeout: 5000,
-            cwd: this.repositoryRoot,
-          },
-        ),
+        this.spawnJJRead(["operation", "log", "--limit", "10", "--no-graph", "--at-operation=@", "-T", template], {
+          timeout: 5000,
+          cwd: this.repositoryRoot,
+        }),
       )
     ).toString();
 
@@ -1117,10 +1003,7 @@ export class JJRepository {
   /**
    * @returns undefined if the file was not modified in `rev`
    */
-  async getDiffOriginal(
-    rev: string,
-    filepath: string,
-  ): Promise<Buffer | undefined> {
+  async getDiffOriginal(rev: string, filepath: string): Promise<Buffer | undefined> {
     const { cleanup, envVars } = await prepareFakeeditor();
 
     const output = await new Promise<string>((resolve, reject) => {
@@ -1148,10 +1031,7 @@ export class JJRepository {
           return;
         }
 
-        const completeOutput = fakeEditorOutputBuffer.substring(
-          0,
-          fakeEditorOutputBuffer.indexOf(FAKEEDITOR_SENTINEL),
-        );
+        const completeOutput = fakeEditorOutputBuffer.substring(0, fakeEditorOutputBuffer.indexOf(FAKEEDITOR_SENTINEL));
         resolve(completeOutput);
       });
 
@@ -1223,12 +1103,8 @@ export class JJRepository {
         const file = summaryLine.slice(2).trim();
 
         if (type === "M" || type === "D") {
-          const normalizedSummaryPath = path
-            .join(this.repositoryRoot, file)
-            .replace(/\\/g, "/");
-          const normalizedTargetPath = path
-            .normalize(filepath)
-            .replace(/\\/g, "/");
+          const normalizedSummaryPath = path.join(this.repositoryRoot, file).replace(/\\/g, "/");
+          const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
           if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
             pathInLeftFolder = file;
             break;
@@ -1239,12 +1115,8 @@ export class JJRepository {
             throw new Error(`Unexpected rename line: ${summaryLineRaw}`);
           }
 
-          const normalizedSummaryPath = path
-            .join(this.repositoryRoot, parseResult.toPath)
-            .replace(/\\/g, "/");
-          const normalizedTargetPath = path
-            .normalize(filepath)
-            .replace(/\\/g, "/");
+          const normalizedSummaryPath = path.join(this.repositoryRoot, parseResult.toPath).replace(/\\/g, "/");
+          const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
           if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
             // The file was renamed TO our target filepath, so we need its OLD path from the left folder
             pathInLeftFolder = parseResult.fromPath;
@@ -1258,11 +1130,7 @@ export class JJRepository {
         try {
           return await fs.readFile(fullPath);
         } catch (e) {
-          logger.error(
-            `Failed to read original file content from left folder at ${fullPath}: ${String(
-              e,
-            )}`,
-          );
+          logger.error(`Failed to read original file content from left folder at ${fullPath}: ${String(e)}`);
           throw e;
         }
       }
