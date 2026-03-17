@@ -19,7 +19,8 @@ export function parseRenamePaths(file: string): { fromPath: string; toPath: stri
 }
 
 export function filepathToFileset(filepath: string): string {
-  return `file:"${filepath.replaceAll(/\\/g, "\\\\")}"`;
+  const escaped = filepath.replaceAll(/\\/g, "\\\\").replaceAll(/"/g, '\\"');
+  return `file:"${escaped}"`;
 }
 
 export async function prepareFakeeditor(): Promise<{
