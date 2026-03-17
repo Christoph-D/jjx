@@ -11,6 +11,7 @@ import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
 import type { FileStatus, RepositoryStatus, Show, Change } from "./types";
 import { getRevFromChange } from "./types";
+import { TIMEOUTS } from "./constants";
 
 export class WorkspaceSourceControlManager {
   repoInfos:
@@ -64,7 +65,7 @@ export class WorkspaceSourceControlManager {
         const repoRoot = (
           await handleCommand(
             spawnJJ(jjPath.filepath, [...getIgnoreWorkingCopyArgs(workspaceFolder.uri.fsPath), "root"], {
-              timeout: 5000,
+              timeout: TIMEOUTS.DEFAULT,
               cwd: workspaceFolder.uri.fsPath,
             }),
           )

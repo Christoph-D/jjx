@@ -9,6 +9,7 @@ import { fakeEditorPath, getIgnoreWorkingCopyArgs } from "./config";
 import { spawnJJ, handleJJCommand } from "./process";
 import { prepareFakeeditor, filepathToFileset, parseRenamePaths } from "./fakeeditor";
 import { pathEquals } from "./utils";
+import { TIMEOUTS } from "./constants";
 import type {
   FileStatus,
   FileStatusType,
@@ -107,7 +108,7 @@ export class JJRepository {
     const output = (
       await handleJJCommand(
         this.spawnJJRead(["log", "-r", "@", "-T", template, "--no-graph"], {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
       )
@@ -227,7 +228,7 @@ export class JJRepository {
     return (
       await handleJJCommand(
         this.spawnJJRead(["file", "list"], {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
       )
@@ -254,7 +255,7 @@ export class JJRepository {
     const output = (
       await handleJJCommand(
         this.spawnJJRead(["log", "-T", template, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])], {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
       )
@@ -358,7 +359,7 @@ export class JJRepository {
   readFile(rev: string, filepath: string) {
     return handleJJCommand(
       this.spawnJJRead(["file", "show", "--revision", rev, filepathToFileset(filepath)], {
-        timeout: 5000,
+        timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     );
@@ -367,7 +368,7 @@ export class JJRepository {
   readFileByFileId(filepath: string, fileId: string) {
     return handleJJCommand(
       this.spawnJJRead(["debug", "object", "file", "--", filepath, fileId], {
-        timeout: 5000,
+        timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     );
@@ -376,7 +377,7 @@ export class JJRepository {
   showTemplate(rev: string, template: string): Promise<string> {
     return handleJJCommand(
       this.spawnJJRead(["show", "-r", rev, "-T", template, "--no-patch"], {
-        timeout: 5000,
+        timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     ).then((buf) => buf.toString());
@@ -385,7 +386,7 @@ export class JJRepository {
   debugObject(objectType: string, objectId: string): Promise<string> {
     return handleJJCommand(
       this.spawnJJRead(["debug", "object", objectType, objectId], {
-        timeout: 5000,
+        timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     ).then((buf) => buf.toString());
@@ -394,7 +395,7 @@ export class JJRepository {
   debugTree(treeId: string, filepath: string): Promise<string> {
     return handleJJCommand(
       this.spawnJJRead(["debug", "tree", "--id", treeId, "--", filepath], {
-        timeout: 5000,
+        timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     ).then((buf) => buf.toString());
@@ -414,7 +415,7 @@ export class JJRepository {
         this.spawnJJ(
           ["describe", ...(message ? ["-m", message] : []), rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
           {
-            ...(message ? { timeout: 5000 } : {}),
+            ...(message ? { timeout: TIMEOUTS.DEFAULT } : {}),
             cwd: this.repositoryRoot,
           },
         ),
@@ -426,7 +427,7 @@ export class JJRepository {
     try {
       return await handleJJCommand(
         this.spawnJJ(["new", ...(message ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])], {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
       );
@@ -439,7 +440,7 @@ export class JJRepository {
     try {
       return await handleJJCommand(
         this.spawnJJ(["commit", ...(message ? ["-m", message] : [])], {
-          ...(message ? { timeout: 5000 } : {}),
+          ...(message ? { timeout: TIMEOUTS.DEFAULT } : {}),
           cwd: this.repositoryRoot,
         }),
       );
@@ -506,7 +507,7 @@ export class JJRepository {
             ...(ignoreImmutable ? ["--ignore-immutable"] : []),
           ],
           {
-            timeout: 5000,
+            timeout: TIMEOUTS.DEFAULT,
             cwd: this.repositoryRoot,
           },
         ),
@@ -583,7 +584,7 @@ export class JJRepository {
           ...(ignoreImmutable ? ["--ignore-immutable"] : []),
         ],
         {
-          timeout: 10_000, // Ensure this is longer than fakeeditor's internal timeout
+          timeout: TIMEOUTS.FAKE_EDITOR,
           cwd: this.repositoryRoot,
           env: { ...process.env, ...envVars },
         },
@@ -596,7 +597,6 @@ export class JJRepository {
         fakeEditorOutputBuffer += data.toString();
 
         if (!fakeEditorOutputBuffer.includes(FAKEEDITOR_SENTINEL)) {
-          // Wait for more data if sentinel not yet received
           return;
         }
 
@@ -605,7 +605,6 @@ export class JJRepository {
         const lines = output.trim().split("\n");
         const fakeEditorPID = lines[0];
         const fakeEditorCWD = lines[1];
-        // lines[2] is the fakeeditor executable path
         const leftFolderPath = lines[3];
         const rightFolderPath = lines[4];
 
@@ -653,11 +652,9 @@ export class JJRepository {
           ? rightFolderPath
           : path.join(fakeEditorCWD, rightFolderPath);
 
-        // Convert filepath to relative path and join with rightFolderPath
         const relativeFilePath = path.relative(this.repositoryRoot, filepath);
         const fileToEdit = path.join(rightFolderAbsolutePath, relativeFilePath);
 
-        // Ensure right folder is an exact copy of left, then handle the specific file
         void fs
           .rm(rightFolderAbsolutePath, { recursive: true, force: true })
           .then(() => fs.mkdir(rightFolderAbsolutePath, { recursive: true }))
@@ -666,7 +663,7 @@ export class JJRepository {
               recursive: true,
             }),
           )
-          .then(() => fs.rm(fileToEdit, { force: true })) // remove the specific file we're about to write to avoid its read-only permissions copied from the left folder
+          .then(() => fs.rm(fileToEdit, { force: true }))
           .then(() => fs.writeFile(fileToEdit, content))
           .then(succeedFakeeditor)
           .catch((error) => {
@@ -714,7 +711,7 @@ export class JJRepository {
     const output = (
       await handleJJCommand(
         this.spawnJJRead(["log", "-r", rev, "-n", limit.toString(), "-T", template], {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
       )
@@ -746,7 +743,7 @@ export class JJRepository {
   async edit(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
       this.spawnJJ(["edit", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
-        timeout: 5000,
+        timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     );
@@ -755,7 +752,7 @@ export class JJRepository {
   async moveBookmark(bookmark: string, targetRev: string, allowBackwards = false) {
     return await handleJJCommand(
       this.spawnJJ(["bookmark", "move", bookmark, "-t", targetRev, ...(allowBackwards ? ["--allow-backwards"] : [])], {
-        timeout: 5000,
+        timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     );
@@ -763,24 +760,29 @@ export class JJRepository {
 
   async createBookmark(bookmark: string, targetRev: string) {
     return await handleJJCommand(
-      this.spawnJJ(["bookmark", "create", bookmark, "-r", targetRev], { timeout: 5000, cwd: this.repositoryRoot }),
+      this.spawnJJ(["bookmark", "create", bookmark, "-r", targetRev], {
+        timeout: TIMEOUTS.DEFAULT,
+        cwd: this.repositoryRoot,
+      }),
     );
   }
 
   async createTag(tag: string, targetRev: string) {
     return await handleJJCommand(
-      this.spawnJJ(["tag", "set", tag, "-r", targetRev], { timeout: 5000, cwd: this.repositoryRoot }),
+      this.spawnJJ(["tag", "set", tag, "-r", targetRev], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
     );
   }
 
   async deleteBookmark(bookmark: string) {
     return await handleJJCommand(
-      this.spawnJJ(["bookmark", "delete", bookmark], { timeout: 5000, cwd: this.repositoryRoot }),
+      this.spawnJJ(["bookmark", "delete", bookmark], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
     );
   }
 
   async deleteTag(tag: string) {
-    return await handleJJCommand(this.spawnJJ(["tag", "remove", tag], { timeout: 5000, cwd: this.repositoryRoot }));
+    return await handleJJCommand(
+      this.spawnJJ(["tag", "remove", tag], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
+    );
   }
 
   async abandonRetryImmutable(rev: string) {
@@ -794,7 +796,7 @@ export class JJRepository {
   async abandon(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
       this.spawnJJ(["abandon", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
-        timeout: 5000,
+        timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     );
@@ -813,7 +815,7 @@ export class JJRepository {
       this.spawnJJ(
         ["rebase", sourceFlag, source, flag, destination, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
         {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         },
       ),
@@ -853,7 +855,7 @@ export class JJRepository {
           ...(ignoreImmutable ? ["--ignore-immutable"] : []),
         ],
         {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         },
       ),
@@ -866,7 +868,7 @@ export class JJRepository {
         try {
           await handleJJCommand(
             this.spawnJJ(["git", "fetch"], {
-              timeout: 60_000,
+              timeout: TIMEOUTS.GIT_FETCH,
               cwd: this.repositoryRoot,
             }),
           );
@@ -881,7 +883,7 @@ export class JJRepository {
   async updateStale(): Promise<void> {
     await handleJJCommand(
       this.spawnJJ(["workspace", "update-stale"], {
-        timeout: 30_000,
+        timeout: TIMEOUTS.UPDATE_STALE,
         cwd: this.repositoryRoot,
       }),
     );
@@ -899,7 +901,7 @@ export class JJRepository {
             filepath, // `jj file annotate` takes a path, not a fileset
           ],
           {
-            timeout: 60_000,
+            timeout: TIMEOUTS.ANNOTATE,
             cwd: this.repositoryRoot,
           },
         ),
@@ -928,7 +930,7 @@ export class JJRepository {
     const output = (
       await handleJJCommand(
         this.spawnJJRead(["operation", "log", "--limit", "10", "--no-graph", "--at-operation=@", "-T", template], {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
       )
@@ -964,7 +966,7 @@ export class JJRepository {
     return (
       await handleJJCommand(
         this.spawnJJ(["operation", "undo", id], {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
       )
@@ -975,7 +977,7 @@ export class JJRepository {
     return (
       await handleJJCommand(
         this.spawnJJ(["operation", "restore", id], {
-          timeout: 5000,
+          timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
       )

@@ -2,6 +2,7 @@ import path from "path";
 import * as vscode from "vscode";
 import * as os from "os";
 import which from "which";
+import { TIMEOUTS } from "./constants";
 
 export let extensionDir = "";
 export let fakeEditorPath = "";
@@ -72,7 +73,7 @@ export function getCommandTimeout(repositoryRoot: string, defaultTimeout: number
   if (configuredTimeout !== null && configuredTimeout !== undefined) {
     return configuredTimeout;
   }
-  return defaultTimeout ?? 30000;
+  return defaultTimeout ?? TIMEOUTS.FALLBACK;
 }
 
 /**
