@@ -255,7 +255,16 @@
         const ARC_RADIUS_SMALL = 8;
         const ARC_RADIUS = 12;
 
-        for (const edge of currentGraph.edges) {
+        const sortedEdges = [...currentGraph.edges].sort((a, b) => {
+          const aStart = a.lanePath[0];
+          const bStart = b.lanePath[0];
+          if (aStart !== bStart) return bStart - aStart;
+          const aEnd = a.lanePath[a.lanePath.length - 1];
+          const bEnd = b.lanePath[b.lanePath.length - 1];
+          return bEnd - aEnd;
+        });
+
+        for (const edge of sortedEdges) {
           const fromY = rowYList[edge.fromRow];
           if (fromY === undefined) continue;
           if (!edge.lanePath || edge.lanePath.length < 2) continue;
