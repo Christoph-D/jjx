@@ -4,7 +4,7 @@ import fs from "fs/promises";
 import spawn from "cross-spawn";
 import { generateTemplate, LOG_ENTRY_FIELDS, SHOW_ENTRY_FIELDS, STATUS_ENTRY_FIELDS } from "./templateBuilder";
 import { logger } from "./logger";
-import { ImmutableError, convertJJErrors } from "./errors";
+import { ImmutableError, convertJJErrors, parseJJError } from "./errors";
 import { fakeEditorPath, getIgnoreWorkingCopyArgs } from "./config";
 import { spawnJJ, handleJJCommand } from "./process";
 import { prepareFakeeditor, filepathToFileset, parseRenamePaths } from "./fakeeditor";
@@ -431,17 +431,7 @@ export class JJRepository {
         }),
       );
     } catch (error) {
-      if (error instanceof Error) {
-        const match = error.message.match(/error:\s*([\s\S]+)$/i);
-        if (match) {
-          const errorMessage = match[1];
-          throw new Error(errorMessage);
-        } else {
-          throw error;
-        }
-      } else {
-        throw error;
-      }
+      throw parseJJError(error);
     }
   }
 
@@ -454,17 +444,7 @@ export class JJRepository {
         }),
       );
     } catch (error) {
-      if (error instanceof Error) {
-        const match = error.message.match(/error:\s*([\s\S]+)$/i);
-        if (match) {
-          const errorMessage = match[1];
-          throw new Error(errorMessage);
-        } else {
-          throw error;
-        }
-      } else {
-        throw error;
-      }
+      throw parseJJError(error);
     }
   }
 
