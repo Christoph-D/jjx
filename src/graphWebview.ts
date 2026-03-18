@@ -4,6 +4,8 @@ import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef, Paren
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { assignLanes } from "./laneAssigner";
+import { collapseImmutableEntries } from "./collapser";
+import type { ElidedInfo } from "./collapser";
 import { logger } from "./logger";
 
 export type { LaneNode, LaneEdge, ChangeIdGraph } from "./laneAssigner";
@@ -46,6 +48,7 @@ export class ChangeNode {
   linesRemoved: number;
   mine: boolean;
   conflict: boolean;
+  elided?: number;
   constructor(
     changeId: string,
     changeIdPrefix: string,
@@ -71,6 +74,7 @@ export class ChangeNode {
     linesRemoved: number,
     mine: boolean,
     conflict: boolean,
+    elided?: number,
   ) {
     this.changeId = changeId;
     this.changeIdPrefix = changeIdPrefix;
@@ -96,6 +100,7 @@ export class ChangeNode {
     this.linesRemoved = linesRemoved;
     this.mine = mine;
     this.conflict = conflict;
+    this.elided = elided;
   }
 }
 
@@ -363,13 +368,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const config = vscode.workspace.getConfiguration("jjx");
       const graphStyle = config.get<string>("graphStyle") || "full";
 
-      const entries = await this.repository.log();
-      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entries, graphStyle);
+      const rawEntries = await this.repository.log();
+      const { entries: collapsedEntries, elidedMap } = collapseImmutableEntries(rawEntries);
+      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(collapsedEntries, graphStyle, elidedMap);
 
       this.selectedNodes.clear();
       const changeEditAction = config.get<string>("changeEditAction");
 
-      const laneInfo = assignLanes(entries);
+      const laneInfo = assignLanes(collapsedEntries);
 
       this.panel.webview.postMessage({
         command: "updateGraph",
@@ -438,17 +444,57 @@ function description(entry: LogEntry) {
   return prefix + desc;
 }
 
+export { collapseImmutableEntries } from "./collapser";
+export type { ElidedInfo } from "./collapser";
+
 export function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
+  elidedMap: Map<string, ElidedInfo> = new Map(),
 ): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
+  const nonElidedEntries = entries.filter((e) => !e.change_id.startsWith("__elided_"));
   const offsetWidth = Math.max(
     0,
-    ...entries.filter((e) => e.divergent && e.change_offset).map((e) => e.change_offset.length + 1),
+    ...nonElidedEntries.filter((e) => e.divergent && e.change_offset).map((e) => e.change_offset.length + 1),
   );
-  let maxPrefixLength = Math.max(4, ...entries.map((e) => e.change_id_shortest.length));
+  let maxPrefixLength = Math.max(4, ...nonElidedEntries.map((e) => e.change_id_shortest.length));
 
   const changes = entries.map((entry) => {
+    const elidedInfo = elidedMap.get(entry.change_id);
+    if (elidedInfo) {
+      const uniqueParentIds = entry.parents.map((p: ParentRef) =>
+        p.divergent && p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
+      );
+
+      return new ChangeNode(
+        entry.change_id,
+        "",
+        "",
+        null,
+        `${elidedInfo.count} elided`,
+        "",
+        "",
+        false,
+        [],
+        [],
+        [],
+        [],
+        [],
+        uniqueParentIds,
+        "~",
+        "",
+        "",
+        "",
+        "",
+        0,
+        0,
+        0,
+        false,
+        false,
+        elidedInfo.count,
+      );
+    }
+
     const changeIdShortest = entry.change_id_shortest;
     const changeIdSuffix = entry.change_id
       .slice(changeIdShortest.length)

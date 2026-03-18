@@ -701,7 +701,7 @@
     "lint": "eslint src",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "unit-test": "node --import tsx --test src/unit-test/templateBuilder.test.ts src/unit-test/assignLanes.test.ts src/unit-test/conflictResolver.test.ts",
+    "unit-test": "node --import tsx --test src/unit-test/templateBuilder.test.ts src/unit-test/assignLanes.test.ts src/unit-test/conflictResolver.test.ts src/unit-test/collapseImmutable.test.ts",
     "vscode-test": "node out/test/runTest.js",
     "test": "npm-run-all unit-test vscode-test"
   },

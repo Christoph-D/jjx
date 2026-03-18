@@ -160,7 +160,14 @@
 
         const radius = change.currentWorkingCopy ? 7 : CIRCLE_RADIUS;
 
-        if (change.branchType === "◆") {
+        if (change.branchType === "~") {
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", "0");
+          text.setAttribute("y", "0");
+          text.setAttribute("class", "elided-symbol");
+          text.textContent = "~";
+          g.appendChild(text);
+        } else if (change.branchType === "◆") {
           const diamond = document.createElementNS("http://www.w3.org/2000/svg", "path");
           const size = 5;
           const d = `M 0 ${-size} L ${size} 0 L 0 ${size} L ${-size} 0 Z`;
@@ -508,12 +515,41 @@
           const nodeData = currentGraph.nodes[index];
           const nodeLane = nodeData ? nodeData.lane : 0;
           const colorIndex = nodeData ? nodeData.colorIndex : 0;
+          const isElided = !!change.elided;
 
           const node = document.createElement("div");
-          node.className = "change-node" + (change.currentWorkingCopy ? " working-copy" : "");
+          node.className =
+            "change-node" + (change.currentWorkingCopy ? " working-copy" : "") + (isElided ? " elided-node" : "");
           node.dataset.changeId = change.changeId;
           node.dataset.parentIds = JSON.stringify(change.parentChangeIds || []);
           node.dataset.branchType = change.branchType;
+
+          if (isElided) {
+            const textContent = document.createElement("div");
+            textContent.className = "text-content";
+            textContent.style.setProperty("--graph-width", `${SWIMLANE_WIDTH * nodeData.numLanesActiveVisually}px`);
+            textContent.style.setProperty("--change-id-right-padding", `${CHANGE_ID_RIGHT_PADDING}px`);
+
+            const changeIdLeft = document.createElement("div");
+            changeIdLeft.className = "change-id-left";
+            node.appendChild(changeIdLeft);
+
+            const nodeLabel = document.createElement("div");
+            const labelText = document.createElement("span");
+            labelText.className = "elided-label";
+            labelText.textContent = change.label;
+            nodeLabel.appendChild(labelText);
+            textContent.append(nodeLabel);
+            node.appendChild(textContent);
+            nodesContainer.appendChild(node);
+
+            const circle = createCircle(change, colorIndex);
+            circle.dataset.changeId = change.changeId;
+            circle.dataset.nodeLane = nodeLane;
+            circlesContainer.appendChild(circle);
+            return;
+          }
+
           node.dataset.currentWorkingCopy = change.currentWorkingCopy;
           node.dataset.authorName = change.authorName || "";
           node.dataset.authorEmail = change.authorEmail || "";

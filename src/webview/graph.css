@@ -485,3 +485,34 @@ body {
   font-weight: bold;
   margin-right: 2px;
 }
+
+/* Elided node styles */
+.change-node.elided-node {
+  cursor: default;
+  pointer-events: none;
+}
+
+.change-node.elided-node .text-content {
+  height: 20px;
+}
+
+.elided-label {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.node-circle .elided-symbol {
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 150%;
+  font-weight: bold;
+  fill: var(--lane-color, var(--vscode-charts-blue));
+}
+
+.node-circle.dimmed .elided-symbol {
+  opacity: var(--dimmed-opacity);
+}
+
+.node-circle.highlighted .elided-symbol {
+  opacity: 1;
+}
