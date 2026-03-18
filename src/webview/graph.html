@@ -515,7 +515,7 @@
           const nodeData = currentGraph.nodes[index];
           const nodeLane = nodeData ? nodeData.lane : 0;
           const colorIndex = nodeData ? nodeData.colorIndex : 0;
-          const isElided = !!change.elided;
+          const isElided = change.branchType === "~";
 
           const node = document.createElement("div");
           node.className =
@@ -554,6 +554,10 @@
 
             node.addEventListener("mouseleave", () => {
               highlightConnectedNodes(node, false);
+            });
+
+            node.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
             });
             return;
           }
@@ -684,7 +688,7 @@
 
           node.addEventListener("mouseenter", (e) => {
             highlightConnectedNodes(node, true);
-            if (change.changeId !== rootChangeId) {
+            if (change.changeId !== rootChangeId && change.branchType !== "~") {
               tooltipTimeout = setTimeout(() => {
                 showTooltip(node, e);
               }, 500);
@@ -695,7 +699,7 @@
             if (tooltipTimeout) {
               clearTimeout(tooltipTimeout);
             }
-            if (change.changeId !== rootChangeId) {
+            if (change.changeId !== rootChangeId && change.branchType !== "~") {
               tooltipTimeout = setTimeout(() => {
                 showTooltip(node, e);
               }, 500);
@@ -715,7 +719,7 @@
             if (e.button !== 0 || e.shiftKey) {
               return;
             }
-            if (change.branchType === "◆") {
+            if (change.branchType === "◆" || change.branchType === "~") {
               return;
             }
             dragStartChangeId = change.changeId;
@@ -725,6 +729,9 @@
 
           node.onclick = (e) => {
             if (isDragging || justFinishedDrag) {
+              return;
+            }
+            if (change.branchType === "~") {
               return;
             }
             if (e.shiftKey) {
@@ -762,7 +769,7 @@
 
           node.addEventListener("contextmenu", (e) => {
             e.preventDefault();
-            if (change.changeId === rootChangeId) {
+            if (change.changeId === rootChangeId || change.branchType === "~") {
               return;
             }
             const contextMenu = document.getElementById("context-menu");
@@ -1035,7 +1042,8 @@
           const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
           const targetNode = dropTarget?.closest(".change-node");
           const targetId = targetNode?.dataset?.changeId;
-          if (targetNode && targetId && targetId !== dragStartChangeId) {
+          const targetBranchType = targetNode?.dataset?.branchType;
+          if (targetNode && targetId && targetId !== dragStartChangeId && targetBranchType !== "~") {
             justFinishedDrag = true;
             const rebaseMenu = document.getElementById("rebase-menu");
             rebaseMenu.dataset.sourceId = dragStartChangeId;
@@ -1132,7 +1140,8 @@
         });
         if (targetNode) {
           const targetId = targetNode.dataset.changeId;
-          if (targetId && targetId !== dragStartChangeId) {
+          const targetBranchType = targetNode.dataset.branchType;
+          if (targetId && targetId !== dragStartChangeId && targetBranchType !== "~") {
             targetNode.classList.add("drop-target");
             dropTargetId = targetId;
           } else {
