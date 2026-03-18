@@ -43,7 +43,9 @@ export class JJFileSystemProvider implements FileSystemProvider {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
-    this.disposables.forEach((d) => d.dispose());
+    for (const d of this.disposables) {
+      d.dispose();
+    }
   }
 
   onDidChangeRepository({ repositoryRoot }: { repositoryRoot: string }): void {
