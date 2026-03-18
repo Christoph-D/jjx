@@ -547,6 +547,14 @@
             circle.dataset.changeId = change.changeId;
             circle.dataset.nodeLane = nodeLane;
             circlesContainer.appendChild(circle);
+
+            node.addEventListener("mouseenter", () => {
+              highlightConnectedNodes(node, true);
+            });
+
+            node.addEventListener("mouseleave", () => {
+              highlightConnectedNodes(node, false);
+            });
             return;
           }
 

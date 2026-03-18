@@ -489,7 +489,6 @@ body {
 /* Elided node styles */
 .change-node.elided-node {
   cursor: default;
-  pointer-events: none;
 }
 
 .change-node.elided-node .text-content {
