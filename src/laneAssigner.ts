@@ -85,19 +85,27 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
       color = lanes[nodeLane].colorIndex;
     }
 
+    const firstParent = norm.parentIds.length > 0 ? norm.parentIds[0] : norm.changeId;
+    const firstParentAlreadyTracked = lanes.some((l, i) => i !== nodeLane && l.targetId === firstParent);
     lanes[nodeLane] = {
-      targetId: norm.parentIds.length > 0 ? norm.parentIds[0] : norm.changeId,
+      targetId: firstParentAlreadyTracked ? null : firstParent,
       colorIndex: color,
     };
 
     for (const parentId of norm.parentIds) {
       const existingIndex = lanes.findIndex((l) => l.targetId === parentId);
       if (existingIndex === -1) {
-        lanes.push({
+        const nullSlot = lanes.findIndex((l) => l.targetId === null);
+        const newLane: LaneInfo = {
           targetId: parentId,
           colorIndex: rot(colorIndex, colorRegistryLength),
-        });
+        };
         colorIndex++;
+        if (nullSlot !== -1) {
+          lanes[nullSlot] = newLane;
+        } else {
+          lanes.push(newLane);
+        }
       }
     }
 

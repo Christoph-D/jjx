@@ -309,4 +309,22 @@ describe("assignLanes", () => {
     assert.strictEqual(toH.length, 2);
     assert.ok(toH.every((e) => e.lanePath.length >= 2));
   });
+
+  it("reuses lanes closed by a change", () => {
+    const entries = [
+      makeEntry("aaa", ["ddd"]),
+      makeEntry("bbb", ["ddd", "ccc"]),
+      makeEntry("ccc", ["ddd"]),
+      makeEntry("ddd", []),
+    ];
+    const result = assignLanes(entries);
+
+    const nodeC = findNodeByChangeId(result, "ccc");
+    assert.ok(nodeC);
+    assert.strictEqual(nodeC.lane, 1);
+
+    const edgeC = findEdgesTo(result, "ccc")[0];
+    assert.strictEqual(edgeC.lanePath[0], 1);
+    assert.strictEqual(edgeC.lanePath[1], 1);
+  });
 });
