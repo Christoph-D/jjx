@@ -370,12 +370,18 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
       const rawEntries = await this.repository.log();
       const { entries: collapsedEntries, elidedMap } = collapseImmutableEntries(rawEntries);
-      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(collapsedEntries, graphStyle, elidedMap);
+      const { entries: entriesWithInvisible, invisibleParentMap } = addInvisibleParentNodes(collapsedEntries);
+      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(
+        entriesWithInvisible,
+        graphStyle,
+        elidedMap,
+        invisibleParentMap,
+      );
 
       this.selectedNodes.clear();
       const changeEditAction = config.get<string>("changeEditAction");
 
-      const laneInfo = assignLanes(collapsedEntries);
+      const laneInfo = assignLanes(entriesWithInvisible);
 
       this.panel.webview.postMessage({
         command: "updateGraph",
@@ -447,10 +453,86 @@ function description(entry: LogEntry) {
 export { collapseImmutableEntries } from "./collapser";
 export type { ElidedInfo } from "./collapser";
 
+export type InvisibleParentInfo = object;
+
+function getUniqueEntryId(entry: LogEntry): string {
+  return entry.divergent && entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id;
+}
+
+function getParentUniqueId(parent: ParentRef): string {
+  return parent.divergent && parent.change_offset ? `${parent.change_id}/${parent.change_offset}` : parent.change_id;
+}
+
+export function addInvisibleParentNodes(entries: LogEntry[]): {
+  entries: LogEntry[];
+  invisibleParentMap: Map<string, InvisibleParentInfo>;
+} {
+  if (entries.length === 0) {
+    return { entries: [], invisibleParentMap: new Map() };
+  }
+
+  const visibleIds = new Set(entries.map(getUniqueEntryId));
+  const invisibleParents = new Map<string, { row: number; parent: ParentRef }>();
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    for (const parent of entry.parents) {
+      const parentId = getParentUniqueId(parent);
+      if (!visibleIds.has(parentId) && !invisibleParents.has(parentId)) {
+        invisibleParents.set(parentId, { row: i, parent });
+      }
+    }
+  }
+
+  if (invisibleParents.size === 0) {
+    return { entries, invisibleParentMap: new Map() };
+  }
+
+  const sortedInvisibleParents = [...invisibleParents.entries()].sort((a, b) => b[1].row - a[1].row);
+
+  const result = [...entries];
+  const invisibleParentMap = new Map<string, InvisibleParentInfo>();
+
+  for (const [parentId, info] of sortedInvisibleParents) {
+    const insertIndex = info.row + 1;
+
+    const syntheticEntry: LogEntry = {
+      change_id: info.parent.change_id,
+      change_id_short: "",
+      change_id_shortest: "",
+      commit_id_short: "",
+      immutable: true,
+      mine: false,
+      empty: true,
+      current_working_copy: false,
+      root: false,
+      conflict: false,
+      divergent: info.parent.divergent,
+      change_offset: info.parent.change_offset,
+      description: "",
+      author: { name: "", email: "", timestamp: "" },
+      committer: { name: "", email: "", timestamp: "" },
+      diff: { total_added: 0, total_removed: 0, files: [] },
+      parents: [],
+      local_bookmarks: [],
+      remote_bookmarks: [],
+      local_tags: [],
+      remote_tags: [],
+      working_copies: [],
+    };
+
+    result.splice(insertIndex, 0, syntheticEntry);
+    invisibleParentMap.set(parentId, {});
+  }
+
+  return { entries: result, invisibleParentMap };
+}
+
 export function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
   elidedMap: Map<string, ElidedInfo> = new Map(),
+  invisibleParentMap: Map<string, InvisibleParentInfo> = new Map(),
 ): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
   const nonElidedEntries = entries.filter((e) => !e.change_id.startsWith("__elided_"));
   const offsetWidth = Math.max(
@@ -492,6 +574,37 @@ export function parseJJLogJson(
         false,
         false,
         elidedInfo.count,
+      );
+    }
+
+    const entryUniqueId =
+      entry.divergent && entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id;
+    if (invisibleParentMap.has(entryUniqueId)) {
+      return new ChangeNode(
+        entryUniqueId,
+        "",
+        "",
+        null,
+        "",
+        "",
+        "",
+        false,
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        "~",
+        "",
+        "",
+        "",
+        "",
+        0,
+        0,
+        0,
+        false,
+        false,
       );
     }
 
