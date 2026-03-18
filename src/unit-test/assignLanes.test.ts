@@ -327,4 +327,42 @@ describe("assignLanes", () => {
     assert.strictEqual(edgeC.lanePath[0], 1);
     assert.strictEqual(edgeC.lanePath[1], 1);
   });
+
+  it("invisible parent nodes free their lane", () => {
+    // Simulates the output of addInvisibleParentNodes:
+    // "aaa" has a parent "bbb" outside the visible set, so a synthetic
+    // parentless entry for "bbb" is inserted right after "aaa".
+    // "ccc" is an independent branch below.
+    // The lane used by "bbb" should be freed so "ccc" doesn't see extra lanes.
+    const entries = [makeEntry("aaa", ["bbb"]), makeEntry("bbb", []), makeEntry("ccc", ["ddd"]), makeEntry("ddd", [])];
+    const result = assignLanes(entries);
+
+    const nodeC = findNodeByChangeId(result, "ccc");
+    assert.ok(nodeC);
+    assert.strictEqual(nodeC.numLanesActiveVisually, 1);
+
+    const nodeD = findNodeByChangeId(result, "ddd");
+    assert.ok(nodeD);
+    assert.strictEqual(nodeD.numLanesActiveVisually, 1);
+  });
+
+  it("invisible parent on a side lane frees that lane", () => {
+    // "aaa" has two parents: "bbb" (visible) and "xxx" (invisible, synthetic).
+    // After "xxx" is processed (parentless), its lane should be freed.
+    const entries = [
+      makeEntry("aaa", ["bbb", "xxx"]),
+      makeEntry("xxx", []),
+      makeEntry("bbb", ["ccc"]),
+      makeEntry("ccc", []),
+    ];
+    const result = assignLanes(entries);
+
+    const nodeB = findNodeByChangeId(result, "bbb");
+    assert.ok(nodeB);
+    assert.strictEqual(nodeB.numLanesActiveVisually, 1);
+
+    const nodeC = findNodeByChangeId(result, "ccc");
+    assert.ok(nodeC);
+    assert.strictEqual(nodeC.numLanesActiveVisually, 1);
+  });
 });
