@@ -208,14 +208,12 @@ export async function activate(context: vscode.ExtensionContext) {
         activeLines === lines
       ) {
         const safeLines = lines.filter((line) => line !== annotateInfo!.changeIdsByLine.length);
+        const uniqueChangeIds = [
+          ...new Set(safeLines.map((line) => annotateInfo!.changeIdsByLine[line]).filter(Boolean)),
+        ];
+        const showResults = await repository.showAll(uniqueChangeIds);
         const changes = new Map<string, ChangeWithDetails>(
-          await Promise.all(
-            safeLines.map(async (line) => {
-              const changeId = annotateInfo!.changeIdsByLine[line];
-              const showResult = await repository.show(changeId);
-              return [changeId, showResult.change] satisfies [string, ChangeWithDetails];
-            }),
-          ),
+          showResults.map((result) => [result.change.changeId.substring(0, 8), result.change]),
         );
         if (
           annotateInfo &&
