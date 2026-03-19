@@ -1,14 +1,10 @@
-.vscode/**
-.vscode-test/**
+/.*
 out/**
 node_modules/**
 src/**
 !dist/**
 !images/**
 AGENTS.md
-.gitignore
-.yarnrc
-.devcontainer
 esbuild.js
 vsc-extension-quickstart.md
 **/tsconfig.json
