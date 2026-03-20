@@ -418,6 +418,10 @@
         const filesChanged = parseInt(nodeElement.dataset.filesChanged) || 0;
         const linesAdded = parseInt(nodeElement.dataset.linesAdded) || 0;
         const linesRemoved = parseInt(nodeElement.dataset.linesRemoved) || 0;
+        const localBookmarks = JSON.parse(nodeElement.dataset.localBookmarks || "[]");
+        const remoteBookmarks = JSON.parse(nodeElement.dataset.remoteBookmarks || "[]");
+        const localTags = JSON.parse(nodeElement.dataset.localTags || "[]");
+        const remoteTags = JSON.parse(nodeElement.dataset.remoteTags || "[]");
 
         let html = "";
         if (authorName || authorEmail || authorTimestamp) {
@@ -432,6 +436,33 @@
           if (authorTimestamp) {
             html += `<div class="tooltip-timestamp">${authorTimestamp}</div>`;
           }
+        }
+
+        const hasBookmarksOrTags =
+          localBookmarks.length > 0 || remoteBookmarks.length > 0 || localTags.length > 0 || remoteTags.length > 0;
+        if (hasBookmarksOrTags) {
+          html += `<div class="tooltip-pills">`;
+          localBookmarks.forEach((b) => {
+            const unsyncedClass = b.synced ? "" : " unsynced";
+            html += `<span class="tooltip-pill tooltip-bookmark-pill${unsyncedClass}">${escapeHtml(b.name)}</span>`;
+          });
+          const localBookmarkNames = new Set(localBookmarks.map((b) => b.name));
+          remoteBookmarks.forEach((b) => {
+            if (!localBookmarkNames.has(b.name)) {
+              html += `<span class="tooltip-pill tooltip-bookmark-pill">${escapeHtml(b.name)}@${escapeHtml(b.remote)}</span>`;
+            }
+          });
+          localTags.forEach((t) => {
+            const unsyncedClass = t.synced ? "" : " unsynced";
+            html += `<span class="tooltip-pill tooltip-tag-pill${unsyncedClass}">${escapeHtml(t.name)}</span>`;
+          });
+          const localTagNames = new Set(localTags.map((t) => t.name));
+          remoteTags.forEach((t) => {
+            if (!localTagNames.has(t.name)) {
+              html += `<span class="tooltip-pill tooltip-tag-pill">${escapeHtml(t.name)}@${escapeHtml(t.remote)}</span>`;
+            }
+          });
+          html += `</div>`;
         }
 
         html += `<div class="tooltip-summary">${filesChanged} file${filesChanged !== 1 ? "s" : ""} changed, <span class="tooltip-added">+${linesAdded}</span> <span class="tooltip-removed">-${linesRemoved}</span></div>`;
@@ -583,6 +614,10 @@
           node.dataset.nodeLane = nodeLane;
           node.dataset.changeOffset = change.changeOffset || "";
           node.dataset.conflict = change.conflict || false;
+          node.dataset.localBookmarks = JSON.stringify(change.localBookmarks || []);
+          node.dataset.remoteBookmarks = JSON.stringify(change.remoteBookmarks || []);
+          node.dataset.localTags = JSON.stringify(change.localTags || []);
+          node.dataset.remoteTags = JSON.stringify(change.remoteTags || []);
 
           const textContent = document.createElement("div");
           textContent.className = "text-content";

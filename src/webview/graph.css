@@ -340,6 +340,35 @@ body {
   margin-bottom: 6px;
 }
 
+.tooltip-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-bottom: 6px;
+}
+
+.tooltip-pill {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.tooltip-bookmark-pill {
+  background-color: #393a9b;
+}
+
+.tooltip-tag-pill {
+  background-color: #ac681b;
+}
+
+.tooltip-bookmark-pill.unsynced::after,
+.tooltip-tag-pill.unsynced::after {
+  content: "*";
+}
+
 .tooltip-summary {
   font-size: 0.9em;
   margin-bottom: 6px;
