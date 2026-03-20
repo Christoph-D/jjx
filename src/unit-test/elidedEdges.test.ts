@@ -510,7 +510,7 @@ describe("elidedEdges", () => {
 
       const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
 
-      assert.deepStrictEqual([...visibleIds], ["A", "left-B", "right-B", "D"]);
+      assert.deepStrictEqual([...visibleIds].sort(), ["A", "D", "left-B", "right-B"]);
 
       const bEdges = edges.get("right-B")!;
       assert.strictEqual(bEdges.length, 1);
@@ -528,6 +528,46 @@ describe("elidedEdges", () => {
       assert.deepStrictEqual(changeIds, ["A", "right-B", "right-C", "left-B", "D"]);
 
       const synthEntry = result.find((e) => e.change_id === "right-C");
+      assert.ok(synthEntry);
+      assert.deepStrictEqual(synthEntry.parents, [{ change_id: "D", divergent: false, change_offset: "" }]);
+    });
+
+    it("creates synthetic nodes for elided commits in a more complex case", () => {
+      const entries: LogEntry[] = [
+        createEntry("A", [parentRef("B")]),
+        createEntry("B", [parentRef("C"), parentRef("X")], { immutable: true }),
+        createEntry("X", [parentRef("G")], { immutable: true }),
+        createEntry("C", [parentRef("D")], { immutable: true }),
+        createEntry("Z", [parentRef("D")]),
+        createEntry("D", [parentRef("E")], { immutable: true }),
+        createEntry("E", [parentRef("F")], { immutable: true }),
+        createEntry("F", [parentRef("G")], { immutable: true }),
+        createEntry("G", [], { immutable: true }),
+      ];
+
+      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+
+      assert.deepStrictEqual([...visibleIds].sort(), ["A", "B", "D", "Z"]);
+
+      const bEdges = edges.get("B")!;
+      assert.strictEqual(bEdges.length, 2);
+      bEdges.sort((a, b) => a.targetId.localeCompare(b.targetId));
+      assert.deepStrictEqual(bEdges, [
+        { targetId: "C", edgeType: "direct" },
+        { targetId: "X", edgeType: "missing" },
+      ]);
+
+      assert.deepStrictEqual([...syntheticNodes.keys()].sort(), ["C", "E", "X"]);
+      assert.strictEqual(syntheticNodes.get("C")?.edgeType, "indirect");
+      assert.strictEqual(syntheticNodes.get("E")?.edgeType, "missing");
+      assert.strictEqual(syntheticNodes.get("X")?.edgeType, "missing");
+
+      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+
+      const changeIds = result.map((e) => e.change_id);
+      assert.deepStrictEqual(changeIds, ["A", "B", "X", "C", "Z", "D", "E"]);
+
+      const synthEntry = result.find((e) => e.change_id === "C");
       assert.ok(synthEntry);
       assert.deepStrictEqual(synthEntry.parents, [{ change_id: "D", divergent: false, change_offset: "" }]);
     });

@@ -142,7 +142,10 @@ export function classifyEdges(entries: LogEntry[]): {
     const id = getUniqueEntryId(entry);
     const classifiedEdges: ClassifiedEdge[] = [];
     const knownAncestors = new Set<string>();
-    const isMerge = entry.parents.length > 1;
+    const ancestorOfVisibleParentIds = entry.parents
+      .map(getParentUniqueId)
+      .filter((pid) => !visibleIds.has(pid) && ancestorOfVisible.has(pid));
+    const hasMultipleAncestorOfVisibleParents = ancestorOfVisibleParentIds.length > 1;
 
     for (const parent of entry.parents) {
       const parentId = getParentUniqueId(parent);
@@ -163,7 +166,12 @@ export function classifyEdges(entries: LogEntry[]): {
           const indirectEdges = parentEdges.filter((e) => e.edgeType === "indirect");
           const parentIsMerge = (parentMap.get(parentId)?.length ?? 0) > 1;
           const hasMultipleVisibleChildren = (visibleChildCount.get(parentId) ?? 0) > 1;
-          if (isMerge || parentIsMerge || indirectEdges.length > 1 || hasMultipleVisibleChildren) {
+          if (
+            hasMultipleAncestorOfVisibleParents ||
+            parentIsMerge ||
+            indirectEdges.length > 1 ||
+            hasMultipleVisibleChildren
+          ) {
             for (const edge of indirectEdges) {
               if (!knownAncestors.has(edge.targetId)) {
                 classifiedEdges.push(edge);
