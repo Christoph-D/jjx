@@ -94,6 +94,15 @@
         "rgba(from var(--vscode-charts-red) r g b / 100%)",
       ];
 
+      function abbreviateName(name, maxLength = 20) {
+        if (name.length <= maxLength) {
+          return name;
+        }
+        const prefixLength = Math.ceil((maxLength - 3) / 2);
+        const suffixLength = Math.floor((maxLength - 3) / 2);
+        return name.substring(0, prefixLength) + "..." + name.substring(name.length - suffixLength);
+      }
+
       window.addEventListener("message", (event) => {
         const message = event.data;
         switch (message.command) {
@@ -609,7 +618,7 @@
             change.localBookmarks.forEach((b) => {
               const pill = document.createElement("span");
               pill.className = "pill bookmark-pill" + (b.synced ? "" : " unsynced");
-              pill.textContent = b.name;
+              pill.textContent = abbreviateName(b.name);
               pill.dataset.bookmark = b.name;
               nodeLabel.appendChild(pill);
             });
@@ -620,7 +629,7 @@
               if (!localBookmarkNames.has(b.name)) {
                 const pill = document.createElement("span");
                 pill.className = "pill bookmark-pill";
-                pill.textContent = `${b.name}@${b.remote}`;
+                pill.textContent = `${abbreviateName(b.name)}@${b.remote}`;
                 nodeLabel.appendChild(pill);
               }
             });
@@ -629,7 +638,7 @@
             change.localTags.forEach((t) => {
               const pill = document.createElement("span");
               pill.className = "pill tag-pill" + (t.synced ? "" : " unsynced");
-              pill.textContent = t.name;
+              pill.textContent = abbreviateName(t.name);
               nodeLabel.appendChild(pill);
             });
           }
@@ -639,7 +648,7 @@
               if (!localTagNames.has(t.name)) {
                 const pill = document.createElement("span");
                 pill.className = "pill tag-pill";
-                pill.textContent = `${t.name}@${t.remote}`;
+                pill.textContent = `${abbreviateName(t.name)}@${t.remote}`;
                 nodeLabel.appendChild(pill);
               }
             });
@@ -861,7 +870,7 @@
               uniqueBookmarks.forEach((bookmarkName) => {
                 const item = document.createElement("div");
                 item.className = "context-submenu-item";
-                item.textContent = bookmarkName;
+                item.textContent = abbreviateName(bookmarkName);
                 item.dataset.bookmark = bookmarkName;
                 bookmarkSubmenu.appendChild(item);
               });
@@ -879,7 +888,7 @@
               localBookmarks.forEach((b) => {
                 const item = document.createElement("div");
                 item.className = "context-submenu-item";
-                item.textContent = b.name;
+                item.textContent = abbreviateName(b.name);
                 item.dataset.deleteBookmark = b.name;
                 deleteBookmarkSubmenu.appendChild(item);
               });
@@ -897,7 +906,7 @@
               localTags.forEach((t) => {
                 const item = document.createElement("div");
                 item.className = "context-submenu-item";
-                item.textContent = t.name;
+                item.textContent = abbreviateName(t.name);
                 item.dataset.deleteTag = t.name;
                 deleteTagSubmenu.appendChild(item);
               });
