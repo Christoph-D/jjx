@@ -498,5 +498,38 @@ describe("elidedEdges", () => {
       assert.ok(!changeIds.includes("D"), "D should be filtered out");
       assert.ok(!changeIds.includes("X"), "X should be filtered out");
     });
+
+    it("creates synthetic nodes if one side if immutable", () => {
+      const entries: LogEntry[] = [
+        createEntry("A", [parentRef("left-B"), parentRef("right-B")]),
+        createEntry("right-B", [parentRef("right-C")], { immutable: true }),
+        createEntry("right-C", [parentRef("D")], { immutable: true }),
+        createEntry("left-B", [parentRef("D")]),
+        createEntry("D", [], { immutable: true }),
+      ];
+
+      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+
+      assert.deepStrictEqual([...visibleIds], ["A", "left-B", "right-B", "D"]);
+
+      const bEdges = edges.get("right-B")!;
+      assert.strictEqual(bEdges.length, 1);
+      assert.strictEqual(bEdges[0].edgeType, "direct");
+      assert.strictEqual(bEdges[0].targetId, "right-C");
+
+      assert.strictEqual(syntheticNodes.size, 1);
+      assert.ok(syntheticNodes.has("right-C"));
+      assert.strictEqual(syntheticNodes.get("right-C")?.edgeType, "indirect");
+      assert.strictEqual(syntheticNodes.get("right-C")?.targetId, "D");
+
+      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+
+      const changeIds = result.map((e) => e.change_id);
+      assert.deepStrictEqual(changeIds, ["A", "right-B", "right-C", "left-B", "D"]);
+
+      const synthEntry = result.find((e) => e.change_id === "right-C");
+      assert.ok(synthEntry);
+      assert.deepStrictEqual(synthEntry.parents, [{ change_id: "D", divergent: false, change_offset: "" }]);
+    });
   });
 });

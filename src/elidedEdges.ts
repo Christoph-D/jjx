@@ -124,10 +124,25 @@ export function classifyEdges(entries: LogEntry[]): {
 
   const externalEdgesCache = new Map<string, ClassifiedEdge[]>();
 
+  const visibleChildCount = new Map<string, number>();
+  for (const entry of entries) {
+    const id = getUniqueEntryId(entry);
+    if (!visibleIds.has(id)) {
+      continue;
+    }
+    for (const parent of entry.parents) {
+      const parentId = getParentUniqueId(parent);
+      if (!visibleIds.has(parentId)) {
+        visibleChildCount.set(parentId, (visibleChildCount.get(parentId) || 0) + 1);
+      }
+    }
+  }
+
   for (const entry of entries) {
     const id = getUniqueEntryId(entry);
     const classifiedEdges: ClassifiedEdge[] = [];
     const knownAncestors = new Set<string>();
+    const isMerge = entry.parents.length > 1;
 
     for (const parent of entry.parents) {
       const parentId = getParentUniqueId(parent);
@@ -145,10 +160,20 @@ export function classifyEdges(entries: LogEntry[]): {
             knownAncestors.add(parentId);
           }
         } else {
-          for (const edge of parentEdges) {
-            if (!knownAncestors.has(edge.targetId)) {
-              classifiedEdges.push(edge);
-              knownAncestors.add(edge.targetId);
+          const indirectEdges = parentEdges.filter((e) => e.edgeType === "indirect");
+          const parentIsMerge = (parentMap.get(parentId)?.length ?? 0) > 1;
+          const hasMultipleVisibleChildren = (visibleChildCount.get(parentId) ?? 0) > 1;
+          if (isMerge || parentIsMerge || indirectEdges.length > 1 || hasMultipleVisibleChildren) {
+            for (const edge of indirectEdges) {
+              if (!knownAncestors.has(edge.targetId)) {
+                classifiedEdges.push(edge);
+                knownAncestors.add(edge.targetId);
+              }
+            }
+          } else {
+            if (!knownAncestors.has(parentId)) {
+              classifiedEdges.push({ targetId: parentId, edgeType: "direct" });
+              knownAncestors.add(parentId);
             }
           }
         }
@@ -160,7 +185,7 @@ export function classifyEdges(entries: LogEntry[]): {
       }
     }
 
-    removeTransitiveEdges(classifiedEdges, parentMap);
+    removeTransitiveEdges(classifiedEdges, parentMap, visibleIds);
     edges.set(id, classifiedEdges);
   }
 
@@ -169,12 +194,12 @@ export function classifyEdges(entries: LogEntry[]): {
       continue;
     }
     for (const edge of classifiedEdges) {
-      if (edge.edgeType !== "direct" && !syntheticNodes.has(edge.targetId)) {
+      if (!visibleIds.has(edge.targetId) && !syntheticNodes.has(edge.targetId)) {
         const reachableVisible = findReachableVisible(edge.targetId, visibleIds, parentMap);
         syntheticNodes.set(edge.targetId, {
           id: edge.targetId,
           targetId: reachableVisible || edge.targetId,
-          edgeType: edge.edgeType,
+          edgeType: reachableVisible ? "indirect" : "missing",
         });
       }
     }
@@ -256,7 +281,7 @@ function resolveExternalEdges(
     }
 
     if (parents.length > 1) {
-      removeTransitiveEdges(edges, parentMap);
+      removeTransitiveEdges(edges, parentMap, visibleIds);
     }
 
     cache.set(current, edges);
@@ -266,11 +291,11 @@ function resolveExternalEdges(
   return cache.get(startId)!;
 }
 
-function removeTransitiveEdges(edges: ClassifiedEdge[], parentMap: Map<string, string[]>): void {
-  if (!edges.some((e) => e.edgeType === "indirect")) {
-    return;
-  }
-
+function removeTransitiveEdges(
+  edges: ClassifiedEdge[],
+  parentMap: Map<string, string[]>,
+  visibleIds: Set<string>,
+): void {
   const initialTargets = new Set<string>();
   for (const edge of edges) {
     if (edge.edgeType !== "missing") {
@@ -278,13 +303,33 @@ function removeTransitiveEdges(edges: ClassifiedEdge[], parentMap: Map<string, s
     }
   }
 
+  const resolvedAncestors = new Map<string, Set<string>>();
+  for (const target of initialTargets) {
+    if (!visibleIds.has(target)) {
+      const ancestors = findVisibleAncestors(target, visibleIds, parentMap);
+      resolvedAncestors.set(target, ancestors);
+    }
+  }
+
   const unwanted = new Set<string>();
   const work: string[] = [];
 
   for (const target of initialTargets) {
-    const parents = parentMap.get(target);
-    if (parents) {
-      work.push(...parents);
+    if (visibleIds.has(target)) {
+      const parents = parentMap.get(target);
+      if (parents) {
+        work.push(...parents);
+      }
+    } else {
+      const ancestors = resolvedAncestors.get(target);
+      if (ancestors) {
+        for (const ancestor of ancestors) {
+          const parents = parentMap.get(ancestor);
+          if (parents) {
+            work.push(...parents);
+          }
+        }
+      }
     }
   }
 
@@ -308,10 +353,49 @@ function removeTransitiveEdges(edges: ClassifiedEdge[], parentMap: Map<string, s
 
   for (let i = edges.length - 1; i >= 0; i--) {
     const edge = edges[i];
-    if (edge.edgeType !== "missing" && unwanted.has(edge.targetId)) {
+    if (edge.edgeType === "missing") {
+      continue;
+    }
+
+    const target = edge.targetId;
+    if (unwanted.has(target)) {
       edges.splice(i, 1);
+    } else if (!visibleIds.has(target)) {
+      const ancestors = resolvedAncestors.get(target);
+      if (ancestors && ancestors.size > 0 && [...ancestors].every((a) => unwanted.has(a))) {
+        edges.splice(i, 1);
+      }
     }
   }
+}
+
+function findVisibleAncestors(startId: string, visibleIds: Set<string>, parentMap: Map<string, string[]>): Set<string> {
+  const result = new Set<string>();
+  const visited = new Set<string>();
+  const stack = [startId];
+
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    if (visited.has(current)) {
+      continue;
+    }
+    visited.add(current);
+
+    const parents = parentMap.get(current);
+    if (!parents) {
+      continue;
+    }
+
+    for (const parent of parents) {
+      if (visibleIds.has(parent)) {
+        result.add(parent);
+      } else {
+        stack.push(parent);
+      }
+    }
+  }
+
+  return result;
 }
 
 function findReachableVisible(
@@ -376,7 +460,7 @@ export function insertSyntheticNodes(
 
     const syntheticNodesForEntry: SyntheticNode[] = [];
     for (const edge of classifiedEdges) {
-      if (edge.edgeType !== "direct") {
+      if (!visibleIds.has(edge.targetId)) {
         const synthNode = syntheticNodes.get(edge.targetId);
         if (synthNode) {
           syntheticNodesForEntry.push(synthNode);
