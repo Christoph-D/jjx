@@ -550,6 +550,20 @@
           "description": "Action to perform when clicking the edit button on a change in the graph view",
           "scope": "resource"
         },
+        "jjx.commitAction": {
+          "type": "string",
+          "default": "commit",
+          "enum": [
+            "commit",
+            "new"
+          ],
+          "enumDescriptions": [
+            "Commits the current change with the description (jj commit)",
+            "Creates a new change on top with the description (jj new)"
+          ],
+          "description": "Action to perform when pressing Ctrl+Enter in the source control input box",
+          "scope": "resource"
+        },
         "jjx.graphStyle": {
           "type": "string",
           "default": "compact",

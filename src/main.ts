@@ -89,11 +89,11 @@ export async function activate(context: vscode.ExtensionContext) {
         await checkReposFunction(affectedFolders);
       }
     }
-    if (e.affectsConfiguration("jjx.changeEditAction")) {
+    if (e.affectsConfiguration("jjx.commitAction")) {
       const config = vscode.workspace.getConfiguration("jjx");
-      const changeEditAction = config.get<string>("changeEditAction") || "edit";
+      const commitAction = config.get<string>("commitAction") || "commit";
       for (const repoSCM of workspaceSCM.repoSCMs) {
-        repoSCM.updatePlaceholderText(changeEditAction);
+        repoSCM.updatePlaceholderText(commitAction);
       }
     }
     if (e.affectsConfiguration("jjx.openDiffAction")) {
@@ -325,9 +325,9 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("Repository not found");
           }
           const config = vscode.workspace.getConfiguration("jjx");
-          const changeEditAction = config.get<string>("changeEditAction") || "edit";
+          const commitAction = config.get<string>("commitAction") || "commit";
           const message = sourceControl.inputBox.value.trim() || undefined;
-          if (changeEditAction === "new") {
+          if (commitAction === "commit") {
             await repository.commit(message);
           } else {
             await repository.new(message);
