@@ -77,19 +77,6 @@ export function getCommandTimeout(repositoryRoot: string, defaultTimeout: number
 }
 
 /**
- * Returns ["--ignore-working-copy"] if the setting is enabled, otherwise returns an empty array.
- * This allows the flag to be conditionally included using the spread operator.
- */
-export function getIgnoreWorkingCopyArgs(repositoryRoot: string): string[] {
-  const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
-  const ignoreWorkingCopy = config.get<boolean>("ignoreWorkingCopy");
-  if (ignoreWorkingCopy) {
-    return ["--ignore-working-copy"];
-  }
-  return [];
-}
-
-/**
  * Gets the configured jj executable path from settings.
  * If no path is configured, searches through common installation paths before falling back to "jj".
  */

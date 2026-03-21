@@ -5,7 +5,7 @@ import type { JJDecorationProvider } from "./decorationProvider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent, isDescendant } from "./utils";
 import { JJFileSystemProvider } from "./fileSystemProvider";
-import { getConfigArgs, getIgnoreWorkingCopyArgs, getJJPath } from "./config";
+import { getConfigArgs, getJJPath } from "./config";
 import { handleCommand, spawnJJ } from "./process";
 import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
@@ -64,7 +64,7 @@ export class WorkspaceSourceControlManager {
 
         const repoRoot = (
           await handleCommand(
-            spawnJJ(jjPath.filepath, [...getIgnoreWorkingCopyArgs(workspaceFolder.uri.fsPath), "root"], {
+            spawnJJ(jjPath.filepath, ["--ignore-working-copy", "root"], {
               timeout: TIMEOUTS.DEFAULT,
               cwd: workspaceFolder.uri.fsPath,
             }),
@@ -360,7 +360,7 @@ export class RepositorySourceControlManager {
    * This should never be called concurrently.
    */
   async checkForUpdatesUnsafe() {
-    const latestOperationId = await this.repository.getLatestOperationId();
+    const latestOperationId = await this.repository.getLatestOperationId(false);
     if (this.operationId !== latestOperationId) {
       this.operationId = latestOperationId;
       const status = await this.repository.status();

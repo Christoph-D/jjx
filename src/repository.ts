@@ -5,7 +5,7 @@ import spawn from "cross-spawn";
 import { generateTemplate, LOG_ENTRY_FIELDS, SHOW_ENTRY_FIELDS, STATUS_ENTRY_FIELDS } from "./templateBuilder";
 import { logger } from "./logger";
 import { ImmutableError, convertJJErrors, parseJJError } from "./errors";
-import { fakeEditorPath, getIgnoreWorkingCopyArgs } from "./config";
+import { fakeEditorPath } from "./config";
 import { spawnJJ, handleJJCommand } from "./process";
 import { prepareFakeeditor, filepathToFileset, parseRenamePaths } from "./fakeeditor";
 import { pathEquals } from "./utils";
@@ -80,17 +80,18 @@ export class JJRepository {
   }
 
   spawnJJRead(args: string[], options: Parameters<typeof spawn>[2] & { cwd: string }) {
-    return this.spawnJJ([...getIgnoreWorkingCopyArgs(this.repositoryRoot), ...args], options);
+    return this.spawnJJ(["--ignore-working-copy", ...args], options);
   }
 
   /**
    * Note: this command may itself snapshot the working copy and add an operation to the log, in which case it will
    * return the new operation id.
    */
-  async getLatestOperationId() {
+  async getLatestOperationId(ignoreWorkingCopy: boolean = true) {
+    const spawn = ignoreWorkingCopy ? this.spawnJJRead.bind(this) : this.spawnJJ.bind(this);
     return (
       await handleJJCommand(
-        this.spawnJJRead(["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"], {
+        spawn(["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"], {
           cwd: this.repositoryRoot,
         }),
       )
