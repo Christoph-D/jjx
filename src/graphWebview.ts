@@ -7,6 +7,7 @@ import { assignLanes } from "./laneAssigner";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elidedEdges";
 import type { SyntheticNode } from "./elidedEdges";
 import { logger } from "./logger";
+import { getLogRevset } from "./config";
 
 export type { LaneNode, LaneEdge, ChangeIdGraph } from "./laneAssigner";
 
@@ -409,7 +410,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const config = vscode.workspace.getConfiguration("jjx");
       const graphStyle = config.get<string>("graphStyle") || "full";
 
-      const rawEntries = await this.repository.log();
+      const rawEntries = await this.repository.log(getLogRevset(this.repository.repositoryRoot));
       const elideImmutableCommits = this.getEffectiveEliding();
       const { edges, syntheticNodes, visibleIds } = classifyEdges(rawEntries, { elideImmutableCommits });
       const entriesWithSynthetics = insertSyntheticNodes(rawEntries, syntheticNodes, edges, visibleIds);
