@@ -94,7 +94,6 @@ The following settings can be configured in VS Code's settings:
 | `jjx.enableAnnotations`             | `true`      | Enables in-line blame annotations                                                                 |
 | `jjx.commandTimeout`                | `null`      | Global timeout in milliseconds for all jj commands. If not set, per-command defaults will be used |
 | `jjx.jjPath`                        | `""`        | Path to the jj executable. If not set, your PATH and common locations will be searched            |
-| `jjx.fakeEditorPath`                | `null`      | Path to the fake editor executable. If not set, use bundled prebuilt binaries                     |
 | `jjx.changeEditAction`              | `"edit"`    | Action when clicking the edit button on a change: `"edit"` (jj edit) or `"new"` (jj new)          |
 | `jjx.commitAction`                  | `"commit"`  | Action when pressing Ctrl+Enter in source control: `"commit"` (jj commit) or `"new"` (jj new)     |
 | `jjx.graphStyle`                    | `"compact"` | Display style for commits: `"full"` shows all details, `"compact"` shows single line              |

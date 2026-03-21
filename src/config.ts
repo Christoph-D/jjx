@@ -10,13 +10,6 @@ export let fakeEditorPath = "";
 export function initExtensionDir(extensionUri: vscode.Uri) {
   extensionDir = vscode.Uri.joinPath(extensionUri, extensionUri.fsPath.includes("extensions") ? "dist" : "src").fsPath;
 
-  const config = vscode.workspace.getConfiguration("jjx");
-  const customPath = config.get<string | null>("fakeEditorPath");
-  if (customPath !== null && customPath !== undefined) {
-    fakeEditorPath = customPath;
-    return;
-  }
-
   const fakeEditorExecutables: {
     [platform in typeof process.platform]?: {
       [arch in typeof process.arch]?: string;
