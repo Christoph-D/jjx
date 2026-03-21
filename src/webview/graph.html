@@ -446,21 +446,15 @@
             const unsyncedClass = b.synced ? "" : " unsynced";
             html += `<span class="tooltip-pill tooltip-bookmark-pill${unsyncedClass}">${escapeHtml(b.name)}</span>`;
           });
-          const localBookmarkNames = new Set(localBookmarks.map((b) => b.name));
           remoteBookmarks.forEach((b) => {
-            if (!localBookmarkNames.has(b.name)) {
-              html += `<span class="tooltip-pill tooltip-bookmark-pill">${escapeHtml(b.name)}@${escapeHtml(b.remote)}</span>`;
-            }
+            html += `<span class="tooltip-pill tooltip-bookmark-pill">${escapeHtml(b.name)}@${escapeHtml(b.remote)}</span>`;
           });
           localTags.forEach((t) => {
             const unsyncedClass = t.synced ? "" : " unsynced";
             html += `<span class="tooltip-pill tooltip-tag-pill${unsyncedClass}">${escapeHtml(t.name)}</span>`;
           });
-          const localTagNames = new Set(localTags.map((t) => t.name));
           remoteTags.forEach((t) => {
-            if (!localTagNames.has(t.name)) {
-              html += `<span class="tooltip-pill tooltip-tag-pill">${escapeHtml(t.name)}@${escapeHtml(t.remote)}</span>`;
-            }
+            html += `<span class="tooltip-pill tooltip-tag-pill">${escapeHtml(t.name)}@${escapeHtml(t.remote)}</span>`;
           });
           html += `</div>`;
         }
