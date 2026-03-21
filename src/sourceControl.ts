@@ -273,11 +273,7 @@ export class RepositorySourceControlManager {
   ) {
     this.repository = new JJRepository(repositoryRoot, jjPath, jjConfigArgs);
 
-    this.sourceControl = vscode.scm.createSourceControl(
-      "jj",
-      "Jujutsu",
-      vscode.Uri.file(repositoryRoot),
-    );
+    this.sourceControl = vscode.scm.createSourceControl("jj", "Jujutsu", vscode.Uri.file(repositoryRoot));
     this.subscriptions.push(this.sourceControl);
 
     this.workingCopyResourceGroup = this.sourceControl.createResourceGroup("@", "Working Copy");
@@ -297,14 +293,21 @@ export class RepositorySourceControlManager {
       provideOriginalResource,
     };
 
-    const watcherOperations = vscode.workspace.createFileSystemWatcher(
+    const opstoreWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(path.join(this.repositoryRoot, ".jj/repo/op_store/operations"), "*"),
     );
-    this.subscriptions.push(watcherOperations);
+    this.subscriptions.push(opstoreWatcher);
+
+    const repoWatcher = vscode.workspace.createFileSystemWatcher("**/*");
+    this.subscriptions.push(repoWatcher);
+
     const repoChangedWatchEvent = anyEvent(
-      watcherOperations.onDidCreate,
-      watcherOperations.onDidChange,
-      watcherOperations.onDidDelete,
+      opstoreWatcher.onDidCreate,
+      opstoreWatcher.onDidChange,
+      opstoreWatcher.onDidDelete,
+      repoWatcher.onDidCreate,
+      repoWatcher.onDidChange,
+      repoWatcher.onDidDelete,
     );
     repoChangedWatchEvent(
       async (_uri) => {
