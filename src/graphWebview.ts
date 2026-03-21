@@ -497,9 +497,17 @@ export function parseJJLogJson(
   syntheticNodes: Map<string, SyntheticNode> = new Map(),
 ): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
   const nonSyntheticEntries = entries.filter((e) => !syntheticNodes.has(getUniqueEntryId(e)));
+
+  const changeIdCounts = new Map<string, number>();
+  for (const entry of nonSyntheticEntries) {
+    changeIdCounts.set(entry.change_id, (changeIdCounts.get(entry.change_id) ?? 0) + 1);
+  }
+
   const offsetWidth = Math.max(
     0,
-    ...nonSyntheticEntries.filter((e) => e.divergent && e.change_offset).map((e) => e.change_offset.length + 1),
+    ...nonSyntheticEntries
+      .filter((e) => e.change_offset && (e.divergent || (changeIdCounts.get(e.change_id) ?? 0) > 1))
+      .map((e) => e.change_offset.length + 1),
   );
   let maxPrefixLength = Math.max(4, ...nonSyntheticEntries.map((e) => e.change_id_shortest.length));
 
@@ -508,7 +516,7 @@ export function parseJJLogJson(
     const synthNode = syntheticNodes.get(entryUniqueId);
     if (synthNode) {
       const uniqueParentIds = entry.parents.map((p: ParentRef) =>
-        p.divergent && p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
+        p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
       );
 
       return new ChangeNode(
@@ -547,8 +555,9 @@ export function parseJJLogJson(
     const timestamp = entry.author.timestamp;
     const commitId = entry.commit_id_short;
 
-    const changeOffset = entry.divergent && entry.change_offset ? entry.change_offset : null;
-    const uniqueChangeId = entry.divergent && changeOffset ? `${entry.change_id}/${changeOffset}` : entry.change_id;
+    const showOffset = entry.change_offset && (entry.divergent || (changeIdCounts.get(entry.change_id) ?? 0) > 1);
+    const changeOffset = showOffset ? entry.change_offset : null;
+    const uniqueChangeId = entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id;
 
     let branchType: string | undefined;
     if (entry.current_working_copy) {
@@ -574,7 +583,7 @@ export function parseJJLogJson(
     const linesRemoved = entry.diff?.total_removed ?? 0;
 
     const uniqueParentIds = entry.parents.map((p: ParentRef) =>
-      p.divergent && p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
+      p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
     );
 
     return new ChangeNode(

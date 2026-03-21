@@ -63,6 +63,23 @@ describe("elidedEdges", () => {
       const parent = { change_id: "xyz789", divergent: true, change_offset: "2" };
       assert.strictEqual(getParentUniqueId(parent), "xyz789/2");
     });
+
+    it("returns change_id/offset when offset present even if divergent is false", () => {
+      const parent = { change_id: "xyz789", divergent: false, change_offset: "1" };
+      assert.strictEqual(getParentUniqueId(parent), "xyz789/1");
+    });
+  });
+
+  describe("getUniqueEntryId with divergent=false commits", () => {
+    it("returns change_id/offset when offset present even if divergent is false", () => {
+      const entry = createEntry("abc123", [], { divergent: false, change_offset: "1" });
+      assert.strictEqual(getUniqueEntryId(entry), "abc123/1");
+    });
+
+    it("returns change_id/0 when offset is 0", () => {
+      const entry = createEntry("abc123", [], { divergent: false, change_offset: "0" });
+      assert.strictEqual(getUniqueEntryId(entry), "abc123/0");
+    });
   });
 
   describe("classifyEdges", () => {
@@ -192,6 +209,35 @@ describe("elidedEdges", () => {
       assert.strictEqual(aEdges.length, 2, "A should have edges to B and C, not duplicate to D");
       const targets = aEdges.map((e) => e.targetId).sort();
       assert.deepStrictEqual(targets, ["B", "C"]);
+    });
+
+    it("handles divergent commits with divergent=false flag", () => {
+      const entries: LogEntry[] = [
+        createEntry("abc123", [], { divergent: false, change_offset: "0" }),
+        createEntry("abc123", [], { divergent: false, change_offset: "1" }),
+      ];
+
+      const { edges, visibleIds } = classifyEdges(entries);
+
+      assert.ok(visibleIds.has("abc123/0"), "visibleIds should contain abc123/0");
+      assert.ok(visibleIds.has("abc123/1"), "visibleIds should contain abc123/1");
+      assert.strictEqual(edges.size, 2, "Should have separate edges for each divergent commit");
+    });
+
+    it("handles parent refs with divergent=false and non-zero offset", () => {
+      const divergentParent = { change_id: "xyz789", divergent: false, change_offset: "1" };
+      const entries: LogEntry[] = [
+        createEntry("A", [divergentParent]),
+        createEntry("xyz789", [], { divergent: false, change_offset: "1" }),
+      ];
+
+      const { edges, visibleIds } = classifyEdges(entries);
+
+      assert.ok(visibleIds.has("xyz789/1"), "visibleIds should contain xyz789/1");
+      const aEdges = edges.get("A");
+      assert.ok(aEdges, "Should have edges for A");
+      assert.strictEqual(aEdges.length, 1, "A should have one edge to xyz789/1");
+      assert.strictEqual(aEdges[0].targetId, "xyz789/1", "Edge should target xyz789/1");
     });
 
     it("keeps missing edges even when target is reachable", () => {
@@ -570,6 +616,41 @@ describe("elidedEdges", () => {
       const synthEntry = result.find((e) => e.change_id === "C");
       assert.ok(synthEntry);
       assert.deepStrictEqual(synthEntry.parents, [{ change_id: "D", divergent: false, change_offset: "" }]);
+    });
+
+    it("distinguishes divergent commits", () => {
+      const entries: LogEntry[] = [
+        createEntry("A", [parentRef("C")], { divergent: true, change_offset: "0" }),
+        createEntry("A", [parentRef("C")], { divergent: true, change_offset: "1" }),
+        createEntry("C", [], { immutable: true }),
+      ];
+
+      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+
+      assert.deepStrictEqual([...visibleIds].sort(), ["A/0", "A/1", "C"]);
+
+      const a0Edges = edges.get("A/0")!;
+      assert.strictEqual(a0Edges.length, 1);
+      assert.strictEqual(a0Edges[0].edgeType, "direct");
+      assert.strictEqual(a0Edges[0].targetId, "C");
+
+      const a1Edges = edges.get("A/1")!;
+      assert.strictEqual(a1Edges.length, 1);
+      assert.strictEqual(a1Edges[0].edgeType, "direct");
+      assert.strictEqual(a1Edges[0].targetId, "C");
+
+      assert.strictEqual(syntheticNodes.size, 0);
+
+      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+
+      assert.deepStrictEqual(
+        result.map((e) => e.change_id),
+        ["A", "A", "C"],
+      );
+      assert.deepStrictEqual(
+        result.map((e) => e.divergent),
+        [true, true, false],
+      );
     });
   });
 });

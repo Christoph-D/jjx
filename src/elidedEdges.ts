@@ -14,11 +14,11 @@ export interface SyntheticNode {
 }
 
 function getUniqueEntryId(entry: LogEntry): string {
-  return entry.divergent && entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id;
+  return entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id;
 }
 
 function getParentUniqueId(parent: ParentRef): string {
-  return parent.divergent && parent.change_offset ? `${parent.change_id}/${parent.change_offset}` : parent.change_id;
+  return parent.change_offset ? `${parent.change_id}/${parent.change_offset}` : parent.change_id;
 }
 
 interface AncestryInfo {

@@ -35,7 +35,7 @@ interface LaneInfo {
 }
 
 function getParentUniqueId(parent: ParentRef): string {
-  return parent.divergent && parent.change_offset ? `${parent.change_id}/${parent.change_offset}` : parent.change_id;
+  return parent.change_offset ? `${parent.change_id}/${parent.change_offset}` : parent.change_id;
 }
 
 interface NormalizedEntry {
@@ -45,7 +45,7 @@ interface NormalizedEntry {
 
 function normalizeEntries(entries: LogEntry[]): NormalizedEntry[] {
   return entries.map((entry) => ({
-    changeId: entry.divergent && entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
+    changeId: entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
     parentIds: entry.parents.map(getParentUniqueId),
   }));
 }
