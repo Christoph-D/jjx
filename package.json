@@ -530,7 +530,7 @@
         },
         "jjx.graphStyle": {
           "type": "string",
-          "default": "full",
+          "default": "compact",
           "enum": [
             "full",
             "compact"
