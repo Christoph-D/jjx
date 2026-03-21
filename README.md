@@ -70,7 +70,8 @@ Here's what you can do so far:
 
 ### 💼 Multi-Workspace support
 
-- Show workspace labels in the graph view
+- Show workspace labels in the graph view  
+  ![workspaces](images/workspaces.png)
 - Handle "workspace is stale" errors
 
 ### 🔄 Operation management
