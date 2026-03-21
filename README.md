@@ -72,7 +72,7 @@ Here's what you can do so far:
 
 ### 💼 Multi-Workspace support
 
-- Show multiple workspaces in the graph view
+- Show workspace labels in the graph view
 - Handle "workspace is stale" errors
 
 ### 🔄 Operation management
