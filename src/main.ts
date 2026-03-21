@@ -193,6 +193,8 @@ export async function activate(context: vscode.ExtensionContext) {
       | undefined;
     let activeEditorUri: vscode.Uri | undefined;
     let activeLines: number[] = [];
+    let lastUniqueChangeIds: string = "";
+    let cachedChanges: Map<string, ChangeWithDetails> = new Map();
     const setDecorations = async (editor: vscode.TextEditor, lines: number[]) => {
       const repository = workspaceSCM.getRepositoryFromUri(editor.document.uri);
       if (!repository) {
@@ -204,33 +206,27 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      if (
-        annotateInfo &&
-        annotateInfo.uri === editor.document.uri &&
-        activeEditorUri === editor.document.uri &&
-        activeLines === lines
-      ) {
+      if (annotateInfo && annotateInfo.uri === editor.document.uri && activeEditorUri === editor.document.uri) {
         const safeLines = lines.filter((line) => line !== annotateInfo!.changeIdsByLine.length);
         const uniqueChangeIds = [
           ...new Set(safeLines.map((line) => annotateInfo!.changeIdsByLine[line]).filter(Boolean)),
         ];
-        const showResults = await repository.showAll(uniqueChangeIds);
-        const changes = new Map<string, ChangeWithDetails>(
-          showResults.map((result) => [result.change.changeId.substring(0, 8), result.change]),
-        );
-        if (
-          annotateInfo &&
-          annotateInfo.uri === editor.document.uri &&
-          activeEditorUri === editor.document.uri &&
-          activeLines === lines
-        ) {
+        const uniqueChangeIdsKey = uniqueChangeIds.sort().join(",");
+        if (uniqueChangeIdsKey !== lastUniqueChangeIds) {
+          lastUniqueChangeIds = uniqueChangeIdsKey;
+          const showResults = await repository.showAll(uniqueChangeIds);
+          cachedChanges = new Map<string, ChangeWithDetails>(
+            showResults.map((result) => [result.change.changeId.substring(0, 8), result.change]),
+          );
+        }
+        if (annotateInfo && annotateInfo.uri === editor.document.uri && activeEditorUri === editor.document.uri) {
           const decorations: vscode.DecorationOptions[] = [];
           for (const line of safeLines) {
             const changeId = annotateInfo.changeIdsByLine[line];
             if (!changeId) {
               continue; // Could be possible if `annotateInfo` is stale due to the await
             }
-            const change = changes.get(changeId);
+            const change = cachedChanges.get(changeId);
             if (!change) {
               continue; // Could be possible if `annotateInfo` is mismatched with `changes` due to a race
             }
@@ -295,6 +291,8 @@ export async function activate(context: vscode.ExtensionContext) {
       if (editor) {
         const uri = editor.document.uri;
         activeEditorUri = uri;
+        lastUniqueChangeIds = "";
+        cachedChanges.clear();
         await updateAnnotateInfo(uri);
         activeLines = editor.selections.map((selection) => selection.active.line);
         await setDecorations(editor, activeLines);
@@ -1397,8 +1395,7 @@ export async function activate(context: vscode.ExtensionContext) {
     } catch (err) {
       logger.error(`Error during background poll: ${String(err)}`);
     } finally {
-      const pollInterval =
-        vscode.workspace.getConfiguration("jjx").get<number>("pollInterval");
+      const pollInterval = vscode.workspace.getConfiguration("jjx").get<number>("pollInterval");
       if (pollInterval !== undefined && pollInterval > 0) {
         pollTimeoutId = setTimeout(() => void scheduleNextPoll(), pollInterval);
       }
