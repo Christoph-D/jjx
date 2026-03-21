@@ -14,8 +14,6 @@ import { linesDiffComputers } from "./vendor/vscode/editor/common/diff/linesDiff
 import { ILinesDiffComputer, LinesDiff } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
 import { match } from "arktype";
 import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals } from "./utils";
-
-const DEFAULT_POLL_INTERVAL_MS = 30000;
 import { openMergeEditor } from "./conflictResolver";
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -1400,8 +1398,8 @@ export async function activate(context: vscode.ExtensionContext) {
       logger.error(`Error during background poll: ${String(err)}`);
     } finally {
       const pollInterval =
-        vscode.workspace.getConfiguration("jjx").get<number>("pollInterval") ?? DEFAULT_POLL_INTERVAL_MS;
-      if (pollInterval > 0) {
+        vscode.workspace.getConfiguration("jjx").get<number>("pollInterval");
+      if (pollInterval !== undefined && pollInterval > 0) {
         pollTimeoutId = setTimeout(() => void scheduleNextPoll(), pollInterval);
       }
     }

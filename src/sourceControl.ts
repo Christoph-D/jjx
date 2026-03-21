@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { getParams, toJJUri } from "./uri";
 import type { JJDecorationProvider } from "./decorationProvider";
 import { logger } from "./logger";
-import { anyEvent } from "./utils";
+import { anyEvent, filterEvent, isDescendant } from "./utils";
 import { JJFileSystemProvider } from "./fileSystemProvider";
 import { getConfigArgs, getIgnoreWorkingCopyArgs, getJJPath } from "./config";
 import { handleCommand, spawnJJ } from "./process";
@@ -257,12 +257,13 @@ export class RepositorySourceControlManager {
   private _onDidUpdate = new vscode.EventEmitter<void>();
   readonly onDidUpdate: vscode.Event<void> = this._onDidUpdate.event;
 
-  operationId: string | undefined; // the latest operation id seen by this manager
+  operationId: string | undefined;
   fileStatusesByChange: Map<string, FileStatus[]> = new Map();
   conflictedFilesByChange: Map<string, Set<string>> = new Map();
   trackedFiles: Set<string> = new Set();
   status: RepositoryStatus | undefined;
   parentShowResults: Map<string, Show> = new Map();
+  private repoWatcherTimer: NodeJS.Timeout | undefined;
 
   constructor(
     public repositoryRoot: string,
@@ -301,16 +302,13 @@ export class RepositorySourceControlManager {
     const repoWatcher = vscode.workspace.createFileSystemWatcher("**/*");
     this.subscriptions.push(repoWatcher);
 
-    const repoChangedWatchEvent = anyEvent(
+    const opstoreChangedWatchEvent = anyEvent(
       opstoreWatcher.onDidCreate,
       opstoreWatcher.onDidChange,
       opstoreWatcher.onDidDelete,
-      repoWatcher.onDidCreate,
-      repoWatcher.onDidChange,
-      repoWatcher.onDidDelete,
     );
-    repoChangedWatchEvent(
-      async (_uri) => {
+    opstoreChangedWatchEvent(
+      async () => {
         this.fileSystemProvider.onDidChangeRepository({
           repositoryRoot: this.repositoryRoot,
         });
@@ -319,6 +317,25 @@ export class RepositorySourceControlManager {
       undefined,
       this.subscriptions,
     );
+
+    const repoChangedWatchEvent = filterEvent(
+      anyEvent(repoWatcher.onDidCreate, repoWatcher.onDidChange, repoWatcher.onDidDelete),
+      (uri) => !isDescendant(path.join(this.repositoryRoot, ".jj"), uri.fsPath),
+    );
+    repoChangedWatchEvent(() => this.handleRepoWatcherEvent(), undefined, this.subscriptions);
+  }
+
+  private handleRepoWatcherEvent() {
+    if (this.repoWatcherTimer) {
+      clearTimeout(this.repoWatcherTimer);
+    }
+    this.repoWatcherTimer = setTimeout(() => {
+      this.repoWatcherTimer = undefined;
+      this.fileSystemProvider.onDidChangeRepository({
+        repositoryRoot: this.repositoryRoot,
+      });
+      void this.checkForUpdates();
+    }, TIMEOUTS.REPO_WATCHER_DEBOUNCE);
   }
 
   updatePlaceholderText(changeEditAction: string) {
@@ -564,6 +581,10 @@ export class RepositorySourceControlManager {
   }
 
   dispose() {
+    if (this.repoWatcherTimer) {
+      clearTimeout(this.repoWatcherTimer);
+      this.repoWatcherTimer = undefined;
+    }
     for (const subscription of this.subscriptions) {
       subscription.dispose();
     }

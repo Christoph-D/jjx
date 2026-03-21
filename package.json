@@ -550,7 +550,7 @@
         },
         "jjx.pollInterval": {
           "type": "number",
-          "default": 1000,
+          "default": 30000,
           "description": "Interval in milliseconds between repository polls. Set to 0 to disable polling.",
           "scope": "resource",
           "minimum": 0
