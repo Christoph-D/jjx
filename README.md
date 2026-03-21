@@ -77,8 +77,9 @@ Here's what you can do so far:
 
 ### 🔄 Operation Management
 
-- Quick undo/redo buttons
-- Undo jj operations or restore to a previous state
+- Browse the operations log with quick undo/redo buttons  
+  ![oplog](images/undo-redo.png)
+- Undo any jj operation or restore repository to a previous state
 
 ## 📋 Prerequisites
 
