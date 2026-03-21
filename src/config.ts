@@ -134,3 +134,8 @@ export function getLogRevset(repositoryRoot: string): string {
   const numParents = config.get<number>("numberOfImmutableParentsInLog") ?? 1;
   return `connected(present(@) | ancestors(immutable_heads().., ${numParents + 1}) | trunk())`;
 }
+
+export function getNumberOfImmutableParentsInLog(repositoryRoot: string): number {
+  const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
+  return config.get<number>("numberOfImmutableParentsInLog") ?? 1;
+}

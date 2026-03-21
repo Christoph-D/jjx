@@ -7,7 +7,7 @@ import { assignLanes } from "./laneAssigner";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elidedEdges";
 import type { SyntheticNode } from "./elidedEdges";
 import { logger } from "./logger";
-import { getLogRevset } from "./config";
+import { getLogRevset, getNumberOfImmutableParentsInLog } from "./config";
 
 export type { LaneNode, LaneEdge, ChangeIdGraph } from "./laneAssigner";
 
@@ -412,7 +412,10 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
       const rawEntries = await this.repository.log(getLogRevset(this.repository.repositoryRoot));
       const elideImmutableCommits = this.getEffectiveEliding();
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(rawEntries, { elideImmutableCommits });
+      const { edges, syntheticNodes, visibleIds } = classifyEdges(rawEntries, {
+        elideImmutableCommits,
+        numberOfImmutableParentsInLog: getNumberOfImmutableParentsInLog(this.repository.repositoryRoot),
+      });
       const entriesWithSynthetics = insertSyntheticNodes(rawEntries, syntheticNodes, edges, visibleIds);
       const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(
         entriesWithSynthetics,

@@ -27,7 +27,11 @@ interface AncestryInfo {
   ancestorOfVisible: Set<string>;
 }
 
-function buildAncestryInfo(entries: LogEntry[], elideImmutableCommits: boolean): AncestryInfo {
+function buildAncestryInfo(
+  entries: LogEntry[],
+  elideImmutableCommits: boolean,
+  immutableParentDepth: number,
+): AncestryInfo {
   const visibleIds = new Set<string>();
   const parentMap = new Map<string, string[]>();
   const allParents = new Set<string>();
@@ -61,15 +65,22 @@ function buildAncestryInfo(entries: LogEntry[], elideImmutableCommits: boolean):
     }
   }
 
-  for (const mutableId of mutableIds) {
-    const parents = parentMap.get(mutableId);
-    if (parents) {
-      for (const pid of parents) {
-        if (allEntryIds.has(pid)) {
-          visibleIds.add(pid);
+  const levels = immutableParentDepth;
+  let currentLevel = new Set(mutableIds);
+  for (let i = 0; i < levels; i++) {
+    const nextLevel = new Set<string>();
+    for (const id of currentLevel) {
+      const parents = parentMap.get(id);
+      if (parents) {
+        for (const pid of parents) {
+          if (allEntryIds.has(pid)) {
+            visibleIds.add(pid);
+            nextLevel.add(pid);
+          }
         }
       }
     }
+    currentLevel = nextLevel;
   }
 
   const ancestorOfVisible = new Set<string>();
@@ -115,6 +126,7 @@ function canReachVisible(startId: string, visibleIds: Set<string>, parentMap: Ma
 
 export interface ClassifyEdgesOptions {
   elideImmutableCommits?: boolean;
+  numberOfImmutableParentsInLog?: number;
 }
 
 export function classifyEdges(
@@ -126,9 +138,14 @@ export function classifyEdges(
   visibleIds: Set<string>;
 } {
   const elideImmutableCommits = options?.elideImmutableCommits ?? true;
+  const immutableParentDepth = options?.numberOfImmutableParentsInLog ?? 1;
   const edges = new Map<string, ClassifiedEdge[]>();
   const syntheticNodes = new Map<string, SyntheticNode>();
-  const { visibleIds, parentMap, ancestorOfVisible } = buildAncestryInfo(entries, elideImmutableCommits);
+  const { visibleIds, parentMap, ancestorOfVisible } = buildAncestryInfo(
+    entries,
+    elideImmutableCommits,
+    immutableParentDepth,
+  );
 
   const externalEdgesCache = new Map<string, ClassifiedEdge[]>();
 
