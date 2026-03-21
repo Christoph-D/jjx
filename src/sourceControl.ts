@@ -275,7 +275,7 @@ export class RepositorySourceControlManager {
 
     this.sourceControl = vscode.scm.createSourceControl(
       "jj",
-      path.basename(repositoryRoot),
+      "Jujutsu",
       vscode.Uri.file(repositoryRoot),
     );
     this.subscriptions.push(this.sourceControl);
