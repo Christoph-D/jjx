@@ -785,7 +785,7 @@ export class JJRepository {
 
   async deleteTag(tag: string) {
     return await handleJJCommand(
-      this.spawnJJ(["tag", "remove", tag], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
+      this.spawnJJ(["tag", "delete", tag], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
     );
   }
 
