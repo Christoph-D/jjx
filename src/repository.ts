@@ -988,6 +988,24 @@ export class JJRepository {
     ).toString();
   }
 
+  async undo() {
+    return await handleJJCommand(
+      this.spawnJJ(["undo"], {
+        timeout: TIMEOUTS.DEFAULT,
+        cwd: this.repositoryRoot,
+      }),
+    );
+  }
+
+  async redo() {
+    return await handleJJCommand(
+      this.spawnJJ(["redo"], {
+        timeout: TIMEOUTS.DEFAULT,
+        cwd: this.repositoryRoot,
+      }),
+    );
+  }
+
   /**
    * @returns undefined if the file was not modified in `rev`
    */

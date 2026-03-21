@@ -887,6 +887,32 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+      vscode.commands.registerCommand("jj.undo", async () => {
+        try {
+          const repository = getSelectedRepo();
+          await repository.undo();
+          await operationLogManager.refresh();
+          await graphWebview?.refresh();
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to undo${error instanceof Error ? `: ${error.message}` : ""}`);
+        }
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("jj.redo", async () => {
+        try {
+          const repository = getSelectedRepo();
+          await repository.redo();
+          await operationLogManager.refresh();
+          await graphWebview?.refresh();
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to redo${error instanceof Error ? `: ${error.message}` : ""}`);
+        }
+      }),
+    );
+
+    context.subscriptions.push(
       vscode.commands.registerCommand("jj.selectOperationLogRepo", async () => {
         try {
           const repoNames = workspaceSCM.repoSCMs.map((repo) => repo.repositoryRoot);

@@ -154,6 +154,18 @@
         "icon": "$(repo)"
       },
       {
+        "command": "jj.undo",
+        "title": "Undo",
+        "category": "Jujutsu",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "jj.redo",
+        "title": "Redo",
+        "category": "Jujutsu",
+        "icon": "$(redo)"
+      },
+      {
         "command": "jj.operationUndo",
         "title": "Undo operation",
         "category": "Jujutsu",
@@ -259,14 +271,24 @@
       ],
       "view/title": [
         {
+          "command": "jj.undo",
+          "when": "view == jjOperationLog",
+          "group": "navigation@1"
+        },
+        {
+          "command": "jj.redo",
+          "when": "view == jjOperationLog",
+          "group": "navigation@2"
+        },
+        {
           "command": "jj.refreshOperationLog",
           "when": "view == jjOperationLog",
-          "group": "navigation"
+          "group": "navigation@3"
         },
         {
           "command": "jj.selectOperationLogRepo",
           "when": "view == jjOperationLog",
-          "group": "navigation"
+          "group": "navigation@4"
         },
         {
           "command": "jj.refreshGraphWebview",
