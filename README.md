@@ -1,5 +1,7 @@
 # Jujutsu X
 
+![logo](images/logo-small.png)
+
 > A Visual Studio Code extension for the [Jujutsu (jj) version control system](https://github.com/jj-vcs/jj). My
 > personal development fork of [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 
