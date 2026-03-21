@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import * as vscode from "vscode";
 import { getParams, toJJUri } from "./uri";
 import type { JJDecorationProvider } from "./decorationProvider";
@@ -294,8 +295,22 @@ export class RepositorySourceControlManager {
       provideOriginalResource,
     };
 
+    const jjRepoPath = path.join(this.repositoryRoot, ".jj/repo");
+    let jjRootRepoPath: string;
+    // In jj workspaces, .jj/repo is a regular file pointing to the real repo.
+    try {
+      const stats = fs.statSync(jjRepoPath);
+      if (stats.isFile()) {
+        jjRootRepoPath = fs.readFileSync(jjRepoPath, "utf-8").trim();
+      } else {
+        jjRootRepoPath = jjRepoPath;
+      }
+    } catch {
+      jjRootRepoPath = jjRepoPath;
+    }
+
     const opstoreWatcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(path.join(this.repositoryRoot, ".jj/repo/op_store/operations"), "*"),
+      new vscode.RelativePattern(path.join(jjRootRepoPath, "op_store/operations"), "*"),
     );
     this.subscriptions.push(opstoreWatcher);
 
