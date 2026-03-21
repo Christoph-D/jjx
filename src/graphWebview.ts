@@ -394,6 +394,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     }
 
     try {
+      await this.repository.getLatestOperationId(false);
       const config = vscode.workspace.getConfiguration("jjx");
       const graphStyle = config.get<string>("graphStyle") || "full";
 

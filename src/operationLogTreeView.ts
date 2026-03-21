@@ -61,6 +61,7 @@ export class OperationLogTreeDataProvider implements TreeDataProvider<unknown> {
   }
 
   async refresh() {
+    await this.selectedRepository.getLatestOperationId(false);
     const prev = this.operationTreeItems;
     const operations = await this.selectedRepository.operationLog();
     this.operationTreeItems = operations.map((op) => new OperationTreeItem(op, this.selectedRepository.repositoryRoot));
