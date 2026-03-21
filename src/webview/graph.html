@@ -170,6 +170,15 @@
         const radius = change.currentWorkingCopy ? 7 : CIRCLE_RADIUS;
 
         if (change.branchType === "~") {
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", "-8");
+          rect.setAttribute("y", "-6");
+          rect.setAttribute("width", "16");
+          rect.setAttribute("height", "10");
+          rect.setAttribute("class", "elided-bg");
+          rect.style.fill = "var(--vscode-sideBar-background)";
+          g.appendChild(rect);
+
           const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
           text.setAttribute("x", "0");
           text.setAttribute("y", "0");
