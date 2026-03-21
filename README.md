@@ -11,7 +11,7 @@ The goal of this extension is to bring the great UX of Jujutsu into the VS Code 
 
 Here's what you can do so far:
 
-### 🔗 Graph View
+### 🔗 Graph view
 
 - Compact graph view  
   ![compact graph](images/compact-view.png)
@@ -33,7 +33,7 @@ Here's what you can do so far:
 - Squash a change into any other change
 - Duplicate a change onto/after/before any other change
 
-### 📁 File Management
+### 📁 File management
 
 - Track file statuses in the working copy
 - Monitor file statuses across all parent changes
@@ -41,7 +41,7 @@ Here's what you can do so far:
 - View line-by-line blame  
   <img src="images/blame.gif" width="70%" alt="view blame">
 
-### 💫 Change Management
+### 💫 Change management
 
 - Quickly commit with Ctrl+Enter
 - Support both the
@@ -65,7 +65,7 @@ Here's what you can do so far:
 - Show divergent changes in the graph and change view
 - Allow all meaningful operations on divergent changes
 
-### 🏷️ Bookmark/Tag Management
+### 🏷️ Bookmark/Tag management
 
 - Create, move, and delete bookmarks
 - Set and delete tags
@@ -75,7 +75,7 @@ Here's what you can do so far:
 - Show multiple workspaces in the graph view
 - Handle "workspace is stale" errors
 
-### 🔄 Operation Management
+### 🔄 Operation management
 
 - Browse the operations log with quick undo/redo buttons  
   ![oplog](images/undo-redo.png)
@@ -87,7 +87,7 @@ Here's what you can do so far:
   setting
 - Ensure `jj` is of a recent version (>=0.38.0)
 
-## 🐛 Known Issues
+## 🐛 Known issues
 
 If you encounter any problems, please [report them on GitHub](https://github.com/Christoph-D/jjx/issues/)!
 
