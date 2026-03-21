@@ -5,9 +5,7 @@
 
 ## 🚀 Features
 
-The goal of this extension is to bring the great UX of Jujutsu into the VS Code UI. We are currently focused on
-achieving parity for commonly used features of VS Code's built-in Git extension, such as the various operations possible
-via the Source Control view.
+The goal of this extension is to bring the great UX of Jujutsu into the VS Code UI.
 
 Here's what you can do so far:
 
@@ -20,6 +18,8 @@ Here's what you can do so far:
   - Minimal change IDs
   - No unnecessary information
   - No author name if it's your own change
+- Elided commits  
+  ![elided commits](images/elided-commits.gif)
 - Right-click on a change for a context menu, for example to abandon the change
 - Select a change to see its affected files and diffs
 - Create merge changes with shift-select
@@ -36,12 +36,10 @@ Here's what you can do so far:
 
 ### 💫 Change Management
 
-- Create new changes with optional descriptions
+- Quickly commit with Ctrl+Enter
 - Support both the
   [squash workflow](https://steveklabnik.github.io/jujutsu-tutorial/real-world-workflows/the-squash-workflow.html) and
   the [edit workflow](https://steveklabnik.github.io/jujutsu-tutorial/real-world-workflows/the-edit-workflow.html)
-- Edit descriptions of working copy and parent changes  
-  ![edit description](images/describe.png)
 - Move changes between working copy and parents  
   ![squash](images/squash.png)
 - Move specific lines from the working copy to its parent changes ![squash range](images/squash_range.webp)
@@ -72,6 +70,7 @@ Here's what you can do so far:
 
 ### 🔄 Operation Management
 
+- Quick undo/redo buttons
 - Undo jj operations or restore to a previous state
 
 ## 📋 Prerequisites
