@@ -517,6 +517,7 @@ function createSyntheticEntry(node: SyntheticNode): LogEntry {
     root: false,
     conflict: false,
     divergent: false,
+    hidden: false,
     change_offset: "",
     description: "",
     author: { name: "", email: "", timestamp: "" },

@@ -319,6 +319,7 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     value: "wc.name()",
   },
   divergent: { type: "boolean", expr: "self.divergent()" },
+  hidden: { type: "boolean", expr: "self.hidden()" },
   change_offset: {
     type: "string",
     expr: 'if(self.change_offset(), self.change_offset(), "")',

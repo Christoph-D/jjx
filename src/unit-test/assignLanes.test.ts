@@ -20,6 +20,7 @@ function makeEntry(change_id: string, parents: string[] | ParentRef[], overrides
     root: false,
     conflict: false,
     divergent: false,
+    hidden: false,
     change_offset: "",
     description: `commit ${change_id}`,
     author: { name: "Test", email: "test@test.com", timestamp: "2025-01-01" },

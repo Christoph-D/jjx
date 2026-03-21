@@ -66,6 +66,7 @@ export interface LogEntry {
   root: boolean;
   conflict: boolean;
   divergent: boolean;
+  hidden: boolean;
   change_offset: string;
   description: string;
   author: {

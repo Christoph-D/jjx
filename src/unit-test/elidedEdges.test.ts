@@ -17,6 +17,7 @@ function createEntry(changeId: string, parents: ParentRef[] = [], extra: Partial
     root: false,
     conflict: false,
     divergent: false,
+    hidden: false,
     change_offset: "",
     description: `Commit ${changeId}`,
     author: { name: "Test", email: "test@test.com", timestamp: "2024-01-01" },

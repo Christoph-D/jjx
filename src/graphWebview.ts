@@ -486,7 +486,13 @@ function description(entry: LogEntry) {
   if (entry.root) {
     return "root()";
   }
-  const prefix = entry.empty ? "(empty) " : "";
+  let prefix = "";
+  if (entry.hidden) {
+    prefix = "(hidden) ";
+  }
+  if (entry.empty) {
+    prefix += "(empty) ";
+  }
   const desc = entry.description.split("\n")[0] || "(no description set)";
   return prefix + desc;
 }
@@ -498,16 +504,31 @@ export function parseJJLogJson(
 ): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
   const nonSyntheticEntries = entries.filter((e) => !syntheticNodes.has(getUniqueEntryId(e)));
 
-  const changeIdCounts = new Map<string, number>();
+  const changeIdCountsTotal = new Map<string, number>();
+  const changeIdCountsNonHidden = new Map<string, number>();
   for (const entry of nonSyntheticEntries) {
-    changeIdCounts.set(entry.change_id, (changeIdCounts.get(entry.change_id) ?? 0) + 1);
+    changeIdCountsTotal.set(entry.change_id, (changeIdCountsTotal.get(entry.change_id) ?? 0) + 1);
+    if (!entry.hidden) {
+      changeIdCountsNonHidden.set(entry.change_id, (changeIdCountsNonHidden.get(entry.change_id) ?? 0) + 1);
+    }
   }
+
+  const shouldShowOffset = (e: LogEntry): boolean => {
+    if (!e.change_offset) {
+      return false;
+    }
+    if (e.divergent) {
+      return true;
+    }
+    if (e.hidden) {
+      return (changeIdCountsTotal.get(e.change_id) ?? 0) > 1;
+    }
+    return (changeIdCountsNonHidden.get(e.change_id) ?? 0) > 1;
+  };
 
   const offsetWidth = Math.max(
     0,
-    ...nonSyntheticEntries
-      .filter((e) => e.change_offset && (e.divergent || (changeIdCounts.get(e.change_id) ?? 0) > 1))
-      .map((e) => e.change_offset.length + 1),
+    ...nonSyntheticEntries.filter(shouldShowOffset).map((e) => e.change_offset.length + 1),
   );
   let maxPrefixLength = Math.max(4, ...nonSyntheticEntries.map((e) => e.change_id_shortest.length));
 
@@ -555,7 +576,7 @@ export function parseJJLogJson(
     const timestamp = entry.author.timestamp;
     const commitId = entry.commit_id_short;
 
-    const showOffset = entry.change_offset && (entry.divergent || (changeIdCounts.get(entry.change_id) ?? 0) > 1);
+    const showOffset = shouldShowOffset(entry);
     const changeOffset = showOffset ? entry.change_offset : null;
     const uniqueChangeId = entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id;
 
