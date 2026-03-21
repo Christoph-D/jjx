@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: "24.x"
 
-      - uses: mlugg/setup-zig@v1
+      - uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.14.1
 
