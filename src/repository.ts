@@ -416,7 +416,7 @@ export class JJRepository {
         this.spawnJJ(
           ["describe", ...(message ? ["-m", message] : []), rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
           {
-            ...(message ? { timeout: TIMEOUTS.DEFAULT } : {}),
+            timeout: message ? TIMEOUTS.DEFAULT : 0,
             cwd: this.repositoryRoot,
           },
         ),
@@ -441,7 +441,7 @@ export class JJRepository {
     try {
       return await handleJJCommand(
         this.spawnJJ(["commit", ...(message ? ["-m", message] : [])], {
-          ...(message ? { timeout: TIMEOUTS.DEFAULT } : {}),
+          timeout: message ? TIMEOUTS.DEFAULT : 0,
           cwd: this.repositoryRoot,
         }),
       );
@@ -508,7 +508,7 @@ export class JJRepository {
             ...(ignoreImmutable ? ["--ignore-immutable"] : []),
           ],
           {
-            timeout: TIMEOUTS.DEFAULT,
+            timeout: message ? TIMEOUTS.DEFAULT : 0,
             cwd: this.repositoryRoot,
           },
         ),

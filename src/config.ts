@@ -68,6 +68,9 @@ export function getConfigArgs(extensionDir: string): string[] {
  * Otherwise, returns the provided default timeout, or 30 seconds if no default is provided.
  */
 export function getCommandTimeout(repositoryRoot: string, defaultTimeout: number | undefined): number {
+  if (defaultTimeout === 0) {
+    return 0;
+  }
   const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
   const configuredTimeout = config.get<number | null>("commandTimeout");
   if (configuredTimeout !== null && configuredTimeout !== undefined) {
