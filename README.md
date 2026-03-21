@@ -84,6 +84,13 @@ Here's what you can do so far:
 
 If you encounter any problems, please [report them on GitHub](https://github.com/Christoph-D/jjx/issues/)!
 
+## 🔧 Troubleshooting
+
+### Double modification annotations ("M, M") in file explorer
+
+If you see annotations like "M, M" next to files, this is caused by VS Code's built-in Git extension running alongside
+JJX. To disable Git, disable `git.enabled` in your VS Code settings.
+
 ## 📝 License
 
 This project is licensed under the [AGPL-3.0 License](LICENSE). Code from the original project
