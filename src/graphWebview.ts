@@ -369,7 +369,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const graphStyle = config.get<string>("graphStyle") || "full";
 
       const rawEntries = await this.repository.log();
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(rawEntries);
+      const elideImmutableCommits = config.get<boolean>("elideImmutableCommits") ?? true;
+      const { edges, syntheticNodes, visibleIds } = classifyEdges(rawEntries, { elideImmutableCommits });
       const entriesWithSynthetics = insertSyntheticNodes(rawEntries, syntheticNodes, edges, visibleIds);
       const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(
         entriesWithSynthetics,

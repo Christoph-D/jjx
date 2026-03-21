@@ -546,6 +546,12 @@
           ],
           "description": "Action when clicking a file in the change view",
           "scope": "resource"
+        },
+        "jjx.elideImmutableCommits": {
+          "type": "boolean",
+          "default": true,
+          "description": "When enabled, chains of immutable commits between relevant commits are elided (hidden) in the graph view. When disabled, all commits are shown.",
+          "scope": "resource"
         }
       }
     },

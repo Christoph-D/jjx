@@ -101,7 +101,10 @@ export async function activate(context: vscode.ExtensionContext) {
         repoSCM.render();
       }
     }
-    if (e.affectsConfiguration("jjx.graphStyle")) {
+    if (
+      e.affectsConfiguration("jjx.graphStyle") ||
+      e.affectsConfiguration("jjx.elideImmutableCommits")
+    ) {
       if (graphWebview) {
         await graphWebview.refresh();
       }
