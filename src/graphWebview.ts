@@ -114,6 +114,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   public panel?: vscode.WebviewView;
   public repository: JJRepository;
   public selectedNodes: Set<string> = new Set();
+  private elideOverride: boolean | null = null;
 
   private _onDidChangeSelection = new vscode.EventEmitter<string[]>();
   readonly onDidChangeSelection: vscode.Event<string[]> = this._onDidChangeSelection.event;
@@ -345,6 +346,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       }
     });
 
+    await this.updateElidingContext();
     await this.refresh();
   }
 
@@ -359,6 +361,33 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     }
   }
 
+  public async enableElideImmutableCommits(): Promise<void> {
+    this.elideOverride = true;
+    await this.updateElidingContext();
+    await this.refresh();
+  }
+
+  public async disableElideImmutableCommits(): Promise<void> {
+    this.elideOverride = false;
+    await this.updateElidingContext();
+    await this.refresh();
+  }
+
+  public async resetElideOverride(): Promise<void> {
+    this.elideOverride = null;
+    await this.updateElidingContext();
+  }
+
+  private getEffectiveEliding(): boolean {
+    const configValue = vscode.workspace.getConfiguration("jjx").get<boolean>("elideImmutableCommits") ?? true;
+    return this.elideOverride ?? configValue;
+  }
+
+  private async updateElidingContext(): Promise<void> {
+    const effectiveEliding = this.getEffectiveEliding();
+    await vscode.commands.executeCommand("setContext", "jjGraphView.elidingActive", effectiveEliding);
+  }
+
   public async refresh() {
     if (!this.panel) {
       return;
@@ -369,7 +398,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const graphStyle = config.get<string>("graphStyle") || "full";
 
       const rawEntries = await this.repository.log();
-      const elideImmutableCommits = config.get<boolean>("elideImmutableCommits") ?? true;
+      const elideImmutableCommits = this.getEffectiveEliding();
       const { edges, syntheticNodes, visibleIds } = classifyEdges(rawEntries, { elideImmutableCommits });
       const entriesWithSynthetics = insertSyntheticNodes(rawEntries, syntheticNodes, edges, visibleIds);
       const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(

@@ -172,6 +172,18 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "jj.toggleElideImmutableCommits.show",
+        "title": "Show all commits",
+        "category": "Jujutsu",
+        "icon": "$(unfold)"
+      },
+      {
+        "command": "jj.toggleElideImmutableCommits.elide",
+        "title": "Elide immutable commits",
+        "category": "Jujutsu",
+        "icon": "$(fold)"
+      },
+      {
         "command": "jj.newGraphWebview",
         "title": "Create new change with selected as parents",
         "category": "Jujutsu",
@@ -259,17 +271,27 @@
         {
           "command": "jj.refreshGraphWebview",
           "when": "view == jjGraphWebview",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "jj.newGraphWebview",
           "when": "view == jjGraphWebview && jjGraphView.nodesSelected",
-          "group": "navigation"
+          "group": "navigation@2"
+        },
+        {
+          "command": "jj.toggleElideImmutableCommits.show",
+          "when": "view == jjGraphWebview && jjGraphView.elidingActive",
+          "group": "navigation@3"
+        },
+        {
+          "command": "jj.toggleElideImmutableCommits.elide",
+          "when": "view == jjGraphWebview && !jjGraphView.elidingActive",
+          "group": "navigation@3"
         },
         {
           "command": "jj.selectGraphWebviewRepo",
           "when": "view == jjGraphWebview",
-          "group": "navigation"
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [

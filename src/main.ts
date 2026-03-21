@@ -101,11 +101,11 @@ export async function activate(context: vscode.ExtensionContext) {
         repoSCM.render();
       }
     }
-    if (
-      e.affectsConfiguration("jjx.graphStyle") ||
-      e.affectsConfiguration("jjx.elideImmutableCommits")
-    ) {
+    if (e.affectsConfiguration("jjx.graphStyle") || e.affectsConfiguration("jjx.elideImmutableCommits")) {
       if (graphWebview) {
+        if (e.affectsConfiguration("jjx.elideImmutableCommits")) {
+          await graphWebview.resetElideOverride();
+        }
         await graphWebview.refresh();
       }
     }
@@ -822,6 +822,18 @@ export async function activate(context: vscode.ExtensionContext) {
             `Failed to refresh graph${error instanceof Error ? `: ${error.message}` : ""}`,
           );
         }
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("jj.toggleElideImmutableCommits.show", async () => {
+        await graphWebview!.disableElideImmutableCommits();
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("jj.toggleElideImmutableCommits.elide", async () => {
+        await graphWebview!.enableElideImmutableCommits();
       }),
     );
 
