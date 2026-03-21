@@ -37,9 +37,8 @@ Here's what you can do so far:
 
 - Track file statuses in the working copy
 - Monitor file statuses across all parent changes
-- View detailed file diffs for working copy and parent modifications ![view file diff](images/diff.png)
-- View line-by-line blame  
-  <img src="images/blame.gif" width="70%" alt="view blame">
+- View detailed file diffs for working copy and parent modifications
+- Line-by-line blame annotations (optional)
 
 ### 💫 Change management
 
@@ -50,8 +49,7 @@ Here's what you can do so far:
 - Move changes between working copy and parents  
   ![squash](images/squash.png)
 - Move specific lines from the working copy to its parent changes ![squash range](images/squash_range.webp)
-- Discard changes  
-  ![restore](images/restore.png)
+- Discard changes
 
 ### ⚠️ Conflicts
 
