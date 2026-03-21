@@ -28,19 +28,3 @@ jobs:
 
       - name: Unit tests
         run: npm run unit-test
-
-      - name: Generate Release Info
-        id: release_info
-        if: github.ref_type == 'tag'
-        run: |
-            VERSION=$(jq -r .version package.json)
-            VSIX_NAME="jjx-${VERSION}.vsix"
-            echo "vsix_name=${VSIX_NAME}" >> $GITHUB_OUTPUT
-
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        if: github.ref_type == 'tag'
-        with:
-          files: ${{ steps.release_info.outputs.vsix_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
