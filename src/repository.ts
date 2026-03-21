@@ -840,6 +840,16 @@ export class JJRepository {
     );
   }
 
+  async duplicate(source: string, destination: string, mode: "onto" | "after" | "before") {
+    const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
+    return await handleJJCommand(
+      this.spawnJJ(["duplicate", "-r", source, flag, destination], {
+        timeout: TIMEOUTS.DEFAULT,
+        cwd: this.repositoryRoot,
+      }),
+    );
+  }
+
   async restoreRetryImmutable(rev?: string, filepaths?: string[]) {
     return this.retryWithImmutable(
       rev ?? "@",

@@ -43,6 +43,10 @@
       </div>
       <div class="context-menu-separator"></div>
       <div class="context-menu-item" data-action="squashInto">Squash into this change</div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" data-action="duplicateOnto">Duplicate onto this change</div>
+      <div class="context-menu-item" data-action="duplicateAfter">Duplicate after this change</div>
+      <div class="context-menu-item" data-action="duplicateBefore">Duplicate before this change</div>
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="stale-state" class="stale-state">
@@ -1111,6 +1115,9 @@
               '[data-action="rebaseBefore"], [data-action="rebaseBeforeWithDescendants"]',
             );
             const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
+            const duplicateItems = rebaseMenu.querySelectorAll(
+              '[data-action="duplicateOnto"], [data-action="duplicateAfter"], [data-action="duplicateBefore"]',
+            );
             const separators = rebaseMenu.querySelectorAll(".context-menu-separator");
 
             if (isDivergent) {
@@ -1120,6 +1127,9 @@
               if (squashItem) {
                 squashItem.style.display = targetId === rootChangeId ? "none" : "block";
               }
+              duplicateItems.forEach((item) => {
+                item.style.display = targetId === rootChangeId ? "none" : "block";
+              });
             } else {
               rebaseItems.forEach((item) => (item.style.display = "block"));
               rebaseBeforeItems.forEach((item) => {
@@ -1131,6 +1141,9 @@
               if (squashItem) {
                 squashItem.style.display = targetId === rootChangeId ? "none" : "block";
               }
+              duplicateItems.forEach((item) => {
+                item.style.display = targetId === rootChangeId ? "none" : "block";
+              });
             }
 
             requestAnimationFrame(() => {
@@ -1236,6 +1249,24 @@
         } else if (action === "squashInto") {
           vscode.postMessage({
             command: "squashInto",
+            changeId: sourceId,
+            targetChangeId: targetId,
+          });
+        } else if (action === "duplicateOnto") {
+          vscode.postMessage({
+            command: "duplicateOnto",
+            changeId: sourceId,
+            targetChangeId: targetId,
+          });
+        } else if (action === "duplicateAfter") {
+          vscode.postMessage({
+            command: "duplicateAfter",
+            changeId: sourceId,
+            targetChangeId: targetId,
+          });
+        } else if (action === "duplicateBefore") {
+          vscode.postMessage({
+            command: "duplicateBefore",
             changeId: sourceId,
             targetChangeId: targetId,
           });

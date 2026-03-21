@@ -335,6 +335,17 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             vscode.window.showErrorMessage(`Failed to squash: ${error as string}`);
           }
           break;
+        case "duplicateOnto":
+        case "duplicateAfter":
+        case "duplicateBefore":
+          try {
+            const mode = message.command.replace("duplicate", "").toLowerCase() as "onto" | "after" | "before";
+            await this.repository.duplicate(message.changeId, message.targetChangeId, mode);
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(`Failed to duplicate: ${error as string}`);
+          }
+          break;
         case "updateStale":
           try {
             await this.repository.updateStale();

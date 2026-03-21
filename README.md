@@ -25,8 +25,13 @@ Here's what you can do so far:
 - Right-click on a change for a context menu, for example to abandon the change
 - Select a change to see its affected files and diffs
 - Create merge changes with shift-select
-- Drag & drop to rebase
-- Drag & drop to squash
+- Drag & drop changes onto other changes
+
+### ✋ Drag & drop operations
+
+- Rebase a change (with or without descendants) onto/after/before any other change
+- Squash a change into any other change
+- Duplicate a change onto/after/before any other change
 
 ### 📁 File Management
 
