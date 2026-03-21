@@ -33,6 +33,19 @@ https://docs.jj-vcs.dev/latest/templates/
 
 Key types used: `Commit`, `ChangeId`, `CommitId`, `Signature`, `Timestamp`.
 
+## Version Control
+
+If `jj status` works, then this is a jj repository. In this case you must use `jj` commands instead of `git`. Do not try
+to use `git`:
+
+- **Commit**: `jj commit -m $message`
+- **Status**: `jj status`
+- **Diff**: `jj show --git`
+- **Recent changes**: `jj log --limit 5 -r '..@' -T 'change_id.short() ++ " " ++ description.first_line()'`
+
+Git commands appear to work because jj repositories are often colocated with git repositories. If any jj command works,
+then you must use only jj commands and never git commands.
+
 ## Code Conventions
 
 - TypeScript strict mode, ES2022 target
