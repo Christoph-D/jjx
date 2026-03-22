@@ -7,7 +7,8 @@ export type TestOptions = {
 export default defineConfig<void, TestOptions>({
   reporter: "list",
   timeout: 120_000,
-  workers: 1,
+  workers: 4,
+  fullyParallel: true,
   expect: {
     timeout: 30_000,
   },
