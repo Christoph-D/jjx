@@ -14,6 +14,10 @@ type TestFixtures = TestOptions & {
   workbox: Page;
 };
 
+type WorkerFixtures = {
+  vscodePath: string;
+};
+
 let xvfb: ReturnType<typeof spawn> | null = null;
 let display: string | undefined;
 
@@ -34,9 +38,17 @@ function startXvfb(): string | undefined {
   return displayVal;
 }
 
-export const test = base.extend<TestFixtures>({
-  vscodeVersion: ["stable", { option: true }],
-  workbox: async ({ vscodeVersion }, use) => {
+export const test = base.extend<TestFixtures, WorkerFixtures>({
+  vscodePath: [
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      const vscodePath = await downloadAndUnzipVSCode("stable");
+      await use(vscodePath);
+    },
+    { scope: "worker" },
+  ],
+
+  workbox: async ({ vscodePath }, use) => {
     if (!display) {
       display = startXvfb();
     }
@@ -56,7 +68,6 @@ export const test = base.extend<TestFixtures>({
       stdio: "inherit",
     });
 
-    const vscodePath = await downloadAndUnzipVSCode(vscodeVersion);
     const extensionPath = path.resolve(__dirname, "..", "..");
 
     const electronApp = await _electron.launch({
