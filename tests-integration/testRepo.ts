@@ -14,6 +14,11 @@ export interface BookmarkInfo {
   description: string | null;
 }
 
+export interface TagInfo {
+  name: string;
+  description: string | null;
+}
+
 const BOOKMARK_FIELDS: TemplateFields = {
   name: { type: "string", expr: "self.name()" },
   description: {
@@ -22,6 +27,15 @@ const BOOKMARK_FIELDS: TemplateFields = {
   },
 };
 const BOOKMARK_TEMPLATE = generateTemplate(BOOKMARK_FIELDS);
+
+const TAG_FIELDS: TemplateFields = {
+  name: { type: "string", expr: "self.name()" },
+  description: {
+    type: "raw",
+    expr: 'if(self.normal_target(), self.normal_target().description().escape_json(), "null")',
+  },
+};
+const TAG_TEMPLATE = generateTemplate(TAG_FIELDS);
 
 function getJJPath(): string {
   return process.env.JJ_PATH || "jj";
@@ -54,6 +68,22 @@ export class TestRepo {
         return b;
       });
     return bookmarks.find((b) => b.name === name);
+  }
+
+  async getTag(name: string): Promise<TagInfo | undefined> {
+    const result = await this.jjCommand(["tag", "list", "-T", TAG_TEMPLATE]);
+    const tags: TagInfo[] = result.stdout
+      .trim()
+      .split("\n")
+      .filter((line) => line.length > 0)
+      .map((line) => {
+        const t = JSON.parse(line) as TagInfo;
+        if (t.description !== null) {
+          t.description = t.description.replace(/\n$/, "");
+        }
+        return t;
+      });
+    return tags.find((t) => t.name === name);
   }
 
   async jjCommand(args: string[]): Promise<JJCommandResult> {

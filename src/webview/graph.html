@@ -681,6 +681,7 @@
               const pill = document.createElement("span");
               pill.className = "pill tag-pill" + (t.synced ? "" : " unsynced");
               pill.textContent = abbreviateName(t.name);
+              pill.dataset.tag = t.name;
               nodeLabel.appendChild(pill);
             });
           }
