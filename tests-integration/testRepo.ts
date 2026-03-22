@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 
 export interface JJCommandResult {
   stdout: string;
@@ -28,7 +28,7 @@ export class TestRepo {
   async jjCommand(args: string[]): Promise<JJCommandResult> {
     const jjPath = getJJPath();
     return new Promise((resolve) => {
-      exec([jjPath, ...args].join(" "), { cwd: this.repoPath, timeout: 10000 }, (error, stdout, stderr) => {
+      execFile(jjPath, args, { cwd: this.repoPath, timeout: 10000 }, (error, stdout, stderr) => {
         resolve({
           stdout: stdout?.toString() ?? "",
           stderr: stderr?.toString() ?? "",
