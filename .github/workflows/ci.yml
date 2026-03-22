@@ -28,3 +28,13 @@ jobs:
 
       - name: Unit tests
         run: npm run unit-test
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: jj-cli
+
+      - name: Install Playwright browsers
+        run: cd tests-integration && npx playwright install
+
+      - name: Playwright tests
+        run: npm run playwright-test
