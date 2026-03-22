@@ -755,14 +755,14 @@
     "compile-tests": "node esbuild.js --test",
     "pretest": "npm run compile-tests && npm run compile",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src",
+    "lint": "eslint src tests-integration/*.ts tests-integration/tests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "unit-test": "node --import tsx --test src/unit-test/templateBuilder.test.ts src/unit-test/assignLanes.test.ts src/unit-test/conflictResolver.test.ts src/unit-test/elidedEdges.test.ts",
     "vscode-test": "node out/test/runTest.js",
     "test": "npm-run-all unit-test vscode-test",
     "playwright-test": "npm run build && cd tests-integration && npm ci && npx playwright test",
-    "playwright-test:only-test": "npx playwright test",
+    "playwright-test:only-test": "cd tests-integration && npx playwright test",
     "publish": "vsce publish"
   },
   "devDependencies": {
