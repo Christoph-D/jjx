@@ -1,5 +1,5 @@
 import { test as base, type Page, type Frame, _electron } from "@playwright/test";
-import { downloadAndUnzipVSCode } from "@vscode/test-electron/out/download";
+import { getVscodePath } from "../globalSetup";
 export { expect } from "@playwright/test";
 import path from "path";
 import os from "os";
@@ -62,8 +62,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   vscodePath: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
-      const vscodePath = await downloadAndUnzipVSCode("stable");
-      await use(vscodePath);
+      await use(getVscodePath());
     },
     { scope: "worker" },
   ],

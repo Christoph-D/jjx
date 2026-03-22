@@ -10,3 +10,4 @@ src/**/*.js
 src/**/*.js.map
 .jj
 test-results/
+tests-integration/.vscode-path
