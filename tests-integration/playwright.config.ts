@@ -6,11 +6,11 @@ export type TestOptions = {
 
 export default defineConfig<void, TestOptions>({
   reporter: "list",
-  timeout: 120_000,
+  timeout: 30_000,
   workers: 4,
   fullyParallel: true,
   expect: {
-    timeout: 30_000,
+    timeout: 10_000,
   },
   globalSetup: "./globalSetup",
 });
