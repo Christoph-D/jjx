@@ -22,3 +22,29 @@ test("graph view shows new commits", async ({ graphFrame, testRepo }) => {
   await expect(graphFrame.getByText("commit 2")).toBeVisible();
   await expect(graphFrame.getByText("commit 3")).toBeVisible();
 });
+
+test("create bookmark from context menu", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.writeFile("test.txt", "content");
+  await testRepo.commit("test commit");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(3, { timeout: 10000 });
+
+  const commitNode = nodes.nth(0);
+  await commitNode.click({ button: "right" });
+
+  const createBookmarkItem = graphFrame.locator('.context-menu-item[data-action="createBookmark"]');
+  await createBookmarkItem.click();
+
+  const input = workbox.locator("input").first();
+  await input.waitFor({ state: "visible", timeout: 5000 });
+  await input.fill("foo");
+  await workbox.keyboard.press("Enter");
+
+  const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="foo"]');
+  await expect(bookmarkPill).toBeVisible({ timeout: 10000 });
+
+  const result = await testRepo.jjCommand(["bookmark", "list", "-T", "name", "foo"]);
+  expect(result.stdout.trim()).toBe("foo");
+  expect(result.exitCode).toBe(0);
+});
