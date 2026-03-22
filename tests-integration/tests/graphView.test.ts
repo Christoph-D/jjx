@@ -47,6 +47,19 @@ test("create bookmark from context menu", async ({ graphFrame, testRepo, workbox
   const result = await testRepo.jjCommand(["bookmark", "list", "-T", "name", "foo"]);
   expect(result.stdout.trim()).toBe("foo");
   expect(result.exitCode).toBe(0);
+
+  await commitNode.click({ button: "right" });
+
+  const deleteBookmarkItem = graphFrame.locator('.context-menu-item[data-action="deleteBookmark"]');
+  await deleteBookmarkItem.hover();
+
+  const deleteBookmarkSubmenuItem = graphFrame.locator('.context-submenu-item[data-delete-bookmark="foo"]');
+  await deleteBookmarkSubmenuItem.click();
+
+  await expect(bookmarkPill).not.toBeVisible({ timeout: 10000 });
+
+  const deleteResult = await testRepo.jjCommand(["bookmark", "list", "-T", "name", "foo"]);
+  expect(deleteResult.stdout.trim()).toBe("");
 });
 
 test("move bookmark forward and backward with confirmation", async ({ graphFrame, testRepo, workbox }) => {
