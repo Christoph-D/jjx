@@ -94,6 +94,11 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
     const extensionPath = path.resolve(__dirname, "..", "..");
 
+    const userDataDir = path.join(cachePath, "user-data");
+    const userDir = path.join(userDataDir, "User");
+    await fs.promises.mkdir(userDir, { recursive: true });
+    await fs.promises.writeFile(path.join(userDir, "settings.json"), '{"git.enabled": false}');
+
     const electronApp = await _electron.launch({
       executablePath: vscodePath,
       args: [
@@ -105,7 +110,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "--disable-workspace-trust",
         `--extensionDevelopmentPath=${extensionPath}`,
         `--extensions-dir=${path.join(cachePath, "extensions")}`,
-        `--user-data-dir=${path.join(cachePath, "user-data")}`,
+        `--user-data-dir=${userDataDir}`,
         testRepo.repoPath,
       ],
       env: {
