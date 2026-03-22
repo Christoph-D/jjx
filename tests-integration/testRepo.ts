@@ -1,7 +1,8 @@
 import fs from "fs/promises";
 import path from "path";
 import { execFile } from "child_process";
-import { generateTemplate, type TemplateFields } from "../src/templateBuilder.js";
+import { generateTemplate, type TemplateFields, LOG_TEMPLATE } from "../src/templateBuilder.js";
+import type { LogEntry } from "../src/types.js";
 
 export interface JJCommandResult {
   stdout: string;
@@ -46,6 +47,25 @@ export class TestRepo {
 
   async commit(message: string): Promise<JJCommandResult> {
     return this.jjCommand(["commit", "-m", message]);
+  }
+
+  async log(rev: string = "all()"): Promise<LogEntry[]> {
+    const result = await this.jjCommand(["log", "-r", rev, "-T", LOG_TEMPLATE]);
+    const output = result.stdout;
+
+    if (!output.trim()) {
+      return [];
+    }
+
+    const entries: LogEntry[] = [];
+    for (const line of output.trim().split("\n")) {
+      const jsonStart = line.indexOf("{");
+      if (jsonStart === -1) {
+        continue;
+      }
+      entries.push(JSON.parse(line.slice(jsonStart)) as LogEntry);
+    }
+    return entries;
   }
 
   async writeFile(relativePath: string, content: string): Promise<void> {
