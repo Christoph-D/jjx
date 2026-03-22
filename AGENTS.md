@@ -57,3 +57,14 @@ then you must use only jj commands and never git commands.
 - No comments unless requested
 - Existing comments should remain in place unless they become incorrect
 - Follow existing patterns in neighboring files
+
+## Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+- Format: `<type>: <description>`
+- Types: `feat`, `fix`, `test`, `ci`, `docs`, `chore`
+- Description: sentence case, imperative mood, no trailing period
+
+Examples: `feat: Use HTML5 drag&drop API`, `test: Test rebase drag&drop`,
+`fix: Run npm install in the create-release agent`
