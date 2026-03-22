@@ -104,7 +104,7 @@ export function generateTemplate(fields: TemplateFields): string {
   return `"{" ++ ${fieldsStr} ++ "}\\n"`;
 }
 
-export const SHOW_ENTRY_FIELDS: TemplateFields = {
+const SHOW_ENTRY_FIELDS: TemplateFields = {
   change_id: { type: "string", expr: "change_id" },
   commit_id: { type: "string", expr: "commit_id" },
   divergent: { type: "boolean", expr: "self.divergent()" },
@@ -145,7 +145,7 @@ export const SHOW_ENTRY_FIELDS: TemplateFields = {
   },
 };
 
-export const STATUS_ENTRY_FIELDS: TemplateFields = {
+const STATUS_ENTRY_FIELDS: TemplateFields = {
   change_id: { type: "string", expr: "change_id" },
   commit_id: { type: "string", expr: "commit_id" },
   divergent: { type: "boolean", expr: "self.divergent()" },
@@ -204,7 +204,7 @@ export const STATUS_ENTRY_FIELDS: TemplateFields = {
   },
 };
 
-export const LOG_ENTRY_FIELDS: TemplateFields = {
+const LOG_ENTRY_FIELDS: TemplateFields = {
   author: {
     type: "dict",
     contents: {
@@ -325,3 +325,17 @@ export const LOG_ENTRY_FIELDS: TemplateFields = {
     expr: 'if(self.change_offset(), self.change_offset(), "")',
   },
 };
+
+const OPERATION_ENTRY_FIELDS: TemplateFields = {
+  id: { type: "string", expr: "self.id()" },
+  description: { type: "string", expr: "self.description()" },
+  tags: { type: "string", expr: "self.tags()" },
+  start: { type: "string", expr: "self.time().start()" },
+  user: { type: "string", expr: "self.user()" },
+  snapshot: { type: "boolean", expr: "self.snapshot()" },
+};
+
+export const SHOW_TEMPLATE = generateTemplate(SHOW_ENTRY_FIELDS);
+export const STATUS_TEMPLATE = generateTemplate(STATUS_ENTRY_FIELDS);
+export const LOG_TEMPLATE = generateTemplate(LOG_ENTRY_FIELDS);
+export const OPERATION_TEMPLATE = generateTemplate(OPERATION_ENTRY_FIELDS);

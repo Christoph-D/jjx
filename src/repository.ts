@@ -2,7 +2,7 @@ import path from "path";
 import * as vscode from "vscode";
 import fs from "fs/promises";
 import spawn from "cross-spawn";
-import { generateTemplate, LOG_ENTRY_FIELDS, SHOW_ENTRY_FIELDS, STATUS_ENTRY_FIELDS } from "./templateBuilder";
+import { SHOW_TEMPLATE, STATUS_TEMPLATE, LOG_TEMPLATE, OPERATION_TEMPLATE } from "./templateBuilder";
 import { logger } from "./logger";
 import { ImmutableError, convertJJErrors, parseJJError } from "./errors";
 import { fakeEditorPath } from "./config";
@@ -105,10 +105,9 @@ export class JJRepository {
       return this.statusCache;
     }
 
-    const template = generateTemplate(STATUS_ENTRY_FIELDS);
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(["log", "-r", "@", "-T", template, "--no-graph"], {
+        this.spawnJJRead(["log", "-r", "@", "-T", STATUS_TEMPLATE, "--no-graph"], {
           timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
@@ -251,11 +250,9 @@ export class JJRepository {
   }
 
   async showAll(revsets: string[]) {
-    const template = generateTemplate(SHOW_ENTRY_FIELDS);
-
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(["log", "-T", template, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])], {
+        this.spawnJJRead(["log", "-T", SHOW_TEMPLATE, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])], {
           timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
@@ -707,11 +704,9 @@ export class JJRepository {
   }
 
   async log(rev: string, limit: number = 100): Promise<LogEntry[]> {
-    const template = generateTemplate(LOG_ENTRY_FIELDS);
-
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(["log", "-r", rev, "-n", limit.toString(), "-T", template], {
+        this.spawnJJRead(["log", "-r", rev, "-n", limit.toString(), "-T", LOG_TEMPLATE], {
           timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
@@ -927,23 +922,15 @@ export class JJRepository {
   }
 
   async operationLog(): Promise<Operation[]> {
-    const OPERATION_ENTRY_FIELDS: import("./templateBuilder").TemplateFields = {
-      id: { type: "string", expr: "self.id()" },
-      description: { type: "string", expr: "self.description()" },
-      tags: { type: "string", expr: "self.tags()" },
-      start: { type: "string", expr: "self.time().start()" },
-      user: { type: "string", expr: "self.user()" },
-      snapshot: { type: "boolean", expr: "self.snapshot()" },
-    };
-
-    const template = generateTemplate(OPERATION_ENTRY_FIELDS);
-
     const output = (
       await handleJJCommand(
-        this.spawnJJRead(["operation", "log", "--limit", "10", "--no-graph", "--at-operation=@", "-T", template], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
+        this.spawnJJRead(
+          ["operation", "log", "--limit", "10", "--no-graph", "--at-operation=@", "-T", OPERATION_TEMPLATE],
+          {
+            timeout: TIMEOUTS.DEFAULT,
+            cwd: this.repositoryRoot,
+          },
+        ),
       )
     ).toString();
 
@@ -952,22 +939,7 @@ export class JJRepository {
       if (!line.trim()) {
         continue;
       }
-      const entry = JSON.parse(line) as {
-        id: string;
-        description: string;
-        tags: string;
-        start: string;
-        user: string;
-        snapshot: boolean;
-      };
-      ret.push({
-        id: entry.id,
-        description: entry.description,
-        tags: entry.tags,
-        start: entry.start,
-        user: entry.user,
-        snapshot: entry.snapshot,
-      });
+      ret.push(JSON.parse(line) as Operation);
     }
 
     return ret;

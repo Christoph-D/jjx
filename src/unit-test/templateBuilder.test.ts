@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { generateTemplate, TemplateFields, LOG_ENTRY_FIELDS } from "../templateBuilder";
+import { generateTemplate, TemplateFields, LOG_TEMPLATE } from "../templateBuilder";
 
 describe("TemplateBuilder Test Suite", () => {
   it("generateTemplate with string field", () => {
@@ -152,11 +152,10 @@ describe("TemplateBuilder Test Suite", () => {
     );
   });
 
-  it("generateTemplate with LOG_ENTRY_FIELDS produces valid output", () => {
-    const result = generateTemplate(LOG_ENTRY_FIELDS);
-    assert.ok(result.startsWith(`"{"`));
-    assert.ok(result.endsWith(`"}\\n"`));
-    assert.ok(result.includes(`change_id`));
-    assert.ok(result.includes(`description`));
+  it("LOG_TEMPLATE produces valid output", () => {
+    assert.ok(LOG_TEMPLATE.startsWith(`"{"`));
+    assert.ok(LOG_TEMPLATE.endsWith(`"}\\n"`));
+    assert.ok(LOG_TEMPLATE.includes(`change_id`));
+    assert.ok(LOG_TEMPLATE.includes(`description`));
   });
 });
