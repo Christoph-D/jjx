@@ -28,14 +28,29 @@ function startXvfb(): string | undefined {
     return undefined;
   }
 
-  const displayNum = 99;
-  const displayVal = `:${displayNum}`;
+  const maxAttempts = 10;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const displayNum = 99 + Math.floor(Math.random() * 900);
+    const displayVal = `:${displayNum}`;
 
-  xvfb = spawn("Xvfb", [displayVal, "-screen", "0", "1024x768x24"], {
-    stdio: "ignore",
-  });
+    xvfb = spawn("Xvfb", [displayVal, "-screen", "0", "1024x768x24"], {
+      stdio: "ignore",
+    });
 
-  return displayVal;
+    const startTime = Date.now();
+    while (Date.now() - startTime < 100) {
+      if (xvfb.exitCode !== null) {
+        xvfb = null;
+        break;
+      }
+    }
+
+    if (xvfb && xvfb.exitCode === null) {
+      return displayVal;
+    }
+  }
+
+  return undefined;
 }
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
