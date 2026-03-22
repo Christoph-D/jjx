@@ -39,17 +39,22 @@ Create a new release for the JJX extension following semantic versioning.
 
 7. **Update package.json** with the new version in the `version` field.
 
-8. **Commit the version bump:**
+8. **Run npm install** to update package-lock.json:
+   ```
+   npm install
+   ```
+
+9. **Commit the version bump:**
    ```
    jj commit -m 'chore: Bump version to $tag'
    ```
 
-9. **Move the main bookmark to the new change:**
-   ```
-   jj bookmark move main -t @-
-   ```
+10. **Move the main bookmark to the new change:**
+    ```
+    jj bookmark move main -t @-
+    ```
 
-10. **Create the new tag:**
+11. **Create the new tag:**
    ```
    jj tag set -r main $tag
    ```
