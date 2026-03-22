@@ -106,6 +106,10 @@ export class TestRepo {
     return tags.find((t) => t.name === name);
   }
 
+  async createTag(name: string, revision: string = "@"): Promise<JJCommandResult> {
+    return this.jjCommand(["tag", "set", "-r", revision, name]);
+  }
+
   async jjCommand(args: string[]): Promise<JJCommandResult> {
     const jjPath = getJJPath();
     return new Promise((resolve) => {
