@@ -15,6 +15,10 @@ A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version
 - VSCode tests in `src/test`: `npm run vscode-test`
 - Run all tests: `npm run test`
 
+### Integration Tests
+
+To iterate on an integration test, change the test to `test.only()` and then run `npm run playwright-test:only-test`.
+
 ## Architecture
 
 | File                        | Purpose                                       |
