@@ -27,9 +27,9 @@
   },
   "workspaceFolder": "/workspaces/jjx",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/jjx,type=bind,consistency=cached",
-  "remoteUser": "node",
+  "remoteUser": "ubuntu",
   "mounts": [
-    "source=config-jjx,target=/home/node/persistent-config,type=volume",
+    "source=config-jjx,target=/home/ubuntu/persistent-config,type=volume",
     "source=/etc/localtime,target=/usr/share/zoneinfo/hostlocaltime,type=bind,readonly"
   ],
   "postCreateCommand": "bash .devcontainer/setup.sh"

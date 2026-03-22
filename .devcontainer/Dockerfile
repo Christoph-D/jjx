@@ -1,6 +1,6 @@
-FROM node:25-bookworm
+FROM mcr.microsoft.com/playwright:v1.56.0-noble
 
-RUN apt-get update && apt-get -y install git curl bash ripgrep less tzdata xvfb
+RUN apt-get update && apt-get -y install git curl bash ripgrep less tzdata xvfb xz-utils
 RUN ln -sf /usr/share/zoneinfo/hostlocaltime /etc/localtime
 
 ADD https://go.microsoft.com/fwlink/?LinkID=760868 /tmp/vscode.deb
@@ -10,12 +10,12 @@ ADD https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz /tmp/zig.
 RUN mkdir -p /opt/zig && tar -xf /tmp/zig.tar.xz -C /opt/zig --strip-components=1 && rm /tmp/zig.tar.xz
 ENV PATH=$PATH:/opt/zig
 
-USER node
-WORKDIR /home/node
+USER ubuntu
+WORKDIR /home/ubuntu
 
-RUN mkdir -p /home/node/persistent-config
-RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/home/node/persistent-config/.bash_history" \
-  && echo "$SNIPPET" >> "/home/node/.bashrc"
+RUN mkdir -p /home/ubuntu/persistent-config
+RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/home/ubuntu/persistent-config/.bash_history" \
+  && echo "$SNIPPET" >> "/home/ubuntu/.bashrc"
 
 WORKDIR /workspaces/jjx
 
