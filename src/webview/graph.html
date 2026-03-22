@@ -83,12 +83,8 @@
 
       let isDragging = false;
       let dragStartChangeId = null;
-      let dragStartX = 0;
-      let dragStartY = 0;
-      let dragGhost = null;
       let dropTargetId = null;
       let justFinishedDrag = false;
-      const DRAG_THRESHOLD = 5;
 
       const colorRegistry = [
         "rgba(from var(--vscode-charts-blue) r g b / 100%)",
@@ -767,17 +763,158 @@
             hideTooltip();
           });
 
-          node.onmousedown = (e) => {
-            if (e.button !== 0 || e.shiftKey) {
-              return;
-            }
-            if (change.branchType === "◆" || change.branchType === "~") {
-              return;
-            }
-            dragStartChangeId = change.changeId;
-            dragStartX = e.clientX;
-            dragStartY = e.clientY;
-          };
+          if (change.branchType !== "◆" && change.branchType !== "~") {
+            node.draggable = true;
+
+            node.addEventListener("dragstart", (e) => {
+              if (e.shiftKey) {
+                e.preventDefault();
+                return;
+              }
+              dragStartChangeId = change.changeId;
+              isDragging = true;
+              node.classList.add("dragging");
+              e.dataTransfer.setData("text/plain", change.changeId);
+              e.dataTransfer.effectAllowed = "move";
+
+              const ghost = document.createElement("div");
+              ghost.className = "drag-ghost";
+              ghost.textContent = change.changeId.substring(0, 8);
+              document.body.appendChild(ghost);
+              e.dataTransfer.setDragImage(ghost, 0, 0);
+              setTimeout(() => ghost.remove(), 0);
+            });
+
+            node.addEventListener("dragend", () => {
+              isDragging = false;
+              dragStartChangeId = null;
+              node.classList.remove("dragging");
+              document.querySelectorAll(".change-node.drop-target").forEach((n) => {
+                n.classList.remove("drop-target");
+              });
+            });
+          }
+
+          if (change.branchType !== "~") {
+            node.addEventListener("dragover", (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+            });
+
+            node.addEventListener("dragenter", (e) => {
+              e.preventDefault();
+              if (!isDragging || !dragStartChangeId) return;
+              if (change.changeId === dragStartChangeId) return;
+              document.querySelectorAll(".change-node.drop-target").forEach((n) => {
+                n.classList.remove("drop-target");
+              });
+              node.classList.add("drop-target");
+              dropTargetId = change.changeId;
+            });
+
+            node.addEventListener("dragleave", (e) => {
+              if (e.relatedTarget && node.contains(e.relatedTarget)) return;
+              node.classList.remove("drop-target");
+              dropTargetId = null;
+            });
+
+            node.addEventListener("drop", (e) => {
+              e.preventDefault();
+              node.classList.remove("drop-target");
+              const sourceId = e.dataTransfer.getData("text/plain");
+              const targetId = change.changeId;
+              if (!sourceId || !targetId || sourceId === targetId) return;
+
+              justFinishedDrag = true;
+              const rebaseMenu = document.getElementById("rebase-menu");
+              rebaseMenu.dataset.sourceId = sourceId;
+              rebaseMenu.dataset.targetId = targetId;
+              rebaseMenu.style.left = "-9999px";
+              rebaseMenu.style.top = "-9999px";
+              rebaseMenu.style.display = "block";
+
+              const sourceNode = document.querySelector(`.change-node[data-change-id="${sourceId}"]`);
+              const sourceIsDivergent = sourceNode?.dataset?.changeOffset && sourceNode.dataset.changeOffset !== "";
+              const targetIsDivergent = node?.dataset?.changeOffset && node.dataset.changeOffset !== "";
+              const isDivergent = sourceIsDivergent || targetIsDivergent;
+              const targetIsImmutable = change.branchType === "◆";
+
+              const rebaseItems = rebaseMenu.querySelectorAll(
+                '[data-action="rebaseOnto"], [data-action="rebaseOntoWithDescendants"], [data-action="rebaseAfter"], [data-action="rebaseAfterWithDescendants"]',
+              );
+              const rebaseBeforeItems = rebaseMenu.querySelectorAll(
+                '[data-action="rebaseBefore"], [data-action="rebaseBeforeWithDescendants"]',
+              );
+              const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
+              const duplicateItems = rebaseMenu.querySelectorAll(
+                '[data-action="duplicateOnto"], [data-action="duplicateAfter"], [data-action="duplicateBefore"]',
+              );
+              const duplicateBeforeItem = rebaseMenu.querySelector('[data-action="duplicateBefore"]');
+              const separators = rebaseMenu.querySelectorAll(".context-menu-separator");
+
+              if (isDivergent) {
+                rebaseItems.forEach((item) => (item.style.display = "none"));
+                rebaseBeforeItems.forEach((item) => (item.style.display = "none"));
+                separators.forEach((sep, index) => {
+                  sep.style.display = index === 3 ? "block" : "none";
+                });
+                if (squashItem) {
+                  squashItem.style.display = "none";
+                }
+                duplicateItems.forEach((item) => {
+                  item.style.display = "block";
+                });
+              } else {
+                rebaseItems.forEach((item) => (item.style.display = "block"));
+                rebaseBeforeItems.forEach((item) => {
+                  item.style.display = targetIsImmutable ? "none" : "block";
+                });
+                separators.forEach((sep, index) => {
+                  if (targetIsImmutable) {
+                    sep.style.display = index === 0 || index === 3 ? "block" : "none";
+                  } else {
+                    sep.style.display = "block";
+                  }
+                });
+                if (squashItem) {
+                  squashItem.style.display = targetIsImmutable ? "none" : "block";
+                }
+                duplicateItems.forEach((item) => {
+                  item.style.display = "block";
+                });
+                if (duplicateBeforeItem) {
+                  duplicateBeforeItem.style.display = targetIsImmutable ? "none" : "block";
+                }
+              }
+
+              requestAnimationFrame(() => {
+                const menuRect = rebaseMenu.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const scrollX = window.scrollX || window.pageXOffset;
+                const scrollY = window.scrollY || window.pageYOffset;
+                let left = e.pageX;
+                let top = e.pageY;
+                if (left + menuRect.width > viewportWidth + scrollX - 10) {
+                  left = e.pageX - menuRect.width;
+                }
+                if (top + menuRect.height > viewportHeight + scrollY - 10) {
+                  top = e.pageY - menuRect.height;
+                }
+                if (left < scrollX + 10) {
+                  left = scrollX + 10;
+                }
+                if (top < scrollY + 10) {
+                  top = scrollY + 10;
+                }
+                rebaseMenu.style.left = left + "px";
+                rebaseMenu.style.top = top + "px";
+                setTimeout(() => {
+                  justFinishedDrag = false;
+                }, 100);
+              });
+            });
+          }
 
           node.onclick = (e) => {
             if (isDragging || justFinishedDrag) {
@@ -1051,165 +1188,6 @@
             command: "describeChange",
             changeId: changeId,
           });
-        }
-      });
-
-      document.addEventListener("mousemove", (e) => {
-        if (!dragStartChangeId) {
-          return;
-        }
-        if (isDragging) {
-          if (dragGhost) {
-            dragGhost.style.left = e.clientX + 10 + "px";
-            dragGhost.style.top = e.clientY + 10 + "px";
-          }
-          return;
-        }
-        const dx = e.clientX - dragStartX;
-        const dy = e.clientY - dragStartY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance > DRAG_THRESHOLD) {
-          isDragging = true;
-          const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
-          if (sourceNode) {
-            sourceNode.classList.add("dragging");
-          }
-          dragGhost = document.createElement("div");
-          dragGhost.className = "drag-ghost";
-          dragGhost.textContent = dragStartChangeId.substring(0, 8);
-          document.body.appendChild(dragGhost);
-          dragGhost.style.left = e.clientX + 10 + "px";
-          dragGhost.style.top = e.clientY + 10 + "px";
-        }
-      });
-
-      document.addEventListener("mouseup", (e) => {
-        if (!isDragging && !dragStartChangeId) {
-          return;
-        }
-        if (isDragging) {
-          if (dragGhost) {
-            dragGhost.style.display = "none";
-          }
-          const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-          const targetNode = dropTarget?.closest(".change-node");
-          const targetId = targetNode?.dataset?.changeId;
-          const targetBranchType = targetNode?.dataset?.branchType;
-          if (targetNode && targetId && targetId !== dragStartChangeId && targetBranchType !== "~") {
-            justFinishedDrag = true;
-            const rebaseMenu = document.getElementById("rebase-menu");
-            rebaseMenu.dataset.sourceId = dragStartChangeId;
-            rebaseMenu.dataset.targetId = targetId;
-            rebaseMenu.style.left = "-9999px";
-            rebaseMenu.style.top = "-9999px";
-            rebaseMenu.style.display = "block";
-
-            const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
-            const sourceIsDivergent = sourceNode?.dataset?.changeOffset && sourceNode.dataset.changeOffset !== "";
-            const targetIsDivergent = targetNode?.dataset?.changeOffset && targetNode.dataset.changeOffset !== "";
-            const isDivergent = sourceIsDivergent || targetIsDivergent;
-
-            const rebaseItems = rebaseMenu.querySelectorAll(
-              '[data-action="rebaseOnto"], [data-action="rebaseOntoWithDescendants"], [data-action="rebaseAfter"], [data-action="rebaseAfterWithDescendants"]',
-            );
-            const rebaseBeforeItems = rebaseMenu.querySelectorAll(
-              '[data-action="rebaseBefore"], [data-action="rebaseBeforeWithDescendants"]',
-            );
-            const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
-            const duplicateItems = rebaseMenu.querySelectorAll(
-              '[data-action="duplicateOnto"], [data-action="duplicateAfter"], [data-action="duplicateBefore"]',
-            );
-            const separators = rebaseMenu.querySelectorAll(".context-menu-separator");
-
-            if (isDivergent) {
-              rebaseItems.forEach((item) => (item.style.display = "none"));
-              rebaseBeforeItems.forEach((item) => (item.style.display = "none"));
-              separators.forEach((sep) => (sep.style.display = "none"));
-              if (squashItem) {
-                squashItem.style.display = targetId === rootChangeId ? "none" : "block";
-              }
-              duplicateItems.forEach((item) => {
-                item.style.display = targetId === rootChangeId ? "none" : "block";
-              });
-            } else {
-              rebaseItems.forEach((item) => (item.style.display = "block"));
-              rebaseBeforeItems.forEach((item) => {
-                item.style.display = targetId === rootChangeId ? "none" : "block";
-              });
-              separators.forEach((sep, index) => {
-                sep.style.display = targetId === rootChangeId && index >= 1 ? "none" : "block";
-              });
-              if (squashItem) {
-                squashItem.style.display = targetId === rootChangeId ? "none" : "block";
-              }
-              duplicateItems.forEach((item) => {
-                item.style.display = targetId === rootChangeId ? "none" : "block";
-              });
-            }
-
-            requestAnimationFrame(() => {
-              const menuRect = rebaseMenu.getBoundingClientRect();
-              const viewportWidth = window.innerWidth;
-              const viewportHeight = window.innerHeight;
-              const scrollX = window.scrollX || window.pageXOffset;
-              const scrollY = window.scrollY || window.pageYOffset;
-              let left = e.pageX;
-              let top = e.pageY;
-              if (left + menuRect.width > viewportWidth + scrollX - 10) {
-                left = e.pageX - menuRect.width;
-              }
-              if (top + menuRect.height > viewportHeight + scrollY - 10) {
-                top = e.pageY - menuRect.height;
-              }
-              if (left < scrollX + 10) {
-                left = scrollX + 10;
-              }
-              if (top < scrollY + 10) {
-                top = scrollY + 10;
-              }
-              rebaseMenu.style.left = left + "px";
-              rebaseMenu.style.top = top + "px";
-              setTimeout(() => {
-                justFinishedDrag = false;
-              }, 100);
-            });
-          }
-          if (dragGhost) {
-            dragGhost.remove();
-            dragGhost = null;
-          }
-          const sourceNode = document.querySelector(`.change-node[data-change-id="${dragStartChangeId}"]`);
-          if (sourceNode) {
-            sourceNode.classList.remove("dragging");
-          }
-          document.querySelectorAll(".change-node.drop-target").forEach((n) => {
-            n.classList.remove("drop-target");
-          });
-        }
-        isDragging = false;
-        dragStartChangeId = null;
-        dropTargetId = null;
-      });
-
-      document.addEventListener("mouseover", (e) => {
-        if (!isDragging) {
-          return;
-        }
-        const targetNode = e.target?.closest(".change-node");
-        document.querySelectorAll(".change-node.drop-target").forEach((n) => {
-          n.classList.remove("drop-target");
-        });
-        if (targetNode) {
-          const targetId = targetNode.dataset.changeId;
-          const targetBranchType = targetNode.dataset.branchType;
-          if (targetId && targetId !== dragStartChangeId && targetBranchType !== "~") {
-            targetNode.classList.add("drop-target");
-            dropTargetId = targetId;
-          } else {
-            dropTargetId = null;
-          }
-        } else {
-          dropTargetId = null;
         }
       });
 
