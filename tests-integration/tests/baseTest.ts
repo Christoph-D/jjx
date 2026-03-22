@@ -1,4 +1,4 @@
-import { test as base, type Page, _electron } from "@playwright/test";
+import { test as base, type Page, type Frame, _electron } from "@playwright/test";
 import { downloadAndUnzipVSCode } from "@vscode/test-electron/out/download";
 export { expect } from "@playwright/test";
 import path from "path";
@@ -12,6 +12,7 @@ export type TestOptions = {
 
 type TestFixtures = TestOptions & {
   workbox: Page;
+  graphFrame: Frame;
 };
 
 type WorkerFixtures = {
@@ -111,6 +112,36 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
     await electronApp.close();
     await fs.promises.rm(tempDir, { recursive: true, force: true });
+  },
+
+  graphFrame: async ({ workbox }, use) => {
+    await workbox.locator(".monaco-workbench").waitFor({ timeout: 30000 });
+
+    await workbox.getByRole("tab", { name: /Source Control/i }).click();
+    await workbox.locator(".scm-view").first().waitFor({ timeout: 10000 });
+
+    const graphHeader = workbox.getByRole("button", { name: /Source Control Graph/i });
+    const isExpanded = await graphHeader.getAttribute("aria-expanded");
+    if (isExpanded === "false") {
+      await graphHeader.click();
+      await workbox.waitForTimeout(2000);
+    }
+
+    const allFrames = workbox.frames();
+    let graphFrame: Frame | null = null;
+    for (const frame of allFrames) {
+      const content = await frame.content();
+      if (content.includes('id="nodes"')) {
+        graphFrame = frame;
+        break;
+      }
+    }
+
+    if (!graphFrame) {
+      throw new Error("Graph frame not found");
+    }
+
+    await use(graphFrame);
   },
 });
 
