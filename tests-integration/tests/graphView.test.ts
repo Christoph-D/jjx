@@ -44,9 +44,8 @@ test("create bookmark from context menu", async ({ graphFrame, testRepo, workbox
   const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="foo"]');
   await expect(bookmarkPill).toBeVisible({ timeout: 10000 });
 
-  const result = await testRepo.jjCommand(["bookmark", "list", "-T", "name", "foo"]);
-  expect(result.stdout.trim()).toBe("foo");
-  expect(result.exitCode).toBe(0);
+  const bookmark = await testRepo.getBookmark("foo");
+  expect(bookmark).toBeDefined();
 
   await commitNode.click({ button: "right" });
 
@@ -58,8 +57,7 @@ test("create bookmark from context menu", async ({ graphFrame, testRepo, workbox
 
   await expect(bookmarkPill).not.toBeVisible({ timeout: 10000 });
 
-  const deleteResult = await testRepo.jjCommand(["bookmark", "list", "-T", "name", "foo"]);
-  expect(deleteResult.stdout.trim()).toBe("");
+  expect(await testRepo.getBookmark("foo")).toBeUndefined();
 });
 
 test("move bookmark forward and backward with confirmation", async ({ graphFrame, testRepo, workbox }) => {
@@ -85,15 +83,8 @@ test("move bookmark forward and backward with confirmation", async ({ graphFrame
   const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="test-bookmark"]');
   await expect(bookmarkPill).toBeVisible({ timeout: 10000 });
 
-  let result = await testRepo.jjCommand([
-    "bookmark",
-    "list",
-    "-T",
-    'name ++ " " ++ self.normal_target().description()',
-    "test-bookmark",
-  ]);
-  expect(result.stdout.trim()).toContain("commit 1");
-  expect(result.exitCode).toBe(0);
+  let bookmark = await testRepo.getBookmark("test-bookmark");
+  expect(bookmark?.description).toBe("commit 1");
 
   const commit2Node = nodes.nth(1);
   await commit2Node.click({ button: "right" });
@@ -106,15 +97,8 @@ test("move bookmark forward and backward with confirmation", async ({ graphFrame
 
   await expect(commit2Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible({ timeout: 10000 });
 
-  result = await testRepo.jjCommand([
-    "bookmark",
-    "list",
-    "-T",
-    'name ++ " " ++ self.normal_target().description()',
-    "test-bookmark",
-  ]);
-  expect(result.stdout.trim()).toContain("commit 2");
-  expect(result.exitCode).toBe(0);
+  bookmark = await testRepo.getBookmark("test-bookmark");
+  expect(bookmark?.description).toBe("commit 2");
 
   await commit1Node.click({ button: "right" });
   await moveBookmarkItem.hover();
@@ -126,13 +110,6 @@ test("move bookmark forward and backward with confirmation", async ({ graphFrame
 
   await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible({ timeout: 10000 });
 
-  result = await testRepo.jjCommand([
-    "bookmark",
-    "list",
-    "-T",
-    'name ++ " " ++ self.normal_target().description()',
-    "test-bookmark",
-  ]);
-  expect(result.stdout.trim()).toContain("commit 1");
-  expect(result.exitCode).toBe(0);
+  bookmark = await testRepo.getBookmark("test-bookmark");
+  expect(bookmark?.description).toBe("commit 1");
 });

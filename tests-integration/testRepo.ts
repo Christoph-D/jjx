@@ -1,12 +1,27 @@
 import fs from "fs/promises";
 import path from "path";
 import { execFile } from "child_process";
+import { generateTemplate, type TemplateFields } from "../src/templateBuilder.js";
 
 export interface JJCommandResult {
   stdout: string;
   stderr: string;
   exitCode: number;
 }
+
+export interface BookmarkInfo {
+  name: string;
+  description: string | null;
+}
+
+const BOOKMARK_FIELDS: TemplateFields = {
+  name: { type: "string", expr: "self.name()" },
+  description: {
+    type: "raw",
+    expr: 'if(self.normal_target(), self.normal_target().description().escape_json(), "null")',
+  },
+};
+const BOOKMARK_TEMPLATE = generateTemplate(BOOKMARK_FIELDS);
 
 function getJJPath(): string {
   return process.env.JJ_PATH || "jj";
@@ -23,6 +38,22 @@ export class TestRepo {
     const fullPath = path.join(this.repoPath, relativePath);
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.writeFile(fullPath, content);
+  }
+
+  async getBookmark(name: string): Promise<BookmarkInfo | undefined> {
+    const result = await this.jjCommand(["bookmark", "list", "-T", BOOKMARK_TEMPLATE]);
+    const bookmarks: BookmarkInfo[] = result.stdout
+      .trim()
+      .split("\n")
+      .filter((line) => line.length > 0)
+      .map((line) => {
+        const b = JSON.parse(line) as BookmarkInfo;
+        if (b.description !== null) {
+          b.description = b.description.replace(/\n$/, "");
+        }
+        return b;
+      });
+    return bookmarks.find((b) => b.name === name);
   }
 
   async jjCommand(args: string[]): Promise<JJCommandResult> {
