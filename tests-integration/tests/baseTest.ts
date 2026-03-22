@@ -4,7 +4,10 @@ export { expect } from "@playwright/test";
 import path from "path";
 import os from "os";
 import fs from "fs";
-import { spawn, spawnSync, execSync } from "child_process";
+import { spawn, execSync } from "child_process";
+import { TestRepo, newTestRepo } from "../testRepo";
+
+export { TestRepo };
 
 export type TestOptions = {
   vscodeVersion: string;
@@ -13,6 +16,7 @@ export type TestOptions = {
 type TestFixtures = TestOptions & {
   workbox: Page;
   graphFrame: Frame;
+  testRepo: TestRepo;
 };
 
 type WorkerFixtures = {
@@ -64,25 +68,30 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: "worker" },
   ],
 
-  workbox: async ({ vscodePath }, use) => {
+  testRepo: [
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "jjx-test-"));
+      const repoPath = path.join(tempDir, "repo");
+
+      console.log(`Creating test jj repo in ${repoPath}`);
+      const testRepo = await newTestRepo(repoPath);
+
+      await use(testRepo);
+
+      await fs.promises.rm(tempDir, { recursive: true, force: true });
+    },
+    { scope: "test" },
+  ],
+
+  workbox: async ({ vscodePath, testRepo }, use) => {
     if (!display) {
       display = startXvfb();
     }
 
-    const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "jjx-test-"));
-
+    const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "jjx-cache-"));
     const cachePath = path.join(tempDir, "cache");
     await fs.promises.mkdir(cachePath, { recursive: true });
-
-    const repoPath = path.join(tempDir, "repo");
-    await fs.promises.mkdir(repoPath, { recursive: true });
-
-    console.log(`Creating test jj repo in ${repoPath}`);
-    spawnSync("jj git init", {
-      cwd: repoPath,
-      shell: true,
-      stdio: "inherit",
-    });
 
     const extensionPath = path.resolve(__dirname, "..", "..");
 
@@ -98,7 +107,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         `--extensionDevelopmentPath=${extensionPath}`,
         `--extensions-dir=${path.join(cachePath, "extensions")}`,
         `--user-data-dir=${path.join(cachePath, "user-data")}`,
-        repoPath,
+        testRepo.repoPath,
       ],
       env: {
         ...process.env,

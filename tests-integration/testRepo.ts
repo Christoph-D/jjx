@@ -1,12 +1,15 @@
 import fs from "fs/promises";
 import path from "path";
 import { exec } from "child_process";
-import { getJJPath } from "./utils";
 
 export interface JJCommandResult {
   stdout: string;
   stderr: string;
   exitCode: number;
+}
+
+function getJJPath(): string {
+  return process.env.JJ_PATH || "jj";
 }
 
 export class TestRepo {
