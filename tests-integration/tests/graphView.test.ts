@@ -1,11 +1,12 @@
 import { test, expect } from "./baseTest";
 
-test("jj graph view loads and contains root commit", async ({ graphFrame }) => {
+test("graph view shows new commits", async ({ graphFrame, testRepo }) => {
   const rootCommit = graphFrame.getByText("root()");
   await expect(rootCommit).toBeVisible({ timeout: 10000 });
-});
 
-test("graph view shows new commits", async ({ graphFrame, testRepo }) => {
+  const workingCopy = graphFrame.getByText("@");
+  await expect(workingCopy).toBeVisible({ timeout: 10000 });
+
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(2, { timeout: 10000 });
 
