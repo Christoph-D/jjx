@@ -129,6 +129,20 @@ export class TestRepo {
   }
 }
 
+export function getParents(logEntries: LogEntry[], description: string): string[] {
+  const entry = logEntries.find((e) => e.description.trim() === description);
+  if (!entry) {
+    throw new Error(`Commit with description "${description}" not found`);
+  }
+  return entry.parents.map((parent) => {
+    const parentEntry = logEntries.find((e) => e.change_id === parent.change_id);
+    if (!parentEntry) {
+      throw new Error(`Parent commit with change_id "${parent.change_id}" not found`);
+    }
+    return parentEntry.description.trim();
+  });
+}
+
 export async function newTestRepo(repoPath: string): Promise<TestRepo> {
   const repo = new TestRepo(repoPath);
   await fs.mkdir(repoPath, { recursive: true });

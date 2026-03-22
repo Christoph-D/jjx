@@ -1,4 +1,5 @@
 import { test, expect } from "./baseTest";
+import { getParents } from "../testRepo";
 
 test("rebase commit onto another via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
@@ -21,13 +22,7 @@ test("rebase commit onto another via drag and drop", async ({ graphFrame, testRe
 
   await expect(async () => {
     const logEntries = await testRepo.log();
-    const commitCEntry = logEntries.find((e) => e.description.trim() === "C");
-    expect(commitCEntry).toBeDefined();
-    expect(commitCEntry!.parents).toHaveLength(1);
-
-    const commitAParent = logEntries.find((e) => e.change_id === commitCEntry!.parents[0].change_id);
-    expect(commitAParent).toBeDefined();
-    expect(commitAParent!.description.trim()).toBe("A");
+    expect(getParents(logEntries, "C")).toEqual(["A"]);
   }).toPass({ timeout: 10000 });
 });
 
@@ -52,16 +47,7 @@ test("rebase after another commit via drag and drop", async ({ graphFrame, testR
 
   await expect(async () => {
     const logEntries = await testRepo.log();
-    const commitCEntry = logEntries.find((e) => e.description.trim() === "C");
-    expect(commitCEntry).toBeDefined();
-
-    const commitBEntry = logEntries.find((e) => e.description.trim() === "B");
-    expect(commitBEntry).toBeDefined();
-    expect(commitBEntry!.parents).toHaveLength(1);
-
-    const bParent = logEntries.find((e) => e.change_id === commitBEntry!.parents[0].change_id);
-    expect(bParent).toBeDefined();
-    expect(bParent!.description.trim()).toBe("C");
+    expect(getParents(logEntries, "B")).toEqual(["C"]);
   }).toPass({ timeout: 10000 });
 });
 
@@ -86,20 +72,7 @@ test("rebase before another commit via drag and drop", async ({ graphFrame, test
 
   await expect(async () => {
     const logEntries = await testRepo.log();
-    const commitCEntry = logEntries.find((e) => e.description.trim() === "C");
-    expect(commitCEntry).toBeDefined();
-    expect(commitCEntry!.parents).toHaveLength(1);
-
-    const cParent = logEntries.find((e) => e.change_id === commitCEntry!.parents[0].change_id);
-    expect(cParent).toBeDefined();
-    expect(cParent!.description.trim()).toBe("A");
-
-    const commitBEntry = logEntries.find((e) => e.description.trim() === "B");
-    expect(commitBEntry).toBeDefined();
-    expect(commitBEntry!.parents).toHaveLength(1);
-
-    const bParent = logEntries.find((e) => e.change_id === commitBEntry!.parents[0].change_id);
-    expect(bParent).toBeDefined();
-    expect(bParent!.description.trim()).toBe("C");
+    expect(getParents(logEntries, "C")).toEqual(["A"]);
+    expect(getParents(logEntries, "B")).toEqual(["C"]);
   }).toPass({ timeout: 10000 });
 });
