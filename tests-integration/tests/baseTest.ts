@@ -51,7 +51,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       }
 
       const display = `:${99 + workerInfo.workerIndex}`;
-      const xvfb: ChildProcess = spawn("Xvfb", [display, "-screen", "0", "1024x768x24"], {
+      const xvfb: ChildProcess = spawn("Xvfb", [display, "-screen", "0", "1920x1080x24"], {
         stdio: "ignore",
         detached: true,
       });
