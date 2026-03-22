@@ -13,4 +13,10 @@ export default defineConfig<void, TestOptions>({
     timeout: 10_000,
   },
   globalSetup: "./globalSetup",
+  projects: [
+    {
+      name: "integration tests",
+      testMatch: /\.test\.ts/,
+    },
+  ],
 });
