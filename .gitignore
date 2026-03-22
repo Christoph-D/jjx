@@ -9,3 +9,4 @@ out/
 src/**/*.js
 src/**/*.js.map
 .jj
+test-results/
