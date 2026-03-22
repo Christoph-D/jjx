@@ -1,8 +1,7 @@
 import { test, expect } from "./baseTest";
 
 test("create and delete bookmark from context menu", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.writeFile("test.txt", "content");
-  await testRepo.commit("test commit");
+  await testRepo.commitFile("test.txt", "content", "test commit");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(3, { timeout: 10000 });
@@ -38,10 +37,8 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
 });
 
 test("move bookmark forward and backward with confirmation", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.writeFile("a.txt", "content a");
-  await testRepo.commit("commit 1");
-  await testRepo.writeFile("b.txt", "content b");
-  await testRepo.commit("commit 2");
+  await testRepo.commitFile("a.txt", "content a", "commit 1");
+  await testRepo.commitFile("b.txt", "content b", "commit 2");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(4, { timeout: 10000 });

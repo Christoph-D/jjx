@@ -10,12 +10,9 @@ test("graph view shows new commits", async ({ graphFrame, testRepo }) => {
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(2, { timeout: 10000 });
 
-  await testRepo.writeFile("a.txt", "content a");
-  await testRepo.commit("commit 1");
-  await testRepo.writeFile("b.txt", "content b");
-  await testRepo.commit("commit 2");
-  await testRepo.writeFile("c.txt", "content c");
-  await testRepo.commit("commit 3");
+  await testRepo.commitFile("a.txt", "content a", "commit 1");
+  await testRepo.commitFile("b.txt", "content b", "commit 2");
+  await testRepo.commitFile("c.txt", "content c", "commit 3");
 
   await expect(nodes).toHaveCount(5, { timeout: 10000 });
 

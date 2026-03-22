@@ -1,12 +1,9 @@
 import { test, expect } from "./baseTest";
 
 test("rebase commit onto another via drag and drop", async ({ graphFrame, testRepo }) => {
-  await testRepo.writeFile("a.txt", "content a");
-  await testRepo.commit("A");
-  await testRepo.writeFile("b.txt", "content b");
-  await testRepo.commit("B");
-  await testRepo.writeFile("c.txt", "content c");
-  await testRepo.commit("C");
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5, { timeout: 10000 });

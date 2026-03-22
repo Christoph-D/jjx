@@ -1,8 +1,7 @@
 import { test, expect } from "./baseTest";
 
 test("create and delete tag from context menu", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.writeFile("test.txt", "content");
-  await testRepo.commit("test commit");
+  await testRepo.commitFile("test.txt", "content", "test commit");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(3, { timeout: 10000 });

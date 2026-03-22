@@ -74,6 +74,11 @@ export class TestRepo {
     await fs.writeFile(fullPath, content);
   }
 
+  async commitFile(relativePath: string, content: string, message: string): Promise<JJCommandResult> {
+    await this.writeFile(relativePath, content);
+    return this.commit(message);
+  }
+
   async getBookmark(name: string): Promise<BookmarkInfo | undefined> {
     const result = await this.jjCommand(["bookmark", "list", "-T", BOOKMARK_TEMPLATE]);
     const bookmarks: BookmarkInfo[] = result.stdout

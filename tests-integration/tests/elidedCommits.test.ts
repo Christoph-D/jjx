@@ -1,11 +1,8 @@
 import { test, expect } from "./baseTest";
 
 test("elided commits appear when ancestors are immutable", async ({ graphFrame, testRepo }) => {
-  await testRepo.writeFile("a.txt", "content a");
-  await testRepo.commit("commit A");
-
-  await testRepo.writeFile("b.txt", "content b");
-  await testRepo.commit("commit B");
+  await testRepo.commitFile("a.txt", "content a", "commit A");
+  await testRepo.commitFile("b.txt", "content b", "commit B");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(4, { timeout: 10000 });
@@ -29,11 +26,8 @@ test("elided commits appear when ancestors are immutable", async ({ graphFrame, 
 });
 
 test("elided commits read from settings", async ({ graphFrame, testRepo }) => {
-  await testRepo.writeFile("a.txt", "content a");
-  await testRepo.commit("commit A");
-
-  await testRepo.writeFile("b.txt", "content b");
-  await testRepo.commit("commit B");
+  await testRepo.commitFile("a.txt", "content a", "commit A");
+  await testRepo.commitFile("b.txt", "content b", "commit B");
 
   await testRepo.writeFile(".vscode/settings.json", '{"jjx.elideImmutableCommits": false}');
   await testRepo.createTag("test-tag", "@-");
