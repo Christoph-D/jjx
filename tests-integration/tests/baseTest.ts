@@ -24,6 +24,26 @@ type WorkerFixtures = {
   xvfbDisplay: string;
 };
 
+const xvfbPids: Set<number> = new Set();
+
+function killXvfbProcesses(): void {
+  for (const pid of xvfbPids) {
+    try {
+      process.kill(pid, "SIGTERM");
+    } catch {
+      // Process may already be gone
+    }
+  }
+  xvfbPids.clear();
+}
+
+for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"] as const) {
+  process.once(signal, () => {
+    killXvfbProcesses();
+    process.exit(128 + (signal === "SIGTERM" ? 15 : signal === "SIGINT" ? 2 : 1));
+  });
+}
+
 function hasXvfb(): boolean {
   try {
     execSync("which Xvfb", { stdio: "ignore" });
@@ -64,14 +84,19 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         return;
       }
 
+      if (xvfb.pid) {
+        xvfbPids.add(xvfb.pid);
+      }
+
       await use(display);
 
-      try {
-        if (xvfb.pid) {
+      if (xvfb.pid) {
+        xvfbPids.delete(xvfb.pid);
+        try {
           process.kill(xvfb.pid, "SIGTERM");
+        } catch {
+          // Process may already be gone
         }
-      } catch {
-        // Process may already be gone
       }
     },
     { scope: "worker" },
