@@ -45,8 +45,13 @@ function getJJPath(): string {
 export class TestRepo {
   constructor(public readonly repoPath: string) {}
 
-  async commit(message: string): Promise<JJCommandResult> {
-    return this.jjCommand(["commit", "-m", message]);
+  async commit(message: string): Promise<string> {
+    const result = await this.jjCommand(["commit", "-m", message]);
+    if (result.exitCode !== 0) {
+      throw new Error(`Commit failed: ${result.stderr}`);
+    }
+    const entries = await this.log("@-");
+    return entries[0].change_id;
   }
 
   async log(rev: string = "all()"): Promise<LogEntry[]> {
@@ -74,7 +79,7 @@ export class TestRepo {
     await fs.writeFile(fullPath, content);
   }
 
-  async commitFile(relativePath: string, content: string, message: string): Promise<JJCommandResult> {
+  async commitFile(relativePath: string, content: string, message: string): Promise<string> {
     await this.writeFile(relativePath, content);
     return this.commit(message);
   }
