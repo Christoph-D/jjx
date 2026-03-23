@@ -630,7 +630,7 @@ function getResourceStateCommand(
     return {
       title: "Open",
       command: "vscode.open",
-      arguments: [afterUri],
+      arguments: [workingCopyUri],
     };
   } else if (fileStatus.type === "D") {
     return {
