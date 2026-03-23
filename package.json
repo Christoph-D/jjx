@@ -185,7 +185,7 @@
       },
       {
         "command": "jj.toggleElideImmutableCommits.show",
-        "title": "Show all commits",
+        "title": "Show elided commits",
         "category": "Jujutsu",
         "icon": "$(unfold)"
       },

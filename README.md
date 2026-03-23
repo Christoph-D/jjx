@@ -114,6 +114,12 @@ If you encounter any problems, please [report them on GitHub](https://github.com
 If you see annotations like "M, M" next to files, this is caused by VS Code's built-in Git extension running alongside
 JJX. To disable Git, disable `git.enabled` in your VS Code settings.
 
+### "Show elided commits" in the graph doesn't show all commits
+
+This button only affects commits between regularly visible commits, not how many immutable parent commits are shown that
+lead outside the visible set of commits. To increase the number of immutable parent commits in the log, adjust the
+setting `jjx.numberOfImmutableParentsInLog`.
+
 ## 📝 License
 
 This project is licensed under the [AGPL-3.0 License](LICENSE). Code from the original project
