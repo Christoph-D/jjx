@@ -1,8 +1,53 @@
 const esbuild = require("esbuild");
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
 const isTest = process.argv.includes("--test");
+
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function copyDir(src, dest) {
+  ensureDir(dest);
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDir(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function copyFile(src, dest) {
+  ensureDir(path.dirname(dest));
+  fs.copyFileSync(src, dest);
+}
+
+function copyAssets() {
+  copyDir("src/webview", "dist/webview");
+  copyFile("src/config.toml", "dist/config.toml");
+  copyFile("src/jj-editor.sh", "dist/jj-editor.sh");
+  copyFile("src/jj-merge-editor.sh", "dist/jj-merge-editor.sh");
+  fs.chmodSync("dist/jj-editor.sh", 0o755);
+  fs.chmodSync("dist/jj-merge-editor.sh", 0o755);
+
+  if (production) {
+    copyDir("node_modules/@vscode/codicons/dist", "dist/codicons");
+
+    execSync("npm run build:fakeeditor", { stdio: "inherit" });
+
+    ensureDir("dist/fakeeditor/zig-out/bin");
+    copyDir("src/fakeeditor/zig-out/bin", "dist/fakeeditor/zig-out/bin");
+  }
+}
 
 /**
  * @type {import('esbuild').Plugin}
@@ -119,15 +164,17 @@ async function main() {
     });
 
     if (watch) {
+      copyAssets();
       await ctx.watch();
       await jjEditorCtx.watch();
       await jjMergeEditorCtx.watch();
     } else {
       await ctx.rebuild();
-      await ctx.dispose();
       await jjEditorCtx.rebuild();
-      await jjEditorCtx.dispose();
       await jjMergeEditorCtx.rebuild();
+      copyAssets();
+      await ctx.dispose();
+      await jjEditorCtx.dispose();
       await jjMergeEditorCtx.dispose();
     }
   }
