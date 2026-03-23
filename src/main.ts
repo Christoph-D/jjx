@@ -579,28 +579,9 @@ export async function activate(context: vscode.ExtensionContext) {
               throw new Error("No parent changes found");
             }
 
-            let message: string | undefined;
-            if (
-              resourceGroup.resourceStates.length === resourceStates.length && // the source change contains only the selected files
-              status.workingCopy.description !== "" &&
-              destinationParentChange.description !== ""
-            ) {
-              message = await vscode.window.showInputBox({
-                prompt: "Provide a description",
-                placeHolder: "Set description here...",
-              });
-
-              if (message === undefined) {
-                return;
-              } else if (message === "") {
-                message = destinationParentChange.description;
-              }
-            }
-
             await repository.squashRetryImmutable({
               fromRev: "@",
               toRev: destinationParentChange.changeId,
-              message,
               filepaths: resourceStates.map((state) => state.resourceUri.fsPath),
             });
           } catch (error) {
@@ -631,28 +612,9 @@ export async function activate(context: vscode.ExtensionContext) {
               throw new Error("Parent change we're squashing from was not found in status");
             }
 
-            let message: string | undefined;
-            if (
-              resourceGroup.resourceStates.length === resourceStates.length && // the source change contains only the selected files
-              status.workingCopy.description !== "" &&
-              parentChange.description !== ""
-            ) {
-              message = await vscode.window.showInputBox({
-                prompt: "Provide a description",
-                placeHolder: "Set description here...",
-              });
-
-              if (message === undefined) {
-                return;
-              } else if (message === "") {
-                message = status.workingCopy.description;
-              }
-            }
-
             await repository.squashRetryImmutable({
               fromRev: resourceGroup.id,
               toRev: "@",
-              message,
               filepaths: resourceStates.map((state) => state.resourceUri.fsPath),
             });
           } catch (error) {
@@ -712,25 +674,10 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("No parent changes found");
           }
 
-          let message: string | undefined;
-          if (status.workingCopy.description !== "" && destinationParentChange.description !== "") {
-            message = await vscode.window.showInputBox({
-              prompt: "Provide a description",
-              placeHolder: "Set description here...",
-            });
-
-            if (message === undefined) {
-              return;
-            } else if (message === "") {
-              message = destinationParentChange.description;
-            }
-          }
-
           try {
             await repository.squashRetryImmutable({
               fromRev: "@",
               toRev: destinationParentChange.changeId,
-              message,
             });
           } catch (error) {
             vscode.window.showErrorMessage(`Failed to squash${error instanceof Error ? `: ${error.message}` : ""}`);
@@ -758,25 +705,10 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("Parent change we're squashing from was not found in status");
           }
 
-          let message: string | undefined;
-          if (status.workingCopy.description !== "" && parentChange.description !== "") {
-            message = await vscode.window.showInputBox({
-              prompt: "Provide a description",
-              placeHolder: "Set description here...",
-            });
-
-            if (message === undefined) {
-              return;
-            } else if (message === "") {
-              message = status.workingCopy.description;
-            }
-          }
-
           try {
             await repository.squashRetryImmutable({
               fromRev: resourceGroup.id,
               toRev: "@",
-              message,
             });
           } catch (error) {
             vscode.window.showErrorMessage(`Failed to squash${error instanceof Error ? `: ${error.message}` : ""}`);
