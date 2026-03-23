@@ -1,4 +1,5 @@
 import path from "path";
+import * as crypto from "crypto";
 import * as vscode from "vscode";
 import fs from "fs/promises";
 import spawn from "cross-spawn";
@@ -8,6 +9,7 @@ import { ImmutableError, convertJJErrors, parseJJError } from "./errors";
 import { fakeEditorPath } from "./config";
 import { spawnJJ, handleJJCommand } from "./process";
 import { prepareFakeeditor, filepathToFileset, parseRenamePaths } from "./fakeeditor";
+import { getDiffToolPath, expectDiffToolRequest } from "./jjEditor";
 import { pathEquals } from "./utils";
 import { TIMEOUTS } from "./constants";
 import type {
@@ -971,147 +973,109 @@ export class JJRepository {
    * @returns undefined if the file was not modified in `rev`
    */
   async getDiffOriginal(rev: string, filepath: string): Promise<Buffer | undefined> {
-    const { cleanup, envVars } = await prepareFakeeditor();
+    const diffToolSh = getDiffToolPath();
+    if (!diffToolSh) {
+      throw new Error("Diff tool not initialized. Ensure useVSCodeAsJJEditor is enabled.");
+    }
 
-    const output = await new Promise<string>((resolve, reject) => {
+    const requestId = crypto.randomUUID();
+    const pathPromise = expectDiffToolRequest(requestId);
+
+    const summaryOutput = await new Promise<string>((resolve, reject) => {
       const childProcess = this.spawnJJRead(
         // We don't pass the filepath to diff because we need the left folder to have all files,
         // in case the file was renamed or copied. If we knew the status of the file, we could
         // pass the previous filename in addition to the current filename upon seeing a rename or copy.
         // We don't have the status though, which is why we're using `--summary` here.
-        ["diff", "--summary", "--tool", `${fakeEditorPath}`, "-r", rev],
+        [
+          "diff",
+          "--summary",
+          "--tool=jjx-vscode-diff",
+          "--config",
+          `merge-tools.jjx-vscode-diff.program="${diffToolSh}"`,
+          "-r",
+          rev,
+        ],
         {
-          timeout: 10_000, // Ensure this is longer than fakeeditor's internal timeout
+          timeout: 10_000,
           cwd: this.repositoryRoot,
-          env: { ...process.env, ...envVars },
+          env: { ...process.env, VSCODE_JJ_DIFF_REQUEST_ID: requestId },
         },
       );
 
-      let fakeEditorOutputBuffer = "";
-      const FAKEEDITOR_SENTINEL = "FAKEEDITOR_OUTPUT_END\n";
+      const output: Buffer[] = [];
+      const errOutput: Buffer[] = [];
 
       childProcess.stdout!.on("data", (data: Buffer) => {
-        fakeEditorOutputBuffer += data.toString();
-
-        if (!fakeEditorOutputBuffer.includes(FAKEEDITOR_SENTINEL)) {
-          // Wait for more data if sentinel not yet received
-          return;
-        }
-
-        const completeOutput = fakeEditorOutputBuffer.substring(0, fakeEditorOutputBuffer.indexOf(FAKEEDITOR_SENTINEL));
-        resolve(completeOutput);
+        output.push(data);
       });
 
-      const errOutput: Buffer[] = [];
       childProcess.stderr!.on("data", (data: Buffer) => {
         errOutput.push(data);
       });
 
       childProcess.on("error", (error: Error) => {
-        void cleanup();
         reject(new Error(`Spawning command failed: ${error.message}`));
       });
 
       childProcess.on("close", (code, signal) => {
-        void cleanup();
         if (code) {
           reject(
             new Error(
-              `Command failed with exit code ${code}.\nstdout: ${fakeEditorOutputBuffer}\nstderr: ${Buffer.concat(errOutput).toString()}`,
+              `Command failed with exit code ${code}.\nstdout: ${Buffer.concat(output).toString()}\nstderr: ${Buffer.concat(errOutput).toString()}`,
             ),
           );
         } else if (signal) {
           reject(
             new Error(
-              `Command failed with signal ${signal}.\nstdout: ${fakeEditorOutputBuffer}\nstderr: ${Buffer.concat(errOutput).toString()}`,
+              `Command failed with signal ${signal}.\nstdout: ${Buffer.concat(output).toString()}\nstderr: ${Buffer.concat(errOutput).toString()}`,
             ),
           );
         } else {
-          // This reject will only matter if the promise wasn't resolved already;
-          // that means we'll only see this if the command exited without sending the sentinel.
-          reject(
-            new Error(
-              `Command exited unexpectedly.\nstdout:${fakeEditorOutputBuffer}\nstderr: ${Buffer.concat(errOutput).toString()}`,
-            ),
-          );
+          resolve(Buffer.concat(output).toString());
         }
       });
     }).catch(convertJJErrors);
 
-    const lines = output.trim().split("\n");
-    const pidLineIdx =
-      lines.findIndex((line) => {
-        return line.includes(fakeEditorPath);
-      }) - 2;
-    if (pidLineIdx < 0) {
-      throw new Error("PID line not found.");
-    }
-    if (pidLineIdx + 3 >= lines.length) {
-      throw new Error(`Unexpected output from fakeeditor: ${output}`);
-    }
+    const { leftFiles } = await pathPromise;
 
-    const summaryLines = lines.slice(0, pidLineIdx);
-    const fakeEditorPID = lines[pidLineIdx];
-    const fakeEditorCWD = lines[pidLineIdx + 1];
-    // lines[pidLineIdx + 2] is the fakeeditor executable path
-    const leftFolderPath = lines[pidLineIdx + 3];
+    const summaryLines = summaryOutput.trim().split("\n");
 
-    const leftFolderAbsolutePath = path.isAbsolute(leftFolderPath)
-      ? leftFolderPath
-      : path.join(fakeEditorCWD, leftFolderPath);
+    for (const summaryLineRaw of summaryLines) {
+      const summaryLine = summaryLineRaw.trim();
 
-    try {
-      let pathInLeftFolder: string | undefined;
+      const type = summaryLine.charAt(0);
+      const file = summaryLine.slice(2).trim();
 
-      for (const summaryLineRaw of summaryLines) {
-        const summaryLine = summaryLineRaw.trim();
-
-        const type = summaryLine.charAt(0);
-        const file = summaryLine.slice(2).trim();
-
-        if (type === "M" || type === "D") {
-          const normalizedSummaryPath = path.join(this.repositoryRoot, file).replace(/\\/g, "/");
-          const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
-          if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
-            pathInLeftFolder = file;
-            break;
+      if (type === "M" || type === "D") {
+        const normalizedSummaryPath = path.join(this.repositoryRoot, file).replace(/\\/g, "/");
+        const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
+        if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
+          const content = leftFiles[file];
+          if (content !== undefined) {
+            return Buffer.from(content, "utf8");
           }
-        } else if (type === "R" || type === "C") {
-          const parseResult = parseRenamePaths(file);
-          if (!parseResult) {
-            throw new Error(`Unexpected rename line: ${summaryLineRaw}`);
-          }
+          return undefined;
+        }
+      } else if (type === "R" || type === "C") {
+        const parseResult = parseRenamePaths(file);
+        if (!parseResult) {
+          throw new Error(`Unexpected rename line: ${summaryLineRaw}`);
+        }
 
-          const normalizedSummaryPath = path.join(this.repositoryRoot, parseResult.toPath).replace(/\\/g, "/");
-          const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
-          if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
-            // The file was renamed TO our target filepath, so we need its OLD path from the left folder
-            pathInLeftFolder = parseResult.fromPath;
-            break;
+        const normalizedSummaryPath = path.join(this.repositoryRoot, parseResult.toPath).replace(/\\/g, "/");
+        const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
+        if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
+          const content = leftFiles[parseResult.fromPath];
+          if (content !== undefined) {
+            return Buffer.from(content, "utf8");
           }
+          return undefined;
         }
       }
-
-      if (pathInLeftFolder) {
-        const fullPath = path.join(leftFolderAbsolutePath, pathInLeftFolder);
-        try {
-          return await fs.readFile(fullPath);
-        } catch (e) {
-          logger.error(`Failed to read original file content from left folder at ${fullPath}: ${String(e)}`);
-          throw e;
-        }
-      }
-
-      // File was either added or unchanged in this revision.
-      return undefined;
-    } finally {
-      try {
-        process.kill(parseInt(fakeEditorPID), "SIGTERM");
-      } catch (killError) {
-        logger.error(
-          `Failed to kill fakeeditor (PID: ${fakeEditorPID}) in getDiffOriginal: ${killError instanceof Error ? killError : ""}`,
-        );
-      }
     }
+
+    // File was either added or unchanged in this revision.
+    return undefined;
   }
 }

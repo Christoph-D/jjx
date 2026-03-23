@@ -20,6 +20,7 @@ interface MergeEditorTabInput {
 
 let editorEnv: Record<string, string> = {};
 let mergeEditorPath = "";
+let diffToolPath = "";
 
 export function getJjEditorEnv(): Record<string, string> {
   return editorEnv;
@@ -27,6 +28,31 @@ export function getJjEditorEnv(): Record<string, string> {
 
 export function getMergeEditorPath(): string {
   return mergeEditorPath;
+}
+
+export function getDiffToolPath(): string {
+  return diffToolPath;
+}
+
+interface DiffToolRequest {
+  requestId: string;
+  leftFiles: Record<string, string>;
+  rightFiles: Record<string, string>;
+}
+
+interface PendingDiffRequest {
+  resolve: (data: { leftFiles: Record<string, string>; rightFiles: Record<string, string> }) => void;
+  reject: (error: Error) => void;
+}
+
+const pendingDiffRequests = new Map<string, PendingDiffRequest>();
+
+export function expectDiffToolRequest(
+  requestId: string,
+): Promise<{ leftFiles: Record<string, string>; rightFiles: Record<string, string> }> {
+  return new Promise((resolve, reject) => {
+    pendingDiffRequests.set(requestId, { resolve, reject });
+  });
 }
 
 export class JJEditor implements IIPCHandler {
@@ -107,6 +133,36 @@ export class JJMergeEditor implements IIPCHandler {
         }
       });
     });
+  }
+
+  dispose(): void {
+    this.disposable.dispose();
+  }
+}
+
+export class JJDiffTool implements IIPCHandler {
+  private disposable = EmptyDisposable;
+
+  constructor(ipc: IPCServer, extensionDir: string) {
+    this.disposable = ipc.registerHandler("jj-diff-tool", this);
+
+    diffToolPath = path.join(extensionDir, "jj-diff-tool.sh");
+
+    editorEnv = {
+      ...editorEnv,
+      VSCODE_JJ_DIFF_NODE: process.execPath,
+      VSCODE_JJ_DIFF_MAIN: path.join(extensionDir, "jj-diff-tool-main.js"),
+    };
+  }
+
+  handle(request: DiffToolRequest): Promise<boolean> {
+    const pending = pendingDiffRequests.get(request.requestId);
+    if (!pending) {
+      return Promise.resolve(false);
+    }
+    pendingDiffRequests.delete(request.requestId);
+    pending.resolve({ leftFiles: request.leftFiles, rightFiles: request.rightFiles });
+    return Promise.resolve(true);
   }
 
   dispose(): void {

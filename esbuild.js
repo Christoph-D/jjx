@@ -36,8 +36,10 @@ function copyAssets() {
   copyFile("src/config.toml", "dist/config.toml");
   copyFile("src/jj-editor.sh", "dist/jj-editor.sh");
   copyFile("src/jj-merge-editor.sh", "dist/jj-merge-editor.sh");
+  copyFile("src/jj-diff-tool.sh", "dist/jj-diff-tool.sh");
   fs.chmodSync("dist/jj-editor.sh", 0o755);
   fs.chmodSync("dist/jj-merge-editor.sh", 0o755);
+  fs.chmodSync("dist/jj-diff-tool.sh", 0o755);
 
   if (production) {
     copyDir("node_modules/@vscode/codicons/dist", "dist/codicons");
@@ -163,19 +165,36 @@ async function main() {
       plugins: [esbuildProblemMatcherPlugin],
     });
 
+    // Build jj-diff-tool-main.ts (standalone script for diff tool)
+    const jjDiffToolCtx = await esbuild.context({
+      entryPoints: ["src/jj-diff-tool-main.ts"],
+      bundle: true,
+      format: "cjs",
+      minify: production,
+      sourcemap: !production,
+      sourcesContent: false,
+      platform: "node",
+      outfile: "dist/jj-diff-tool-main.js",
+      logLevel: "silent",
+      plugins: [esbuildProblemMatcherPlugin],
+    });
+
     if (watch) {
       copyAssets();
       await ctx.watch();
       await jjEditorCtx.watch();
       await jjMergeEditorCtx.watch();
+      await jjDiffToolCtx.watch();
     } else {
       await ctx.rebuild();
       await jjEditorCtx.rebuild();
       await jjMergeEditorCtx.rebuild();
+      await jjDiffToolCtx.rebuild();
       copyAssets();
       await ctx.dispose();
       await jjEditorCtx.dispose();
       await jjMergeEditorCtx.dispose();
+      await jjDiffToolCtx.dispose();
     }
   }
 }
