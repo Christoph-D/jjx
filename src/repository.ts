@@ -975,7 +975,7 @@ export class JJRepository {
   async getDiffOriginal(rev: string, filepath: string): Promise<Buffer | undefined> {
     const diffToolSh = getDiffToolPath();
     if (!diffToolSh) {
-      throw new Error("Diff tool not initialized. Ensure useVSCodeAsJJEditor is enabled.");
+      throw new Error("Diff tool not initialized.");
     }
 
     const requestId = crypto.randomUUID();

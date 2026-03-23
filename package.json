@@ -603,12 +603,6 @@
           "description": "Number of immutable parent commits to show in the log.",
           "scope": "resource",
           "minimum": 0
-        },
-        "jjx.useVSCodeAsJJEditor": {
-          "type": "boolean",
-          "default": true,
-          "description": "Use VS Code as the editor for jj commands that require one (e.g., jj describe without -m)",
-          "scope": "resource"
         }
       }
     },
