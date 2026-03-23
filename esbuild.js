@@ -104,14 +104,31 @@ async function main() {
       plugins: [esbuildProblemMatcherPlugin],
     });
 
+    // Build jj-merge-editor-main.ts (standalone script for merge tool)
+    const jjMergeEditorCtx = await esbuild.context({
+      entryPoints: ["src/jj-merge-editor-main.ts"],
+      bundle: true,
+      format: "cjs",
+      minify: production,
+      sourcemap: !production,
+      sourcesContent: false,
+      platform: "node",
+      outfile: "dist/jj-merge-editor-main.js",
+      logLevel: "silent",
+      plugins: [esbuildProblemMatcherPlugin],
+    });
+
     if (watch) {
       await ctx.watch();
       await jjEditorCtx.watch();
+      await jjMergeEditorCtx.watch();
     } else {
       await ctx.rebuild();
       await ctx.dispose();
       await jjEditorCtx.rebuild();
       await jjEditorCtx.dispose();
+      await jjMergeEditorCtx.rebuild();
+      await jjMergeEditorCtx.dispose();
     }
   }
 }

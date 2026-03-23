@@ -381,24 +381,6 @@ export class JJRepository {
     ).then((buf) => buf.toString());
   }
 
-  debugObject(objectType: string, objectId: string): Promise<string> {
-    return handleJJCommand(
-      this.spawnJJRead(["debug", "object", objectType, objectId], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    ).then((buf) => buf.toString());
-  }
-
-  debugTree(treeId: string, filepath: string): Promise<string> {
-    return handleJJCommand(
-      this.spawnJJRead(["debug", "tree", "--id", treeId, "--", filepath], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    ).then((buf) => buf.toString());
-  }
-
   async describeRetryImmutable(rev: string, message?: string) {
     return this.retryWithImmutable(
       rev,

@@ -751,10 +751,10 @@
     ]
   },
   "scripts": {
-    "build": "npm run check-types && npm run lint && node esbuild.js --production && cp -r src/webview dist/ && cp src/config.toml dist/ && cp src/jj-editor.sh dist/ && chmod +x dist/jj-editor.sh && mkdir -p dist/codicons && cp -r node_modules/@vscode/codicons/dist/* dist/codicons/ && npm run build:fakeeditor && mkdir -p dist/fakeeditor/zig-out/bin && cp -r src/fakeeditor/zig-out/bin/. dist/fakeeditor/zig-out/bin/",
+    "build": "npm run check-types && npm run lint && node esbuild.js --production && cp -r src/webview dist/ && cp src/config.toml dist/ && cp src/jj-editor.sh dist/ && cp src/jj-merge-editor.sh dist/ && chmod +x dist/jj-editor.sh dist/jj-merge-editor.sh && mkdir -p dist/codicons && cp -r node_modules/@vscode/codicons/dist/* dist/codicons/ && npm run build:fakeeditor && mkdir -p dist/fakeeditor/zig-out/bin && cp -r src/fakeeditor/zig-out/bin/. dist/fakeeditor/zig-out/bin/",
     "build:fakeeditor": "cd src/fakeeditor && ./build_all_platforms.sh",
     "vscode:prepublish": "npm run build",
-    "compile": "npm run check-types && npm run lint && node esbuild.js && cp src/jj-editor.sh dist/ && chmod +x dist/jj-editor.sh",
+    "compile": "npm run check-types && npm run lint && node esbuild.js && cp src/jj-editor.sh dist/ && cp src/jj-merge-editor.sh dist/ && chmod +x dist/jj-editor.sh dist/jj-merge-editor.sh",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
@@ -764,7 +764,7 @@
     "lint": "eslint src tests-integration/*.ts tests-integration/tests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "unit-test": "node --import tsx --test src/unit-test/templateBuilder.test.ts src/unit-test/assignLanes.test.ts src/unit-test/conflictResolver.test.ts src/unit-test/elidedEdges.test.ts",
+    "unit-test": "node --import tsx --test src/unit-test/templateBuilder.test.ts src/unit-test/assignLanes.test.ts src/unit-test/elidedEdges.test.ts",
     "vscode-test": "node out/test/runTest.js",
     "test": "npm-run-all unit-test vscode-test",
     "playwright-test": "npm run build && cd tests-integration && npm ci && npx playwright test",

@@ -14,9 +14,9 @@ import { linesDiffComputers } from "./vendor/vscode/editor/common/diff/linesDiff
 import { ILinesDiffComputer, LinesDiff } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
 import { match } from "arktype";
 import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals } from "./utils";
-import { openMergeEditor } from "./conflictResolver";
 import { createIPCServer } from "./ipc/ipcServer";
-import { JJEditor } from "./jjEditor";
+import { JJEditor, JJMergeEditor, getMergeEditorPath } from "./jjEditor";
+import { handleJJCommand } from "./process";
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Jujutsu X", {
@@ -37,6 +37,8 @@ export async function activate(context: vscode.ExtensionContext) {
       const distDir = vscode.Uri.joinPath(context.extensionUri, "dist").fsPath;
       const jjEditor = new JJEditor(ipcServer, distDir);
       context.subscriptions.push(jjEditor);
+      const jjMergeEditor = new JJMergeEditor(ipcServer, distDir);
+      context.subscriptions.push(jjMergeEditor);
       logger.info("JJEditor IPC server initialized");
     } catch (error) {
       logger.error(`Failed to initialize JJEditor: ${error instanceof Error ? error.message : String(error)}`);
@@ -1531,7 +1533,17 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!repo) {
           throw new Error("Repository not found");
         }
-        await openMergeEditor(repo, uri.fsPath);
+        const mergeEditorScriptPath = getMergeEditorPath();
+        if (!mergeEditorScriptPath) {
+          throw new Error("Merge editor not initialized");
+        }
+        const relativePath = path.relative(repo.repositoryRoot, uri.fsPath);
+        const mergeToolConfig = `merge-tools.jjx-vscode-merge.program="${mergeEditorScriptPath}"`;
+        await handleJJCommand(
+          repo.spawnJJ(["resolve", "--tool=jjx-vscode-merge", "--config", mergeToolConfig, "--", relativePath], {
+            cwd: repo.repositoryRoot,
+          }),
+        );
       } catch (error) {
         vscode.window.showErrorMessage(
           `Failed to open merge editor${error instanceof Error ? `: ${error.message}` : ""}`,

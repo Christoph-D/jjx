@@ -3,6 +3,7 @@
 
 import { Disposable } from "vscode";
 import { toDisposable } from "../utils";
+import { logger } from "../logger";
 import * as path from "path";
 import * as http from "http";
 import * as os from "os";
@@ -85,14 +86,16 @@ export class IPCServer implements IIPCServer, Disposable {
 
   private onRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
     if (!req.url) {
-      console.warn(`Request lacks url`);
+      logger.warn(`Request lacks url`);
       return;
     }
 
     const handler = this.handlers.get(req.url);
 
     if (!handler) {
-      console.warn(`IPC handler for ${req.url} not found`);
+      logger.warn(
+        `IPC handler for ${req.url} not found. Available handlers: ${Array.from(this.handlers.keys()).join(", ")}`,
+      );
       return;
     }
 
@@ -105,7 +108,8 @@ export class IPCServer implements IIPCServer, Disposable {
           res.writeHead(200);
           res.end(JSON.stringify(result));
         },
-        () => {
+        (err) => {
+          logger.error(`IPC handler error: ${err}`);
           res.writeHead(500);
           res.end();
         },
