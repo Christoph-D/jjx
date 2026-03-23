@@ -7,7 +7,7 @@ test("duplicate commit onto another via drag and drop", async ({ graphFrame, tes
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -15,10 +15,10 @@ test("duplicate commit onto another via drag and drop", async ({ graphFrame, tes
   await commitC.dragTo(commitA);
 
   const duplicateOntoItem = graphFrame.locator('.context-menu-item[data-action="duplicateOnto"]');
-  await expect(duplicateOntoItem).toBeVisible({ timeout: 5000 });
+  await expect(duplicateOntoItem).toBeVisible();
   await duplicateOntoItem.click();
 
-  await expect(nodes).toHaveCount(6, { timeout: 10000 });
+  await expect(nodes).toHaveCount(6);
 
   await expect(async () => {
     const logEntries = await testRepo.log();
@@ -32,7 +32,7 @@ test("duplicate commit onto another via drag and drop", async ({ graphFrame, tes
     expect(cParents).toContain("A");
     expect(cParents).toContain("B");
     expect(getParents(logEntries, "B")).toEqual(["A"]);
-  }).toPass({ timeout: 10000 });
+  }).toPass();
 });
 
 test("duplicate after another commit via drag and drop", async ({ graphFrame, testRepo }) => {
@@ -41,7 +41,7 @@ test("duplicate after another commit via drag and drop", async ({ graphFrame, te
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -49,10 +49,10 @@ test("duplicate after another commit via drag and drop", async ({ graphFrame, te
   await commitC.dragTo(commitA);
 
   const duplicateAfterItem = graphFrame.locator('.context-menu-item[data-action="duplicateAfter"]');
-  await expect(duplicateAfterItem).toBeVisible({ timeout: 5000 });
+  await expect(duplicateAfterItem).toBeVisible();
   await duplicateAfterItem.click();
 
-  await expect(nodes).toHaveCount(6, { timeout: 10000 });
+  await expect(nodes).toHaveCount(6);
 
   await expect(async () => {
     const logEntries = await testRepo.log();
@@ -71,7 +71,7 @@ test("duplicate after another commit via drag and drop", async ({ graphFrame, te
     const cDuplicateParent = logEntries.find((e) => e.change_id === cDuplicate!.parents[0]?.change_id);
     expect(cDuplicateParent).toBeDefined();
     expect(cDuplicateParent!.description.trim()).toBe("A");
-  }).toPass({ timeout: 10000 });
+  }).toPass();
 });
 
 test("duplicate before another commit via drag and drop", async ({ graphFrame, testRepo }) => {
@@ -80,7 +80,7 @@ test("duplicate before another commit via drag and drop", async ({ graphFrame, t
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   const commitC = nodes.nth(1);
   const commitB = nodes.nth(2);
@@ -88,10 +88,10 @@ test("duplicate before another commit via drag and drop", async ({ graphFrame, t
   await commitC.dragTo(commitB);
 
   const duplicateBeforeItem = graphFrame.locator('.context-menu-item[data-action="duplicateBefore"]');
-  await expect(duplicateBeforeItem).toBeVisible({ timeout: 5000 });
+  await expect(duplicateBeforeItem).toBeVisible();
   await duplicateBeforeItem.click();
 
-  await expect(nodes).toHaveCount(6, { timeout: 10000 });
+  await expect(nodes).toHaveCount(6);
 
   await expect(async () => {
     const logEntries = await testRepo.log();
@@ -112,5 +112,5 @@ test("duplicate before another commit via drag and drop", async ({ graphFrame, t
     const duplicateCParent = logEntries.find((e) => e.change_id === duplicateCEntry!.parents[0].change_id);
     expect(duplicateCParent).toBeDefined();
     expect(duplicateCParent!.description.trim()).toBe("A");
-  }).toPass({ timeout: 10000 });
+  }).toPass();
 });

@@ -19,6 +19,9 @@ A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version
 
 To iterate on an integration test, change the test to `test.only()` and then run `npm run playwright-test:only-test`.
 
+Do not add custom timeouts to Playwright expectations. The Playwright config already sets `expect.timeout` to 10
+seconds.
+
 ## Architecture
 
 | File                        | Purpose                                       |

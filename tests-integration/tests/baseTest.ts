@@ -156,10 +156,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
 
   graphFrame: async ({ workbox }, use) => {
-    await workbox.locator(".monaco-workbench").waitFor({ timeout: 30000 });
+    await workbox.locator(".monaco-workbench").waitFor();
 
     await workbox.getByRole("tab", { name: /Source Control/i }).click();
-    await workbox.locator(".scm-view").first().waitFor({ timeout: 10000 });
+    await workbox.locator(".scm-view").first().waitFor();
 
     const graphHeader = workbox.getByRole("button", { name: /Source Control Graph/i });
     const isExpanded = await graphHeader.getAttribute("aria-expanded");

@@ -4,7 +4,7 @@ test("shows diff when clicking modified file in Working Copy", async ({ graphFra
   await testRepo.commitFile("test.txt", "A", "Initial commit");
   await testRepo.writeFile("test.txt", "B");
 
-  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible({ timeout: 10000 });
+  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
 
   const fileItem = workbox.getByRole("treeitem", { name: /test\.txt/ }).first();
   await expect(fileItem).toBeVisible();
@@ -12,8 +12,8 @@ test("shows diff when clicking modified file in Working Copy", async ({ graphFra
 
   const diffEditor = workbox.locator(".editor-instance");
   await expect(diffEditor).toBeVisible();
-  await expect(diffEditor.getByText("A", { exact: true }).first()).toBeVisible({ timeout: 10000 });
-  await expect(diffEditor.getByText("B", { exact: true }).first()).toBeVisible({ timeout: 10000 });
+  await expect(diffEditor.getByText("A", { exact: true }).first()).toBeVisible();
+  await expect(diffEditor.getByText("B", { exact: true }).first()).toBeVisible();
 });
 
 test("shows diff when clicking modified file in Parent Commit", async ({ graphFrame, testRepo, workbox }) => {
@@ -21,7 +21,7 @@ test("shows diff when clicking modified file in Parent Commit", async ({ graphFr
   await testRepo.commitFile("test.txt", "B", "Second commit");
   await testRepo.writeFile("test.txt", "C");
 
-  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible({ timeout: 10000 });
+  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
 
   const fileItem = workbox.getByRole("treeitem", { name: /test\.txt/ }).nth(1);
   await expect(fileItem).toBeVisible();
@@ -29,8 +29,8 @@ test("shows diff when clicking modified file in Parent Commit", async ({ graphFr
 
   const diffEditor = workbox.locator(".editor-instance");
   await expect(diffEditor).toBeVisible();
-  await expect(diffEditor.getByText("A", { exact: true }).first()).toBeVisible({ timeout: 10000 });
-  await expect(diffEditor.getByText("B", { exact: true }).first()).toBeVisible({ timeout: 10000 });
+  await expect(diffEditor.getByText("A", { exact: true }).first()).toBeVisible();
+  await expect(diffEditor.getByText("B", { exact: true }).first()).toBeVisible();
 
   const fileItemWorkingCopy = workbox.getByRole("treeitem", { name: /test\.txt/ }).nth(0);
   await expect(fileItemWorkingCopy).toBeVisible();
@@ -38,6 +38,6 @@ test("shows diff when clicking modified file in Parent Commit", async ({ graphFr
 
   const diffEditorWorkingCopy = workbox.locator(".editor-instance");
   await expect(diffEditorWorkingCopy).toBeVisible();
-  await expect(diffEditorWorkingCopy.getByText("B", { exact: true }).first()).toBeVisible({ timeout: 10000 });
-  await expect(diffEditorWorkingCopy.getByText("C", { exact: true }).first()).toBeVisible({ timeout: 10000 });
+  await expect(diffEditorWorkingCopy.getByText("B", { exact: true }).first()).toBeVisible();
+  await expect(diffEditorWorkingCopy.getByText("C", { exact: true }).first()).toBeVisible();
 });

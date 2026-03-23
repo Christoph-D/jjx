@@ -4,7 +4,7 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
   await testRepo.commitFile("test.txt", "content", "test commit");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(3, { timeout: 10000 });
+  await expect(nodes).toHaveCount(3);
 
   const commitNode = nodes.nth(1);
   await commitNode.click({ button: "right" });
@@ -13,12 +13,12 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
   await createTagItem.click();
 
   const input = workbox.locator("input").first();
-  await input.waitFor({ state: "visible", timeout: 5000 });
+  await input.waitFor({ state: "visible" });
   await input.fill("test-tag");
   await workbox.keyboard.press("Enter");
 
   const tagPill = graphFrame.locator('.tag-pill[data-tag="test-tag"]');
-  await expect(tagPill).toBeVisible({ timeout: 10000 });
+  await expect(tagPill).toBeVisible();
 
   const tag = await testRepo.getTag("test-tag");
   expect(tag).toBeDefined();
@@ -31,7 +31,7 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
   const deleteTagSubmenuItem = graphFrame.locator('.context-submenu-item[data-delete-tag="test-tag"]');
   await deleteTagSubmenuItem.click();
 
-  await expect(tagPill).not.toBeVisible({ timeout: 10000 });
+  await expect(tagPill).not.toBeVisible();
 
   expect(await testRepo.getTag("test-tag")).toBeUndefined();
 });

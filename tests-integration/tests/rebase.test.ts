@@ -7,7 +7,7 @@ test("rebase commit onto another via drag and drop", async ({ graphFrame, testRe
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -15,15 +15,15 @@ test("rebase commit onto another via drag and drop", async ({ graphFrame, testRe
   await commitC.dragTo(commitA);
 
   const rebaseOntoItem = graphFrame.locator('.context-menu-item[data-action="rebaseOnto"]');
-  await expect(rebaseOntoItem).toBeVisible({ timeout: 5000 });
+  await expect(rebaseOntoItem).toBeVisible();
   await rebaseOntoItem.click();
 
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   await expect(async () => {
     const logEntries = await testRepo.log();
     expect(getParents(logEntries, "C")).toEqual(["A"]);
-  }).toPass({ timeout: 10000 });
+  }).toPass();
 });
 
 test("rebase after another commit via drag and drop", async ({ graphFrame, testRepo }) => {
@@ -32,7 +32,7 @@ test("rebase after another commit via drag and drop", async ({ graphFrame, testR
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -40,15 +40,15 @@ test("rebase after another commit via drag and drop", async ({ graphFrame, testR
   await commitC.dragTo(commitA);
 
   const rebaseAfterItem = graphFrame.locator('.context-menu-item[data-action="rebaseAfter"]');
-  await expect(rebaseAfterItem).toBeVisible({ timeout: 5000 });
+  await expect(rebaseAfterItem).toBeVisible();
   await rebaseAfterItem.click();
 
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   await expect(async () => {
     const logEntries = await testRepo.log();
     expect(getParents(logEntries, "B")).toEqual(["C"]);
-  }).toPass({ timeout: 10000 });
+  }).toPass();
 });
 
 test("rebase before another commit via drag and drop", async ({ graphFrame, testRepo }) => {
@@ -57,7 +57,7 @@ test("rebase before another commit via drag and drop", async ({ graphFrame, test
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   const commitC = nodes.nth(1);
   const commitB = nodes.nth(2);
@@ -65,14 +65,14 @@ test("rebase before another commit via drag and drop", async ({ graphFrame, test
   await commitC.dragTo(commitB);
 
   const rebaseBeforeItem = graphFrame.locator('.context-menu-item[data-action="rebaseBefore"]');
-  await expect(rebaseBeforeItem).toBeVisible({ timeout: 5000 });
+  await expect(rebaseBeforeItem).toBeVisible();
   await rebaseBeforeItem.click();
 
-  await expect(nodes).toHaveCount(5, { timeout: 10000 });
+  await expect(nodes).toHaveCount(5);
 
   await expect(async () => {
     const logEntries = await testRepo.log();
     expect(getParents(logEntries, "C")).toEqual(["A"]);
     expect(getParents(logEntries, "B")).toEqual(["C"]);
-  }).toPass({ timeout: 10000 });
+  }).toPass();
 });
