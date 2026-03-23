@@ -89,11 +89,29 @@ async function main() {
       logLevel: "silent",
       plugins: [esbuildProblemMatcherPlugin],
     });
+
+    // Build jj-editor-main.ts (standalone script for JJ_EDITOR)
+    const jjEditorCtx = await esbuild.context({
+      entryPoints: ["src/jj-editor-main.ts"],
+      bundle: true,
+      format: "cjs",
+      minify: production,
+      sourcemap: !production,
+      sourcesContent: false,
+      platform: "node",
+      outfile: "dist/jj-editor-main.js",
+      logLevel: "silent",
+      plugins: [esbuildProblemMatcherPlugin],
+    });
+
     if (watch) {
       await ctx.watch();
+      await jjEditorCtx.watch();
     } else {
       await ctx.rebuild();
       await ctx.dispose();
+      await jjEditorCtx.rebuild();
+      await jjEditorCtx.dispose();
     }
   }
 }

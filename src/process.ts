@@ -3,11 +3,14 @@ import type { ChildProcess } from "child_process";
 import { logger } from "./logger";
 import { getCommandTimeout } from "./config";
 import { convertJJErrors } from "./errors";
+import { getJjEditorEnv } from "./jjEditor";
 
 export function spawnJJ(jjPath: string, args: string[], options: Parameters<typeof spawn>[2] & { cwd: string }) {
+  const jjEditorEnv = getJjEditorEnv();
   const finalOptions = {
     ...options,
     timeout: getCommandTimeout(options.cwd, options.timeout),
+    env: { ...process.env, ...jjEditorEnv, ...options.env },
   };
 
   logger.info(`spawn: ${JSON.stringify([jjPath, ...args])} ${JSON.stringify({ spawnOptions: finalOptions })}`);

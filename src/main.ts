@@ -15,6 +15,8 @@ import { ILinesDiffComputer, LinesDiff } from "./vendor/vscode/editor/common/dif
 import { match } from "arktype";
 import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals } from "./utils";
 import { openMergeEditor } from "./conflictResolver";
+import { createIPCServer } from "./ipc/ipcServer";
+import { JJEditor } from "./jjEditor";
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Jujutsu X", {
@@ -26,6 +28,20 @@ export async function activate(context: vscode.ExtensionContext) {
   logger.info("Extension activated");
 
   initExtensionDir(context.extensionUri);
+
+  const useVSCodeAsJJEditor = vscode.workspace.getConfiguration("jjx").get<boolean>("useVSCodeAsJJEditor");
+  if (useVSCodeAsJJEditor) {
+    try {
+      const ipcServer = await createIPCServer();
+      context.subscriptions.push(ipcServer);
+      const distDir = vscode.Uri.joinPath(context.extensionUri, "dist").fsPath;
+      const jjEditor = new JJEditor(ipcServer, distDir);
+      context.subscriptions.push(jjEditor);
+      logger.info("JJEditor IPC server initialized");
+    } catch (error) {
+      logger.error(`Failed to initialize JJEditor: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   const decorationProvider = new JJDecorationProvider((decorationProvider) => {
     context.subscriptions.push(vscode.window.registerFileDecorationProvider(decorationProvider));

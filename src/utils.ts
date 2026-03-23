@@ -13,6 +13,8 @@ export function toDisposable(dispose: () => void): Disposable {
   return { dispose };
 }
 
+export const EmptyDisposable = toDisposable(() => {});
+
 export function combinedDisposable(disposables: Disposable[]): Disposable {
   return toDisposable(() => dispose(disposables));
 }

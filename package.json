@@ -603,6 +603,12 @@
           "description": "Number of immutable parent commits to show in the log.",
           "scope": "resource",
           "minimum": 0
+        },
+        "jjx.useVSCodeAsJJEditor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use VS Code as the editor for jj commands that require one (e.g., jj describe without -m)",
+          "scope": "resource"
         }
       }
     },
@@ -745,10 +751,10 @@
     ]
   },
   "scripts": {
-    "build": "npm run check-types && npm run lint && node esbuild.js --production && cp -r src/webview dist/ && cp src/config.toml dist/ && mkdir -p dist/codicons && cp -r node_modules/@vscode/codicons/dist/* dist/codicons/ && npm run build:fakeeditor && mkdir -p dist/fakeeditor/zig-out/bin && cp -r src/fakeeditor/zig-out/bin/. dist/fakeeditor/zig-out/bin/",
+    "build": "npm run check-types && npm run lint && node esbuild.js --production && cp -r src/webview dist/ && cp src/config.toml dist/ && cp src/jj-editor.sh dist/ && chmod +x dist/jj-editor.sh && mkdir -p dist/codicons && cp -r node_modules/@vscode/codicons/dist/* dist/codicons/ && npm run build:fakeeditor && mkdir -p dist/fakeeditor/zig-out/bin && cp -r src/fakeeditor/zig-out/bin/. dist/fakeeditor/zig-out/bin/",
     "build:fakeeditor": "cd src/fakeeditor && ./build_all_platforms.sh",
     "vscode:prepublish": "npm run build",
-    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "compile": "npm run check-types && npm run lint && node esbuild.js && cp src/jj-editor.sh dist/ && chmod +x dist/jj-editor.sh",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
