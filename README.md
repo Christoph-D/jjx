@@ -102,6 +102,7 @@ The following settings can be configured in VS Code's settings:
 | `jjx.openDiffAction`                | `"diff"`    | Action when clicking a file: `"diff"` (compare to parent) or `"file"` (open directly)             |
 | `jjx.elideImmutableCommits`         | `true`      | Hide chains of immutable commits between relevant commits in the graph view                       |
 | `jjx.numberOfImmutableParentsInLog` | `1`         | Number of immutable parent commits to show in the log                                             |
+| `jjx.useVSCodeAsJJEditor`           | `true`      | Use VS Code as the editor for jj commands that require one (e.g., jj describe without -m)         |
 
 ## 🐛 Known issues
 
