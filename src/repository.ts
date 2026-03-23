@@ -4,12 +4,16 @@ import * as vscode from "vscode";
 import fs from "fs/promises";
 import spawn from "cross-spawn";
 import { SHOW_TEMPLATE, STATUS_TEMPLATE, LOG_TEMPLATE, OPERATION_TEMPLATE } from "./templateBuilder";
-import { logger } from "./logger";
 import { ImmutableError, convertJJErrors, parseJJError } from "./errors";
-import { fakeEditorPath } from "./config";
 import { spawnJJ, handleJJCommand } from "./process";
-import { prepareFakeeditor, filepathToFileset, parseRenamePaths } from "./fakeeditor";
-import { getDiffToolPath, expectDiffToolRequest } from "./jjEditor";
+import { parseRenamePaths, filepathToFileset } from "./utils";
+import {
+  getDiffToolPath,
+  expectDiffToolRequest,
+  getSquashToolPath,
+  expectSquashToolRequest,
+  completeSquashToolRequest,
+} from "./jjEditor";
 import { pathEquals } from "./utils";
 import { TIMEOUTS } from "./constants";
 import type {
@@ -550,141 +554,82 @@ export class JJRepository {
     content: string;
     ignoreImmutable?: boolean;
   }): Promise<void> {
-    const { succeedFakeeditor, cleanup, envVars } = await prepareFakeeditor();
-    return new Promise<void>((resolve, reject) => {
-      const childProcess = this.spawnJJ(
-        [
-          "squash",
-          "--from",
-          fromRev,
-          "--into",
-          toRev,
-          "--interactive",
-          "--tool",
-          `${fakeEditorPath}`,
-          "--use-destination-message",
-          ...(ignoreImmutable ? ["--ignore-immutable"] : []),
-        ],
-        {
-          timeout: TIMEOUTS.FAKE_EDITOR,
-          cwd: this.repositoryRoot,
-          env: { ...process.env, ...envVars },
-        },
-      );
+    const squashToolSh = getSquashToolPath();
+    if (!squashToolSh) {
+      throw new Error("Squash tool not initialized. Ensure useVSCodeAsJJEditor is enabled.");
+    }
 
-      let fakeEditorOutputBuffer = "";
-      const FAKEEDITOR_SENTINEL = "FAKEEDITOR_OUTPUT_END\n";
+    const requestId = crypto.randomUUID();
+    const pathPromise = expectSquashToolRequest(requestId);
 
-      childProcess.stdout!.on("data", (data: Buffer) => {
-        fakeEditorOutputBuffer += data.toString();
+    const childProcess = this.spawnJJ(
+      [
+        "squash",
+        "--from",
+        fromRev,
+        "--into",
+        toRev,
+        "--interactive",
+        "--tool=jjx-vscode-squash",
+        "--config",
+        `merge-tools.jjx-vscode-squash.program="${squashToolSh}"`,
+        "--use-destination-message",
+        ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+      ],
+      {
+        timeout: TIMEOUTS.SQUASH_TOOL,
+        cwd: this.repositoryRoot,
+        env: { ...process.env, VSCODE_JJ_SQUASH_REQUEST_ID: requestId },
+      },
+    );
 
-        if (!fakeEditorOutputBuffer.includes(FAKEEDITOR_SENTINEL)) {
-          return;
-        }
-
-        const output = fakeEditorOutputBuffer.substring(0, fakeEditorOutputBuffer.indexOf(FAKEEDITOR_SENTINEL));
-
-        const lines = output.trim().split("\n");
-        const fakeEditorPID = lines[0];
-        const fakeEditorCWD = lines[1];
-        const leftFolderPath = lines[3];
-        const rightFolderPath = lines[4];
-
-        if (lines.length !== 5) {
-          if (fakeEditorPID) {
-            try {
-              process.kill(parseInt(fakeEditorPID), "SIGTERM");
-            } catch (killError) {
-              logger.error(
-                `Failed to kill fakeeditor (PID: ${fakeEditorPID}) after validation error: ${killError instanceof Error ? killError : ""}`,
-              );
-            }
-          }
-          void cleanup();
-          reject(new Error(`Unexpected output from fakeeditor: ${output}`));
-          return;
-        }
-
-        if (
-          !fakeEditorPID ||
-          !fakeEditorCWD ||
-          !leftFolderPath ||
-          !leftFolderPath.endsWith("left") ||
-          !rightFolderPath ||
-          !rightFolderPath.endsWith("right")
-        ) {
-          if (fakeEditorPID) {
-            try {
-              process.kill(parseInt(fakeEditorPID), "SIGTERM");
-            } catch (killError) {
-              logger.error(
-                `Failed to kill fakeeditor (PID: ${fakeEditorPID}) after validation error: ${killError instanceof Error ? killError : ""}`,
-              );
-            }
-          }
-          void cleanup();
-          reject(new Error(`Unexpected output from fakeeditor: ${output}`));
-          return;
-        }
-
-        const leftFolderAbsolutePath = path.isAbsolute(leftFolderPath)
-          ? leftFolderPath
-          : path.join(fakeEditorCWD, leftFolderPath);
-        const rightFolderAbsolutePath = path.isAbsolute(rightFolderPath)
-          ? rightFolderPath
-          : path.join(fakeEditorCWD, rightFolderPath);
-
-        const relativeFilePath = path.relative(this.repositoryRoot, filepath);
-        const fileToEdit = path.join(rightFolderAbsolutePath, relativeFilePath);
-
-        void fs
-          .rm(rightFolderAbsolutePath, { recursive: true, force: true })
-          .then(() => fs.mkdir(rightFolderAbsolutePath, { recursive: true }))
-          .then(() =>
-            fs.cp(leftFolderAbsolutePath, rightFolderAbsolutePath, {
-              recursive: true,
-            }),
-          )
-          .then(() => fs.rm(fileToEdit, { force: true }))
-          .then(() => fs.writeFile(fileToEdit, content))
-          .then(succeedFakeeditor)
-          .catch((error) => {
-            if (fakeEditorPID) {
-              try {
-                process.kill(parseInt(fakeEditorPID), "SIGTERM");
-              } catch (killError) {
-                logger.error(
-                  `Failed to send SIGTERM to fakeeditor (PID: ${fakeEditorPID}) during error handling: ${killError instanceof Error ? killError : ""}`,
-                );
-              }
-            }
-            void cleanup();
-            reject(error); // eslint-disable-line @typescript-eslint/prefer-promise-reject-errors
-          });
-      });
-
+    const jjExit = new Promise<void>((resolve, reject) => {
       let errOutput = "";
       childProcess.stderr!.on("data", (data: Buffer) => {
         errOutput += data.toString();
       });
 
+      childProcess.on("error", (error: Error) => {
+        reject(new Error(`Spawning command failed: ${error.message}`));
+      });
+
       childProcess.on("close", (code, signal) => {
-        void cleanup();
         if (code) {
-          reject(
-            new Error(
-              `Command failed with exit code ${code}.\nstdout: ${fakeEditorOutputBuffer}\nstderr: ${errOutput}`,
-            ),
-          );
+          reject(new Error(`Command failed with exit code ${code}.\nstderr: ${errOutput}`));
         } else if (signal) {
-          reject(
-            new Error(`Command failed with signal ${signal}.\nstdout: ${fakeEditorOutputBuffer}\nstderr: ${errOutput}`),
-          );
+          reject(new Error(`Command failed with signal ${signal}.\nstderr: ${errOutput}`));
         } else {
           resolve();
         }
       });
-    }).catch(convertJJErrors);
+    });
+
+    try {
+      const { leftPath, rightPath } = await pathPromise;
+
+      const leftFolderAbsolutePath = path.isAbsolute(leftPath) ? leftPath : path.join(this.repositoryRoot, leftPath);
+      const rightFolderAbsolutePath = path.isAbsolute(rightPath)
+        ? rightPath
+        : path.join(this.repositoryRoot, rightPath);
+
+      const relativeFilePath = path.relative(this.repositoryRoot, filepath);
+      const fileToEdit = path.join(rightFolderAbsolutePath, relativeFilePath);
+
+      await fs.rm(rightFolderAbsolutePath, { recursive: true, force: true });
+      await fs.mkdir(rightFolderAbsolutePath, { recursive: true });
+      await fs.cp(leftFolderAbsolutePath, rightFolderAbsolutePath, {
+        recursive: true,
+      });
+      await fs.rm(fileToEdit, { force: true });
+      await fs.writeFile(fileToEdit, content);
+
+      completeSquashToolRequest(requestId, true);
+    } catch (error) {
+      completeSquashToolRequest(requestId, false);
+      throw error;
+    }
+
+    await jjExit.catch(convertJJErrors);
   }
 
   async log(rev: string, limit: number = 100): Promise<LogEntry[]> {

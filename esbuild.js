@@ -37,17 +37,14 @@ function copyAssets() {
   copyFile("src/jj-editor.sh", "dist/jj-editor.sh");
   copyFile("src/jj-merge-editor.sh", "dist/jj-merge-editor.sh");
   copyFile("src/jj-diff-tool.sh", "dist/jj-diff-tool.sh");
+  copyFile("src/jj-squash-tool.sh", "dist/jj-squash-tool.sh");
   fs.chmodSync("dist/jj-editor.sh", 0o755);
   fs.chmodSync("dist/jj-merge-editor.sh", 0o755);
   fs.chmodSync("dist/jj-diff-tool.sh", 0o755);
+  fs.chmodSync("dist/jj-squash-tool.sh", 0o755);
 
   if (production) {
     copyDir("node_modules/@vscode/codicons/dist", "dist/codicons");
-
-    execSync("npm run build:fakeeditor", { stdio: "inherit" });
-
-    ensureDir("dist/fakeeditor/zig-out/bin");
-    copyDir("src/fakeeditor/zig-out/bin", "dist/fakeeditor/zig-out/bin");
   }
 }
 
@@ -179,22 +176,39 @@ async function main() {
       plugins: [esbuildProblemMatcherPlugin],
     });
 
+    // Build jj-squash-tool-main.ts (standalone script for squash tool)
+    const jjSquashToolCtx = await esbuild.context({
+      entryPoints: ["src/jj-squash-tool-main.ts"],
+      bundle: true,
+      format: "cjs",
+      minify: production,
+      sourcemap: !production,
+      sourcesContent: false,
+      platform: "node",
+      outfile: "dist/jj-squash-tool-main.js",
+      logLevel: "silent",
+      plugins: [esbuildProblemMatcherPlugin],
+    });
+
     if (watch) {
       copyAssets();
       await ctx.watch();
       await jjEditorCtx.watch();
       await jjMergeEditorCtx.watch();
       await jjDiffToolCtx.watch();
+      await jjSquashToolCtx.watch();
     } else {
       await ctx.rebuild();
       await jjEditorCtx.rebuild();
       await jjMergeEditorCtx.rebuild();
       await jjDiffToolCtx.rebuild();
+      await jjSquashToolCtx.rebuild();
       copyAssets();
       await ctx.dispose();
       await jjEditorCtx.dispose();
       await jjMergeEditorCtx.dispose();
       await jjDiffToolCtx.dispose();
+      await jjSquashToolCtx.dispose();
     }
   }
 }

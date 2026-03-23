@@ -21,6 +21,7 @@ interface MergeEditorTabInput {
 let editorEnv: Record<string, string> = {};
 let mergeEditorPath = "";
 let diffToolPath = "";
+let squashToolPath = "";
 
 export function getJjEditorEnv(): Record<string, string> {
   return editorEnv;
@@ -32,6 +33,10 @@ export function getMergeEditorPath(): string {
 
 export function getDiffToolPath(): string {
   return diffToolPath;
+}
+
+export function getSquashToolPath(): string {
+  return squashToolPath;
 }
 
 interface DiffToolRequest {
@@ -53,6 +58,33 @@ export function expectDiffToolRequest(
   return new Promise((resolve, reject) => {
     pendingDiffRequests.set(requestId, { resolve, reject });
   });
+}
+
+interface SquashToolRequest {
+  requestId: string;
+  leftPath: string;
+  rightPath: string;
+}
+
+interface PendingSquashRequest {
+  resolve: (data: { leftPath: string; rightPath: string }) => void;
+  reject: (error: Error) => void;
+  complete: (success: boolean) => void;
+}
+
+const pendingSquashRequests = new Map<string, PendingSquashRequest>();
+
+export function expectSquashToolRequest(requestId: string): Promise<{ leftPath: string; rightPath: string }> {
+  return new Promise((resolve, reject) => {
+    pendingSquashRequests.set(requestId, { resolve, reject, complete: () => {} });
+  });
+}
+
+export function completeSquashToolRequest(requestId: string, success: boolean): void {
+  const pending = pendingSquashRequests.get(requestId);
+  if (pending) {
+    pending.complete(success);
+  }
 }
 
 export class JJEditor implements IIPCHandler {
@@ -163,6 +195,41 @@ export class JJDiffTool implements IIPCHandler {
     pendingDiffRequests.delete(request.requestId);
     pending.resolve({ leftFiles: request.leftFiles, rightFiles: request.rightFiles });
     return Promise.resolve(true);
+  }
+
+  dispose(): void {
+    this.disposable.dispose();
+  }
+}
+
+export class JJSquashTool implements IIPCHandler {
+  private disposable = EmptyDisposable;
+
+  constructor(ipc: IPCServer, extensionDir: string) {
+    this.disposable = ipc.registerHandler("jj-squash-tool", this);
+
+    squashToolPath = path.join(extensionDir, "jj-squash-tool.sh");
+
+    editorEnv = {
+      ...editorEnv,
+      VSCODE_JJ_SQUASH_NODE: process.execPath,
+      VSCODE_JJ_SQUASH_MAIN: path.join(extensionDir, "jj-squash-tool-main.js"),
+    };
+  }
+
+  handle(request: SquashToolRequest): Promise<boolean> {
+    const pending = pendingSquashRequests.get(request.requestId);
+    if (!pending) {
+      return Promise.resolve(false);
+    }
+
+    return new Promise((resolve) => {
+      pending.resolve({ leftPath: request.leftPath, rightPath: request.rightPath });
+      pending.complete = (success: boolean) => {
+        pendingSquashRequests.delete(request.requestId);
+        resolve(success);
+      };
+    });
   }
 
   dispose(): void {

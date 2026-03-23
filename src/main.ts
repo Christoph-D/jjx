@@ -15,7 +15,7 @@ import { ILinesDiffComputer, LinesDiff } from "./vendor/vscode/editor/common/dif
 import { match } from "arktype";
 import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals } from "./utils";
 import { createIPCServer } from "./ipc/ipcServer";
-import { JJEditor, JJMergeEditor, JJDiffTool, getMergeEditorPath } from "./jjEditor";
+import { JJEditor, JJMergeEditor, JJDiffTool, JJSquashTool, getMergeEditorPath } from "./jjEditor";
 import { handleJJCommand } from "./process";
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -39,6 +39,8 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(jjMergeEditor);
     const jjDiffTool = new JJDiffTool(ipcServer, distDir);
     context.subscriptions.push(jjDiffTool);
+    const jjSquashTool = new JJSquashTool(ipcServer, distDir);
+    context.subscriptions.push(jjSquashTool);
     logger.info("JJEditor IPC server initialized");
   } catch (error) {
     logger.error(`Failed to initialize JJEditor: ${error instanceof Error ? error.message : String(error)}`);

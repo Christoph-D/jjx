@@ -3,4 +3,3 @@
 
 import "./main.test";
 import "./repository.test";
-import "./fakeeditor.test";

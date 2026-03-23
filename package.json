@@ -746,7 +746,6 @@
   },
   "scripts": {
     "build": "npm run check-types && npm run lint && node esbuild.js --production",
-    "build:fakeeditor": "cd src/fakeeditor && ./build_all_platforms.sh",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
