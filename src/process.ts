@@ -13,7 +13,7 @@ export function spawnJJ(jjPath: string, args: string[], options: Parameters<type
     env: { ...process.env, ...jjEditorEnv, ...options.env },
   };
 
-  logger.info(`spawn: ${JSON.stringify([jjPath, ...args])} ${JSON.stringify({ spawnOptions: finalOptions })}`);
+  logger.trace(`spawn: ${JSON.stringify([jjPath, ...args])} ${JSON.stringify({ spawnOptions: finalOptions })}`);
 
   return spawn(jjPath, args, finalOptions);
 }
