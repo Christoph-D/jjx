@@ -79,6 +79,15 @@ export class TestRepo {
     await fs.writeFile(fullPath, content);
   }
 
+  async readFile(relativePath: string): Promise<string> {
+    const fullPath = path.join(this.repoPath, relativePath);
+    try {
+      return await fs.readFile(fullPath, "utf-8");
+    } catch {
+      throw new Error(`Failed to read file: ${relativePath}`);
+    }
+  }
+
   async commitFile(relativePath: string, content: string, message: string): Promise<string> {
     await this.writeFile(relativePath, content);
     return this.commit(message);
