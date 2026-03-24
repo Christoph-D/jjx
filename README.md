@@ -2,14 +2,12 @@
 
 ![logo](images/logo-small.png)
 
-> A Visual Studio Code extension for the [Jujutsu (jj) version control system](https://github.com/jj-vcs/jj). My
-> personal development fork of [Jujutsu Kaizen](https://github.com/keanemind/jjk).
+**Jujutsu X** provides a native VS Code experience for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version control
+system—featuring an interactive commit graph, drag-and-drop rebasing, conflict resolution, and more.
+
+Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 
 ## 🚀 Features
-
-The goal of this extension is to bring the great UX of Jujutsu into the VS Code UI.
-
-Here's what you can do so far:
 
 ### 🔗 Graph view
 
@@ -24,7 +22,7 @@ Here's what you can do so far:
   ![elided commits](images/elided-commits.gif)
 - Right-click on a change for a context menu, for example to abandon the change
 - Select a change to see its affected files and diffs
-- Create merge changes with shift-select
+- Create merge changes with shift-select and then pressing the "+" button
 - Drag & drop changes onto other changes
 
 ### ✋ Drag & drop operations
@@ -32,23 +30,26 @@ Here's what you can do so far:
 - Rebase a change (with or without descendants) onto/after/before any other change
 - Squash a change into any other change
 - Duplicate a change onto/after/before any other change
+- Apply the reverse of change (revert) onto/after/before any other change
 
 ### 📁 File management
 
-- Track file statuses in the working copy
-- Monitor file statuses across all parent changes
-- View detailed file diffs for working copy and parent modifications
+- Show changed files in the working copy and parent changes
+- Show changed files in the selected change when clicking on a change in the graph
+- Right-click context menu: View as diff, open at revision, open in working copy, copy paths
+- Configurable file click action: View as diff, open at revision, open in working copy
 - Line-by-line blame annotations (optional)
 
 ### 💫 Change management
 
-- Quickly commit with Ctrl+Enter
-- Support both the
-  [squash workflow](https://steveklabnik.github.io/jujutsu-tutorial/real-world-workflows/the-squash-workflow.html) and
-  the [edit workflow](https://steveklabnik.github.io/jujutsu-tutorial/real-world-workflows/the-edit-workflow.html)
-- Move changes between working copy and parents  
-  ![squash](images/squash.png)
-- Move specific lines from the working copy to its parent changes ![squash range](images/squash_range.webp)
+- Quickly commit with Ctrl+Enter without an editor
+- Ctrl+Enter with an empty description opens the full editor
+- Commit messages when describing or squashing changes open in the full VS Code editor
+- Flexible configuration supports both the
+  [squash workflow](https://steveklabnik.github.io/jujutsu-tutorial/real-world-workflows/the-squash-workflow.html), the
+  [edit workflow](https://steveklabnik.github.io/jujutsu-tutorial/real-world-workflows/the-edit-workflow.html), and more
+- Move changes between working copy and parents
+- Move specific lines from the working copy to its parent changes
 - Discard changes
 
 ### ⚠️ Conflicts
@@ -63,6 +64,10 @@ Here's what you can do so far:
 - Show divergent changes in the graph and change view
 - Allow all meaningful operations on divergent changes
 
+### 🙈 Hidden changes
+
+- Properly render hidden changes in the graph, for example when a change with a remote bookmark is rewritten locally
+
 ### 🏷️ Bookmark/Tag management
 
 - Create, move, and delete bookmarks
@@ -74,7 +79,7 @@ Here's what you can do so far:
 
 - Show workspace labels in the graph view  
   ![workspaces](images/workspaces.png)
-- Handle "workspace is stale" errors
+- Handle "workspace is stale" errors by prompting the user to click a button "update stale workspace"
 
 ### 🔄 Operation management
 
