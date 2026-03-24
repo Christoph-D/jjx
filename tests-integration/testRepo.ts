@@ -88,6 +88,11 @@ export class TestRepo {
     }
   }
 
+  async deleteFile(relativePath: string): Promise<void> {
+    const fullPath = path.join(this.repoPath, relativePath);
+    await fs.unlink(fullPath);
+  }
+
   async commitFile(relativePath: string, content: string, message: string): Promise<string> {
     await this.writeFile(relativePath, content);
     return this.commit(message);
