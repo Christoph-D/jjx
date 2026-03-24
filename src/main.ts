@@ -1440,9 +1440,10 @@ export async function activate(context: vscode.ExtensionContext) {
           const { fileStatuses } = await repo.show(changeId);
           const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
 
-          const beforeUri = toJJUri(vscode.Uri.file(filePath), {
-            diffOriginalRev: changeId,
-          });
+          const beforeUri =
+            fileStatus?.type === "A"
+              ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
+              : toJJUri(vscode.Uri.file(filePath), { diffOriginalRev: changeId });
           const afterUri =
             fileStatus?.type === "D"
               ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
