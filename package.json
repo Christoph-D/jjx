@@ -387,17 +387,17 @@
         {
           "command": "jj.openDiffResourceState",
           "when": "scmProvider == jj",
-          "group": "1_modification"
+          "group": "1_modification@1"
         },
         {
           "command": "jj.openFileAtRevision",
           "when": "scmProvider == jj",
-          "group": "1_modification"
+          "group": "1_modification@2"
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
           "when": "scmProvider == jj && scmResourceGroup != @",
-          "group": "1_modification"
+          "group": "1_modification@3"
         },
         {
           "command": "jj.copyPath",
