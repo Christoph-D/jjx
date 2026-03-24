@@ -1,5 +1,66 @@
 # Change Log
 
+## 1.1.0
+
+### New Features
+
+#### Support Conflicted Bookmarks and Tags
+
+- **Conflicted bookmarks/tags** - Shown with `??` suffix when conflicted
+
+#### New File Context Menu
+
+- **View as Diff** - Open the file as a diff comparing to its parent
+- **Open File at Revision** - Open the file as it exists at the selected revision
+- **Open File in Working Copy** - Open the current working copy version of the file
+- **Copy Path** - Copy the full absolute path to the clipboard
+- **Copy Relative Path** - Copy the path relative to the repository root
+
+#### New File View Options
+
+- **Configurable file click action** - Choose between diff, at-revision, or working-copy view (default changed to diff)
+- **View file at revision** - Open files at their specific revision
+- **View file in working copy** - Open the working copy version of any file
+
+#### Drag & Drop Enhancements
+
+- **HTML5 drag&drop API** - Modern drag&drop implementation for better reliability
+- **Reorganized context menu** - Submenus for "Onto, After, Before" options
+- **Revert a change** - New revert action in the drag&drop menu
+- **Improved tooltips** - Tooltips hide during drag&drop or when menus are open
+
+#### More Reliable Editor Integration
+
+- **IPC-based editor** - VS Code editor integration for jj commands through IPC
+
+#### Configuration
+
+- `jjx.fileClickAction` - Renamed from `openDiffAction`, now with three options: `diff` (default), `at-revision`, or
+  `working-copy`
+- `jjx.numberOfImmutableParentsInLog` - New setting to control the number of immutable parent commits to show in the log
+  (default: 1)
+
+### Bug Fixes
+
+- Context menu submenus stay open while hovered
+- Submenus positioned vertically within visible area
+- Proper diff view for added and deleted files
+- Consistent Title Case capitalization for UI elements
+- Hidden "Selected Commit" section when already shown as Parent
+- Include revision in tab title when opening files at a specific revision
+
+### Testing
+
+- Added comprehensive Playwright integration tests for all major features
+- Tests for drag&drop, bookmarks, tags, rebase, duplicate, and more
+
+### Removed
+
+- **Zig build dependency** - No longer needed for building the extension
+- **Fakeeditor binary** - Replaced with IPC-based VS Code editor integration for jj commands
+- **Old vscode-test suite** - Replaced with Playwright integration tests
+- `jjx.fakeEditorPath` configuration option - No longer needed
+
 ## 1.0.0 - Initial Release
 
 Jujutsu X is a fork of [Jujutsu Kaizen](https://github.com/keanemind/jjk), a VS Code extension for the
