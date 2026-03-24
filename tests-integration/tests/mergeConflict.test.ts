@@ -17,9 +17,10 @@ test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, wo
   const scmView = workbox.locator(".scm-view").first();
   await scmView.waitFor();
 
-  const conflictedFile = workbox.locator(".scm-view").getByText("test.txt").first();
-  await expect(conflictedFile).toBeVisible();
-  await conflictedFile.click();
+  // Wait for the files to appear (two in the parent commits, one in the working copy)
+  const conflictedFiles = scmView.getByRole("treeitem", { name: /test\.txt/ });
+  await expect(conflictedFiles).toHaveCount(3);
+  await conflictedFiles.first().click();
 
   const mergeEditorLeft = workbox.locator('.monaco-editor[role="code"][data-uri*="left_test.txt"]');
   await expect(mergeEditorLeft).toBeVisible();

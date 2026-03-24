@@ -127,7 +127,14 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     const userDataDir = path.join(cachePath, "user-data");
     const userDir = path.join(userDataDir, "User");
     await fs.promises.mkdir(userDir, { recursive: true });
-    await fs.promises.writeFile(path.join(userDir, "settings.json"), '{"git.enabled": false}');
+    await fs.promises.writeFile(
+      path.join(userDir, "settings.json"),
+      JSON.stringify({
+        "git.enabled": false,
+        "diffEditor.renderSideBySide": true,
+        "diffEditor.renderSideBySideInlineBreakpoint": 50,
+      }),
+    );
 
     const electronApp = await _electron.launch({
       executablePath: vscodePath,

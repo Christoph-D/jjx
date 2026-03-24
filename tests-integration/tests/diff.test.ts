@@ -6,9 +6,13 @@ test("shows diff when clicking modified file in Working Copy", async ({ graphFra
 
   await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
 
-  const fileItem = workbox.getByRole("treeitem", { name: /test\.txt/ }).first();
-  await expect(fileItem).toBeVisible();
-  await fileItem.click();
+  // Wait for both test.txt files to appear (Working Copy + Parent Commit)
+  // Working Copy file appears after extension detects the change
+  const testFiles = workbox.getByRole("treeitem", { name: /test\.txt/ });
+  await expect(testFiles).toHaveCount(2, { timeout: 10000 });
+
+  // Click the first one (Working Copy)
+  await testFiles.first().click();
 
   const diffEditor = workbox.locator(".editor-instance");
   await expect(diffEditor).toBeVisible();
@@ -23,8 +27,12 @@ test("shows diff when clicking modified file in Parent Commit", async ({ graphFr
 
   await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
 
-  const fileItem = workbox.getByRole("treeitem", { name: /test\.txt/ }).nth(1);
-  await expect(fileItem).toBeVisible();
+  // Wait for both test.txt files to appear (Working Copy + Parent Commit)
+  const testFiles = workbox.getByRole("treeitem", { name: /test\.txt/ });
+  await expect(testFiles).toHaveCount(2, { timeout: 10000 });
+
+  // Click the second one (Parent Commit)
+  const fileItem = testFiles.nth(1);
   await fileItem.click();
 
   const diffEditor = workbox.locator(".editor-instance");
@@ -32,8 +40,8 @@ test("shows diff when clicking modified file in Parent Commit", async ({ graphFr
   await expect(diffEditor.getByText("A", { exact: true }).first()).toBeVisible();
   await expect(diffEditor.getByText("B", { exact: true }).first()).toBeVisible();
 
-  const fileItemWorkingCopy = workbox.getByRole("treeitem", { name: /test\.txt/ }).nth(0);
-  await expect(fileItemWorkingCopy).toBeVisible();
+  // Click the first one (Working Copy)
+  const fileItemWorkingCopy = testFiles.first();
   await fileItemWorkingCopy.click();
 
   const diffEditorWorkingCopy = workbox.locator(".editor-instance");
