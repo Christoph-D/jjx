@@ -53,6 +53,12 @@
         "icon": "$(go-to-file)"
       },
       {
+        "command": "jj.openFileAtRevision",
+        "title": "Open File",
+        "category": "Jujutsu",
+        "icon": "$(go-to-file)"
+      },
+      {
         "command": "jj.openFileEditor",
         "title": "View as File",
         "category": "Jujutsu",
@@ -384,7 +390,7 @@
           "group": "1_modification"
         },
         {
-          "command": "jj.openFileResourceState",
+          "command": "jj.openFileAtRevision",
           "when": "scmProvider == jj",
           "group": "1_modification"
         },
@@ -454,6 +460,10 @@
       "commandPalette": [
         {
           "command": "jj.openFileResourceState",
+          "when": "false"
+        },
+        {
+          "command": "jj.openFileAtRevision",
           "when": "false"
         },
         {
