@@ -1437,14 +1437,18 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("Repository not found");
           }
 
+          const { fileStatuses } = await repo.show(changeId);
+          const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
+
           const beforeUri = toJJUri(vscode.Uri.file(filePath), {
             diffOriginalRev: changeId,
           });
           const afterUri =
-            changeId === "@" ? vscode.Uri.file(filePath) : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
-
-          const { fileStatuses } = await repo.show(changeId);
-          const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
+            fileStatus?.type === "D"
+              ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
+              : changeId === "@"
+                ? vscode.Uri.file(filePath)
+                : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
 
           const diffTitleSuffix = changeId === "@" ? "(Working Copy)" : `(${changeId.substring(0, 8)})`;
 
