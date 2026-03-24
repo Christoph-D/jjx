@@ -643,6 +643,17 @@ function getResourceStateCommand(
     };
   }
   if (fileStatus.type === "D") {
+    if (fileClickAction === "diff") {
+      return {
+        title: "Open",
+        command: "vscode.diff",
+        arguments: [
+          beforeUri,
+          toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true }),
+          `${fileStatus.file} ${diffTitleSuffix}`,
+        ],
+      };
+    }
     return {
       title: "Open",
       command: "vscode.open",
