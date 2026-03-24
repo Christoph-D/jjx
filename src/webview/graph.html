@@ -8,11 +8,9 @@
   <body>
     <div id="context-menu" class="context-menu">
       <div class="context-menu-item" data-action="edit">Edit This Change</div>
-      <div class="context-menu-item" data-action="copyId">Copy Change ID</div>
-      <div class="context-menu-item" data-action="abandon">Abandon Change</div>
       <div class="context-menu-item" data-action="describe">Describe Change...</div>
+      <div class="context-menu-separator"></div>
       <div class="context-menu-item" data-action="createBookmark">Create Bookmark...</div>
-      <div class="context-menu-item" data-action="createTag">Create Tag...</div>
       <div class="context-menu-item has-submenu" data-action="moveBookmark">
         Move Bookmark Here
         <div class="context-submenu" id="bookmark-submenu"></div>
@@ -21,10 +19,15 @@
         Delete Bookmark
         <div class="context-submenu" id="delete-bookmark-submenu"></div>
       </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" data-action="createTag">Create Tag...</div>
       <div class="context-menu-item has-submenu" data-action="deleteTag">
         Delete Tag
         <div class="context-submenu" id="delete-tag-submenu"></div>
       </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" data-action="copyId">Copy Change ID</div>
+      <div class="context-menu-item" data-action="abandon">Abandon Change</div>
     </div>
     <div id="rebase-menu" class="context-menu">
       <div class="context-menu-item" data-action="rebaseOnto">Rebase Onto This Change</div>
