@@ -34,7 +34,7 @@ jobs:
           tool: jj-cli
 
       - name: Install Playwright browsers
-        run: cd tests-integration && npx playwright install
+        run: npx playwright install
 
       - name: Playwright tests
         run: npm run playwright-test
