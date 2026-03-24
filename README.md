@@ -67,6 +67,8 @@ Here's what you can do so far:
 
 - Create, move, and delete bookmarks
 - Set and delete tags
+- Show conflicted bookmarks and tags with `??` suffix
+- Show out-of-sync bookmarks and tags with `*` suffix
 
 ### 💼 Multi-Workspace support
 

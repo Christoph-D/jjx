@@ -223,6 +223,7 @@ const LOG_ENTRY_FIELDS: TemplateFields = {
     contents: {
       name: { type: "string", expr: "b.name()" },
       synced: { type: "boolean", expr: "b.synced()" },
+      conflict: { type: "boolean", expr: "b.conflict()" },
     },
   },
   remote_bookmarks: {
@@ -301,6 +302,7 @@ const LOG_ENTRY_FIELDS: TemplateFields = {
     contents: {
       name: { type: "string", expr: "t.name()" },
       synced: { type: "boolean", expr: "t.synced()" },
+      conflict: { type: "boolean", expr: "t.conflict()" },
     },
   },
   remote_tags: {

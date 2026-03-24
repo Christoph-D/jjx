@@ -7,7 +7,7 @@ import fs from "fs";
 import { execSync, spawn, type ChildProcess } from "child_process";
 import { TestRepo, newTestRepo } from "../testRepo";
 
-export { TestRepo };
+export { TestRepo, newTestRepo };
 
 export type TestOptions = {
   vscodeVersion: string;

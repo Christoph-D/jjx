@@ -162,6 +162,11 @@ body {
   content: "*";
 }
 
+.bookmark-pill.conflicted::after,
+.tag-pill.conflicted::after {
+  content: "??";
+}
+
 .edit-button {
   opacity: 0;
   background: none;
@@ -367,6 +372,11 @@ body {
 .tooltip-bookmark-pill.unsynced::after,
 .tooltip-tag-pill.unsynced::after {
   content: "*";
+}
+
+.tooltip-bookmark-pill.conflicted::after,
+.tooltip-tag-pill.conflicted::after {
+  content: "??";
 }
 
 .tooltip-summary {

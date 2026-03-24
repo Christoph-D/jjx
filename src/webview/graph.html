@@ -452,15 +452,15 @@
         if (hasBookmarksOrTags) {
           html += `<div class="tooltip-pills">`;
           localBookmarks.forEach((b) => {
-            const unsyncedClass = b.synced ? "" : " unsynced";
-            html += `<span class="tooltip-pill tooltip-bookmark-pill${unsyncedClass}">${escapeHtml(b.name)}</span>`;
+            const suffixClass = b.conflict ? " conflicted" : b.synced ? "" : " unsynced";
+            html += `<span class="tooltip-pill tooltip-bookmark-pill${suffixClass}">${escapeHtml(b.name)}</span>`;
           });
           remoteBookmarks.forEach((b) => {
             html += `<span class="tooltip-pill tooltip-bookmark-pill">${escapeHtml(b.name)}@${escapeHtml(b.remote)}</span>`;
           });
           localTags.forEach((t) => {
-            const unsyncedClass = t.synced ? "" : " unsynced";
-            html += `<span class="tooltip-pill tooltip-tag-pill${unsyncedClass}">${escapeHtml(t.name)}</span>`;
+            const suffixClass = t.conflict ? " conflicted" : t.synced ? "" : " unsynced";
+            html += `<span class="tooltip-pill tooltip-tag-pill${suffixClass}">${escapeHtml(t.name)}</span>`;
           });
           remoteTags.forEach((t) => {
             html += `<span class="tooltip-pill tooltip-tag-pill">${escapeHtml(t.name)}@${escapeHtml(t.remote)}</span>`;
@@ -655,7 +655,8 @@
           if (change.localBookmarks.length > 0) {
             change.localBookmarks.forEach((b) => {
               const pill = document.createElement("span");
-              pill.className = "pill bookmark-pill" + (b.synced ? "" : " unsynced");
+              const suffixClass = b.conflict ? " conflicted" : b.synced ? "" : " unsynced";
+              pill.className = "pill bookmark-pill" + suffixClass;
               pill.textContent = abbreviateName(b.name);
               pill.dataset.bookmark = b.name;
               nodeLabel.appendChild(pill);
@@ -675,7 +676,8 @@
           if (change.localTags.length > 0) {
             change.localTags.forEach((t) => {
               const pill = document.createElement("span");
-              pill.className = "pill tag-pill" + (t.synced ? "" : " unsynced");
+              const suffixClass = t.conflict ? " conflicted" : t.synced ? "" : " unsynced";
+              pill.className = "pill tag-pill" + suffixClass;
               pill.textContent = abbreviateName(t.name);
               pill.dataset.tag = t.name;
               nodeLabel.appendChild(pill);

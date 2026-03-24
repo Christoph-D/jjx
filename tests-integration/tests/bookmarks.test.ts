@@ -1,4 +1,5 @@
-import { test, expect } from "./baseTest";
+import { test, expect, newTestRepo } from "./baseTest";
+import path from "path";
 
 test("create and delete bookmark from context menu", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("test.txt", "content", "test commit");
@@ -86,4 +87,32 @@ test("move bookmark forward and backward with confirmation", async ({ graphFrame
 
   bookmark = await testRepo.getBookmark("test-bookmark");
   expect(bookmark?.description).toBe("commit 1");
+});
+
+test("conflicted bookmark shows both sides with conflicted class", async ({ graphFrame, testRepo }) => {
+  await testRepo.commitFile("a.txt", "content", "commit A");
+  await testRepo.jjCommand(["bookmark", "create", "test-bookmark"]);
+
+  const remotePath = path.join(testRepo.repoPath, "remote");
+  const remoteRepo = await newTestRepo(remotePath);
+
+  await testRepo.jjCommand(["git", "remote", "add", "origin", "remote"]);
+  await testRepo.jjCommand(["bookmark", "track", "test-bookmark", "--remote=origin"]);
+  await testRepo.jjCommand(["git", "push"]);
+
+  await remoteRepo.jjCommand(["new", "test-bookmark"]);
+  await remoteRepo.commitFile("b.txt", "content", "commit B");
+  await remoteRepo.jjCommand(["bookmark", "set", "test-bookmark"]);
+
+  await testRepo.jjCommand(["new", "test-bookmark"]);
+  await testRepo.commitFile("c.txt", "content", "commit C");
+  await testRepo.jjCommand(["bookmark", "set", "test-bookmark"]);
+
+  await testRepo.jjCommand(["git", "fetch"]);
+
+  const conflictedBookmarks = graphFrame.locator('.bookmark-pill.conflicted[data-bookmark="test-bookmark"]');
+  await expect(conflictedBookmarks).toHaveCount(2);
+
+  const allBookmarks = graphFrame.locator('.bookmark-pill[data-bookmark="test-bookmark"]');
+  await expect(allBookmarks).toHaveCount(2);
 });

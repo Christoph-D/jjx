@@ -41,6 +41,7 @@ export interface LogEntryFile {
 export interface LogEntryLocalRef {
   name: string;
   synced: boolean;
+  conflict: boolean;
 }
 
 export interface LogEntryRemoteRef {
