@@ -384,6 +384,16 @@
           "group": "1_modification"
         },
         {
+          "command": "jj.openFileResourceState",
+          "when": "scmProvider == jj",
+          "group": "1_modification"
+        },
+        {
+          "command": "jj.openFileInWorkingCopyResourceState",
+          "when": "scmProvider == jj && scmResourceGroup != @",
+          "group": "1_modification"
+        },
+        {
           "command": "jj.copyPath",
           "when": "scmProvider == jj",
           "group": "9_copypath"
