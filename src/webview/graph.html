@@ -1001,19 +1001,25 @@
                   const submenu = item.querySelector(".context-submenu");
                   if (submenu) {
                     const itemRect = item.getBoundingClientRect();
-                    submenu.classList.remove("left", "above", "below");
+                    submenu.classList.remove("left", "above", "below", "bottom-aligned");
                     submenu.style.display = "block";
                     const submenuRect = submenu.getBoundingClientRect();
                     submenu.style.display = "";
 
                     const fitsRight = itemRect.right + submenuRect.width <= viewportWidth - 10;
                     const fitsLeft = itemRect.left - submenuRect.width >= 10;
+                    const fitsBelow = itemRect.top + submenuRect.height <= viewportHeight - 10;
 
                     if (fitsRight) {
+                      if (!fitsBelow) {
+                        submenu.classList.add("bottom-aligned");
+                      }
                     } else if (fitsLeft) {
                       submenu.classList.add("left");
+                      if (!fitsBelow) {
+                        submenu.classList.add("bottom-aligned");
+                      }
                     } else {
-                      const fitsBelow = itemRect.bottom + submenuRect.height <= viewportHeight - 10;
                       const fitsAbove = itemRect.top - submenuRect.height >= 10;
 
                       if (fitsBelow) {
@@ -1130,19 +1136,25 @@
                 const submenu = item.querySelector(".context-submenu");
                 if (submenu) {
                   const itemRect = item.getBoundingClientRect();
-                  submenu.classList.remove("left", "above", "below");
+                  submenu.classList.remove("left", "above", "below", "bottom-aligned");
                   submenu.style.display = "block";
                   const submenuRect = submenu.getBoundingClientRect();
                   submenu.style.display = "";
 
                   const fitsRight = itemRect.right + submenuRect.width <= viewportWidth - 10;
                   const fitsLeft = itemRect.left - submenuRect.width >= 10;
+                  const fitsBelow = itemRect.top + submenuRect.height <= viewportHeight - 10;
 
                   if (fitsRight) {
+                    if (!fitsBelow) {
+                      submenu.classList.add("bottom-aligned");
+                    }
                   } else if (fitsLeft) {
                     submenu.classList.add("left");
+                    if (!fitsBelow) {
+                      submenu.classList.add("bottom-aligned");
+                    }
                   } else {
-                    const fitsBelow = itemRect.bottom + submenuRect.height <= viewportHeight - 10;
                     const fitsAbove = itemRect.top - submenuRect.height >= 10;
 
                     if (fitsBelow) {

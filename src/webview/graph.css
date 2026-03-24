@@ -288,6 +288,11 @@ body {
   top: 100%;
 }
 
+.context-submenu.bottom-aligned {
+  top: auto;
+  bottom: 0;
+}
+
 .context-submenu-item {
   padding: 6px 20px;
   cursor: pointer;
