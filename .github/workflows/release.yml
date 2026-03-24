@@ -53,10 +53,15 @@ jobs:
           VSIX_NAME="jjx-${VERSION}.vsix"
           echo "vsix_name=${VSIX_NAME}" >> $GITHUB_OUTPUT
 
+      - name: Extract release notes
+        run: |
+          awk '/^## /{if(p) exit; p=1; next} p{if(NF || started) print; if(NF) started=1}' CHANGELOG.md > release-notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.version.outputs.vsix_name }}
+          body_path: release-notes.md
 
       - name: Publish to VS Code Marketplace
         run: npx vsce publish
