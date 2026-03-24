@@ -229,6 +229,16 @@
         "title": "Open child change",
         "category": "Jujutsu",
         "icon": "$(arrow-right)"
+      },
+      {
+        "command": "jj.copyPath",
+        "title": "Copy Path",
+        "category": "Jujutsu"
+      },
+      {
+        "command": "jj.copyRelativePath",
+        "title": "Copy Relative Path",
+        "category": "Jujutsu"
       }
     ],
     "menus": {
@@ -369,6 +379,21 @@
       ],
       "scm/resourceState/context": [
         {
+          "command": "jj.openDiffResourceState",
+          "when": "scmProvider == jj",
+          "group": "1_modification"
+        },
+        {
+          "command": "jj.copyPath",
+          "when": "scmProvider == jj",
+          "group": "9_copypath"
+        },
+        {
+          "command": "jj.copyRelativePath",
+          "when": "scmProvider == jj",
+          "group": "9_copypath"
+        },
+        {
           "command": "jj.openFileResourceState",
           "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.openDiffAction == 'diff'",
           "group": "inline@1"
@@ -499,6 +524,14 @@
         },
         {
           "command": "jj.openChildChange",
+          "when": "false"
+        },
+        {
+          "command": "jj.copyPath",
+          "when": "false"
+        },
+        {
+          "command": "jj.copyRelativePath",
           "when": "false"
         }
       ]

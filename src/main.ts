@@ -1450,6 +1450,33 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("jj.copyPath", async (resourceState: vscode.SourceControlResourceState) => {
+      try {
+        await vscode.env.clipboard.writeText(resourceState.resourceUri.fsPath);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to copy path${error instanceof Error ? `: ${error.message}` : ""}`);
+      }
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("jj.copyRelativePath", async (resourceState: vscode.SourceControlResourceState) => {
+      try {
+        const repo = workspaceSCM.getRepositoryFromUri(resourceState.resourceUri);
+        if (!repo) {
+          throw new Error("Repository not found");
+        }
+        const relativePath = path.relative(repo.repositoryRoot, resourceState.resourceUri.fsPath);
+        await vscode.env.clipboard.writeText(relativePath);
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to copy relative path${error instanceof Error ? `: ${error.message}` : ""}`,
+        );
+      }
+    }),
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("jj.openFileInWorkingCopyEditor", async (uri: vscode.Uri) => {
       try {
         await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(uri.fsPath), {});
