@@ -8,5 +8,6 @@ dist/
 src/**/*.js
 src/**/*.js.map
 .jj
+.jj-workspaces
 test-results/
 tests-integration/.vscode-path
