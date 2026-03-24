@@ -14,7 +14,11 @@ test("rebase commit onto another via drag and drop", async ({ graphFrame, testRe
 
   await commitC.dragTo(commitA);
 
-  const rebaseOntoItem = graphFrame.locator('.context-menu-item[data-action="rebaseOnto"]');
+  const rebaseItem = graphFrame.locator('.context-menu-item[data-action="rebase"]');
+  await expect(rebaseItem).toBeVisible();
+  await rebaseItem.hover();
+
+  const rebaseOntoItem = graphFrame.locator('.context-submenu-item[data-action="rebaseOnto"]');
   await expect(rebaseOntoItem).toBeVisible();
   await rebaseOntoItem.click();
 
@@ -39,7 +43,11 @@ test("rebase after another commit via drag and drop", async ({ graphFrame, testR
 
   await commitC.dragTo(commitA);
 
-  const rebaseAfterItem = graphFrame.locator('.context-menu-item[data-action="rebaseAfter"]');
+  const rebaseItem = graphFrame.locator('.context-menu-item[data-action="rebase"]');
+  await expect(rebaseItem).toBeVisible();
+  await rebaseItem.hover();
+
+  const rebaseAfterItem = graphFrame.locator('.context-submenu-item[data-action="rebaseAfter"]');
   await expect(rebaseAfterItem).toBeVisible();
   await rebaseAfterItem.click();
 
@@ -64,7 +72,11 @@ test("rebase before another commit via drag and drop", async ({ graphFrame, test
 
   await commitC.dragTo(commitB);
 
-  const rebaseBeforeItem = graphFrame.locator('.context-menu-item[data-action="rebaseBefore"]');
+  const rebaseItem = graphFrame.locator('.context-menu-item[data-action="rebase"]');
+  await expect(rebaseItem).toBeVisible();
+  await rebaseItem.hover();
+
+  const rebaseBeforeItem = graphFrame.locator('.context-submenu-item[data-action="rebaseBefore"]');
   await expect(rebaseBeforeItem).toBeVisible();
   await rebaseBeforeItem.click();
 

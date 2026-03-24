@@ -30,26 +30,33 @@
       <div class="context-menu-item" data-action="abandon">Abandon Change</div>
     </div>
     <div id="rebase-menu" class="context-menu">
-      <div class="context-menu-item" data-action="rebaseOnto">Rebase Onto This Change</div>
-      <div class="context-menu-item" data-action="rebaseOntoWithDescendants">
-        Rebase Onto This Change (with Descendants)
+      <div class="context-menu-item has-submenu" data-action="rebase">
+        Rebase
+        <div class="context-submenu" id="rebase-submenu">
+          <div class="context-submenu-item" data-action="rebaseOnto">Onto</div>
+          <div class="context-submenu-item" data-action="rebaseAfter">After</div>
+          <div class="context-submenu-item" data-action="rebaseBefore">Before</div>
+        </div>
       </div>
-      <div class="context-menu-separator"></div>
-      <div class="context-menu-item" data-action="rebaseAfter">Rebase After This Change</div>
-      <div class="context-menu-item" data-action="rebaseAfterWithDescendants">
-        Rebase After This Change (with Descendants)
-      </div>
-      <div class="context-menu-separator"></div>
-      <div class="context-menu-item" data-action="rebaseBefore">Rebase Before This Change</div>
-      <div class="context-menu-item" data-action="rebaseBeforeWithDescendants">
-        Rebase Before This Change (with Descendants)
+      <div class="context-menu-item has-submenu" data-action="rebaseWithDescendants">
+        Rebase With Descendants
+        <div class="context-submenu" id="rebase-with-descendants-submenu">
+          <div class="context-submenu-item" data-action="rebaseOntoWithDescendants">Onto</div>
+          <div class="context-submenu-item" data-action="rebaseAfterWithDescendants">After</div>
+          <div class="context-submenu-item" data-action="rebaseBeforeWithDescendants">Before</div>
+        </div>
       </div>
       <div class="context-menu-separator"></div>
       <div class="context-menu-item" data-action="squashInto">Squash Into This Change</div>
       <div class="context-menu-separator"></div>
-      <div class="context-menu-item" data-action="duplicateOnto">Duplicate Onto This Change</div>
-      <div class="context-menu-item" data-action="duplicateAfter">Duplicate After This Change</div>
-      <div class="context-menu-item" data-action="duplicateBefore">Duplicate Before This Change</div>
+      <div class="context-menu-item has-submenu" data-action="duplicate">
+        Duplicate
+        <div class="context-submenu" id="duplicate-submenu">
+          <div class="context-submenu-item" data-action="duplicateOnto">Onto</div>
+          <div class="context-submenu-item" data-action="duplicateAfter">After</div>
+          <div class="context-submenu-item" data-action="duplicateBefore">Before</div>
+        </div>
+      </div>
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="stale-state" class="stale-state">
@@ -844,52 +851,66 @@
               const isDivergent = sourceIsDivergent || targetIsDivergent;
               const targetIsImmutable = change.branchType === "◆";
 
-              const rebaseItems = rebaseMenu.querySelectorAll(
-                '[data-action="rebaseOnto"], [data-action="rebaseOntoWithDescendants"], [data-action="rebaseAfter"], [data-action="rebaseAfterWithDescendants"]',
+              const rebaseItem = rebaseMenu.querySelector('[data-action="rebase"]');
+              const rebaseWithDescendantsItem = rebaseMenu.querySelector('[data-action="rebaseWithDescendants"]');
+              const rebaseOntoItem = rebaseMenu.querySelector('[data-action="rebaseOnto"]');
+              const rebaseAfterItem = rebaseMenu.querySelector('[data-action="rebaseAfter"]');
+              const rebaseBeforeItem = rebaseMenu.querySelector('[data-action="rebaseBefore"]');
+              const rebaseOntoWithDescendantsItem = rebaseMenu.querySelector(
+                '[data-action="rebaseOntoWithDescendants"]',
               );
-              const rebaseBeforeItems = rebaseMenu.querySelectorAll(
-                '[data-action="rebaseBefore"], [data-action="rebaseBeforeWithDescendants"]',
+              const rebaseAfterWithDescendantsItem = rebaseMenu.querySelector(
+                '[data-action="rebaseAfterWithDescendants"]',
+              );
+              const rebaseBeforeWithDescendantsItem = rebaseMenu.querySelector(
+                '[data-action="rebaseBeforeWithDescendants"]',
               );
               const squashItem = rebaseMenu.querySelector('[data-action="squashInto"]');
-              const duplicateItems = rebaseMenu.querySelectorAll(
-                '[data-action="duplicateOnto"], [data-action="duplicateAfter"], [data-action="duplicateBefore"]',
-              );
+              const duplicateItem = rebaseMenu.querySelector('[data-action="duplicate"]');
+              const duplicateOntoItem = rebaseMenu.querySelector('[data-action="duplicateOnto"]');
+              const duplicateAfterItem = rebaseMenu.querySelector('[data-action="duplicateAfter"]');
               const duplicateBeforeItem = rebaseMenu.querySelector('[data-action="duplicateBefore"]');
               const separators = rebaseMenu.querySelectorAll(".context-menu-separator");
 
               if (isDivergent) {
-                rebaseItems.forEach((item) => (item.style.display = "none"));
-                rebaseBeforeItems.forEach((item) => (item.style.display = "none"));
+                if (rebaseItem) rebaseItem.style.display = "none";
+                if (rebaseWithDescendantsItem) rebaseWithDescendantsItem.style.display = "none";
                 separators.forEach((sep, index) => {
-                  sep.style.display = index === 3 ? "block" : "none";
+                  sep.style.display = index === 0 ? "block" : "none";
                 });
                 if (squashItem) {
                   squashItem.style.display = "none";
                 }
-                duplicateItems.forEach((item) => {
-                  item.style.display = "block";
-                });
+                if (duplicateItem) {
+                  duplicateItem.style.display = "block";
+                }
+                if (duplicateOntoItem) duplicateOntoItem.style.display = "block";
+                if (duplicateAfterItem) duplicateAfterItem.style.display = "block";
+                if (duplicateBeforeItem) duplicateBeforeItem.style.display = "block";
               } else {
-                rebaseItems.forEach((item) => (item.style.display = "block"));
-                rebaseBeforeItems.forEach((item) => {
-                  item.style.display = targetIsImmutable ? "none" : "block";
-                });
-                separators.forEach((sep, index) => {
-                  if (targetIsImmutable) {
-                    sep.style.display = index === 0 || index === 3 ? "block" : "none";
-                  } else {
-                    sep.style.display = "block";
-                  }
+                if (rebaseItem) rebaseItem.style.display = "block";
+                if (rebaseOntoItem) rebaseOntoItem.style.display = "block";
+                if (rebaseAfterItem) rebaseAfterItem.style.display = "block";
+                if (rebaseBeforeItem) rebaseBeforeItem.style.display = targetIsImmutable ? "none" : "block";
+
+                if (rebaseWithDescendantsItem) rebaseWithDescendantsItem.style.display = "block";
+                if (rebaseOntoWithDescendantsItem) rebaseOntoWithDescendantsItem.style.display = "block";
+                if (rebaseAfterWithDescendantsItem) rebaseAfterWithDescendantsItem.style.display = "block";
+                if (rebaseBeforeWithDescendantsItem)
+                  rebaseBeforeWithDescendantsItem.style.display = targetIsImmutable ? "none" : "block";
+
+                separators.forEach((sep) => {
+                  sep.style.display = "block";
                 });
                 if (squashItem) {
                   squashItem.style.display = targetIsImmutable ? "none" : "block";
                 }
-                duplicateItems.forEach((item) => {
-                  item.style.display = "block";
-                });
-                if (duplicateBeforeItem) {
-                  duplicateBeforeItem.style.display = targetIsImmutable ? "none" : "block";
+                if (duplicateItem) {
+                  duplicateItem.style.display = "block";
                 }
+                if (duplicateOntoItem) duplicateOntoItem.style.display = "block";
+                if (duplicateAfterItem) duplicateAfterItem.style.display = "block";
+                if (duplicateBeforeItem) duplicateBeforeItem.style.display = targetIsImmutable ? "none" : "block";
               }
 
               requestAnimationFrame(() => {
@@ -914,6 +935,37 @@
                 }
                 rebaseMenu.style.left = left + "px";
                 rebaseMenu.style.top = top + "px";
+
+                document.querySelectorAll("#rebase-menu .has-submenu").forEach((item) => {
+                  const submenu = item.querySelector(".context-submenu");
+                  if (submenu) {
+                    const itemRect = item.getBoundingClientRect();
+                    submenu.classList.remove("left", "above", "below");
+                    submenu.style.display = "block";
+                    const submenuRect = submenu.getBoundingClientRect();
+                    submenu.style.display = "";
+
+                    const fitsRight = itemRect.right + submenuRect.width <= viewportWidth - 10;
+                    const fitsLeft = itemRect.left - submenuRect.width >= 10;
+
+                    if (fitsRight) {
+                    } else if (fitsLeft) {
+                      submenu.classList.add("left");
+                    } else {
+                      const fitsBelow = itemRect.bottom + submenuRect.height <= viewportHeight - 10;
+                      const fitsAbove = itemRect.top - submenuRect.height >= 10;
+
+                      if (fitsBelow) {
+                        submenu.classList.add("below");
+                      } else if (fitsAbove) {
+                        submenu.classList.add("above");
+                      } else {
+                        submenu.classList.add("below");
+                      }
+                    }
+                  }
+                });
+
                 setTimeout(() => {
                   justFinishedDrag = false;
                 }, 100);
@@ -1204,53 +1256,62 @@
           rebaseMenu.style.display = "none";
           return;
         }
+
+        const submenuItem = e.target.closest(".context-submenu-item");
+        if (submenuItem) {
+          const action = submenuItem.dataset.action;
+          if (action === "rebaseOnto" || action === "rebaseOntoWithDescendants") {
+            vscode.postMessage({
+              command: "rebaseOnto",
+              changeId: sourceId,
+              targetChangeId: targetId,
+              withDescendants: action === "rebaseOntoWithDescendants",
+            });
+          } else if (action === "rebaseAfter" || action === "rebaseAfterWithDescendants") {
+            vscode.postMessage({
+              command: "rebaseAfter",
+              changeId: sourceId,
+              targetChangeId: targetId,
+              withDescendants: action === "rebaseAfterWithDescendants",
+            });
+          } else if (action === "rebaseBefore" || action === "rebaseBeforeWithDescendants") {
+            vscode.postMessage({
+              command: "rebaseBefore",
+              changeId: sourceId,
+              targetChangeId: targetId,
+              withDescendants: action === "rebaseBeforeWithDescendants",
+            });
+          } else if (action === "duplicateOnto") {
+            vscode.postMessage({
+              command: "duplicateOnto",
+              changeId: sourceId,
+              targetChangeId: targetId,
+            });
+          } else if (action === "duplicateAfter") {
+            vscode.postMessage({
+              command: "duplicateAfter",
+              changeId: sourceId,
+              targetChangeId: targetId,
+            });
+          } else if (action === "duplicateBefore") {
+            vscode.postMessage({
+              command: "duplicateBefore",
+              changeId: sourceId,
+              targetChangeId: targetId,
+            });
+          }
+          rebaseMenu.style.display = "none";
+          return;
+        }
+
         const target = e.target.closest(".context-menu-item");
         if (!target) {
           return;
         }
         const action = target.dataset.action;
-        if (action === "rebaseOnto" || action === "rebaseOntoWithDescendants") {
-          vscode.postMessage({
-            command: "rebaseOnto",
-            changeId: sourceId,
-            targetChangeId: targetId,
-            withDescendants: action === "rebaseOntoWithDescendants",
-          });
-        } else if (action === "rebaseAfter" || action === "rebaseAfterWithDescendants") {
-          vscode.postMessage({
-            command: "rebaseAfter",
-            changeId: sourceId,
-            targetChangeId: targetId,
-            withDescendants: action === "rebaseAfterWithDescendants",
-          });
-        } else if (action === "rebaseBefore" || action === "rebaseBeforeWithDescendants") {
-          vscode.postMessage({
-            command: "rebaseBefore",
-            changeId: sourceId,
-            targetChangeId: targetId,
-            withDescendants: action === "rebaseBeforeWithDescendants",
-          });
-        } else if (action === "squashInto") {
+        if (action === "squashInto") {
           vscode.postMessage({
             command: "squashInto",
-            changeId: sourceId,
-            targetChangeId: targetId,
-          });
-        } else if (action === "duplicateOnto") {
-          vscode.postMessage({
-            command: "duplicateOnto",
-            changeId: sourceId,
-            targetChangeId: targetId,
-          });
-        } else if (action === "duplicateAfter") {
-          vscode.postMessage({
-            command: "duplicateAfter",
-            changeId: sourceId,
-            targetChangeId: targetId,
-          });
-        } else if (action === "duplicateBefore") {
-          vscode.postMessage({
-            command: "duplicateBefore",
             changeId: sourceId,
             targetChangeId: targetId,
           });
