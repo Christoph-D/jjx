@@ -536,36 +536,46 @@ export class RepositorySourceControlManager {
     if (this.selectedCommitShowResult) {
       const changeId = getRevFromChange(this.selectedCommitShowResult.change);
       this.selectedCommitChangeId = changeId;
-      if (!this.selectedCommitResourceGroup) {
-        this.selectedCommitResourceGroup = this.sourceControl.createResourceGroup("selected", "Selected Commit");
-      }
-      this.selectedCommitResourceGroup.label = RepositorySourceControlManager.getLabel(
-        "Selected Commit",
-        this.selectedCommitShowResult.change,
-      );
-      this.selectedCommitResourceGroup.resourceStates = this.selectedCommitShowResult.fileStatuses.map((fileStatus) => {
-        const workingCopyUri = vscode.Uri.file(fileStatus.path);
-        const beforeUri =
-          fileStatus.type === "A"
-            ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
-            : toJJUri(vscode.Uri.file(fileStatus.path), { diffOriginalRev: changeId });
-        return {
-          resourceUri: toJJUri(workingCopyUri, { rev: changeId }),
-          decorations: {
-            strikeThrough: fileStatus.type === "D",
-            tooltip: path.basename(fileStatus.file),
+      const isParent = this.status.parentChanges.some((p) => p.changeId === changeId);
+      const isWorkingCopy = this.status.workingCopy.changeId === changeId;
+      if (isParent || isWorkingCopy) {
+        this.selectedCommitResourceGroup?.dispose();
+        this.selectedCommitResourceGroup = undefined;
+        this.selectedCommitChangeId = undefined;
+      } else {
+        if (!this.selectedCommitResourceGroup) {
+          this.selectedCommitResourceGroup = this.sourceControl.createResourceGroup("selected", "Selected Commit");
+        }
+        this.selectedCommitResourceGroup.label = RepositorySourceControlManager.getLabel(
+          "Selected Commit",
+          this.selectedCommitShowResult.change,
+        );
+        this.selectedCommitResourceGroup.resourceStates = this.selectedCommitShowResult.fileStatuses.map(
+          (fileStatus) => {
+            const workingCopyUri = vscode.Uri.file(fileStatus.path);
+            const beforeUri =
+              fileStatus.type === "A"
+                ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
+                : toJJUri(vscode.Uri.file(fileStatus.path), { diffOriginalRev: changeId });
+            return {
+              resourceUri: toJJUri(workingCopyUri, { rev: changeId }),
+              decorations: {
+                strikeThrough: fileStatus.type === "D",
+                tooltip: path.basename(fileStatus.file),
+              },
+              command: getResourceStateCommand(
+                fileStatus,
+                beforeUri,
+                toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
+                `(${changeId.substring(0, 8)})`,
+                fileClickAction,
+                workingCopyUri,
+                false,
+              ),
+            };
           },
-          command: getResourceStateCommand(
-            fileStatus,
-            beforeUri,
-            toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
-            `(${changeId.substring(0, 8)})`,
-            fileClickAction,
-            workingCopyUri,
-            false,
-          ),
-        };
-      });
+        );
+      }
     } else {
       this.selectedCommitResourceGroup?.dispose();
       this.selectedCommitResourceGroup = undefined;
@@ -573,7 +583,7 @@ export class RepositorySourceControlManager {
     }
 
     const combinedFileStatusesByChange = new Map(this.fileStatusesByChange);
-    if (this.selectedCommitShowResult) {
+    if (this.selectedCommitShowResult && this.selectedCommitChangeId) {
       combinedFileStatusesByChange.set(
         this.selectedCommitShowResult.change.changeId,
         this.selectedCommitShowResult.fileStatuses,
