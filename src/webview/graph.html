@@ -1033,6 +1033,25 @@
                   }
                 });
 
+                rebaseMenu.querySelectorAll(".context-menu-item:not(.has-submenu)").forEach((item) => {
+                  item.addEventListener("mouseenter", () => {
+                    rebaseMenu.querySelectorAll(".has-submenu").forEach((submenuItem) => {
+                      submenuItem.classList.remove("submenu-active");
+                    });
+                  });
+                });
+
+                rebaseMenu.querySelectorAll(".has-submenu").forEach((item) => {
+                  item.addEventListener("mouseenter", () => {
+                    rebaseMenu.querySelectorAll(".has-submenu").forEach((otherItem) => {
+                      if (otherItem !== item) {
+                        otherItem.classList.remove("submenu-active");
+                      }
+                    });
+                    item.classList.add("submenu-active");
+                  });
+                });
+
                 setTimeout(() => {
                   justFinishedDrag = false;
                 }, 100);
@@ -1226,6 +1245,25 @@
                 deleteTagSubmenu.appendChild(item);
               });
             }
+
+            contextMenu.querySelectorAll(".context-menu-item:not(.has-submenu)").forEach((item) => {
+              item.addEventListener("mouseenter", () => {
+                contextMenu.querySelectorAll(".has-submenu").forEach((submenuItem) => {
+                  submenuItem.classList.remove("submenu-active");
+                });
+              });
+            });
+
+            contextMenu.querySelectorAll(".has-submenu").forEach((item) => {
+              item.addEventListener("mouseenter", () => {
+                contextMenu.querySelectorAll(".has-submenu").forEach((otherItem) => {
+                  if (otherItem !== item) {
+                    otherItem.classList.remove("submenu-active");
+                  }
+                });
+                item.classList.add("submenu-active");
+              });
+            });
           });
         });
 
@@ -1247,11 +1285,17 @@
       document.addEventListener("click", () => {
         const contextMenu = document.getElementById("context-menu");
         contextMenu.style.display = "none";
+        contextMenu.querySelectorAll(".has-submenu").forEach((item) => {
+          item.classList.remove("submenu-active");
+        });
       });
 
       window.addEventListener("blur", () => {
         const contextMenu = document.getElementById("context-menu");
         contextMenu.style.display = "none";
+        contextMenu.querySelectorAll(".has-submenu").forEach((item) => {
+          item.classList.remove("submenu-active");
+        });
       });
 
       document.getElementById("context-menu").addEventListener("click", (e) => {
@@ -1286,6 +1330,9 @@
             });
           }
           contextMenu.style.display = "none";
+          contextMenu.querySelectorAll(".has-submenu").forEach((item) => {
+            item.classList.remove("submenu-active");
+          });
           return;
         }
 
@@ -1332,6 +1379,9 @@
         const targetId = rebaseMenu.dataset.targetId;
         if (!sourceId || !targetId) {
           rebaseMenu.style.display = "none";
+          rebaseMenu.querySelectorAll(".has-submenu").forEach((item) => {
+            item.classList.remove("submenu-active");
+          });
           return;
         }
 
@@ -1397,6 +1447,9 @@
             });
           }
           rebaseMenu.style.display = "none";
+          rebaseMenu.querySelectorAll(".has-submenu").forEach((item) => {
+            item.classList.remove("submenu-active");
+          });
           return;
         }
 
@@ -1413,6 +1466,9 @@
           });
         }
         rebaseMenu.style.display = "none";
+        rebaseMenu.querySelectorAll(".has-submenu").forEach((item) => {
+          item.classList.remove("submenu-active");
+        });
       });
 
       document.addEventListener("click", (e) => {
@@ -1422,6 +1478,9 @@
         }
         if (!rebaseMenu.contains(e.target)) {
           rebaseMenu.style.display = "none";
+          rebaseMenu.querySelectorAll(".has-submenu").forEach((item) => {
+            item.classList.remove("submenu-active");
+          });
         }
       });
 

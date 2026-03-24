@@ -268,7 +268,9 @@ body {
   z-index: 10;
 }
 
-.has-submenu:hover > .context-submenu {
+.has-submenu:hover > .context-submenu,
+.has-submenu:has(.context-submenu:hover) > .context-submenu,
+.has-submenu.submenu-active > .context-submenu {
   display: block;
 }
 
