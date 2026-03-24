@@ -540,6 +540,30 @@
         return contextMenu.style.display === "block" || rebaseMenu.style.display === "block";
       }
 
+      function cleanupSeparators(menu) {
+        const items = Array.from(menu.children);
+        const visibleItems = items.filter((item) => item.style.display !== "none");
+
+        visibleItems.forEach((item, index) => {
+          if (!item.classList.contains("context-menu-separator")) return;
+
+          if (index === 0) {
+            item.style.display = "none";
+            return;
+          }
+
+          if (index === visibleItems.length - 1) {
+            item.style.display = "none";
+            return;
+          }
+
+          const prevItem = visibleItems[index - 1];
+          if (prevItem.classList.contains("context-menu-separator")) {
+            item.style.display = "none";
+          }
+        });
+      }
+
       function escapeHtml(text) {
         const div = document.createElement("div");
         div.textContent = text;
@@ -900,14 +924,10 @@
               const revertOntoItem = rebaseMenu.querySelector('[data-action="revertOnto"]');
               const revertAfterItem = rebaseMenu.querySelector('[data-action="revertAfter"]');
               const revertBeforeItem = rebaseMenu.querySelector('[data-action="revertBefore"]');
-              const separators = rebaseMenu.querySelectorAll(".context-menu-separator");
 
               if (isDivergent) {
                 if (rebaseItem) rebaseItem.style.display = "none";
                 if (rebaseWithDescendantsItem) rebaseWithDescendantsItem.style.display = "none";
-                separators.forEach((sep, index) => {
-                  sep.style.display = index === 0 ? "block" : "none";
-                });
                 if (squashItem) {
                   squashItem.style.display = "none";
                 }
@@ -935,9 +955,6 @@
                 if (rebaseBeforeWithDescendantsItem)
                   rebaseBeforeWithDescendantsItem.style.display = targetIsImmutable ? "none" : "block";
 
-                separators.forEach((sep) => {
-                  sep.style.display = "block";
-                });
                 if (squashItem) {
                   squashItem.style.display = targetIsImmutable ? "none" : "block";
                 }
@@ -954,6 +971,8 @@
                 if (revertAfterItem) revertAfterItem.style.display = "block";
                 if (revertBeforeItem) revertBeforeItem.style.display = targetIsImmutable ? "none" : "block";
               }
+
+              cleanupSeparators(rebaseMenu);
 
               requestAnimationFrame(() => {
                 const menuRect = rebaseMenu.getBoundingClientRect();
