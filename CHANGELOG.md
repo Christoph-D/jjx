@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.1.1
+
+### Documentation
+
+- Updated README with clearer feature descriptions and improved formatting
+
 ## 1.1.0
 
 ### New Features
