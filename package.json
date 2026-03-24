@@ -642,7 +642,7 @@
         },
         "jjx.fileClickAction": {
           "type": "string",
-          "default": "working-copy",
+          "default": "diff",
           "enum": [
             "diff",
             "at-revision",

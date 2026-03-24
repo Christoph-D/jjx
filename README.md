@@ -92,18 +92,18 @@ Here's what you can do so far:
 
 The following settings can be configured in VS Code's settings:
 
-| Setting                             | Default          | Description                                                                                                                                       |
-| ----------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `jjx.enableAnnotations`             | `true`           | Enables in-line blame annotations                                                                                                                 |
-| `jjx.commandTimeout`                | `null`           | Global timeout in milliseconds for all jj commands. If not set, per-command defaults will be used                                                 |
-| `jjx.jjPath`                        | `""`             | Path to the jj executable. If not set, your PATH and common locations will be searched                                                            |
-| `jjx.changeEditAction`              | `"edit"`         | Action when clicking the edit button on a change: `"edit"` (jj edit) or `"new"` (jj new)                                                          |
-| `jjx.commitAction`                  | `"commit"`       | Action when pressing Ctrl+Enter in source control: `"commit"` (jj commit) or `"new"` (jj new)                                                     |
-| `jjx.graphStyle`                    | `"compact"`      | Display style for commits: `"full"` shows all details, `"compact"` shows single line                                                              |
-| `jjx.pollInterval`                  | `30000`          | Interval in milliseconds between repository polls. Set to 0 to disable                                                                            |
-| `jjx.fileClickAction`               | `"working-copy"` | Action when clicking a file: `"diff"` (compare to parent), `"at-revision"` (open at clicked revision), or `"working-copy"` (open in working copy) |
-| `jjx.elideImmutableCommits`         | `true`           | Hide chains of immutable commits between relevant commits in the graph view                                                                       |
-| `jjx.numberOfImmutableParentsInLog` | `1`              | Number of immutable parent commits to show in the log                                                                                             |
+| Setting                             | Default     | Description                                                                                                                                       |
+| ----------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jjx.enableAnnotations`             | `true`      | Enables in-line blame annotations                                                                                                                 |
+| `jjx.commandTimeout`                | `null`      | Global timeout in milliseconds for all jj commands. If not set, per-command defaults will be used                                                 |
+| `jjx.jjPath`                        | `""`        | Path to the jj executable. If not set, your PATH and common locations will be searched                                                            |
+| `jjx.changeEditAction`              | `"edit"`    | Action when clicking the edit button on a change: `"edit"` (jj edit) or `"new"` (jj new)                                                          |
+| `jjx.commitAction`                  | `"commit"`  | Action when pressing Ctrl+Enter in source control: `"commit"` (jj commit) or `"new"` (jj new)                                                     |
+| `jjx.graphStyle`                    | `"compact"` | Display style for commits: `"full"` shows all details, `"compact"` shows single line                                                              |
+| `jjx.pollInterval`                  | `30000`     | Interval in milliseconds between repository polls. Set to 0 to disable                                                                            |
+| `jjx.fileClickAction`               | `"diff"`    | Action when clicking a file: `"diff"` (compare to parent), `"at-revision"` (open at clicked revision), or `"working-copy"` (open in working copy) |
+| `jjx.elideImmutableCommits`         | `true`      | Hide chains of immutable commits between relevant commits in the graph view                                                                       |
+| `jjx.numberOfImmutableParentsInLog` | `1`         | Number of immutable parent commits to show in the log                                                                                             |
 
 ## 🐛 Known issues
 

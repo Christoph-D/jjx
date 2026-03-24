@@ -443,7 +443,7 @@ export class RepositorySourceControlManager {
     }
 
     const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
-    const fileClickAction = config.get<"diff" | "at-revision" | "working-copy">("fileClickAction") || "working-copy";
+    const fileClickAction = config.get<"diff" | "at-revision" | "working-copy">("fileClickAction") || "diff";
 
     this.workingCopyResourceGroup.label = RepositorySourceControlManager.getLabel(
       "Working Copy",
@@ -639,17 +639,6 @@ function getResourceStateCommand(
       arguments: [beforeUri, {} satisfies vscode.TextDocumentShowOptions, `${fileStatus.file} (Deleted)`],
     };
   }
-  if (fileClickAction === "diff") {
-    return {
-      title: "Open",
-      command: "vscode.diff",
-      arguments: [
-        beforeUri,
-        afterUri,
-        (fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") + `${fileStatus.file} ${diffTitleSuffix}`,
-      ],
-    };
-  }
   if (fileClickAction === "at-revision") {
     return {
       title: "Open",
@@ -657,9 +646,20 @@ function getResourceStateCommand(
       arguments: [afterUri, {}],
     };
   }
+  if (fileClickAction === "working-copy") {
+    return {
+      title: "Open",
+      command: "vscode.open",
+      arguments: [workingCopyUri, {}],
+    };
+  }
   return {
     title: "Open",
-    command: "vscode.open",
-    arguments: [workingCopyUri, {}],
+    command: "vscode.diff",
+    arguments: [
+      beforeUri,
+      afterUri,
+      (fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") + `${fileStatus.file} ${diffTitleSuffix}`,
+    ],
   };
 }
