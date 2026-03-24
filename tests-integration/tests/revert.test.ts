@@ -1,13 +1,15 @@
-import { test, expect } from "./baseTest";
+import { test, expect, increaseJJVisibleSize } from "./baseTest";
 import { getParents } from "../testRepo";
 
-test("revert commit onto another via drag and drop", async ({ graphFrame, testRepo }) => {
+test("revert commit onto another via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
+
+  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -34,13 +36,15 @@ test("revert commit onto another via drag and drop", async ({ graphFrame, testRe
   }).toPass();
 });
 
-test("revert after another commit via drag and drop", async ({ graphFrame, testRepo }) => {
+test("revert after another commit via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
+
+  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -70,13 +74,15 @@ test("revert after another commit via drag and drop", async ({ graphFrame, testR
   }).toPass();
 });
 
-test("revert before another commit via drag and drop", async ({ graphFrame, testRepo }) => {
+test("revert before another commit via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
+
+  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitB = nodes.nth(2);

@@ -192,3 +192,21 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(graphFrame);
   },
 });
+
+// Closes the chat window and increases the size of the jj graph
+export async function increaseJJVisibleSize(workbox: Page) {
+  // Hide auxiliary side bar (chat window)
+  await workbox.keyboard.press("Control+Alt+b");
+
+  // Make the jj graph larger
+  const sash = workbox.locator(".monaco-sash.horizontal.maximum").first();
+  const sashBox = await sash.boundingBox();
+  if (sashBox) {
+    const sashCenterX = sashBox.x + sashBox.width / 2;
+    const sashCenterY = sashBox.y + sashBox.height / 2;
+    await workbox.mouse.move(sashCenterX, sashCenterY);
+    await workbox.mouse.down();
+    await workbox.mouse.move(sashCenterX, sashCenterY - 300);
+    await workbox.mouse.up();
+  }
+}

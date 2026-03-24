@@ -1,13 +1,15 @@
-import { test, expect } from "./baseTest";
+import { test, expect, increaseJJVisibleSize } from "./baseTest";
 import { getParents } from "../testRepo";
 
-test("duplicate commit onto another via drag and drop", async ({ graphFrame, testRepo }) => {
+test("duplicate commit onto another via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
+
+  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -39,13 +41,15 @@ test("duplicate commit onto another via drag and drop", async ({ graphFrame, tes
   }).toPass();
 });
 
-test("duplicate after another commit via drag and drop", async ({ graphFrame, testRepo }) => {
+test("duplicate after another commit via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
+
+  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -82,13 +86,15 @@ test("duplicate after another commit via drag and drop", async ({ graphFrame, te
   }).toPass();
 });
 
-test("duplicate before another commit via drag and drop", async ({ graphFrame, testRepo }) => {
+test("duplicate before another commit via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
+
+  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitB = nodes.nth(2);
