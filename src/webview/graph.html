@@ -526,6 +526,12 @@
         tooltip.style.display = "none";
       }
 
+      function isMenuOpen() {
+        const contextMenu = document.getElementById("context-menu");
+        const rebaseMenu = document.getElementById("rebase-menu");
+        return contextMenu.style.display === "block" || rebaseMenu.style.display === "block";
+      }
+
       function escapeHtml(text) {
         const div = document.createElement("div");
         div.textContent = text;
@@ -748,6 +754,7 @@
 
           node.addEventListener("mouseenter", (e) => {
             highlightConnectedNodes(node, true);
+            if (isDragging || isMenuOpen()) return;
             if (change.changeId !== rootChangeId && change.branchType !== "~") {
               tooltipTimeout = setTimeout(() => {
                 showTooltip(node, e);
@@ -759,6 +766,7 @@
             if (tooltipTimeout) {
               clearTimeout(tooltipTimeout);
             }
+            if (isDragging || isMenuOpen()) return;
             if (change.changeId !== rootChangeId && change.branchType !== "~") {
               tooltipTimeout = setTimeout(() => {
                 showTooltip(node, e);
@@ -786,6 +794,11 @@
               dragStartChangeId = change.changeId;
               isDragging = true;
               node.classList.add("dragging");
+              if (tooltipTimeout) {
+                clearTimeout(tooltipTimeout);
+                tooltipTimeout = null;
+              }
+              hideTooltip();
               e.dataTransfer.setData("text/plain", change.changeId);
               e.dataTransfer.effectAllowed = "move";
 
@@ -837,6 +850,11 @@
               const targetId = change.changeId;
               if (!sourceId || !targetId || sourceId === targetId) return;
 
+              if (tooltipTimeout) {
+                clearTimeout(tooltipTimeout);
+                tooltipTimeout = null;
+              }
+              hideTooltip();
               justFinishedDrag = true;
               const rebaseMenu = document.getElementById("rebase-menu");
               rebaseMenu.dataset.sourceId = sourceId;
@@ -1018,6 +1036,11 @@
             if (change.changeId === rootChangeId || change.branchType === "~") {
               return;
             }
+            if (tooltipTimeout) {
+              clearTimeout(tooltipTimeout);
+              tooltipTimeout = null;
+            }
+            hideTooltip();
             const contextMenu = document.getElementById("context-menu");
             contextMenu.dataset.changeId = change.changeId;
             contextMenu.dataset.immutable = change.branchType === "◆" ? "true" : "false";
