@@ -1,11 +1,9 @@
 const esbuild = require("esbuild");
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
 
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
-const isTest = process.argv.includes("--test");
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -69,147 +67,96 @@ const esbuildProblemMatcherPlugin = {
 };
 
 async function main() {
-  if (isTest) {
-    // 1. Build the test launcher (runTest.ts)
-    const launcherCtx = await esbuild.context({
-      entryPoints: ["src/test/runTest.ts"],
-      bundle: true,
-      format: "cjs",
-      platform: "node",
-      outfile: "out/test/runTest.js",
-      external: ["@vscode/test-electron"],
-      logLevel: "silent",
-      plugins: [esbuildProblemMatcherPlugin],
-    });
-    await launcherCtx.rebuild();
-    await launcherCtx.dispose();
-    console.log("Test launcher built: out/test/runTest.js");
+  // Production/watch build for src/main.ts (extension code)
+  const ctx = await esbuild.context({
+    entryPoints: ["src/main.ts"],
+    bundle: true,
+    format: "cjs",
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: "node",
+    outfile: "dist/main.js",
+    external: ["vscode"],
+    logLevel: "silent",
+    plugins: [esbuildProblemMatcherPlugin],
+  });
 
-    // 2. Build the actual test suite bundle (all-tests.ts)
-    // This bundles all *.test.ts files (via imports in all-tests.ts)
-    // and their src/ dependencies (like uri.ts and its dependency arktype).
-    const allTestsBundleCtx = await esbuild.context({
-      entryPoints: ["src/test/all-tests.ts"],
-      bundle: true,
-      format: "cjs",
-      platform: "node", // Runs in VS Code extension host
-      outfile: "out/test/all-tests.js",
-      external: ["vscode", "mocha"],
-      sourcemap: true,
-      logLevel: "silent",
-      plugins: [esbuildProblemMatcherPlugin],
-    });
-    await allTestsBundleCtx.rebuild();
-    await allTestsBundleCtx.dispose();
-    console.log("All tests bundle built: out/test/all-tests.js");
+  // Build jj-editor-main.ts (standalone script for JJ_EDITOR)
+  const jjEditorCtx = await esbuild.context({
+    entryPoints: ["src/jj-editor-main.ts"],
+    bundle: true,
+    format: "cjs",
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: "node",
+    outfile: "dist/jj-editor-main.js",
+    logLevel: "silent",
+    plugins: [esbuildProblemMatcherPlugin],
+  });
 
-    // 3. Build the runner (runner.ts)
-    // This script will load and run the all-tests.js bundle using Mocha.
-    const suiteRunnerCtx = await esbuild.context({
-      entryPoints: ["src/test/runner.ts"],
-      bundle: true,
-      format: "cjs",
-      platform: "node", // Runs in VS Code extension host
-      outfile: "out/test/runner.js",
-      external: ["vscode", "mocha"],
-      logLevel: "silent",
-      plugins: [esbuildProblemMatcherPlugin],
-    });
-    await suiteRunnerCtx.rebuild();
-    await suiteRunnerCtx.dispose();
-    console.log("Test suite runner built: out/test/runner.js");
+  // Build jj-merge-editor-main.ts (standalone script for merge tool)
+  const jjMergeEditorCtx = await esbuild.context({
+    entryPoints: ["src/jj-merge-editor-main.ts"],
+    bundle: true,
+    format: "cjs",
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: "node",
+    outfile: "dist/jj-merge-editor-main.js",
+    logLevel: "silent",
+    plugins: [esbuildProblemMatcherPlugin],
+  });
+
+  // Build jj-diff-tool-main.ts (standalone script for diff tool)
+  const jjDiffToolCtx = await esbuild.context({
+    entryPoints: ["src/jj-diff-tool-main.ts"],
+    bundle: true,
+    format: "cjs",
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: "node",
+    outfile: "dist/jj-diff-tool-main.js",
+    logLevel: "silent",
+    plugins: [esbuildProblemMatcherPlugin],
+  });
+
+  // Build jj-squash-tool-main.ts (standalone script for squash tool)
+  const jjSquashToolCtx = await esbuild.context({
+    entryPoints: ["src/jj-squash-tool-main.ts"],
+    bundle: true,
+    format: "cjs",
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: "node",
+    outfile: "dist/jj-squash-tool-main.js",
+    logLevel: "silent",
+    plugins: [esbuildProblemMatcherPlugin],
+  });
+
+  if (watch) {
+    copyAssets();
+    await ctx.watch();
+    await jjEditorCtx.watch();
+    await jjMergeEditorCtx.watch();
+    await jjDiffToolCtx.watch();
+    await jjSquashToolCtx.watch();
   } else {
-    // Production/watch build for src/main.ts (extension code)
-    const ctx = await esbuild.context({
-      entryPoints: ["src/main.ts"],
-      bundle: true,
-      format: "cjs",
-      minify: production,
-      sourcemap: !production,
-      sourcesContent: false,
-      platform: "node",
-      outfile: "dist/main.js",
-      external: ["vscode"],
-      logLevel: "silent",
-      plugins: [esbuildProblemMatcherPlugin],
-    });
-
-    // Build jj-editor-main.ts (standalone script for JJ_EDITOR)
-    const jjEditorCtx = await esbuild.context({
-      entryPoints: ["src/jj-editor-main.ts"],
-      bundle: true,
-      format: "cjs",
-      minify: production,
-      sourcemap: !production,
-      sourcesContent: false,
-      platform: "node",
-      outfile: "dist/jj-editor-main.js",
-      logLevel: "silent",
-      plugins: [esbuildProblemMatcherPlugin],
-    });
-
-    // Build jj-merge-editor-main.ts (standalone script for merge tool)
-    const jjMergeEditorCtx = await esbuild.context({
-      entryPoints: ["src/jj-merge-editor-main.ts"],
-      bundle: true,
-      format: "cjs",
-      minify: production,
-      sourcemap: !production,
-      sourcesContent: false,
-      platform: "node",
-      outfile: "dist/jj-merge-editor-main.js",
-      logLevel: "silent",
-      plugins: [esbuildProblemMatcherPlugin],
-    });
-
-    // Build jj-diff-tool-main.ts (standalone script for diff tool)
-    const jjDiffToolCtx = await esbuild.context({
-      entryPoints: ["src/jj-diff-tool-main.ts"],
-      bundle: true,
-      format: "cjs",
-      minify: production,
-      sourcemap: !production,
-      sourcesContent: false,
-      platform: "node",
-      outfile: "dist/jj-diff-tool-main.js",
-      logLevel: "silent",
-      plugins: [esbuildProblemMatcherPlugin],
-    });
-
-    // Build jj-squash-tool-main.ts (standalone script for squash tool)
-    const jjSquashToolCtx = await esbuild.context({
-      entryPoints: ["src/jj-squash-tool-main.ts"],
-      bundle: true,
-      format: "cjs",
-      minify: production,
-      sourcemap: !production,
-      sourcesContent: false,
-      platform: "node",
-      outfile: "dist/jj-squash-tool-main.js",
-      logLevel: "silent",
-      plugins: [esbuildProblemMatcherPlugin],
-    });
-
-    if (watch) {
-      copyAssets();
-      await ctx.watch();
-      await jjEditorCtx.watch();
-      await jjMergeEditorCtx.watch();
-      await jjDiffToolCtx.watch();
-      await jjSquashToolCtx.watch();
-    } else {
-      await ctx.rebuild();
-      await jjEditorCtx.rebuild();
-      await jjMergeEditorCtx.rebuild();
-      await jjDiffToolCtx.rebuild();
-      await jjSquashToolCtx.rebuild();
-      copyAssets();
-      await ctx.dispose();
-      await jjEditorCtx.dispose();
-      await jjMergeEditorCtx.dispose();
-      await jjDiffToolCtx.dispose();
-      await jjSquashToolCtx.dispose();
-    }
+    await ctx.rebuild();
+    await jjEditorCtx.rebuild();
+    await jjMergeEditorCtx.rebuild();
+    await jjDiffToolCtx.rebuild();
+    await jjSquashToolCtx.rebuild();
+    copyAssets();
+    await ctx.dispose();
+    await jjEditorCtx.dispose();
+    await jjMergeEditorCtx.dispose();
+    await jjDiffToolCtx.dispose();
+    await jjSquashToolCtx.dispose();
   }
 }
 

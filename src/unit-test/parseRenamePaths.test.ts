@@ -1,8 +1,10 @@
-import * as assert from "assert";
-import { parseRenamePaths } from "../utils";
+/* eslint-disable @typescript-eslint/no-floating-promises */
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { parseRenamePaths } from "../parseRenamePaths";
 
-suite("parseRenamePaths", () => {
-  test("should handle rename with no prefix or suffix", () => {
+describe("parseRenamePaths", () => {
+  it("should handle rename with no prefix or suffix", () => {
     const input = "{old => new}";
     const expected = {
       fromPath: "old",
@@ -11,7 +13,7 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should handle rename with only suffix", () => {
+  it("should handle rename with only suffix", () => {
     const input = "{old => new}.txt";
     const expected = {
       fromPath: "old.txt",
@@ -20,7 +22,7 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should handle rename with only prefix", () => {
+  it("should handle rename with only prefix", () => {
     const input = "prefix/{old => new}";
     const expected = {
       fromPath: "prefix/old",
@@ -29,7 +31,7 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should handle empty fromPart", () => {
+  it("should handle empty fromPart", () => {
     const input = "src/test/{ => basic-suite}/main.test.ts";
     const expected = {
       fromPath: "src/test/main.test.ts",
@@ -38,7 +40,7 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should handle empty toPart", () => {
+  it("should handle empty toPart", () => {
     const input = "src/{old => }/file.ts";
     const expected = {
       fromPath: "src/old/file.ts",
@@ -47,7 +49,7 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should parse rename with leading and trailing directories", () => {
+  it("should parse rename with leading and trailing directories", () => {
     const input = "a/b/{c => d}/e/f.txt";
     const expected = {
       fromPath: "a/b/c/e/f.txt",
@@ -56,7 +58,7 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should handle extra spaces within curly braces", () => {
+  it("should handle extra spaces within curly braces", () => {
     const input = "src/test/{  =>   basic-suite  }/main.test.ts";
     const expected = {
       fromPath: "src/test/main.test.ts",
@@ -65,7 +67,7 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should handle paths with dots in segments", () => {
+  it("should handle paths with dots in segments", () => {
     const input = "src/my.component/{old.module => new.module}/index.ts";
     const expected = {
       fromPath: "src/my.component/old.module/index.ts",
@@ -74,9 +76,7 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should handle paths with spaces", () => {
-    // This test depends on how robust the regex is to special path characters.
-    // The current regex is simple and might fail with complex characters.
+  it("should handle paths with spaces", () => {
     const input = "src folder/{a b => c d}/file name with spaces.txt";
     const expected = {
       fromPath: "src folder/a b/file name with spaces.txt",
@@ -85,17 +85,17 @@ suite("parseRenamePaths", () => {
     assert.deepStrictEqual(parseRenamePaths(input), expected);
   });
 
-  test("should return null for simple rename without curly braces", () => {
+  it("should return null for simple rename without curly braces", () => {
     const input = "old.txt => new.txt";
     assert.strictEqual(parseRenamePaths(input), null);
   });
 
-  test("should return null for non-rename lines", () => {
+  it("should return null for non-rename lines", () => {
     const input = "M src/some/file.ts";
     assert.strictEqual(parseRenamePaths(input), null);
   });
 
-  test("should return null for empty input", () => {
+  it("should return null for empty input", () => {
     const input = "";
     assert.strictEqual(parseRenamePaths(input), null);
   });

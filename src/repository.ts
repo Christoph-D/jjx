@@ -6,7 +6,8 @@ import spawn from "cross-spawn";
 import { SHOW_TEMPLATE, STATUS_TEMPLATE, LOG_TEMPLATE, OPERATION_TEMPLATE } from "./templateBuilder";
 import { ImmutableError, convertJJErrors, parseJJError } from "./errors";
 import { spawnJJ, handleJJCommand } from "./process";
-import { parseRenamePaths, filepathToFileset } from "./utils";
+import { parseRenamePaths } from "./parseRenamePaths";
+import { filepathToFileset } from "./utils";
 import {
   getDiffToolPath,
   expectDiffToolRequest,
