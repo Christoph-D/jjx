@@ -523,7 +523,7 @@ export class RepositorySourceControlManager {
               toJJUri(vscode.Uri.file(parentStatus.path), {
                 rev: parentChange.changeId,
               }),
-              `(${parentChange.changeId})`,
+              `(${parentChange.changeId.substring(0, 8)})`,
               fileClickAction,
               workingCopyUri,
               false,
@@ -559,7 +559,7 @@ export class RepositorySourceControlManager {
             fileStatus,
             beforeUri,
             toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
-            `(${changeId})`,
+            `(${changeId.substring(0, 8)})`,
             fileClickAction,
             workingCopyUri,
             false,
