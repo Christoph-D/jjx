@@ -389,7 +389,18 @@ export async function activate(context: vscode.ExtensionContext) {
         "jj.openFileAtRevision",
         async (resourceState: vscode.SourceControlResourceState) => {
           try {
-            await vscode.commands.executeCommand("vscode.open", resourceState.resourceUri, {});
+            const uri = resourceState.resourceUri;
+            let rev = "@";
+            if (uri.scheme === "jj") {
+              const params = getParams(uri);
+              if ("diffOriginalRev" in params) {
+                rev = params.diffOriginalRev;
+              } else if ("rev" in params) {
+                rev = params.rev;
+              }
+            }
+            const titleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
+            await vscode.commands.executeCommand("vscode.open", uri, {}, `${path.basename(uri.fsPath)} ${titleSuffix}`);
           } catch (error) {
             vscode.window.showErrorMessage(`Failed to open file${error instanceof Error ? `: ${error.message}` : ""}`);
           }
