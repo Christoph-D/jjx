@@ -443,7 +443,7 @@ export class RepositorySourceControlManager {
     }
 
     const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
-    const openDiffAction = config.get<"diff" | "file">("openDiffAction") || "diff";
+    const openDiffAction = config.get<"diff" | "at-revision" | "working-copy">("openDiffAction") || "working-copy";
 
     this.workingCopyResourceGroup.label = RepositorySourceControlManager.getLabel(
       "Working Copy",
@@ -452,6 +452,10 @@ export class RepositorySourceControlManager {
     this.workingCopyResourceGroup.resourceStates = this.status.fileStatuses.map((fileStatus) => {
       const workingCopyUri = vscode.Uri.file(fileStatus.path);
       const isConflicted = this.status?.conflictedFiles?.has(fileStatus.path) ?? false;
+      const beforeUri =
+        fileStatus.type === "A"
+          ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
+          : toJJUri(vscode.Uri.file(fileStatus.path), { diffOriginalRev: "@" });
       return {
         resourceUri: workingCopyUri,
         decorations: {
@@ -460,9 +464,7 @@ export class RepositorySourceControlManager {
         },
         command: getResourceStateCommand(
           fileStatus,
-          toJJUri(vscode.Uri.file(`${fileStatus.path}`), {
-            diffOriginalRev: "@",
-          }),
+          beforeUri,
           workingCopyUri,
           "(Working Copy)",
           openDiffAction,
@@ -503,6 +505,10 @@ export class RepositorySourceControlManager {
       if (showResult) {
         parentChangeResourceGroup.resourceStates = showResult.fileStatuses.map((parentStatus) => {
           const workingCopyUri = vscode.Uri.file(parentStatus.path);
+          const beforeUri =
+            parentStatus.type === "A"
+              ? toJJUri(vscode.Uri.file(parentStatus.path), { deleted: true })
+              : toJJUri(vscode.Uri.file(parentStatus.path), { diffOriginalRev: parentChange.changeId });
           return {
             resourceUri: toJJUri(workingCopyUri, {
               rev: parentChange.changeId,
@@ -513,9 +519,7 @@ export class RepositorySourceControlManager {
             },
             command: getResourceStateCommand(
               parentStatus,
-              toJJUri(vscode.Uri.file(parentStatus.path), {
-                diffOriginalRev: parentChange.changeId,
-              }),
+              beforeUri,
               toJJUri(vscode.Uri.file(parentStatus.path), {
                 rev: parentChange.changeId,
               }),
@@ -541,6 +545,10 @@ export class RepositorySourceControlManager {
       );
       this.selectedCommitResourceGroup.resourceStates = this.selectedCommitShowResult.fileStatuses.map((fileStatus) => {
         const workingCopyUri = vscode.Uri.file(fileStatus.path);
+        const beforeUri =
+          fileStatus.type === "A"
+            ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
+            : toJJUri(vscode.Uri.file(fileStatus.path), { diffOriginalRev: changeId });
         return {
           resourceUri: toJJUri(workingCopyUri, { rev: changeId }),
           decorations: {
@@ -549,9 +557,7 @@ export class RepositorySourceControlManager {
           },
           command: getResourceStateCommand(
             fileStatus,
-            toJJUri(vscode.Uri.file(fileStatus.path), {
-              diffOriginalRev: changeId,
-            }),
+            beforeUri,
             toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
             `(${changeId})`,
             openDiffAction,
@@ -615,7 +621,7 @@ function getResourceStateCommand(
   beforeUri: vscode.Uri,
   afterUri: vscode.Uri,
   diffTitleSuffix: string,
-  openDiffAction: "diff" | "file",
+  openDiffAction: "diff" | "at-revision" | "working-copy",
   workingCopyUri: vscode.Uri,
   isConflicted: boolean,
 ): vscode.Command {
@@ -626,33 +632,34 @@ function getResourceStateCommand(
       arguments: [workingCopyUri],
     };
   }
-  if (fileStatus.type === "A") {
-    return {
-      title: "Open",
-      command: "vscode.open",
-      arguments: [workingCopyUri],
-    };
-  } else if (fileStatus.type === "D") {
+  if (fileStatus.type === "D") {
     return {
       title: "Open",
       command: "vscode.open",
       arguments: [beforeUri, {} satisfies vscode.TextDocumentShowOptions, `${fileStatus.file} (Deleted)`],
     };
   }
-  if (openDiffAction === "file") {
+  if (openDiffAction === "diff") {
+    return {
+      title: "Open",
+      command: "vscode.diff",
+      arguments: [
+        beforeUri,
+        afterUri,
+        (fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") + `${fileStatus.file} ${diffTitleSuffix}`,
+      ],
+    };
+  }
+  if (openDiffAction === "at-revision") {
     return {
       title: "Open",
       command: "vscode.open",
-      arguments: [workingCopyUri, {}],
+      arguments: [afterUri, {}],
     };
   }
   return {
     title: "Open",
-    command: "vscode.diff",
-    arguments: [
-      beforeUri,
-      afterUri,
-      (fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") + `${fileStatus.file} ${diffTitleSuffix}`,
-    ],
+    command: "vscode.open",
+    arguments: [workingCopyUri, {}],
   };
 }

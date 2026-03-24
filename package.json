@@ -56,7 +56,7 @@
         "command": "jj.openFileAtRevision",
         "title": "Open File",
         "category": "Jujutsu",
-        "icon": "$(go-to-file)"
+        "icon": "$(eye)"
       },
       {
         "command": "jj.openFileEditor",
@@ -416,45 +416,55 @@
         },
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && config.jjx.openDiffAction == 'file'",
+          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.openDiffAction != 'diff'",
           "group": "inline@1"
         },
         {
-          "command": "jj.openFileInWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.openDiffAction == 'diff'",
+          "command": "jj.openDiffResourceState",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.openDiffAction != 'diff'",
           "group": "inline@1"
+        },
+        {
+          "command": "jj.openFileAtRevision",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.openDiffAction != 'at-revision'",
+          "group": "inline@2"
+        },
+        {
+          "command": "jj.openFileInWorkingCopyResourceState",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.openDiffAction != 'working-copy'",
+          "group": "inline@3"
         },
         {
           "command": "jj.restoreResourceState",
           "when": "scmProvider == jj && scmResourceGroup != selected",
-          "group": "inline@2"
+          "group": "inline@4"
         },
         {
           "command": "jj.squashToParentResourceState",
           "when": "scmProvider == jj && scmResourceGroup == @",
-          "group": "inline@3"
+          "group": "inline@5"
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
           "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
-          "group": "inline@3"
+          "group": "inline@5"
         }
       ],
       "scm/resourceFolder/context": [
         {
           "command": "jj.restoreResourceState",
           "when": "scmProvider == jj && scmResourceGroup != selected",
-          "group": "inline@2"
+          "group": "inline@4"
         },
         {
           "command": "jj.squashToParentResourceState",
           "when": "scmProvider == jj && scmResourceGroup == @",
-          "group": "inline@3"
+          "group": "inline@5"
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
           "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
-          "group": "inline@3"
+          "group": "inline@5"
         }
       ],
       "commandPalette": [
@@ -632,14 +642,16 @@
         },
         "jjx.openDiffAction": {
           "type": "string",
-          "default": "diff",
+          "default": "working-copy",
           "enum": [
             "diff",
-            "file"
+            "at-revision",
+            "working-copy"
           ],
           "enumDescriptions": [
-            "Open files as diff (comparing to parent)",
-            "Open files directly in working copy"
+            "View the diff (comparing to parent)",
+            "Open the file at the clicked revision",
+            "Open the file in the working copy"
           ],
           "description": "Action when clicking a file in the change view",
           "scope": "resource"
