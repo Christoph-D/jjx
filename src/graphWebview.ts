@@ -347,6 +347,17 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             vscode.window.showErrorMessage(`Failed to duplicate: ${error as string}`);
           }
           break;
+        case "revertOnto":
+        case "revertAfter":
+        case "revertBefore":
+          try {
+            const mode = message.command.replace("revert", "").toLowerCase() as "onto" | "after" | "before";
+            await this.repository.revert(message.changeId, message.targetChangeId, mode);
+            await this.refresh();
+          } catch (error: unknown) {
+            vscode.window.showErrorMessage(`Failed to revert: ${error as string}`);
+          }
+          break;
         case "updateStale":
           try {
             await this.repository.updateStale();

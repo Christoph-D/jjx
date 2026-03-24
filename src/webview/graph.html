@@ -57,6 +57,14 @@
           <div class="context-submenu-item" data-action="duplicateBefore">Before</div>
         </div>
       </div>
+      <div class="context-menu-item has-submenu" data-action="revert">
+        Revert
+        <div class="context-submenu" id="revert-submenu">
+          <div class="context-submenu-item" data-action="revertOnto">Onto</div>
+          <div class="context-submenu-item" data-action="revertAfter">After</div>
+          <div class="context-submenu-item" data-action="revertBefore">Before</div>
+        </div>
+      </div>
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="stale-state" class="stale-state">
@@ -888,6 +896,10 @@
               const duplicateOntoItem = rebaseMenu.querySelector('[data-action="duplicateOnto"]');
               const duplicateAfterItem = rebaseMenu.querySelector('[data-action="duplicateAfter"]');
               const duplicateBeforeItem = rebaseMenu.querySelector('[data-action="duplicateBefore"]');
+              const revertItem = rebaseMenu.querySelector('[data-action="revert"]');
+              const revertOntoItem = rebaseMenu.querySelector('[data-action="revertOnto"]');
+              const revertAfterItem = rebaseMenu.querySelector('[data-action="revertAfter"]');
+              const revertBeforeItem = rebaseMenu.querySelector('[data-action="revertBefore"]');
               const separators = rebaseMenu.querySelectorAll(".context-menu-separator");
 
               if (isDivergent) {
@@ -905,6 +917,12 @@
                 if (duplicateOntoItem) duplicateOntoItem.style.display = "block";
                 if (duplicateAfterItem) duplicateAfterItem.style.display = "block";
                 if (duplicateBeforeItem) duplicateBeforeItem.style.display = "block";
+                if (revertItem) {
+                  revertItem.style.display = "block";
+                }
+                if (revertOntoItem) revertOntoItem.style.display = "block";
+                if (revertAfterItem) revertAfterItem.style.display = "block";
+                if (revertBeforeItem) revertBeforeItem.style.display = "block";
               } else {
                 if (rebaseItem) rebaseItem.style.display = "block";
                 if (rebaseOntoItem) rebaseOntoItem.style.display = "block";
@@ -929,6 +947,12 @@
                 if (duplicateOntoItem) duplicateOntoItem.style.display = "block";
                 if (duplicateAfterItem) duplicateAfterItem.style.display = "block";
                 if (duplicateBeforeItem) duplicateBeforeItem.style.display = targetIsImmutable ? "none" : "block";
+                if (revertItem) {
+                  revertItem.style.display = "block";
+                }
+                if (revertOntoItem) revertOntoItem.style.display = "block";
+                if (revertAfterItem) revertAfterItem.style.display = "block";
+                if (revertBeforeItem) revertBeforeItem.style.display = targetIsImmutable ? "none" : "block";
               }
 
               requestAnimationFrame(() => {
@@ -1319,6 +1343,24 @@
           } else if (action === "duplicateBefore") {
             vscode.postMessage({
               command: "duplicateBefore",
+              changeId: sourceId,
+              targetChangeId: targetId,
+            });
+          } else if (action === "revertOnto") {
+            vscode.postMessage({
+              command: "revertOnto",
+              changeId: sourceId,
+              targetChangeId: targetId,
+            });
+          } else if (action === "revertAfter") {
+            vscode.postMessage({
+              command: "revertAfter",
+              changeId: sourceId,
+              targetChangeId: targetId,
+            });
+          } else if (action === "revertBefore") {
+            vscode.postMessage({
+              command: "revertBefore",
               changeId: sourceId,
               targetChangeId: targetId,
             });
