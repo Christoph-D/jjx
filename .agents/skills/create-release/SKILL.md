@@ -18,7 +18,7 @@ Create a new release for the JJX extension following semantic versioning.
    ```
    jj log -r 'v1.0.0..@-' -T 'change_id.short() ++ " " ++ description'
    ```
-   Where `$oldtag` is the tag from step 1.
+   Where `$oldtag` is the tag from step 1. Be sure to use this exact command.
 
 3. **Deep review specific commits:**
    For any commits that need a deeper review to understand the changes:
