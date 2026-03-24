@@ -61,6 +61,23 @@ then you must use only jj commands and never git commands.
 - Existing comments should remain in place unless they become incorrect
 - Follow existing patterns in neighboring files
 
+### UI Text Capitalization
+
+Use Title Case for UI elements (capitalizing all words except articles, coordinating conjunctions, and prepositions with
+4 or fewer letters):
+
+- **Command titles**: "Open File", "Fetch from Remote", "Move Changes to Parent"
+- **Menu items**: "Edit This Change", "Rebase onto This Change"
+- **Placeholders**: "Select a Repository", "Select Parent to Squash Into"
+- **Labels**: "Working Copy Is Stale"
+
+Use sentence case for full sentences (questions, statements, descriptions in message boxes and confirmations):
+
+- "Are you sure you want to discard changes in this change?"
+- "Are you sure you want to abandon this change?"
+- "Moving bookmark backwards or sideways, are you sure?"
+- "The working copy state is outdated and needs to be refreshed."
+
 ## Commit Messages
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):

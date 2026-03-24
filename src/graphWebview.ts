@@ -219,7 +219,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "createBookmark":
           try {
             const bookmarkName = await vscode.window.showInputBox({
-              prompt: "Enter bookmark name",
+              prompt: "Enter Bookmark Name",
               placeHolder: "bookmark-name",
             });
             if (bookmarkName === undefined || bookmarkName === "") {
@@ -234,7 +234,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "createTag":
           try {
             const tagName = await vscode.window.showInputBox({
-              prompt: "Enter tag name",
+              prompt: "Enter Tag Name",
               placeHolder: "v1.0.0",
             });
             if (tagName === undefined || tagName === "") {

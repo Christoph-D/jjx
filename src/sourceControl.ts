@@ -287,7 +287,7 @@ export class RepositorySourceControlManager {
 
     this.sourceControl.acceptInputCommand = {
       command: "jj.new",
-      title: "Create new change",
+      title: "Create New Change",
       arguments: [this.sourceControl],
     };
 
@@ -355,7 +355,7 @@ export class RepositorySourceControlManager {
 
   updatePlaceholderText(commitAction: string) {
     this.sourceControl.inputBox.placeholder =
-      commitAction === "commit" ? "Describe current change (Ctrl+Enter)" : "Describe new change (Ctrl+Enter)";
+      commitAction === "commit" ? "Describe Current Change (Ctrl+Enter)" : "Describe New Change (Ctrl+Enter)";
   }
 
   async checkForUpdates() {

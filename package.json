@@ -48,108 +48,108 @@
       },
       {
         "command": "jj.openFileResourceState",
-        "title": "Open file",
+        "title": "Open File",
         "category": "Jujutsu",
         "icon": "$(go-to-file)"
       },
       {
         "command": "jj.openFileEditor",
-        "title": "View as file",
+        "title": "View as File",
         "category": "Jujutsu",
         "icon": "$(request-changes)"
       },
       {
         "command": "jj.openDiffEditor",
-        "title": "View as diff",
+        "title": "View as Diff",
         "category": "Jujutsu",
         "icon": "$(request-changes)"
       },
       {
         "command": "jj.openDiffResourceState",
-        "title": "View as diff",
+        "title": "View as Diff",
         "category": "Jujutsu",
         "icon": "$(compare-changes)"
       },
       {
         "command": "jj.openFileInWorkingCopyEditor",
-        "title": "Open file in working copy",
+        "title": "Open File in Working Copy",
         "category": "Jujutsu",
         "icon": "$(go-to-file)"
       },
       {
         "command": "jj.openFileInWorkingCopyResourceState",
-        "title": "Open file in working copy",
+        "title": "Open File in Working Copy",
         "category": "Jujutsu",
         "icon": "$(go-to-file)"
       },
       {
         "command": "jj.describe",
-        "title": "Update change description",
+        "title": "Update Change Description",
         "category": "Jujutsu",
         "icon": "$(edit)"
       },
       {
         "command": "jj.new",
-        "title": "Create new change",
+        "title": "Create New Change",
         "category": "Jujutsu",
         "icon": "$(plus)"
       },
       {
         "command": "jj.squashToParentResourceGroup",
-        "title": "Move changes to parent",
+        "title": "Move Changes to Parent",
         "category": "Jujutsu",
         "icon": "$(arrow-down)"
       },
       {
         "command": "jj.squashToWorkingCopyResourceGroup",
-        "title": "Move changes to working copy",
+        "title": "Move Changes to Working Copy",
         "category": "Jujutsu",
         "icon": "$(arrow-up)"
       },
       {
         "command": "jj.squashToParentResourceState",
-        "title": "Move changes to parent",
+        "title": "Move Changes to Parent",
         "category": "Jujutsu",
         "icon": "$(arrow-down)"
       },
       {
         "command": "jj.squashToWorkingCopyResourceState",
-        "title": "Move changes to working copy",
+        "title": "Move Changes to Working Copy",
         "category": "Jujutsu",
         "icon": "$(arrow-up)"
       },
       {
         "command": "jj.editResourceGroup",
-        "title": "Edit this change",
+        "title": "Edit This Change",
         "category": "Jujutsu",
         "icon": "$(sign-in)"
       },
       {
         "command": "jj.restoreResourceState",
-        "title": "Discard changes",
+        "title": "Discard Changes",
         "category": "Jujutsu",
         "icon": "$(discard)"
       },
       {
         "command": "jj.restoreResourceGroup",
-        "title": "Discard changes",
+        "title": "Discard Changes",
         "category": "Jujutsu",
         "icon": "$(discard)"
       },
       {
         "command": "jj.gitFetch",
-        "title": "Fetch from remote",
+        "title": "Fetch from Remote",
         "category": "Jujutsu"
       },
       {
         "command": "jj.refreshOperationLog",
-        "title": "Refresh operation log",
+        "title": "Refresh Operation Log",
         "category": "Jujutsu",
         "icon": "$(refresh)"
       },
       {
         "command": "jj.selectOperationLogRepo",
-        "title": "Select repository",
+        "title": "Select Repository",
         "category": "Jujutsu",
         "icon": "$(repo)"
       },
@@ -167,43 +167,43 @@
       },
       {
         "command": "jj.operationUndo",
-        "title": "Undo operation",
+        "title": "Undo Operation",
         "category": "Jujutsu",
         "icon": "$(discard)"
       },
       {
         "command": "jj.operationRestore",
-        "title": "Restore repo to the state at this operation",
+        "title": "Restore Repo to the State at This Operation",
         "category": "Jujutsu",
         "icon": "$(history)"
       },
       {
         "command": "jj.refreshGraphWebview",
-        "title": "Refresh source control graph",
+        "title": "Refresh Source Control Graph",
         "category": "Jujutsu",
         "icon": "$(refresh)"
       },
       {
         "command": "jj.toggleElideImmutableCommits.show",
-        "title": "Show elided commits",
+        "title": "Show Elided Commits",
         "category": "Jujutsu",
         "icon": "$(unfold)"
       },
       {
         "command": "jj.toggleElideImmutableCommits.elide",
-        "title": "Elide immutable commits",
+        "title": "Elide Immutable Commits",
         "category": "Jujutsu",
         "icon": "$(fold)"
       },
       {
         "command": "jj.newGraphWebview",
-        "title": "Create new change with selected as parents",
+        "title": "Create New Change with Selected as Parents",
         "category": "Jujutsu",
         "icon": "$(plus)"
       },
       {
         "command": "jj.selectGraphWebviewRepo",
-        "title": "Select repository",
+        "title": "Select Repository",
         "category": "Jujutsu",
         "icon": "$(repo)"
       },
@@ -215,18 +215,18 @@
       },
       {
         "command": "jj.squashSelectedRanges",
-        "title": "Squash selected changes...",
+        "title": "Squash Selected Changes...",
         "category": "Jujutsu"
       },
       {
         "command": "jj.openParentChange",
-        "title": "Open parent change",
+        "title": "Open Parent Change",
         "category": "Jujutsu",
         "icon": "$(arrow-left)"
       },
       {
         "command": "jj.openChildChange",
-        "title": "Open child change",
+        "title": "Open Child Change",
         "category": "Jujutsu",
         "icon": "$(arrow-right)"
       },

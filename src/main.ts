@@ -570,7 +570,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 parent,
               }));
               const selection = await vscode.window.showQuickPick(parentOptions, {
-                placeHolder: "Select parent to squash into",
+                placeHolder: "Select Parent to Squash Into",
               });
               if (!selection) {
                 return;
@@ -665,7 +665,7 @@ export async function activate(context: vscode.ExtensionContext) {
               parent,
             }));
             const selection = await vscode.window.showQuickPick(parentOptions, {
-              placeHolder: "Select parent to squash into",
+              placeHolder: "Select Parent to Squash Into",
             });
             if (!selection) {
               return;
@@ -813,7 +813,7 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const repoNames = workspaceSCM.repoSCMs.map((repo) => repo.repositoryRoot);
           const selectedRepoName = await vscode.window.showQuickPick(repoNames, {
-            placeHolder: "Select a repository",
+            placeHolder: "Select a Repository",
           });
 
           const selectedRepo = workspaceSCM.repoSCMs.find((repo) => repo.repositoryRoot === selectedRepoName);
@@ -872,7 +872,7 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const repoNames = workspaceSCM.repoSCMs.map((repo) => repo.repositoryRoot);
           const selectedRepoName = await vscode.window.showQuickPick(repoNames, {
-            placeHolder: "Select a repository",
+            placeHolder: "Select a Repository",
           });
 
           const selectedRepo = workspaceSCM.repoSCMs.find((repo) => repo.repositoryRoot === selectedRepoName);
@@ -987,7 +987,7 @@ export async function activate(context: vscode.ExtensionContext) {
           }
 
           const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: "Select destination change for squashing selected lines",
+            placeHolder: "Select Destination Change for Squashing Selected Lines",
             ignoreFocusOut: true,
           });
 
@@ -1114,7 +1114,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })) satisfies vscode.QuickPickItem[];
 
             const selection = await vscode.window.showQuickPick(items, {
-              placeHolder: "Select parent change to open",
+              placeHolder: "Select Parent Change to Open",
             });
             if (!selection) {
               return;
@@ -1192,7 +1192,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })) satisfies vscode.QuickPickItem[];
 
             const selection = await vscode.window.showQuickPick(items, {
-              placeHolder: "Select child change to open",
+              placeHolder: "Select Child Change to Open",
             });
             if (!selection) {
               return;
@@ -1316,7 +1316,7 @@ export async function activate(context: vscode.ExtensionContext) {
       if (reposWithWarnings.size > 0) {
         const count = reposWithWarnings.size;
         statusBarItem.text = `$(warning) jjx issues (${count})`;
-        statusBarItem.tooltip = "Click to view colocated repository warnings";
+        statusBarItem.tooltip = "Click to View Colocated Repository Warnings";
         statusBarItem.command = "jj.showColocatedWarnings";
         statusBarItem.show();
       } else {

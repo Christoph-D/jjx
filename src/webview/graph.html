@@ -7,53 +7,53 @@
 
   <body>
     <div id="context-menu" class="context-menu">
-      <div class="context-menu-item" data-action="edit">Edit this change</div>
-      <div class="context-menu-item" data-action="copyId">Copy change ID</div>
-      <div class="context-menu-item" data-action="abandon">Abandon change</div>
-      <div class="context-menu-item" data-action="describe">Describe change...</div>
-      <div class="context-menu-item" data-action="createBookmark">Create bookmark...</div>
-      <div class="context-menu-item" data-action="createTag">Create tag...</div>
+      <div class="context-menu-item" data-action="edit">Edit This Change</div>
+      <div class="context-menu-item" data-action="copyId">Copy Change ID</div>
+      <div class="context-menu-item" data-action="abandon">Abandon Change</div>
+      <div class="context-menu-item" data-action="describe">Describe Change...</div>
+      <div class="context-menu-item" data-action="createBookmark">Create Bookmark...</div>
+      <div class="context-menu-item" data-action="createTag">Create Tag...</div>
       <div class="context-menu-item has-submenu" data-action="moveBookmark">
-        Move bookmark here
+        Move Bookmark Here
         <div class="context-submenu" id="bookmark-submenu"></div>
       </div>
       <div class="context-menu-item has-submenu" data-action="deleteBookmark">
-        Delete bookmark
+        Delete Bookmark
         <div class="context-submenu" id="delete-bookmark-submenu"></div>
       </div>
       <div class="context-menu-item has-submenu" data-action="deleteTag">
-        Delete tag
+        Delete Tag
         <div class="context-submenu" id="delete-tag-submenu"></div>
       </div>
     </div>
     <div id="rebase-menu" class="context-menu">
-      <div class="context-menu-item" data-action="rebaseOnto">Rebase onto this change</div>
+      <div class="context-menu-item" data-action="rebaseOnto">Rebase Onto This Change</div>
       <div class="context-menu-item" data-action="rebaseOntoWithDescendants">
-        Rebase onto this change (with descendants)
+        Rebase Onto This Change (with Descendants)
       </div>
       <div class="context-menu-separator"></div>
-      <div class="context-menu-item" data-action="rebaseAfter">Rebase after this change</div>
+      <div class="context-menu-item" data-action="rebaseAfter">Rebase After This Change</div>
       <div class="context-menu-item" data-action="rebaseAfterWithDescendants">
-        Rebase after this change (with descendants)
+        Rebase After This Change (with Descendants)
       </div>
       <div class="context-menu-separator"></div>
-      <div class="context-menu-item" data-action="rebaseBefore">Rebase before this change</div>
+      <div class="context-menu-item" data-action="rebaseBefore">Rebase Before This Change</div>
       <div class="context-menu-item" data-action="rebaseBeforeWithDescendants">
-        Rebase before this change (with descendants)
+        Rebase Before This Change (with Descendants)
       </div>
       <div class="context-menu-separator"></div>
-      <div class="context-menu-item" data-action="squashInto">Squash into this change</div>
+      <div class="context-menu-item" data-action="squashInto">Squash Into This Change</div>
       <div class="context-menu-separator"></div>
-      <div class="context-menu-item" data-action="duplicateOnto">Duplicate onto this change</div>
-      <div class="context-menu-item" data-action="duplicateAfter">Duplicate after this change</div>
-      <div class="context-menu-item" data-action="duplicateBefore">Duplicate before this change</div>
+      <div class="context-menu-item" data-action="duplicateOnto">Duplicate Onto This Change</div>
+      <div class="context-menu-item" data-action="duplicateAfter">Duplicate After This Change</div>
+      <div class="context-menu-item" data-action="duplicateBefore">Duplicate Before This Change</div>
     </div>
     <div id="tooltip" class="tooltip"></div>
     <div id="stale-state" class="stale-state">
       <div class="stale-state-icon">
         <i class="codicon codicon-refresh"></i>
       </div>
-      <div class="stale-state-message">Working copy is stale</div>
+      <div class="stale-state-message">Working Copy Is Stale</div>
       <div class="stale-state-description">The working copy state is outdated and needs to be refreshed.</div>
       <button id="update-stale-button" class="update-stale-button">
         <i class="codicon codicon-sync"></i>
@@ -714,7 +714,7 @@
           editButton.className = "edit-button";
           editButton.innerHTML = '<i class="codicon codicon-log-in"></i>';
           editButton.title =
-            changeEditAction === "new" ? "Create and edit a new empty change on top" : "Edit this change";
+            changeEditAction === "new" ? "Create and Edit a New Empty Change on Top" : "Edit This Change";
           editButton.onclick = async (e) => {
             e.stopPropagation();
             await vscode.postMessage({
