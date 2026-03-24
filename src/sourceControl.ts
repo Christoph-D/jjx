@@ -443,7 +443,7 @@ export class RepositorySourceControlManager {
     }
 
     const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
-    const openDiffAction = config.get<"diff" | "at-revision" | "working-copy">("openDiffAction") || "working-copy";
+    const fileClickAction = config.get<"diff" | "at-revision" | "working-copy">("fileClickAction") || "working-copy";
 
     this.workingCopyResourceGroup.label = RepositorySourceControlManager.getLabel(
       "Working Copy",
@@ -467,7 +467,7 @@ export class RepositorySourceControlManager {
           beforeUri,
           workingCopyUri,
           "(Working Copy)",
-          openDiffAction,
+          fileClickAction,
           workingCopyUri,
           isConflicted,
         ),
@@ -524,7 +524,7 @@ export class RepositorySourceControlManager {
                 rev: parentChange.changeId,
               }),
               `(${parentChange.changeId})`,
-              openDiffAction,
+              fileClickAction,
               workingCopyUri,
               false,
             ),
@@ -560,7 +560,7 @@ export class RepositorySourceControlManager {
             beforeUri,
             toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
             `(${changeId})`,
-            openDiffAction,
+            fileClickAction,
             workingCopyUri,
             false,
           ),
@@ -621,7 +621,7 @@ function getResourceStateCommand(
   beforeUri: vscode.Uri,
   afterUri: vscode.Uri,
   diffTitleSuffix: string,
-  openDiffAction: "diff" | "at-revision" | "working-copy",
+  fileClickAction: "diff" | "at-revision" | "working-copy",
   workingCopyUri: vscode.Uri,
   isConflicted: boolean,
 ): vscode.Command {
@@ -639,7 +639,7 @@ function getResourceStateCommand(
       arguments: [beforeUri, {} satisfies vscode.TextDocumentShowOptions, `${fileStatus.file} (Deleted)`],
     };
   }
-  if (openDiffAction === "diff") {
+  if (fileClickAction === "diff") {
     return {
       title: "Open",
       command: "vscode.diff",
@@ -650,7 +650,7 @@ function getResourceStateCommand(
       ],
     };
   }
-  if (openDiffAction === "at-revision") {
+  if (fileClickAction === "at-revision") {
     return {
       title: "Open",
       command: "vscode.open",

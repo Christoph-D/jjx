@@ -115,7 +115,7 @@ export async function activate(context: vscode.ExtensionContext) {
         repoSCM.updatePlaceholderText(commitAction);
       }
     }
-    if (e.affectsConfiguration("jjx.openDiffAction")) {
+    if (e.affectsConfiguration("jjx.fileClickAction")) {
       for (const repoSCM of workspaceSCM.repoSCMs) {
         repoSCM.render();
       }

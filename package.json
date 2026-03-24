@@ -411,27 +411,27 @@
         },
         {
           "command": "jj.openFileResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.openDiffAction == 'diff'",
+          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.fileClickAction == 'diff'",
           "group": "inline@1"
         },
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.openDiffAction != 'diff'",
+          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.fileClickAction != 'diff'",
           "group": "inline@1"
         },
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.openDiffAction != 'diff'",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'diff'",
           "group": "inline@1"
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.openDiffAction != 'at-revision'",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'at-revision'",
           "group": "inline@2"
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.openDiffAction != 'working-copy'",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'working-copy'",
           "group": "inline@3"
         },
         {
@@ -640,7 +640,7 @@
           "scope": "resource",
           "minimum": 0
         },
-        "jjx.openDiffAction": {
+        "jjx.fileClickAction": {
           "type": "string",
           "default": "working-copy",
           "enum": [
