@@ -24,7 +24,7 @@ type Message = {
   withDescendants: boolean;
 };
 
-export class ChangeNode {
+export interface ChangeNode {
   changeId: string;
   changeIdPrefix: string;
   changeIdSuffix: string;
@@ -50,59 +50,6 @@ export class ChangeNode {
   mine: boolean;
   conflict: boolean;
   elided?: number;
-  constructor(
-    changeId: string,
-    changeIdPrefix: string,
-    changeIdSuffix: string,
-    changeOffset: string | null,
-    label: string,
-    description: string,
-    tooltip: string,
-    currentWorkingCopy: boolean,
-    localBookmarks: LogEntryLocalRef[],
-    remoteBookmarks: LogEntryRemoteRef[],
-    localTags: LogEntryLocalRef[],
-    remoteTags: LogEntryRemoteRef[],
-    workingCopies: string[],
-    parentChangeIds: string[] | undefined,
-    branchType: string | undefined,
-    authorName: string,
-    authorEmail: string,
-    authorTimestamp: string,
-    fullDescription: string,
-    filesChanged: number,
-    linesAdded: number,
-    linesRemoved: number,
-    mine: boolean,
-    conflict: boolean,
-    elided?: number,
-  ) {
-    this.changeId = changeId;
-    this.changeIdPrefix = changeIdPrefix;
-    this.changeIdSuffix = changeIdSuffix;
-    this.changeOffset = changeOffset;
-    this.label = label;
-    this.description = description;
-    this.tooltip = tooltip;
-    this.currentWorkingCopy = currentWorkingCopy;
-    this.localBookmarks = localBookmarks;
-    this.remoteBookmarks = remoteBookmarks;
-    this.localTags = localTags;
-    this.remoteTags = remoteTags;
-    this.workingCopies = workingCopies;
-    this.parentChangeIds = parentChangeIds;
-    this.branchType = branchType;
-    this.authorName = authorName;
-    this.authorEmail = authorEmail;
-    this.authorTimestamp = authorTimestamp;
-    this.fullDescription = fullDescription;
-    this.filesChanged = filesChanged;
-    this.linesAdded = linesAdded;
-    this.linesRemoved = linesRemoved;
-    this.mine = mine;
-    this.conflict = conflict;
-    this.elided = elided;
-  }
 }
 
 export { assignLanes } from "./laneAssigner";
@@ -587,32 +534,32 @@ export function parseJJLogJson(
         p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
       );
 
-      return new ChangeNode(
-        entryUniqueId,
-        "",
-        "",
-        null,
-        "",
-        "",
-        "",
-        false,
-        [],
-        [],
-        [],
-        [],
-        [],
-        uniqueParentIds,
-        "~",
-        "",
-        "",
-        "",
-        "",
-        0,
-        0,
-        0,
-        false,
-        false,
-      );
+      return {
+        changeId: entryUniqueId,
+        changeIdPrefix: "",
+        changeIdSuffix: "",
+        changeOffset: null,
+        label: "",
+        description: "",
+        tooltip: "",
+        currentWorkingCopy: false,
+        localBookmarks: [],
+        remoteBookmarks: [],
+        localTags: [],
+        remoteTags: [],
+        workingCopies: [],
+        parentChangeIds: uniqueParentIds,
+        branchType: "~",
+        authorName: "",
+        authorEmail: "",
+        authorTimestamp: "",
+        fullDescription: "",
+        filesChanged: 0,
+        linesAdded: 0,
+        linesRemoved: 0,
+        mine: false,
+        conflict: false,
+      };
     }
 
     const changeIdShortest = entry.change_id_shortest;
@@ -654,32 +601,32 @@ export function parseJJLogJson(
       p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
     );
 
-    return new ChangeNode(
-      uniqueChangeId,
-      changeIdShortest,
-      changeIdSuffix,
-      changeOffset,
-      formattedLine,
-      formattedDescription,
-      entry.change_id,
-      entry.current_working_copy,
-      entry.local_bookmarks.sort((a, b) => a.name.localeCompare(b.name)),
-      entry.remote_bookmarks.sort((a, b) => a.name.localeCompare(b.name)),
-      entry.local_tags.sort((a, b) => a.name.localeCompare(b.name)),
-      entry.remote_tags.sort((a, b) => a.name.localeCompare(b.name)),
-      entry.working_copies.sort(),
-      uniqueParentIds,
-      branchType,
-      entry.author.name,
-      entry.author.email,
-      entry.author.timestamp,
-      entry.description,
-      filesChanged,
-      linesAdded,
-      linesRemoved,
-      entry.mine,
-      entry.conflict,
-    );
+    return {
+      changeId: uniqueChangeId,
+      changeIdPrefix: changeIdShortest,
+      changeIdSuffix: changeIdSuffix,
+      changeOffset: changeOffset,
+      label: formattedLine,
+      description: formattedDescription,
+      tooltip: entry.change_id,
+      currentWorkingCopy: entry.current_working_copy,
+      localBookmarks: entry.local_bookmarks.sort((a, b) => a.name.localeCompare(b.name)),
+      remoteBookmarks: entry.remote_bookmarks.sort((a, b) => a.name.localeCompare(b.name)),
+      localTags: entry.local_tags.sort((a, b) => a.name.localeCompare(b.name)),
+      remoteTags: entry.remote_tags.sort((a, b) => a.name.localeCompare(b.name)),
+      workingCopies: entry.working_copies.sort(),
+      parentChangeIds: uniqueParentIds,
+      branchType: branchType,
+      authorName: entry.author.name,
+      authorEmail: entry.author.email,
+      authorTimestamp: entry.author.timestamp,
+      fullDescription: entry.description,
+      filesChanged: filesChanged,
+      linesAdded: linesAdded,
+      linesRemoved: linesRemoved,
+      mine: entry.mine,
+      conflict: entry.conflict,
+    };
   });
 
   const hasConflict = entries.some((e) => e.conflict);
