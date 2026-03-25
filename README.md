@@ -109,6 +109,7 @@ The following settings can be configured in VS Code's settings:
 | `jjx.fileClickAction`               | `"diff"`    | Action when clicking a file: `"diff"` (compare to parent), `"at-revision"` (open at clicked revision), or `"working-copy"` (open in working copy) |
 | `jjx.elideImmutableCommits`         | `true`      | Hide chains of immutable commits between relevant commits in the graph view                                                                       |
 | `jjx.numberOfImmutableParentsInLog` | `1`         | Number of immutable parent commits to show in the log                                                                                             |
+| `jjx.baseWebURL`                    | `""`        | Base URL for the 'Copy URL' feature (e.g., `https://github.com/user/repo`). Overrides `git_web_url()` when set                                    |
 
 ## 🐛 Known issues
 

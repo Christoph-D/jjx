@@ -649,6 +649,25 @@ export class JJRepository {
 
   async getCommitUrl(changeId: string): Promise<string | null> {
     try {
+      const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
+      const baseWebURL = config.get<string>("baseWebURL") ?? "";
+
+      if (baseWebURL) {
+        const commitId = (
+          await handleJJCommand(
+            this.spawnJJRead(["show", "-r", changeId, "--no-patch", "-T", "commit_id"], {
+              timeout: TIMEOUTS.DEFAULT,
+              cwd: this.repositoryRoot,
+            }),
+          )
+        )
+          .toString()
+          .trim();
+
+        const base = baseWebURL.endsWith("/") ? baseWebURL.slice(0, -1) : baseWebURL;
+        return `${base}/commit/${commitId}`;
+      }
+
       const output = (
         await handleJJCommand(
           this.spawnJJRead(["show", "-r", changeId, "--no-patch", "-T", 'git_web_url() ++ "/commit/" ++ commit_id'], {

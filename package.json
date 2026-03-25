@@ -668,6 +668,12 @@
           "description": "Number of immutable parent commits to show in the log.",
           "scope": "resource",
           "minimum": 0
+        },
+        "jjx.baseWebURL": {
+          "type": "string",
+          "default": "",
+          "description": "Base URL for the 'Copy URL' feature. When set, this overrides git_web_url() for generating commit URLs (e.g., 'https://github.com/user/repo'). If empty, git_web_url() is used.",
+          "scope": "resource"
         }
       }
     },
