@@ -896,10 +896,11 @@ export class JJRepository {
     );
 
     const { stdout: summaryOutput } = await collectProcessOutput(childProcess).catch(convertJJErrors);
+    const summaryOutputStr = summaryOutput.toString();
 
     const { leftFiles } = await pathPromise;
 
-    const summaryLines = summaryOutput.trim().split("\n");
+    const summaryLines = summaryOutputStr.trim().split("\n");
 
     for (const summaryLineRaw of summaryLines) {
       const summaryLine = summaryLineRaw.trim();

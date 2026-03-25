@@ -7,7 +7,7 @@ import { logger } from "./logger";
 import { anyEvent, filterEvent, isDescendant } from "./utils";
 import { JJFileSystemProvider } from "./fileSystemProvider";
 import { getConfigArgs, getJJPath } from "./config";
-import { handleCommand, spawnJJ } from "./process";
+import { collectProcessOutput, spawnJJ } from "./process";
 import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
 import type { FileStatus, RepositoryStatus, Show, Change } from "./types";
@@ -64,13 +64,13 @@ export class WorkspaceSourceControlManager {
         const jjConfigArgs = getConfigArgs(extensionDir);
 
         const repoRoot = (
-          await handleCommand(
+          await collectProcessOutput(
             spawnJJ(jjPath.filepath, ["--ignore-working-copy", "root"], {
               timeout: TIMEOUTS.DEFAULT,
               cwd: workspaceFolder.uri.fsPath,
             }),
           )
-        )
+        ).stdout
           .toString()
           .trim();
 

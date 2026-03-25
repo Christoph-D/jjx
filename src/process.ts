@@ -7,7 +7,7 @@ import { getJjEditorEnv } from "./jjEditor";
 
 export type SpawnOptions = NodeSpawnOptions & { cwd: string };
 
-export type ProcessOutput = { stdout: string; stderr: string };
+export type ProcessOutput = { stdout: Buffer; stderr: Buffer };
 
 export function collectProcessOutput(childProcess: ChildProcess): Promise<ProcessOutput> {
   return new Promise((resolve, reject) => {
@@ -27,14 +27,22 @@ export function collectProcessOutput(childProcess: ChildProcess): Promise<Proces
     });
 
     childProcess.on("close", (code, signal) => {
-      const stdoutStr = Buffer.concat(stdout).toString();
-      const stderrStr = Buffer.concat(stderr).toString();
+      const stdoutBuf = Buffer.concat(stdout);
+      const stderrBuf = Buffer.concat(stderr);
       if (code) {
-        reject(new Error(`Command failed with exit code ${code}.\nstdout: ${stdoutStr}\nstderr: ${stderrStr}`));
+        reject(
+          new Error(
+            `Command failed with exit code ${code}.\nstdout: ${stdoutBuf.toString()}\nstderr: ${stderrBuf.toString()}`,
+          ),
+        );
       } else if (signal) {
-        reject(new Error(`Command failed with signal ${signal}.\nstdout: ${stdoutStr}\nstderr: ${stderrStr}`));
+        reject(
+          new Error(
+            `Command failed with signal ${signal}.\nstdout: ${stdoutBuf.toString()}\nstderr: ${stderrBuf.toString()}`,
+          ),
+        );
       } else {
-        resolve({ stdout: stdoutStr, stderr: stderrStr });
+        resolve({ stdout: stdoutBuf, stderr: stderrBuf });
       }
     });
   });
@@ -53,39 +61,8 @@ export function spawnJJ(jjPath: string, args: string[], options: SpawnOptions) {
   return spawn(jjPath, args, finalOptions);
 }
 
-export function handleJJCommand(childProcess: ChildProcess) {
-  return handleCommand(childProcess).catch(convertJJErrors);
-}
-
-export function handleCommand(childProcess: ChildProcess) {
-  return new Promise<Buffer>((resolve, reject) => {
-    const output: Buffer[] = [];
-    const errOutput: Buffer[] = [];
-    childProcess.stdout?.on("data", (data: Buffer) => {
-      output.push(data);
-    });
-    childProcess.stderr?.on("data", (data: Buffer) => {
-      errOutput.push(data);
-    });
-    childProcess.on("error", (error: Error) => {
-      reject(new Error(`Spawning command failed: ${error.message}`));
-    });
-    childProcess.on("close", (code, signal) => {
-      if (code) {
-        reject(
-          new Error(
-            `Command failed with exit code ${code}.\nstdout: ${Buffer.concat(output).toString()}\nstderr: ${Buffer.concat(errOutput).toString()}`,
-          ),
-        );
-      } else if (signal) {
-        reject(
-          new Error(
-            `Command failed with signal ${signal}.\nstdout: ${Buffer.concat(output).toString()}\nstderr: ${Buffer.concat(errOutput).toString()}`,
-          ),
-        );
-      } else {
-        resolve(Buffer.concat(output));
-      }
-    });
-  });
+export function handleJJCommand(childProcess: ChildProcess): Promise<Buffer> {
+  return collectProcessOutput(childProcess)
+    .catch(convertJJErrors)
+    .then((output) => output.stdout);
 }
