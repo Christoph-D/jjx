@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import fs from "fs/promises";
 import spawn from "cross-spawn";
 import { SHOW_TEMPLATE, STATUS_TEMPLATE, LOG_TEMPLATE, OPERATION_TEMPLATE } from "./templateBuilder";
-import { ImmutableError, convertJJErrors, parseJJError } from "./errors";
+import { ImmutableError, convertJJErrors } from "./errors";
 import { spawnJJ, handleJJCommand } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
 import { filepathToFileset } from "./utils";
@@ -388,29 +388,21 @@ export class JJRepository {
   }
 
   async new(message?: string, revs?: string[]) {
-    try {
-      return await handleJJCommand(
-        this.spawnJJ(["new", ...(message ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
-      );
-    } catch (error) {
-      throw parseJJError(error);
-    }
+    return await handleJJCommand(
+      this.spawnJJ(["new", ...(message ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])], {
+        timeout: TIMEOUTS.DEFAULT,
+        cwd: this.repositoryRoot,
+      }),
+    );
   }
 
   async commit(message?: string) {
-    try {
-      return await handleJJCommand(
-        this.spawnJJ(["commit", ...(message ? ["-m", message] : [])], {
-          timeout: message ? TIMEOUTS.DEFAULT : 0,
-          cwd: this.repositoryRoot,
-        }),
-      );
-    } catch (error) {
-      throw parseJJError(error);
-    }
+    return await handleJJCommand(
+      this.spawnJJ(["commit", ...(message ? ["-m", message] : [])], {
+        timeout: message ? TIMEOUTS.DEFAULT : 0,
+        cwd: this.repositoryRoot,
+      }),
+    );
   }
 
   async squashRetryImmutable({
