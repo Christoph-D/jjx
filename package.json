@@ -68,7 +68,7 @@
         "command": "jj.openDiffEditor",
         "title": "View as Diff",
         "category": "Jujutsu",
-        "icon": "$(request-changes)"
+        "icon": "$(compare-changes)"
       },
       {
         "command": "jj.openDiffResourceState",
