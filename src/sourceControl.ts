@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import * as vscode from "vscode";
-import { getParams, toJJUri } from "./uri";
+import { resolveRev, toJJUri } from "./uri";
 import type { JJDecorationProvider } from "./decorationProvider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent, isDescendant } from "./utils";
@@ -222,17 +222,9 @@ export function provideOriginalResource(uri: vscode.Uri) {
     return undefined;
   }
 
-  let rev = "@";
-  if (uri.scheme === "jj") {
-    const params = getParams(uri);
-    if ("diffOriginalRev" in params) {
-      // It doesn't make sense to show a quick diff for the left side of a diff. Diffception?
-      return undefined;
-    }
-    if ("fileId" in params || "deleted" in params) {
-      return undefined;
-    }
-    rev = params.rev;
+  const rev = resolveRev(uri, { diffOriginalRevBehavior: "exclude", excludeSpecial: true });
+  if (!rev) {
+    return undefined;
   }
   const filePath = uri.fsPath;
   const originalUri = toJJUri(vscode.Uri.file(filePath), {

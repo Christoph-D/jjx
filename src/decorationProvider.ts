@@ -1,6 +1,6 @@
 import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, ThemeColor } from "vscode";
 import { FileStatus, FileStatusType } from "./types";
-import { getParams, toJJUri } from "./uri";
+import { resolveRev, toJJUri } from "./uri";
 import { normalizePath } from "./utils";
 
 const colorOfType = (type: FileStatusType) => {
@@ -103,18 +103,9 @@ export class JJDecorationProvider implements FileDecorationProvider {
     if (!this.hasData) {
       throw new Error("provideFileDecoration was called before data was available");
     }
-    let rev = "@";
-    if (uri.scheme === "jj") {
-      const params = getParams(uri);
-      if ("diffOriginalRev" in params) {
-        // It doesn't make sense to show a decoration for the left side of a diff, even if that left side is a
-        // single rev, because we never show the left side of a diff by itself; it'll always be part of a diff view.
-        return undefined;
-      }
-      if ("fileId" in params || "deleted" in params) {
-        return undefined;
-      }
-      rev = params.rev;
+    const rev = resolveRev(uri, { diffOriginalRevBehavior: "exclude", excludeSpecial: true });
+    if (rev === undefined) {
+      return undefined;
     }
     const key = getKey(uri.fsPath, rev);
     if (rev === "@" && !this.decorations.has(key)) {

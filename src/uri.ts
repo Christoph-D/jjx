@@ -31,3 +31,42 @@ export function getParams(uri: Uri) {
   }
   return parsed;
 }
+
+export function resolveRev(
+  uri: Uri,
+  options?: {
+    diffOriginalRevBehavior?: "passthrough" | "suffix" | "exclude";
+    excludeSpecial?: boolean;
+  },
+): string | undefined {
+  if (uri.scheme === "file") {
+    return "@";
+  }
+
+  if (uri.scheme !== "jj") {
+    return undefined;
+  }
+
+  const params = getParams(uri);
+
+  if (options?.excludeSpecial && ("fileId" in params || "deleted" in params)) {
+    return undefined;
+  }
+
+  if ("diffOriginalRev" in params) {
+    const behavior = options?.diffOriginalRevBehavior ?? "passthrough";
+    if (behavior === "exclude") {
+      return undefined;
+    }
+    if (behavior === "suffix") {
+      return `${params.diffOriginalRev}-`;
+    }
+    return params.diffOriginalRev;
+  }
+
+  if ("rev" in params) {
+    return params.rev;
+  }
+
+  return undefined;
+}

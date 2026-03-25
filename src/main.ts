@@ -8,7 +8,7 @@ import type { ChangeWithDetails, FileStatus } from "./types";
 import { JJDecorationProvider } from "./decorationProvider";
 import { OperationLogManager, OperationLogTreeDataProvider, OperationTreeItem } from "./operationLogTreeView";
 import { JJGraphWebview } from "./graphWebview";
-import { getParams, toJJUri } from "./uri";
+import { getParams, resolveRev, toJJUri } from "./uri";
 import { initLogger, logger } from "./logger";
 import { linesDiffComputers } from "./vendor/vscode/editor/common/diff/linesDiffComputers";
 import { ILinesDiffComputer } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
@@ -282,14 +282,10 @@ export async function activate(context: vscode.ExtensionContext) {
         annotateInfo = undefined;
         return;
       }
-      let rev = "@";
-      if (uri.scheme === "jj") {
-        const params = getParams(uri);
-        if ("diffOriginalRev" in params) {
-          rev = `${params.diffOriginalRev}-`; // note that this may refer to multiple revs, which we handle below
-        } else if ("rev" in params) {
-          rev = params.rev;
-        }
+      const rev = resolveRev(uri, { diffOriginalRevBehavior: "suffix" });
+      if (!rev) {
+        annotateInfo = undefined;
+        return;
       }
 
       const repository = workspaceSCM.getRepositoryFromUri(uri);
@@ -387,15 +383,7 @@ export async function activate(context: vscode.ExtensionContext) {
       "jj.openFileAtRevision",
       async (resourceState: vscode.SourceControlResourceState) => {
         const uri = resourceState.resourceUri;
-        let rev = "@";
-        if (uri.scheme === "jj") {
-          const params = getParams(uri);
-          if ("diffOriginalRev" in params) {
-            rev = params.diffOriginalRev;
-          } else if ("rev" in params) {
-            rev = params.rev;
-          }
-        }
+        const rev = resolveRev(uri) ?? "@";
         const titleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
         await vscode.commands.executeCommand("vscode.open", uri, {}, `${path.basename(uri.fsPath)} ${titleSuffix}`);
       },
@@ -410,15 +398,7 @@ export async function activate(context: vscode.ExtensionContext) {
           return;
         }
 
-        let rev = "@";
-        if (uri.scheme === "jj") {
-          const params = getParams(uri);
-          if ("diffOriginalRev" in params) {
-            rev = params.diffOriginalRev;
-          } else if ("rev" in params) {
-            rev = params.rev;
-          }
-        }
+        const rev = resolveRev(uri) ?? "@";
 
         await vscode.commands.executeCommand(
           "vscode.open",
@@ -1019,15 +999,7 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      let currentRev = "@";
-      if (uri.scheme === "jj") {
-        const params = getParams(uri);
-        if ("diffOriginalRev" in params) {
-          currentRev = params.diffOriginalRev;
-        } else if ("rev" in params) {
-          currentRev = params.rev;
-        }
-      }
+      const currentRev = resolveRev(uri) ?? "@";
 
       const repository = workspaceSCM.getRepositoryFromUri(uri);
       if (!repository) {
@@ -1089,15 +1061,7 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      let currentRev = "@";
-      if (uri.scheme === "jj") {
-        const params = getParams(uri);
-        if ("diffOriginalRev" in params) {
-          currentRev = params.diffOriginalRev;
-        } else if ("rev" in params) {
-          currentRev = params.rev;
-        }
-      }
+      const currentRev = resolveRev(uri) ?? "@";
 
       const repository = workspaceSCM.getRepositoryFromUri(uri);
       if (!repository) {
@@ -1417,7 +1381,7 @@ function registerCommand<T extends unknown[]>(
       await callback(...args);
     } catch (error) {
       const prefix = options?.errorPrefix ?? inferErrorPrefix(command);
-      showErrorMessage(prefix, error);
+      vscode.window.showErrorMessage(`${prefix}${error instanceof Error ? `: ${error.message}` : ""}`);
     }
   };
 
