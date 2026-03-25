@@ -341,15 +341,6 @@ export class JJRepository {
     );
   }
 
-  readFileByFileId(filepath: string, fileId: string) {
-    return handleJJCommand(
-      this.spawnJJRead(["debug", "object", "file", "--", filepath, fileId], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
-  }
-
   async describeRetryImmutable(rev: string, message?: string) {
     return this.retryWithImmutable(
       rev,

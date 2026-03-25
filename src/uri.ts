@@ -5,9 +5,8 @@ const RevUriParams = type({ rev: "string" });
 const DiffOriginalRevUriParams = type({
   diffOriginalRev: "string",
 });
-const FileIdUriParams = type({ fileId: "string" });
 const DeletedUriParams = type({ deleted: "boolean" });
-const JJUriParams = RevUriParams.or(DiffOriginalRevUriParams).or(FileIdUriParams).or(DeletedUriParams);
+const JJUriParams = RevUriParams.or(DiffOriginalRevUriParams).or(DeletedUriParams);
 
 export type JJUriParams = typeof JJUriParams.infer;
 
@@ -49,7 +48,7 @@ export function resolveRev(
 
   const params = getParams(uri);
 
-  if (options?.excludeSpecial && ("fileId" in params || "deleted" in params)) {
+  if (options?.excludeSpecial && "deleted" in params) {
     return undefined;
   }
 

@@ -12,7 +12,6 @@ import {
   FileChangeType,
   workspace,
 } from "vscode";
-import path from "path";
 import { getParams } from "./uri";
 import type { WorkspaceSourceControlManager } from "./sourceControl";
 import { createThrottledAsyncFn, eventToPromise, filterEvent, isDescendant, pathEquals } from "./utils";
@@ -137,18 +136,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
 
     this.cache.set(uri.toString(), cacheValue);
 
-    if ("fileId" in params) {
-      const relativePath = path.relative(repository.repositoryRoot, uri.fsPath);
-      try {
-        const data = await repository.readFileByFileId(relativePath, params.fileId);
-        return data;
-      } catch (e) {
-        if (e instanceof Error && e.message.includes("No such path")) {
-          throw FileSystemError.FileNotFound();
-        }
-        throw e;
-      }
-    } else if ("diffOriginalRev" in params) {
+    if ("diffOriginalRev" in params) {
       const originalContent = await repository.getDiffOriginal(params.diffOriginalRev, uri.fsPath);
       if (!originalContent) {
         try {
