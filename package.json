@@ -2,7 +2,7 @@
   "name": "jjx",
   "displayName": "Jujutsu X",
   "publisher": "jjx",
-  "description": "Jujutsu (jj) version control system for VS Code",
+  "description": "First-class VS Code integration for Jujutsu (jj) with visual history and fluid workflows",
   "icon": "images/logo.png",
   "version": "1.1.1",
   "engines": {
