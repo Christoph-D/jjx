@@ -13,16 +13,29 @@ export type { LaneNode, LaneEdge, ChangeIdGraph } from "./laneAssigner";
 
 const rootChangeId = "z".repeat(32);
 
-type Message = {
-  command: string;
-  changeId: string;
-  selectedNodes: string[];
-  bookmark: string;
-  tag: string;
-  targetChangeId: string;
-  immutable: boolean;
-  withDescendants: boolean;
-};
+type Message =
+  | { command: "webviewReady" }
+  | { command: "editChange"; changeId: string }
+  | { command: "editChangeDirect"; changeId: string }
+  | { command: "selectChange"; selectedNodes: string[] }
+  | { command: "moveBookmark"; bookmark: string; targetChangeId: string }
+  | { command: "createBookmark"; targetChangeId: string }
+  | { command: "createTag"; targetChangeId: string }
+  | { command: "deleteBookmark"; bookmark: string }
+  | { command: "deleteTag"; tag: string }
+  | { command: "describeChange"; changeId: string }
+  | { command: "abandonChange"; changeId: string }
+  | { command: "rebaseOnto"; changeId: string; targetChangeId: string; withDescendants: boolean }
+  | { command: "rebaseAfter"; changeId: string; targetChangeId: string; withDescendants: boolean }
+  | { command: "rebaseBefore"; changeId: string; targetChangeId: string; withDescendants: boolean }
+  | { command: "squashInto"; changeId: string; targetChangeId: string }
+  | { command: "duplicateOnto"; changeId: string; targetChangeId: string }
+  | { command: "duplicateAfter"; changeId: string; targetChangeId: string }
+  | { command: "duplicateBefore"; changeId: string; targetChangeId: string }
+  | { command: "revertOnto"; changeId: string; targetChangeId: string }
+  | { command: "revertAfter"; changeId: string; targetChangeId: string }
+  | { command: "revertBefore"; changeId: string; targetChangeId: string }
+  | { command: "updateStale" };
 
 export interface ChangeNode {
   changeId: string;
@@ -159,7 +172,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
                   await this.repository.moveBookmark(message.bookmark, message.targetChangeId, true);
                   await this.refresh();
                 } catch (retryError: unknown) {
-                  vscode.window.showErrorMessage(`Failed to move bookmark: ${retryError as string}`);
+                  vscode.window.showErrorMessage(
+                    `Failed to move bookmark: ${retryError instanceof Error ? retryError.message : String(retryError)}`,
+                  );
                 }
               }
             } else {
