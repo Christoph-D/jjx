@@ -647,6 +647,25 @@ export class JJRepository {
     );
   }
 
+  async getCommitUrl(changeId: string): Promise<string | null> {
+    try {
+      const output = (
+        await handleJJCommand(
+          this.spawnJJRead(["show", "-r", changeId, "--no-patch", "-T", 'git_web_url() ++ "/commit/" ++ commit_id'], {
+            timeout: TIMEOUTS.DEFAULT,
+            cwd: this.repositoryRoot,
+          }),
+        )
+      )
+        .toString()
+        .trim();
+
+      return output && !output.startsWith("/commit/") ? output : null;
+    } catch {
+      return null;
+    }
+  }
+
   private async abandon(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
       this.spawnJJ(["abandon", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {

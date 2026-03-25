@@ -36,6 +36,7 @@ type Message =
   | { command: "revertOnto"; changeId: string; targetChangeId: string }
   | { command: "revertAfter"; changeId: string; targetChangeId: string }
   | { command: "revertBefore"; changeId: string; targetChangeId: string }
+  | { command: "copyUrl"; changeId: string }
   | { command: "updateStale" };
 
 export interface ChangeNode {
@@ -261,6 +262,18 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to abandon change", error);
+          }
+          break;
+        case "copyUrl":
+          try {
+            const url = await this.repository.getCommitUrl(message.changeId);
+            if (url) {
+              await vscode.env.clipboard.writeText(url);
+            } else {
+              vscode.window.showWarningMessage("No web remote configured for this repository.");
+            }
+          } catch (error: unknown) {
+            showErrorMessage("Failed to get commit URL", error);
           }
           break;
         case "rebaseOnto":
