@@ -13,7 +13,7 @@ Create a new release for the JJX extension following semantic versioning.
 1. **Find the most recent version tag:**
 
    ```
-   jj tag list -T name --sort committer-date 'v*'
+   jj tag list -T 'name ++ "\n"' --sort committer-date 'v*'
    ```
 
 2. **Review commits since the last version:**
@@ -37,10 +37,14 @@ Create a new release for the JJX extension following semantic versioning.
    - Breaking changes → major version bump (e.g., 1.0.0 → 2.0.0)
    - Read all commits and use judgment for the appropriate bump level
 
-5. **Get user confirmation:** Present the proposed tag value and the proposed changes to CHANGELOG.md to the user. Ask
-   them to review and confirm before proceeding. Do not continue until the user approves.
+5. **Update CHANGELOG.md with the new release notes:**
 
-6. **Update CHANGELOG.md** with the new release notes summarizing the changes.
+   **CRITICAL: You MUST write the updated CHANGELOG.md to disk BEFORE asking the user for confirmation.** The user
+   cannot review or edit the changelog if you haven't written it to the file. Do not just show the user your proposed
+   changes—actually write them to CHANGELOG.md first.
+
+6. **Get user confirmation:** After writing to CHANGELOG.md, tell the user that you wrote the new release notes to
+   CHANGELOG.md. Ask them to review and edit CHANGELOG.md if needed. Do not continue until the user approves.
 
 7. **Update package.json** with the new version in the `version` field.
 
