@@ -425,16 +425,22 @@ export class RepositorySourceControlManager {
     this.trackedFiles = newTrackedFiles;
   }
 
-  static getLabel(prefix: string, change: Change) {
-    const changeIdDisplay =
-      change.divergent && change.changeOffset
-        ? `${change.changeId.substring(0, 8)}/${change.changeOffset}`
-        : change.changeId.substring(0, 8);
-    return `${prefix} [${changeIdDisplay}]${
-      change.description ? ` • ${change.description}` : ""
-    }${change.isEmpty ? " (empty)" : ""}${
-      change.isConflict ? " (conflict)" : ""
-    }${change.description ? "" : " (no description)"}`;
+  static getLabel(prefix: string, change: Change, showChangeId: boolean = true) {
+    const parts: string[] = [prefix];
+    if (showChangeId) {
+      const changeIdDisplay =
+        change.divergent && change.changeOffset
+          ? `${change.changeId.substring(0, 8)}/${change.changeOffset}`
+          : change.changeId.substring(0, 8);
+      parts.push(` [${changeIdDisplay}]`);
+    }
+    if (change.description) {
+      parts.push(` • ${change.description}`);
+    }
+    if (change.isConflict) {
+      parts.push(" (conflict)");
+    }
+    return parts.join("");
   }
 
   render() {
@@ -448,6 +454,7 @@ export class RepositorySourceControlManager {
     this.workingCopyResourceGroup.label = RepositorySourceControlManager.getLabel(
       "Working Copy",
       this.status.workingCopy,
+      false,
     );
     this.workingCopyResourceGroup.resourceStates = this.status.fileStatuses.map((fileStatus) => {
       const workingCopyUri = vscode.Uri.file(fileStatus.path);
@@ -475,13 +482,14 @@ export class RepositorySourceControlManager {
     });
     this.sourceControl.count = this.status.fileStatuses.length;
 
+    const showParentChangeId = this.status.parentChanges.length > 1;
     const updatedGroups: vscode.SourceControlResourceGroup[] = [];
     for (const group of this.parentResourceGroups) {
       const parentChange = this.status.parentChanges.find((change) => change.changeId === group.id);
       if (!parentChange) {
         group.dispose();
       } else {
-        group.label = RepositorySourceControlManager.getLabel("Parent Commit", parentChange);
+        group.label = RepositorySourceControlManager.getLabel("Parent Commit", parentChange, showParentChangeId);
         updatedGroups.push(group);
       }
     }
@@ -494,7 +502,7 @@ export class RepositorySourceControlManager {
       if (!parentGroup) {
         parentChangeResourceGroup = this.sourceControl.createResourceGroup(
           parentChange.changeId,
-          RepositorySourceControlManager.getLabel("Parent Commit", parentChange),
+          RepositorySourceControlManager.getLabel("Parent Commit", parentChange, showParentChangeId),
         );
         this.parentResourceGroups.push(parentChangeResourceGroup);
       } else {
