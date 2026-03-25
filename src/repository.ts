@@ -7,7 +7,7 @@ import { SHOW_TEMPLATE, STATUS_TEMPLATE, LOG_TEMPLATE, OPERATION_TEMPLATE } from
 import { ImmutableError, convertJJErrors } from "./errors";
 import { spawnJJ, handleJJCommand } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
-import { filepathToFileset } from "./utils";
+import { filepathToFileset, pathEquals, normalizePath } from "./utils";
 import {
   getDiffToolPath,
   expectDiffToolRequest,
@@ -15,7 +15,6 @@ import {
   expectSquashToolRequest,
   completeSquashToolRequest,
 } from "./jjEditor";
-import { pathEquals } from "./utils";
 import { TIMEOUTS } from "./constants";
 import type {
   FileStatus,
@@ -94,7 +93,7 @@ export class JJRepository {
         };
       }
       fileStatuses.push(fileStatus);
-      fileStatusesByPath.set(fullPath, fileStatus);
+      fileStatusesByPath.set(normalizePath(fullPath), fileStatus);
     }
 
     const conflictedFiles = new Set<string>();
@@ -103,13 +102,14 @@ export class JJRepository {
       const fullPath = path.join(this.repositoryRoot, normalizedPath);
       conflictedFiles.add(fullPath);
 
-      if (!fileStatusesByPath.has(fullPath)) {
+      const normalizedFullPath = normalizePath(fullPath);
+      if (!fileStatusesByPath.has(normalizedFullPath)) {
         fileStatuses.push({
           type: "X",
           file: path.basename(normalizedPath),
           path: fullPath,
         });
-        fileStatusesByPath.set(fullPath, fileStatuses[fileStatuses.length - 1]);
+        fileStatusesByPath.set(normalizedFullPath, fileStatuses[fileStatuses.length - 1]);
       }
     }
 
