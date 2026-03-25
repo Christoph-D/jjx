@@ -220,6 +220,32 @@ body {
   fill: var(--vscode-list-activeSelectionBackground);
 }
 
+.node-circle .circle-bg {
+  opacity: 1 !important;
+  transition: none;
+  stroke: var(--vscode-sideBar-background);
+}
+
+.node-circle .no-stroke {
+  stroke-width: 0;
+}
+
+.node-circle .thin-stroke {
+  stroke-width: 1.5;
+}
+
+.node-circle.selected .circle-bg {
+  stroke: var(--vscode-list-activeSelectionBackground);
+}
+
+.node-circle.hovered .circle-bg {
+  stroke: var(--vscode-list-hoverBackground);
+}
+
+.node-circle.selected.hovered .circle-bg {
+  stroke: var(--vscode-list-activeSelectionBackground);
+}
+
 .node-content {
   display: flex;
   align-items: center;
