@@ -245,11 +245,6 @@ export class JJRepository {
     return status;
   }
 
-  async status(useCache = false): Promise<RepositoryStatus> {
-    const status = await this.getStatus(useCache);
-    return status;
-  }
-
   async fileList() {
     return (
       await handleJJCommand(

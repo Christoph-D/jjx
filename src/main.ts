@@ -584,7 +584,7 @@ export async function activate(context: vscode.ExtensionContext) {
               throw new Error("Repository not found");
             }
 
-            const status = await repository.status(true);
+            const status = await repository.getStatus(true);
 
             let destinationParentChange = status.parentChanges[0];
             if (status.parentChanges.length > 1) {
@@ -630,7 +630,7 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!repository) {
               throw new Error("Repository not found");
             }
-            const status = await repository.status(true);
+            const status = await repository.getStatus(true);
 
             const parentChange = status.parentChanges.find((change) => change.changeId === resourceGroup.id);
             if (parentChange === undefined) {
@@ -679,7 +679,7 @@ export async function activate(context: vscode.ExtensionContext) {
           if (!repository) {
             throw new Error("Repository not found");
           }
-          const status = await repository.status(true);
+          const status = await repository.getStatus(true);
 
           let destinationParentChange = status.parentChanges[0];
           if (status.parentChanges.length > 1) {
@@ -723,7 +723,7 @@ export async function activate(context: vscode.ExtensionContext) {
           if (!repository) {
             throw new Error("Repository not found");
           }
-          const status = await repository.status(true);
+          const status = await repository.getStatus(true);
 
           const parentChange = status.parentChanges.find((change) => change.changeId === resourceGroup.id);
           if (parentChange === undefined) {
@@ -1000,7 +1000,7 @@ export async function activate(context: vscode.ExtensionContext) {
             // No child changes or error, continue with just parents
           }
 
-          const status = await repository.status(true);
+          const status = await repository.getStatus(true);
           for (const parent of status.parentChanges) {
             items.push({
               label: `$(arrow-down) Parent: ${parent.changeId.substring(0, 8)}`,

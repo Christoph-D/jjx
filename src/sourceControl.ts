@@ -378,7 +378,7 @@ export class RepositorySourceControlManager {
     const latestOperationId = await this.repository.getLatestOperationId(false);
     if (this.operationId !== latestOperationId) {
       this.operationId = latestOperationId;
-      const status = await this.repository.status();
+      const status = await this.repository.getStatus();
 
       await this.updateState(status);
       this.render();
