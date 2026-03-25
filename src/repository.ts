@@ -359,7 +359,7 @@ export class JJRepository {
     );
   }
 
-  async describe(rev: string, message?: string, ignoreImmutable = false) {
+  private async describe(rev: string, message?: string, ignoreImmutable = false) {
     return (
       await handleJJCommand(
         this.spawnJJ(
@@ -422,7 +422,7 @@ export class JJRepository {
     );
   }
 
-  async squash({
+  private async squash({
     fromRev,
     toRev,
     message,
@@ -497,7 +497,7 @@ export class JJRepository {
    * @param options.content - The contents of the file at filepath with some of the changes in fromRev applied to it;
    *                          those changes will be moved to the destination revision.
    */
-  async squashContent({
+  private async squashContent({
     fromRev,
     toRev,
     filepath,
@@ -621,7 +621,7 @@ export class JJRepository {
     );
   }
 
-  async edit(rev: string, ignoreImmutable = false) {
+  private async edit(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
       this.spawnJJ(["edit", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
         timeout: TIMEOUTS.DEFAULT,
@@ -674,7 +674,7 @@ export class JJRepository {
     );
   }
 
-  async abandon(rev: string, ignoreImmutable = false) {
+  private async abandon(rev: string, ignoreImmutable = false) {
     return await handleJJCommand(
       this.spawnJJ(["abandon", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
         timeout: TIMEOUTS.DEFAULT,
@@ -683,7 +683,7 @@ export class JJRepository {
     );
   }
 
-  async rebase(
+  private async rebase(
     source: string,
     destination: string,
     mode: "onto" | "after" | "before",
@@ -745,7 +745,7 @@ export class JJRepository {
     );
   }
 
-  async restore(rev?: string, filepaths?: string[], ignoreImmutable = false) {
+  private async restore(rev?: string, filepaths?: string[], ignoreImmutable = false) {
     return await handleJJCommand(
       this.spawnJJ(
         [
