@@ -168,7 +168,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await workbox.getByRole("tab", { name: /Source Control/i }).click();
     await workbox.locator(".scm-view").first().waitFor();
 
-    const graphHeader = workbox.getByRole("button", { name: /Source Control Graph/i });
+    const graphHeader = workbox.getByRole("button", { name: /JJ Graph/i });
     const isExpanded = await graphHeader.getAttribute("aria-expanded");
     if (isExpanded === "false") {
       await graphHeader.click();

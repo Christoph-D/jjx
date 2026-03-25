@@ -139,7 +139,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
   public async resolveWebviewView(webviewView: vscode.WebviewView): Promise<void> {
     this.panel = webviewView;
-    this.panel.title = `Source Control Graph (${path.basename(this.repository.repositoryRoot)})`;
+    this.panel.title = `JJ Graph (${path.basename(this.repository.repositoryRoot)})`;
 
     webviewView.webview.options = {
       enableScripts: true,
@@ -377,7 +377,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     const prevRepo = this.repository;
     this.repository = repo;
     if (this.panel) {
-      this.panel.title = `Source Control Graph (${path.basename(this.repository.repositoryRoot)})`;
+      this.panel.title = `JJ Graph (${path.basename(this.repository.repositoryRoot)})`;
     }
     if (prevRepo.repositoryRoot !== repo.repositoryRoot) {
       await this.refresh();

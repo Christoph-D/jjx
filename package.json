@@ -28,12 +28,12 @@
         {
           "type": "webview",
           "id": "jjGraphWebview",
-          "name": "Source Control Graph (JJ)",
+          "name": "JJ Graph",
           "when": "jj.reposExist"
         },
         {
           "id": "jjOperationLog",
-          "name": "Operation Log (JJ)",
+          "name": "JJ Operation Log",
           "when": "jj.reposExist"
         }
       ]
@@ -185,7 +185,7 @@
       },
       {
         "command": "jj.refreshGraphWebview",
-        "title": "Refresh Source Control Graph",
+        "title": "Refresh JJ Graph",
         "category": "Jujutsu",
         "icon": "$(refresh)"
       },
