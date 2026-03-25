@@ -45,6 +45,19 @@ export type {
   Operation,
 };
 
+type DiffFileEntry = {
+  status_char: string;
+  source_path: string;
+  target_path: string;
+  is_conflict: boolean;
+};
+
+type ParsedFileStatuses = {
+  fileStatuses: FileStatus[];
+  fileStatusesByPath: Map<string, FileStatus>;
+  conflictedFiles: Set<string>;
+};
+
 export class JJRepository {
   statusCache: RepositoryStatus | undefined;
   gitFetchPromise: Promise<void> | undefined;
@@ -54,6 +67,54 @@ export class JJRepository {
     private jjPath: string,
     private jjConfigArgs: string[],
   ) {}
+
+  private parseFileStatuses(diffFiles: DiffFileEntry[], conflictedPaths: string[] | undefined): ParsedFileStatuses {
+    const fileStatuses: FileStatus[] = [];
+    const fileStatusesByPath = new Map<string, FileStatus>();
+
+    for (const diffFile of diffFiles) {
+      const statusChar = diffFile.status_char as FileStatusType;
+      const targetPath = path.normalize(diffFile.target_path).replace(/\\/g, "/");
+      const sourcePath = path.normalize(diffFile.source_path).replace(/\\/g, "/");
+      const fullPath = path.join(this.repositoryRoot, targetPath);
+
+      let fileStatus: FileStatus;
+      if (statusChar === "R" || statusChar === "C") {
+        fileStatus = {
+          type: statusChar,
+          file: path.basename(targetPath),
+          path: fullPath,
+          renamedFrom: sourcePath,
+        };
+      } else {
+        fileStatus = {
+          type: statusChar,
+          file: path.basename(targetPath),
+          path: fullPath,
+        };
+      }
+      fileStatuses.push(fileStatus);
+      fileStatusesByPath.set(fullPath, fileStatus);
+    }
+
+    const conflictedFiles = new Set<string>();
+    for (const conflictedPath of conflictedPaths || []) {
+      const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
+      const fullPath = path.join(this.repositoryRoot, normalizedPath);
+      conflictedFiles.add(fullPath);
+
+      if (!fileStatusesByPath.has(fullPath)) {
+        fileStatuses.push({
+          type: "X",
+          file: path.basename(normalizedPath),
+          path: fullPath,
+        });
+        fileStatusesByPath.set(fullPath, fileStatuses[fileStatuses.length - 1]);
+      }
+    }
+
+    return { fileStatuses, fileStatusesByPath, conflictedFiles };
+  }
 
   private async retryWithImmutable<T>(
     rev: string,
@@ -149,49 +210,7 @@ export class JJRepository {
       conflicted_files: string[];
     };
 
-    const fileStatuses: FileStatus[] = [];
-    const fileStatusesByPath = new Map<string, FileStatus>();
-
-    for (const diffFile of entry.diff_files) {
-      const statusChar = diffFile.status_char as FileStatusType;
-      const targetPath = path.normalize(diffFile.target_path).replace(/\\/g, "/");
-      const sourcePath = path.normalize(diffFile.source_path).replace(/\\/g, "/");
-      const fullPath = path.join(this.repositoryRoot, targetPath);
-
-      let fileStatus: FileStatus;
-      if (statusChar === "R" || statusChar === "C") {
-        fileStatus = {
-          type: statusChar,
-          file: path.basename(targetPath),
-          path: fullPath,
-          renamedFrom: sourcePath,
-        };
-      } else {
-        fileStatus = {
-          type: statusChar,
-          file: path.basename(targetPath),
-          path: fullPath,
-        };
-      }
-      fileStatuses.push(fileStatus);
-      fileStatusesByPath.set(fullPath, fileStatus);
-    }
-
-    const conflictedFiles = new Set<string>();
-    for (const conflictedPath of entry.conflicted_files || []) {
-      const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
-      const fullPath = path.join(this.repositoryRoot, normalizedPath);
-      conflictedFiles.add(fullPath);
-
-      if (!fileStatusesByPath.has(fullPath)) {
-        fileStatuses.push({
-          type: "X",
-          file: path.basename(normalizedPath),
-          path: fullPath,
-        });
-        fileStatusesByPath.set(fullPath, fileStatuses[fileStatuses.length - 1]);
-      }
-    }
+    const { fileStatuses, conflictedFiles } = this.parseFileStatuses(entry.diff_files, entry.conflicted_files);
 
     const workingCopy: Change = {
       changeId: entry.change_id,
@@ -294,49 +313,7 @@ export class JJRepository {
         conflicted_files: string[];
       };
 
-      const fileStatuses: FileStatus[] = [];
-      const fileStatusesByPath = new Map<string, FileStatus>();
-
-      for (const diffFile of entry.diff_files) {
-        const statusChar = diffFile.status_char as FileStatusType;
-        const targetPath = path.normalize(diffFile.target_path).replace(/\\/g, "/");
-        const sourcePath = path.normalize(diffFile.source_path).replace(/\\/g, "/");
-        const fullPath = path.join(this.repositoryRoot, targetPath);
-
-        let fileStatus: FileStatus;
-        if (statusChar === "R" || statusChar === "C") {
-          fileStatus = {
-            type: statusChar,
-            file: path.basename(targetPath),
-            path: fullPath,
-            renamedFrom: sourcePath,
-          };
-        } else {
-          fileStatus = {
-            type: statusChar,
-            file: path.basename(targetPath),
-            path: fullPath,
-          };
-        }
-        fileStatuses.push(fileStatus);
-        fileStatusesByPath.set(fullPath, fileStatus);
-      }
-
-      const conflictedFiles = new Set<string>();
-      for (const conflictedPath of entry.conflicted_files || []) {
-        const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
-        const fullPath = path.join(this.repositoryRoot, normalizedPath);
-        conflictedFiles.add(fullPath);
-
-        if (!fileStatusesByPath.has(fullPath)) {
-          fileStatuses.push({
-            type: "X",
-            file: path.basename(normalizedPath),
-            path: fullPath,
-          });
-          fileStatusesByPath.set(fullPath, fileStatuses[fileStatuses.length - 1]);
-        }
-      }
+      const { fileStatuses, conflictedFiles } = this.parseFileStatuses(entry.diff_files, entry.conflicted_files);
 
       results.push({
         change: {
