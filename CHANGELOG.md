@@ -1,5 +1,32 @@
 # Change Log
 
+## 1.2.0
+
+### New Features
+
+- **Confirmation dialog for bookmark and tag deletion** - Prevents accidental deletion
+- **Copy URL** - New context menu item to copy a web URL, for example a github URL, for the selected commit
+- **jjx.baseWebURL** - New config setting to override `git_web_url()` for generating commit URLs
+
+### Improvements
+
+- Rename graph views to "JJ Graph" and "JJ Operation Log"
+- Bookmark context menu items reordered for better UX
+- Simplify change view section headers
+- Make diff icon consistent across all diff actions
+
+### Bug Fixes
+
+- Use proper error message extraction in error handlers
+- Use optional chaining for child process stream access
+- Use case-insensitive path comparison in parseFileStatuses
+- Remove parseJJError wrapper in new() and commit() to preserve typed errors
+
+### Internal
+
+- Automatically add release notes from CHANGELOG.md to GitHub releases (CI)
+- Various code cleanup and refactorings
+
 ## 1.1.1
 
 ### Documentation
