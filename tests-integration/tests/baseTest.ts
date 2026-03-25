@@ -133,6 +133,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "git.enabled": false,
         "diffEditor.renderSideBySide": true,
         "diffEditor.renderSideBySideInlineBreakpoint": 50,
+        "window.dialogStyle": "custom",
       }),
     );
 

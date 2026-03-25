@@ -209,6 +209,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "deleteBookmark":
           try {
+            const confirm = await vscode.window.showWarningMessage(
+              `Are you sure you want to delete the bookmark "${message.bookmark}"?`,
+              { modal: true },
+              "Delete",
+            );
+            if (confirm !== "Delete") {
+              return;
+            }
             await this.repository.deleteBookmark(message.bookmark);
             await this.refresh();
           } catch (error: unknown) {
@@ -217,6 +225,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "deleteTag":
           try {
+            const confirm = await vscode.window.showWarningMessage(
+              `Are you sure you want to delete the tag "${message.tag}"?`,
+              { modal: true },
+              "Delete",
+            );
+            if (confirm !== "Delete") {
+              return;
+            }
             await this.repository.deleteTag(message.tag);
             await this.refresh();
           } catch (error: unknown) {

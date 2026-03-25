@@ -32,6 +32,13 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   const deleteBookmarkSubmenuItem = graphFrame.locator('.context-submenu-item[data-delete-bookmark="test-bookmark"]');
   await deleteBookmarkSubmenuItem.click();
 
+  const dialog = workbox.locator(".monaco-dialog-box");
+  await expect(dialog).toContainText("test-bookmark");
+
+  const modalDelete = dialog.getByRole("button", { name: "Delete" });
+  await modalDelete.waitFor();
+  await modalDelete.click();
+
   await expect(bookmarkPill).not.toBeVisible();
 
   expect(await testRepo.getBookmark("test-bookmark")).toBeUndefined();

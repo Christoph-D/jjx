@@ -31,6 +31,13 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
   const deleteTagSubmenuItem = graphFrame.locator('.context-submenu-item[data-delete-tag="test-tag"]');
   await deleteTagSubmenuItem.click();
 
+  const dialog = workbox.locator(".monaco-dialog-box");
+  await expect(dialog).toContainText("test-tag");
+
+  const modalDelete = dialog.getByRole("button", { name: "Delete" });
+  await modalDelete.waitFor();
+  await modalDelete.click();
+
   await expect(tagPill).not.toBeVisible();
 
   expect(await testRepo.getTag("test-tag")).toBeUndefined();
