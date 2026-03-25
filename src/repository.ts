@@ -541,7 +541,7 @@ export class JJRepository {
 
     const jjExit = new Promise<void>((resolve, reject) => {
       let errOutput = "";
-      childProcess.stderr!.on("data", (data: Buffer) => {
+      childProcess.stderr?.on("data", (data: Buffer) => {
         errOutput += data.toString();
       });
 
@@ -917,11 +917,11 @@ export class JJRepository {
       const output: Buffer[] = [];
       const errOutput: Buffer[] = [];
 
-      childProcess.stdout!.on("data", (data: Buffer) => {
+      childProcess.stdout?.on("data", (data: Buffer) => {
         output.push(data);
       });
 
-      childProcess.stderr!.on("data", (data: Buffer) => {
+      childProcess.stderr?.on("data", (data: Buffer) => {
         errOutput.push(data);
       });
 
