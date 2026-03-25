@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import fs from "fs/promises";
 import { SHOW_TEMPLATE, STATUS_TEMPLATE, LOG_TEMPLATE, OPERATION_TEMPLATE } from "./templateBuilder";
 import { ImmutableError, convertJJErrors } from "./errors";
-import { spawnJJ, handleJJCommand, type SpawnOptions } from "./process";
+import { spawnJJ, handleJJCommand, type SpawnOptions, collectProcessOutput } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
 import { filepathToFileset, pathEquals, normalizePath } from "./utils";
 import {
@@ -538,26 +538,9 @@ export class JJRepository {
       },
     );
 
-    const jjExit = new Promise<void>((resolve, reject) => {
-      let errOutput = "";
-      childProcess.stderr?.on("data", (data: Buffer) => {
-        errOutput += data.toString();
-      });
-
-      childProcess.on("error", (error: Error) => {
-        reject(new Error(`Spawning command failed: ${error.message}`));
-      });
-
-      childProcess.on("close", (code, signal) => {
-        if (code) {
-          reject(new Error(`Command failed with exit code ${code}.\nstderr: ${errOutput}`));
-        } else if (signal) {
-          reject(new Error(`Command failed with signal ${signal}.\nstderr: ${errOutput}`));
-        } else {
-          resolve();
-        }
-      });
-    });
+    const jjExit = collectProcessOutput(childProcess)
+      .catch(convertJJErrors)
+      .then(() => {});
 
     try {
       const { leftPath, rightPath } = await pathPromise;
@@ -584,7 +567,7 @@ export class JJRepository {
       throw error;
     }
 
-    await jjExit.catch(convertJJErrors);
+    await jjExit;
   }
 
   async log(rev: string, limit: number = 100): Promise<LogEntry[]> {
@@ -891,61 +874,28 @@ export class JJRepository {
     const requestId = crypto.randomUUID();
     const pathPromise = expectDiffToolRequest(requestId);
 
-    const summaryOutput = await new Promise<string>((resolve, reject) => {
-      const childProcess = this.spawnJJRead(
-        // We don't pass the filepath to diff because we need the left folder to have all files,
-        // in case the file was renamed or copied. If we knew the status of the file, we could
-        // pass the previous filename in addition to the current filename upon seeing a rename or copy.
-        // We don't have the status though, which is why we're using `--summary` here.
-        [
-          "diff",
-          "--summary",
-          "--tool=jjx-vscode-diff",
-          "--config",
-          `merge-tools.jjx-vscode-diff.program="${diffToolSh}"`,
-          "-r",
-          rev,
-        ],
-        {
-          timeout: 10_000,
-          cwd: this.repositoryRoot,
-          env: { ...process.env, VSCODE_JJ_DIFF_REQUEST_ID: requestId },
-        },
-      );
+    const childProcess = this.spawnJJRead(
+      // We don't pass the filepath to diff because we need the left folder to have all files,
+      // in case the file was renamed or copied. If we knew the status of the file, we could
+      // pass the previous filename in addition to the current filename upon seeing a rename or copy.
+      // We don't have the status though, which is why we're using `--summary` here.
+      [
+        "diff",
+        "--summary",
+        "--tool=jjx-vscode-diff",
+        "--config",
+        `merge-tools.jjx-vscode-diff.program="${diffToolSh}"`,
+        "-r",
+        rev,
+      ],
+      {
+        timeout: 10_000,
+        cwd: this.repositoryRoot,
+        env: { ...process.env, VSCODE_JJ_DIFF_REQUEST_ID: requestId },
+      },
+    );
 
-      const output: Buffer[] = [];
-      const errOutput: Buffer[] = [];
-
-      childProcess.stdout?.on("data", (data: Buffer) => {
-        output.push(data);
-      });
-
-      childProcess.stderr?.on("data", (data: Buffer) => {
-        errOutput.push(data);
-      });
-
-      childProcess.on("error", (error: Error) => {
-        reject(new Error(`Spawning command failed: ${error.message}`));
-      });
-
-      childProcess.on("close", (code, signal) => {
-        if (code) {
-          reject(
-            new Error(
-              `Command failed with exit code ${code}.\nstdout: ${Buffer.concat(output).toString()}\nstderr: ${Buffer.concat(errOutput).toString()}`,
-            ),
-          );
-        } else if (signal) {
-          reject(
-            new Error(
-              `Command failed with signal ${signal}.\nstdout: ${Buffer.concat(output).toString()}\nstderr: ${Buffer.concat(errOutput).toString()}`,
-            ),
-          );
-        } else {
-          resolve(Buffer.concat(output).toString());
-        }
-      });
-    }).catch(convertJJErrors);
+    const { stdout: summaryOutput } = await collectProcessOutput(childProcess).catch(convertJJErrors);
 
     const { leftFiles } = await pathPromise;
 

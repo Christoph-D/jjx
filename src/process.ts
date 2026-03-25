@@ -7,6 +7,39 @@ import { getJjEditorEnv } from "./jjEditor";
 
 export type SpawnOptions = NodeSpawnOptions & { cwd: string };
 
+export type ProcessOutput = { stdout: string; stderr: string };
+
+export function collectProcessOutput(childProcess: ChildProcess): Promise<ProcessOutput> {
+  return new Promise((resolve, reject) => {
+    const stdout: Buffer[] = [];
+    const stderr: Buffer[] = [];
+
+    childProcess.stdout?.on("data", (data: Buffer) => {
+      stdout.push(data);
+    });
+
+    childProcess.stderr?.on("data", (data: Buffer) => {
+      stderr.push(data);
+    });
+
+    childProcess.on("error", (error: Error) => {
+      reject(new Error(`Spawning command failed: ${error.message}`));
+    });
+
+    childProcess.on("close", (code, signal) => {
+      const stdoutStr = Buffer.concat(stdout).toString();
+      const stderrStr = Buffer.concat(stderr).toString();
+      if (code) {
+        reject(new Error(`Command failed with exit code ${code}.\nstdout: ${stdoutStr}\nstderr: ${stderrStr}`));
+      } else if (signal) {
+        reject(new Error(`Command failed with signal ${signal}.\nstdout: ${stdoutStr}\nstderr: ${stderrStr}`));
+      } else {
+        resolve({ stdout: stdoutStr, stderr: stderrStr });
+      }
+    });
+  });
+}
+
 export function spawnJJ(jjPath: string, args: string[], options: SpawnOptions) {
   const jjEditorEnv = getJjEditorEnv();
   const finalOptions = {
@@ -28,10 +61,10 @@ export function handleCommand(childProcess: ChildProcess) {
   return new Promise<Buffer>((resolve, reject) => {
     const output: Buffer[] = [];
     const errOutput: Buffer[] = [];
-    childProcess.stdout!.on("data", (data: Buffer) => {
+    childProcess.stdout?.on("data", (data: Buffer) => {
       output.push(data);
     });
-    childProcess.stderr!.on("data", (data: Buffer) => {
+    childProcess.stderr?.on("data", (data: Buffer) => {
       errOutput.push(data);
     });
     childProcess.on("error", (error: Error) => {
