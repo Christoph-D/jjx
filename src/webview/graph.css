@@ -204,6 +204,22 @@ body {
   fill: whitesmoke;
 }
 
+.node-circle .bg-match {
+  fill: var(--vscode-sideBar-background);
+}
+
+.node-circle.selected .bg-match {
+  fill: var(--vscode-list-activeSelectionBackground);
+}
+
+.node-circle.hovered .bg-match {
+  fill: var(--vscode-list-hoverBackground);
+}
+
+.node-circle.selected.hovered .bg-match {
+  fill: var(--vscode-list-activeSelectionBackground);
+}
+
 .node-content {
   display: flex;
   align-items: center;

@@ -131,7 +131,7 @@
               n.classList.remove("selected", "highlighted", "dimmed");
             });
             document.querySelectorAll(".node-circle").forEach((circle) => {
-              circle.classList.remove("dimmed");
+              circle.classList.remove("selected", "dimmed");
             });
             document.querySelectorAll(".connection-line").forEach((line) => {
               line.classList.remove("highlighted", "dimmed");
@@ -194,8 +194,7 @@
           rect.setAttribute("y", "-6");
           rect.setAttribute("width", "16");
           rect.setAttribute("height", "10");
-          rect.setAttribute("class", "elided-bg");
-          rect.style.fill = "var(--vscode-sideBar-background)";
+          rect.setAttribute("class", "elided-bg bg-match");
           g.appendChild(rect);
 
           const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -216,8 +215,8 @@
           circle.setAttribute("cx", "0");
           circle.setAttribute("cy", "0");
           circle.setAttribute("r", radius + 3);
-          circle.style.fill = "var(--vscode-editor-background)";
           circle.setAttribute("stroke-width", "0");
+          circle.classList.add("bg-match");
           g.appendChild(circle);
 
           const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -233,7 +232,7 @@
           circle.setAttribute("r", radius);
 
           if (change.branchType === "○") {
-            circle.style.fill = "var(--vscode-editor-background)";
+            circle.classList.add("bg-match");
             circle.setAttribute("stroke-width", "1.5");
           }
           g.appendChild(circle);
@@ -642,10 +641,16 @@
 
             node.addEventListener("mouseenter", () => {
               highlightConnectedNodes(node, true);
+              document
+                .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
+                ?.classList.add("hovered");
             });
 
             node.addEventListener("mouseleave", () => {
               highlightConnectedNodes(node, false);
+              document
+                .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
+                ?.classList.remove("hovered");
             });
 
             node.addEventListener("contextmenu", (e) => {
@@ -787,6 +792,9 @@
 
           node.addEventListener("mouseenter", (e) => {
             highlightConnectedNodes(node, true);
+            document
+              .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
+              ?.classList.add("hovered");
             if (isDragging || isMenuOpen()) return;
             if (change.changeId !== rootChangeId && change.branchType !== "~") {
               tooltipTimeout = setTimeout(() => {
@@ -809,6 +817,9 @@
 
           node.addEventListener("mouseleave", () => {
             highlightConnectedNodes(node, false);
+            document
+              .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
+              ?.classList.remove("hovered");
             if (tooltipTimeout) {
               clearTimeout(tooltipTimeout);
               tooltipTimeout = null;
@@ -1071,17 +1082,29 @@
               if (selectedNodes.has(change.changeId)) {
                 selectedNodes.delete(change.changeId);
                 node.classList.remove("selected");
+                document
+                  .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
+                  ?.classList.remove("selected");
               } else {
                 selectedNodes.add(change.changeId);
                 node.classList.add("selected");
+                document
+                  .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
+                  ?.classList.add("selected");
               }
             } else {
               document.querySelectorAll(".change-node.selected").forEach((n) => {
                 n.classList.remove("selected");
               });
+              document.querySelectorAll("#node-circles .node-circle.selected").forEach((c) => {
+                c.classList.remove("selected");
+              });
               selectedNodes.clear();
               selectedNodes.add(change.changeId);
               node.classList.add("selected");
+              document
+                .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
+                ?.classList.add("selected");
             }
 
             vscode.postMessage({
