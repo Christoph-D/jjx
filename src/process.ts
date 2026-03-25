@@ -1,11 +1,13 @@
 import spawn from "cross-spawn";
-import type { ChildProcess } from "child_process";
+import type { ChildProcess, SpawnOptions as NodeSpawnOptions } from "child_process";
 import { logger } from "./logger";
 import { getCommandTimeout } from "./config";
 import { convertJJErrors } from "./errors";
 import { getJjEditorEnv } from "./jjEditor";
 
-export function spawnJJ(jjPath: string, args: string[], options: Parameters<typeof spawn>[2] & { cwd: string }) {
+export type SpawnOptions = NodeSpawnOptions & { cwd: string };
+
+export function spawnJJ(jjPath: string, args: string[], options: SpawnOptions) {
   const jjEditorEnv = getJjEditorEnv();
   const finalOptions = {
     ...options,

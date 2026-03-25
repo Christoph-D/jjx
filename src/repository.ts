@@ -2,10 +2,9 @@ import path from "path";
 import * as crypto from "crypto";
 import * as vscode from "vscode";
 import fs from "fs/promises";
-import spawn from "cross-spawn";
 import { SHOW_TEMPLATE, STATUS_TEMPLATE, LOG_TEMPLATE, OPERATION_TEMPLATE } from "./templateBuilder";
 import { ImmutableError, convertJJErrors } from "./errors";
-import { spawnJJ, handleJJCommand } from "./process";
+import { spawnJJ, handleJJCommand, type SpawnOptions } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
 import { filepathToFileset, pathEquals, normalizePath } from "./utils";
 import {
@@ -138,7 +137,7 @@ export class JJRepository {
     }
   }
 
-  spawnJJ(args: string[], options: Parameters<typeof spawn>[2] & { cwd: string }) {
+  spawnJJ(args: string[], options: SpawnOptions) {
     const separatorIndex = args.indexOf("--");
     const finalArgs =
       separatorIndex === -1
@@ -147,7 +146,7 @@ export class JJRepository {
     return spawnJJ(this.jjPath, finalArgs, options);
   }
 
-  spawnJJRead(args: string[], options: Parameters<typeof spawn>[2] & { cwd: string }) {
+  spawnJJRead(args: string[], options: SpawnOptions) {
     return this.spawnJJ(["--ignore-working-copy", ...args], options);
   }
 
