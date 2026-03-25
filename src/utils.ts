@@ -2,7 +2,8 @@ import { sep } from "path";
 import { Event, Disposable, window, TabInputTextDiff } from "vscode";
 
 export function showErrorMessage(message: string, error: unknown): void {
-  window.showErrorMessage(`${message}: ${error instanceof Error ? error.message : String(error)}`);
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  window.showErrorMessage(errorMessage ? `${message}: ${errorMessage}` : message);
 }
 
 export { parseRenamePaths } from "./parseRenamePaths";
