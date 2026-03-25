@@ -1,6 +1,10 @@
 import { sep } from "path";
 import { Event, Disposable, window, TabInputTextDiff } from "vscode";
 
+export function showErrorMessage(message: string, error: unknown): void {
+  window.showErrorMessage(`${message}: ${error instanceof Error ? error.message : String(error)}`);
+}
+
 export { parseRenamePaths } from "./parseRenamePaths";
 
 export function filepathToFileset(filepath: string): string {

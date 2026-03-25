@@ -13,7 +13,7 @@ import { initLogger, logger } from "./logger";
 import { linesDiffComputers } from "./vendor/vscode/editor/common/diff/linesDiffComputers";
 import { ILinesDiffComputer, LinesDiff } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
 import { match } from "arktype";
-import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals } from "./utils";
+import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals, showErrorMessage } from "./utils";
 import { createIPCServer } from "./ipc/ipcServer";
 import { JJEditor, JJMergeEditor, JJDiffTool, JJSquashTool, getMergeEditorPath } from "./jjEditor";
 import { handleJJCommand } from "./process";
@@ -873,9 +873,7 @@ export async function activate(context: vscode.ExtensionContext) {
           try {
             await workspaceSCM.getRepositoryFromUri(lastOpenedFileUri)?.gitFetch();
           } catch (error) {
-            vscode.window.showErrorMessage(
-              `Failed to fetch from remote${error instanceof Error ? `: ${error.message}` : ""}`,
-            );
+            showErrorMessage("Failed to fetch from remote", error);
           } finally {
             statusBarHandleDidChangeActiveTextEditor(vscode.window.activeTextEditor);
           }
@@ -1006,9 +1004,7 @@ export async function activate(context: vscode.ExtensionContext) {
             );
           }
         } catch (error) {
-          vscode.window.showErrorMessage(
-            `Failed to squash selection${error instanceof Error ? `: ${error.message}` : ""}`,
-          );
+          showErrorMessage("Failed to squash selection", error);
         }
       }),
     );
@@ -1416,7 +1412,7 @@ function registerCommand<T extends unknown[]>(
       await callback(...args);
     } catch (error) {
       const prefix = options?.errorPrefix ?? inferErrorPrefix(command);
-      vscode.window.showErrorMessage(`${prefix}${error instanceof Error ? `: ${error.message}` : ""}`);
+      showErrorMessage(prefix, error);
     }
   };
 

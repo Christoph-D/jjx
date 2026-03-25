@@ -3,6 +3,7 @@ import * as fs from "fs";
 import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
+import { showErrorMessage } from "./utils";
 import { assignLanes } from "./laneAssigner";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elidedEdges";
 import type { SyntheticNode } from "./elidedEdges";
@@ -132,9 +133,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               await this.repository.editRetryImmutable(message.changeId);
             }
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to switch to change: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to switch to change", error);
           }
           break;
         case "editChangeDirect":
@@ -148,9 +147,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             }
             await this.repository.editRetryImmutable(message.changeId);
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to switch to change: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to switch to change", error);
           }
           break;
         case "selectChange":
@@ -172,15 +169,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
                   await this.repository.moveBookmark(message.bookmark, message.targetChangeId, true);
                   await this.refresh();
                 } catch (retryError: unknown) {
-                  vscode.window.showErrorMessage(
-                    `Failed to move bookmark: ${retryError instanceof Error ? retryError.message : String(retryError)}`,
-                  );
+                  showErrorMessage("Failed to move bookmark", retryError);
                 }
               }
             } else {
-              vscode.window.showErrorMessage(
-                `Failed to move bookmark: ${error instanceof Error ? error.message : String(error)}`,
-              );
+              showErrorMessage("Failed to move bookmark", error);
             }
           }
           break;
@@ -196,9 +189,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.createBookmark(bookmarkName, message.targetChangeId);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to create bookmark: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to create bookmark", error);
           }
           break;
         case "createTag":
@@ -213,9 +204,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.createTag(tagName, message.targetChangeId);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to create tag: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to create tag", error);
           }
           break;
         case "deleteBookmark":
@@ -223,9 +212,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.deleteBookmark(message.bookmark);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to delete bookmark: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to delete bookmark", error);
           }
           break;
         case "deleteTag":
@@ -233,9 +220,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.deleteTag(message.tag);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to delete tag: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to delete tag", error);
           }
           break;
         case "describeChange":
@@ -243,9 +228,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.describeRetryImmutable(message.changeId);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to describe change: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to describe change", error);
           }
           break;
         case "abandonChange":
@@ -261,9 +244,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.abandonRetryImmutable(message.changeId);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to abandon change: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to abandon change", error);
           }
           break;
         case "rebaseOnto":
@@ -276,9 +257,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to rebase: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to rebase", error);
           }
           break;
         case "rebaseAfter":
@@ -291,9 +270,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to rebase: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to rebase", error);
           }
           break;
         case "rebaseBefore":
@@ -306,9 +283,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             );
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to rebase: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to rebase", error);
           }
           break;
         case "squashInto":
@@ -319,9 +294,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             });
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to squash: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to squash", error);
           }
           break;
         case "duplicateOnto":
@@ -332,9 +305,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.duplicate(message.changeId, message.targetChangeId, mode);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to duplicate: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to duplicate", error);
           }
           break;
         case "revertOnto":
@@ -345,9 +316,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.revert(message.changeId, message.targetChangeId, mode);
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to revert: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to revert", error);
           }
           break;
         case "updateStale":
@@ -355,9 +324,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.repository.updateStale();
             await this.refresh();
           } catch (error: unknown) {
-            vscode.window.showErrorMessage(
-              `Failed to update stale working copy: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            showErrorMessage("Failed to update stale working copy", error);
           }
           break;
       }
