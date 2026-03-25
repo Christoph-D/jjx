@@ -351,15 +351,6 @@ export class JJRepository {
     );
   }
 
-  showTemplate(rev: string, template: string): Promise<string> {
-    return handleJJCommand(
-      this.spawnJJRead(["show", "-r", rev, "-T", template, "--no-patch"], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    ).then((buf) => buf.toString());
-  }
-
   async describeRetryImmutable(rev: string, message?: string) {
     return this.retryWithImmutable(
       rev,
