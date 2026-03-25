@@ -95,44 +95,48 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions,
   );
 
-  vscode.workspace.onDidChangeConfiguration(async (e) => {
-    if (e.affectsConfiguration("git")) {
-      logger.info("Git configuration changed");
-      const workspaceFolders = vscode.workspace.workspaceFolders || [];
+  vscode.workspace.onDidChangeConfiguration(
+    async (e) => {
+      if (e.affectsConfiguration("git")) {
+        logger.info("Git configuration changed");
+        const workspaceFolders = vscode.workspace.workspaceFolders || [];
 
-      const affectedFolders = workspaceFolders
-        .filter((folder) => e.affectsConfiguration("git", folder.uri))
-        .map((folder) => folder.uri.fsPath);
+        const affectedFolders = workspaceFolders
+          .filter((folder) => e.affectsConfiguration("git", folder.uri))
+          .map((folder) => folder.uri.fsPath);
 
-      if (affectedFolders.length > 0) {
-        await checkReposFunction(affectedFolders);
-      }
-    }
-    if (e.affectsConfiguration("jjx.commitAction")) {
-      const config = vscode.workspace.getConfiguration("jjx");
-      const commitAction = config.get<string>("commitAction") || "commit";
-      for (const repoSCM of workspaceSCM.repoSCMs) {
-        repoSCM.updatePlaceholderText(commitAction);
-      }
-    }
-    if (e.affectsConfiguration("jjx.fileClickAction")) {
-      for (const repoSCM of workspaceSCM.repoSCMs) {
-        repoSCM.render();
-      }
-    }
-    if (
-      e.affectsConfiguration("jjx.graphStyle") ||
-      e.affectsConfiguration("jjx.elideImmutableCommits") ||
-      e.affectsConfiguration("jjx.numberOfImmutableParentsInLog")
-    ) {
-      if (graphWebview) {
-        if (e.affectsConfiguration("jjx.elideImmutableCommits")) {
-          await graphWebview.resetElideOverride();
+        if (affectedFolders.length > 0) {
+          await checkReposFunction(affectedFolders);
         }
-        await graphWebview.refresh();
       }
-    }
-  });
+      if (e.affectsConfiguration("jjx.commitAction")) {
+        const config = vscode.workspace.getConfiguration("jjx");
+        const commitAction = config.get<string>("commitAction") || "commit";
+        for (const repoSCM of workspaceSCM.repoSCMs) {
+          repoSCM.updatePlaceholderText(commitAction);
+        }
+      }
+      if (e.affectsConfiguration("jjx.fileClickAction")) {
+        for (const repoSCM of workspaceSCM.repoSCMs) {
+          repoSCM.render();
+        }
+      }
+      if (
+        e.affectsConfiguration("jjx.graphStyle") ||
+        e.affectsConfiguration("jjx.elideImmutableCommits") ||
+        e.affectsConfiguration("jjx.numberOfImmutableParentsInLog")
+      ) {
+        if (graphWebview) {
+          if (e.affectsConfiguration("jjx.elideImmutableCommits")) {
+            await graphWebview.resetElideOverride();
+          }
+          await graphWebview.refresh();
+        }
+      }
+    },
+    undefined,
+    context.subscriptions,
+  );
 
   let isInitialized = false;
   let graphWebview: JJGraphWebview | undefined;
