@@ -40,6 +40,14 @@ jobs:
       - name: Playwright tests
         run: npm run playwright-test
 
+      - name: Upload Playwright artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-artifacts
+          path: test-results/
+          retention-days: 30
+
       - name: Build
         run: npm run build
 
