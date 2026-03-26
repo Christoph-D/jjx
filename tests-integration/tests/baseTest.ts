@@ -1,6 +1,7 @@
 import { test as base, type Page, type Frame, _electron } from "@playwright/test";
 import { getVscodePath } from "../globalSetup";
-export { expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+export { expect };
 import path from "path";
 import os from "os";
 import fs from "fs";
@@ -182,24 +183,21 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     const isExpanded = await graphHeader.getAttribute("aria-expanded");
     if (isExpanded === "false") {
       await graphHeader.click();
-      await workbox.waitForTimeout(2000);
     }
 
-    const allFrames = workbox.frames();
-    let graphFrame: Frame | null = null;
-    for (const frame of allFrames) {
-      const content = await frame.content();
-      if (content.includes('id="nodes"')) {
-        graphFrame = frame;
-        break;
+    let graphFrame: Frame | undefined;
+    await expect(async () => {
+      for (const frame of workbox.frames()) {
+        const content = await frame.content();
+        if (content.includes('id="nodes"')) {
+          graphFrame = frame;
+          return;
+        }
       }
-    }
-
-    if (!graphFrame) {
       throw new Error("Graph frame not found");
-    }
+    }).toPass();
 
-    await use(graphFrame);
+    await use(graphFrame!);
   },
 });
 
