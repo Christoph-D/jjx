@@ -470,24 +470,38 @@ export function insertSyntheticNodes(
   edges: Map<string, ClassifiedEdge[]>,
   visibleIds: Set<string>,
 ): LogEntry[] {
+  const visibleEntries = entries.filter((e) => visibleIds.has(getUniqueEntryId(e)));
+
+  const updatedEntries = visibleEntries.map((entry) => {
+    const entryId = getUniqueEntryId(entry);
+    const classifiedEdges = edges.get(entryId);
+    if (!classifiedEdges) {
+      return entry;
+    }
+    const newParents = classifiedEdges.map((edge) => {
+      const slashIndex = edge.targetId.indexOf("/");
+      if (slashIndex !== -1) {
+        return {
+          change_id: edge.targetId.substring(0, slashIndex),
+          divergent: false,
+          change_offset: edge.targetId.substring(slashIndex + 1),
+        };
+      }
+      return { change_id: edge.targetId, divergent: false, change_offset: "" };
+    });
+    return { ...entry, parents: newParents };
+  });
+
   if (syntheticNodes.size === 0) {
-    return entries.filter((e) => visibleIds.has(getUniqueEntryId(e)));
+    return updatedEntries;
   }
 
-  const visibleEntries = entries.filter((e) => visibleIds.has(getUniqueEntryId(e)));
-  const entryIds = new Set(visibleEntries.map(getUniqueEntryId));
-  const result = [...visibleEntries];
+  const entryIds = new Set(updatedEntries.map(getUniqueEntryId));
+  const result = [...updatedEntries];
   const insertedAtRow = new Map<string, number>();
 
-  const syntheicEntriesByTarget = new Map<string, SyntheticNode[]>();
-  for (const node of syntheticNodes.values()) {
-    const existing = syntheicEntriesByTarget.get(node.targetId) || [];
-    existing.push(node);
-    syntheicEntriesByTarget.set(node.targetId, existing);
-  }
-
-  for (let i = visibleEntries.length - 1; i >= 0; i--) {
-    const entry = visibleEntries[i];
+  for (let i = updatedEntries.length - 1; i >= 0; i--) {
+    const entry = updatedEntries[i];
     const entryId = getUniqueEntryId(entry);
     const classifiedEdges = edges.get(entryId) || [];
 

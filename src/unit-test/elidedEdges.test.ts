@@ -2,6 +2,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId, getParentUniqueId } from "../elidedEdges";
+import type { ClassifiedEdge, SyntheticNode } from "../elidedEdges";
 import type { LogEntry, ParentRef } from "../types";
 
 function createEntry(changeId: string, parents: ParentRef[] = [], extra: Partial<LogEntry> = {}): LogEntry {
@@ -617,6 +618,127 @@ describe("elidedEdges", () => {
       const synthEntry = result.find((e) => e.change_id === "C");
       assert.ok(synthEntry);
       assert.deepStrictEqual(synthEntry.parents, [{ change_id: "D", divergent: false, change_offset: "" }]);
+    });
+
+    it("real-world repo with missing parent", () => {
+      const entries: LogEntry[] = [
+        createEntry("qs", [parentRef("wt")], { current_working_copy: true }),
+        createEntry("wt", [{ change_id: "oq", divergent: false, change_offset: "0" }], {
+          immutable: true,
+        }),
+        createEntry("oq", [{ change_id: "nx", divergent: false, change_offset: "0" }, parentRef("ww")], {
+          immutable: true,
+          change_offset: "0",
+        }),
+        createEntry("nx", [{ change_id: "zz", divergent: false, change_offset: "0" }], {
+          immutable: true,
+          change_offset: "0",
+        }),
+        createEntry("vw", [parentRef("ww")], {}),
+        createEntry("ww", [{ change_id: "zz", divergent: false, change_offset: "0" }], {
+          immutable: true,
+        }),
+        createEntry("zz/0", [], { immutable: true, root: true, empty: true }),
+      ];
+
+      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+
+      assert.deepStrictEqual([...visibleIds].sort(), ["qs", "vw", "wt", "ww"]);
+
+      const wtEdges = edges.get("wt")!;
+      assert.strictEqual(wtEdges.length, 1);
+      assert.deepStrictEqual(wtEdges, [{ targetId: "ww", edgeType: "indirect" }]);
+
+      assert.deepStrictEqual([...syntheticNodes.keys()].sort(), ["zz/0"]);
+
+      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+
+      const wtEdges2 = result[1];
+      assert.strictEqual(wtEdges2.parents.length, 1);
+      assert.deepStrictEqual(wtEdges2.parents[0].change_id, "ww");
+
+      const changeIds = result.map((e) => e.change_id);
+      assert.deepStrictEqual(changeIds, ["qs", "wt", "vw", "ww", "zz/0"]);
+    });
+
+    it("rewrites parents of visible entries to match classified edges", () => {
+      const entries: LogEntry[] = [
+        createEntry("A", [parentRef("H1")]),
+        createEntry("H1", [parentRef("C")], { immutable: true }),
+        createEntry("C", []),
+      ];
+
+      const edges = new Map<string, ClassifiedEdge[]>([["A", [{ targetId: "C", edgeType: "indirect" }]]]);
+      const visibleIds = new Set(["A", "C"]);
+      const syntheticNodes = new Map<string, SyntheticNode>();
+
+      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+
+      assert.deepStrictEqual(
+        result.map((e) => e.change_id),
+        ["A", "C"],
+      );
+      assert.deepStrictEqual(
+        result[0].parents,
+        [{ change_id: "C", divergent: false, change_offset: "" }],
+        "A's parent should be rewritten from hidden H1 to visible C",
+      );
+    });
+
+    it("rewrites parents with change_offset from classified edge target", () => {
+      const entries: LogEntry[] = [
+        createEntry("A", [{ change_id: "hidden", divergent: false, change_offset: "0" }]),
+        createEntry("hidden", [{ change_id: "D", divergent: false, change_offset: "0" }], {
+          immutable: true,
+          change_offset: "0",
+        }),
+        createEntry("D", [{ change_id: "zz", divergent: false, change_offset: "0" }], {
+          immutable: true,
+          change_offset: "0",
+        }),
+        createEntry("zz/0", [], { immutable: true, root: true, empty: true }),
+      ];
+
+      const edges = new Map<string, ClassifiedEdge[]>([["A", [{ targetId: "D", edgeType: "indirect" }]]]);
+      const visibleIds = new Set(["A", "D"]);
+      const syntheticNodes = new Map<string, SyntheticNode>();
+
+      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+
+      assert.strictEqual(result[0].change_id, "A");
+      assert.deepStrictEqual(result[0].parents, [{ change_id: "D", divergent: false, change_offset: "" }]);
+    });
+
+    it("rewrites parents and inserts synthetic nodes simultaneously", () => {
+      const entries: LogEntry[] = [
+        createEntry("A", [parentRef("H1")]),
+        createEntry("H1", [parentRef("X")], { immutable: true }),
+        createEntry("C", [parentRef("X")]),
+      ];
+
+      const edges = new Map<string, ClassifiedEdge[]>([
+        ["A", [{ targetId: "X", edgeType: "indirect" }]],
+        ["C", [{ targetId: "X", edgeType: "missing" }]],
+      ]);
+      const visibleIds = new Set(["A", "C"]);
+      const syntheticNodes = new Map<string, SyntheticNode>([["X", { id: "X", targetId: "X", edgeType: "missing" }]]);
+
+      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+
+      assert.deepStrictEqual(
+        result.map((e) => e.change_id),
+        ["A", "C", "X"],
+      );
+      assert.deepStrictEqual(
+        result[0].parents,
+        [{ change_id: "X", divergent: false, change_offset: "" }],
+        "A's parent should be rewritten to X",
+      );
+      assert.deepStrictEqual(
+        result[1].parents,
+        [{ change_id: "X", divergent: false, change_offset: "" }],
+        "C's parent should be rewritten from original X to match classified edge",
+      );
     });
 
     it("distinguishes divergent commits", () => {
