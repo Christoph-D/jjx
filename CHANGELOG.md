@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.2.1
+
+### Bug Fixes
+
+- Fix graph node circles using incorrect background color on hover and selection
+- Fix graph lines bleeding through node circles when adjacent commits are dimmed
+
 ## 1.2.0
 
 ### New Features
