@@ -5,10 +5,13 @@ export type TestOptions = {
 };
 
 export default defineConfig<void, TestOptions>({
-  reporter: "list",
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   timeout: 60_000,
   workers: 4,
   fullyParallel: true,
+  use: {
+    screenshot: "only-on-failure",
+  },
   expect: {
     timeout: 20_000,
   },
