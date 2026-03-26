@@ -1,5 +1,17 @@
 # Change Log
 
+## 1.2.2
+
+### Bug Fixes
+
+- Fix graph rendering bug where indirect edges where incorrectly rendered as direct edges to missing nodes
+
+### Internal
+
+- Collect Playwright artifacts on test failure (CI)
+- Replace hardcoded timeout with proper polling in graphFrame fixture, reducing test runtime by 25%
+- Add Playwright script to update a screenshot
+
 ## 1.2.1
 
 ### Bug Fixes
