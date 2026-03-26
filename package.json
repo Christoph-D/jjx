@@ -829,6 +829,7 @@
     "test": "npm-run-all unit-test playwright-test",
     "playwright-test": "npm run build && npx playwright test --config=tests-integration/playwright.config.ts",
     "playwright-test:only-test": "npx playwright test --config=tests-integration/playwright.config.ts",
+    "update-screenshots": "npm run build && npx playwright test --config=tests-integration/screenshot/screenshot.config.ts",
     "package": "npx @vscode/vsce package",
     "publish": "vsce publish"
   },

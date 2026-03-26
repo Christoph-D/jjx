@@ -14,9 +14,11 @@ export type TestOptions = {
 };
 
 type TestFixtures = TestOptions & {
+  cachePath: string;
   workbox: Page;
   graphFrame: Frame;
   testRepo: TestRepo;
+  userDataDir: string;
 };
 
 type WorkerFixtures = {
@@ -117,13 +119,17 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: "test" },
   ],
 
-  workbox: async ({ vscodePath, testRepo, xvfbDisplay }, use) => {
-    const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "jjx-cache-"));
-    const cachePath = path.join(tempDir, "cache");
-    await fs.promises.mkdir(cachePath, { recursive: true });
+  cachePath:
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "jjx-cache-"));
+      const cachePath = path.join(tempDir, "cache");
+      await fs.promises.mkdir(cachePath, { recursive: true });
+      await use(cachePath);
+      await fs.promises.rm(tempDir, { recursive: true, force: true });
+    },
 
-    const extensionPath = path.resolve(__dirname, "..", "..");
-
+  userDataDir: async ({ cachePath }, use) => {
     const userDataDir = path.join(cachePath, "user-data");
     const userDir = path.join(userDataDir, "User");
     await fs.promises.mkdir(userDir, { recursive: true });
@@ -134,8 +140,14 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "diffEditor.renderSideBySide": true,
         "diffEditor.renderSideBySideInlineBreakpoint": 50,
         "window.dialogStyle": "custom",
+        "window.autoDetectColorScheme": false,
       }),
     );
+    await use(userDataDir);
+  },
+
+  workbox: async ({ cachePath, vscodePath, testRepo, userDataDir, xvfbDisplay }, use) => {
+    const extensionPath = path.resolve(__dirname, "..", "..");
 
     const electronApp = await _electron.launch({
       executablePath: vscodePath,
@@ -156,11 +168,8 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     });
 
     const workbox = await electronApp.firstWindow();
-
     await use(workbox);
-
     await electronApp.close();
-    await fs.promises.rm(tempDir, { recursive: true, force: true });
   },
 
   graphFrame: async ({ workbox }, use) => {
