@@ -16,7 +16,7 @@ export default defineConfig<void, TestOptions>({
   projects: [
     {
       name: "integration tests",
-      testMatch: /\.test\.ts/,
+      testDir: "./tests",
     },
   ],
 });
