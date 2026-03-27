@@ -464,8 +464,9 @@ export function insertSyntheticNodes(
     for (const edge of classifiedEdges) {
       if (!visibleIds.has(edge.targetId) && !syntheticNodes.has(edge.targetId)) {
         const reachableVisible = findReachableVisible(edge.targetId, visibleIds, parentMap);
+        const synthId = reachableVisible ? syntheticNodeId(id, edge.targetId) : `~${edge.targetId}`;
         syntheticNodes.set(edge.targetId, {
-          id: edge.targetId,
+          id: synthId,
           targetId: reachableVisible || edge.targetId,
           edgeType: reachableVisible ? "indirect" : "missing",
         });
@@ -487,6 +488,12 @@ export function insertSyntheticNodes(
       if (edge.edgeType === "indirect") {
         hasIndirectEdges = true;
         return { change_id: syntheticNodeId(entryId, edge.targetId), divergent: false, change_offset: "" };
+      }
+      if (edge.edgeType === "missing" && !visibleIds.has(edge.targetId)) {
+        const synthNode = syntheticNodes.get(edge.targetId);
+        if (synthNode) {
+          return { change_id: synthNode.id, divergent: false, change_offset: "" };
+        }
       }
       return targetIdToParentRef(edge.targetId);
     });
