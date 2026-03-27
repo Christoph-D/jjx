@@ -124,6 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
       if (
         e.affectsConfiguration("jjx.graphStyle") ||
+        e.affectsConfiguration("jjx.logLimit") ||
         e.affectsConfiguration("jjx.elideImmutableCommits") ||
         e.affectsConfiguration("jjx.elidedVisibleImmutableParents")
       ) {

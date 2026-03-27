@@ -670,6 +670,13 @@
           "scope": "resource",
           "minimum": 0
         },
+        "jjx.logLimit": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum number of commits shown in the graph view.",
+          "scope": "resource",
+          "minimum": 1
+        },
         "jjx.baseWebURL": {
           "type": "string",
           "default": "",
