@@ -89,7 +89,7 @@
 
 - `jjx.fileClickAction` - Renamed from `openDiffAction`, now with three options: `diff` (default), `at-revision`, or
   `working-copy`
-- `jjx.numberOfImmutableParentsInLog` - New setting to control the number of immutable parent commits to show in the log
+- `jjx.elidedVisibleImmutableParents` - New setting to control the number of immutable parent commits to show in the log
   (default: 1)
 
 ### Bug Fixes

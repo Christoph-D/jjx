@@ -85,7 +85,7 @@ export function getLogRevset(): string {
   return `connected(present(@) | ancestors(immutable_heads()..) | trunk())`;
 }
 
-export function getNumberOfImmutableParentsInLog(repositoryRoot: string): number {
+export function getElidedVisibleImmutableParents(repositoryRoot: string): number {
   const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
-  return config.get<number>("numberOfImmutableParentsInLog") ?? 1;
+  return config.get<number>("elidedVisibleImmutableParents") ?? 1;
 }

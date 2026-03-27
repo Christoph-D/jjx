@@ -663,10 +663,10 @@
           "description": "When enabled, chains of immutable commits between relevant commits are elided (hidden) in the graph view. When disabled, all commits are shown.",
           "scope": "resource"
         },
-        "jjx.numberOfImmutableParentsInLog": {
+        "jjx.elidedVisibleImmutableParents": {
           "type": "number",
           "default": 1,
-          "description": "Number of immutable parent commits to show in the log.",
+          "description": "Number of immutable parent commits to show in the log when eliding commits.",
           "scope": "resource",
           "minimum": 0
         },

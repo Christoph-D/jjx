@@ -16,11 +16,11 @@ test("elided commits appear when ancestors are immutable", async ({ graphFrame, 
 
   await expect(elidedNode).toBeVisible();
 
-  await testRepo.writeFile(".vscode/settings.json", '{"jjx.numberOfImmutableParentsInLog": 2}');
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.elidedVisibleImmutableParents": 2}');
   await expect(nodes).toHaveCount(4);
   await expect(elidedNode).toBeVisible();
 
-  await testRepo.writeFile(".vscode/settings.json", '{"jjx.numberOfImmutableParentsInLog": 3}');
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.elidedVisibleImmutableParents": 3}');
   await expect(nodes).toHaveCount(4);
   await expect(elidedNode).toBeHidden();
 });
@@ -38,11 +38,11 @@ test("elided commits read from settings", async ({ graphFrame, testRepo }) => {
   await expect(nodes).toHaveCount(4);
   await expect(elidedNode).toBeHidden();
 
-  await testRepo.writeFile(".vscode/settings.json", '{"jjx.numberOfImmutableParentsInLog": 2}');
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.elidedVisibleImmutableParents": 2}');
   await expect(nodes).toHaveCount(4);
   await expect(elidedNode).toBeVisible();
 
-  await testRepo.writeFile(".vscode/settings.json", '{"jjx.numberOfImmutableParentsInLog": 3}');
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.elidedVisibleImmutableParents": 3}');
   await expect(nodes).toHaveCount(4);
   await expect(elidedNode).toBeHidden();
 });

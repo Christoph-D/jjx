@@ -125,7 +125,7 @@ export async function activate(context: vscode.ExtensionContext) {
       if (
         e.affectsConfiguration("jjx.graphStyle") ||
         e.affectsConfiguration("jjx.elideImmutableCommits") ||
-        e.affectsConfiguration("jjx.numberOfImmutableParentsInLog")
+        e.affectsConfiguration("jjx.elidedVisibleImmutableParents")
       ) {
         if (graphWebview) {
           if (e.affectsConfiguration("jjx.elideImmutableCommits")) {

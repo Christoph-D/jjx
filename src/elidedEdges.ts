@@ -131,7 +131,7 @@ function canReachVisible(startId: string, visibleIds: Set<string>, parentMap: Ma
 
 export interface ClassifyEdgesOptions {
   elideImmutableCommits?: boolean;
-  numberOfImmutableParentsInLog?: number;
+  elidedVisibleImmutableParents?: number;
 }
 
 export function classifyEdges(
@@ -142,7 +142,7 @@ export function classifyEdges(
   visibleIds: Set<string>;
 } {
   const elideImmutableCommits = options?.elideImmutableCommits ?? true;
-  const immutableParentDepth = options?.numberOfImmutableParentsInLog ?? 1;
+  const immutableParentDepth = options?.elidedVisibleImmutableParents ?? 1;
   const edges = new Map<string, ClassifiedEdge[]>();
   const { visibleIds, parentMap, ancestorOfVisible } = buildAncestryInfo(
     entries,

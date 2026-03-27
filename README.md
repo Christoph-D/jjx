@@ -108,7 +108,7 @@ The following settings can be configured in VS Code's settings:
 | `jjx.pollInterval`                  | `30000`     | Interval in milliseconds between repository polls. Set to 0 to disable                                                                            |
 | `jjx.fileClickAction`               | `"diff"`    | Action when clicking a file: `"diff"` (compare to parent), `"at-revision"` (open at clicked revision), or `"working-copy"` (open in working copy) |
 | `jjx.elideImmutableCommits`         | `true`      | Hide chains of immutable commits between relevant commits in the graph view                                                                       |
-| `jjx.numberOfImmutableParentsInLog` | `1`         | Number of immutable parent commits to show in the log                                                                                             |
+| `jjx.elidedVisibleImmutableParents` | `1`         | Number of immutable parent commits to show in the log when eliding commits                                                                        |
 | `jjx.baseWebURL`                    | `""`        | Base URL for the 'Copy URL' feature (e.g., `https://github.com/user/repo`). Overrides `git_web_url()` when set                                    |
 
 ## 🐛 Known issues
@@ -121,12 +121,6 @@ If you encounter any problems, please [report them on GitHub](https://github.com
 
 If you see annotations like "M, M" next to files, this is caused by VS Code's built-in Git extension running alongside
 JJX. To disable Git, disable `git.enabled` in your VS Code settings.
-
-### "Show elided commits" in the graph doesn't show all commits
-
-This button only affects commits between regularly visible commits, not how many immutable parent commits are shown that
-lead outside the visible set of commits. To increase the number of immutable parent commits in the log, adjust the
-setting `jjx.numberOfImmutableParentsInLog`.
 
 ## 📝 License
 
