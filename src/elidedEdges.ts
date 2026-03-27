@@ -60,7 +60,9 @@ function buildAncestryInfo(
       entry.current_working_copy ||
       entry.working_copies.length > 0 ||
       (elideImmutableCommits ? !entry.immutable : true) ||
+      entry.local_bookmarks.length > 0 ||
       entry.remote_bookmarks.length > 0 ||
+      entry.local_tags.length > 0 ||
       entry.remote_tags.length > 0;
 
     if (isVisible) {
