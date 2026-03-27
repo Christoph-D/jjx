@@ -536,7 +536,7 @@ export function parseJJLogJson(
   const changes = entries.map((entry) => {
     const entryUniqueId = getUniqueEntryId(entry);
     const synthNode = syntheticNodes.get(entryUniqueId);
-    if (synthNode) {
+    if (synthNode || entry.change_id.startsWith("~")) {
       const uniqueParentIds = entry.parents.map((p: ParentRef) =>
         p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
       );

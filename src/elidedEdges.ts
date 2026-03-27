@@ -173,9 +173,11 @@ export function classifyEdges(
             knownAncestors.add(parentId);
           }
         } else if (entry.parents.length === 1) {
-          if (!knownAncestors.has(parentId)) {
-            classifiedEdges.push({ targetId: parentId, edgeType: "direct" });
-            knownAncestors.add(parentId);
+          for (const edge of parentEdges) {
+            if (!knownAncestors.has(edge.targetId)) {
+              classifiedEdges.push(edge);
+              knownAncestors.add(edge.targetId);
+            }
           }
         } else {
           const indirectEdges = parentEdges.filter((e) => e.edgeType === "indirect");
@@ -446,6 +448,22 @@ function findReachableVisible(
   return null;
 }
 
+function targetIdToParentRef(targetId: string): ParentRef {
+  const slashIndex = targetId.indexOf("/");
+  if (slashIndex !== -1) {
+    return {
+      change_id: targetId.substring(0, slashIndex),
+      divergent: false,
+      change_offset: targetId.substring(slashIndex + 1),
+    };
+  }
+  return { change_id: targetId, divergent: false, change_offset: "" };
+}
+
+function syntheticNodeId(sourceId: string, targetId: string): string {
+  return `~${sourceId}~${targetId}`;
+}
+
 export function insertSyntheticNodes(
   entries: LogEntry[],
   syntheticNodes: Map<string, SyntheticNode>,
@@ -454,6 +472,8 @@ export function insertSyntheticNodes(
 ): LogEntry[] {
   const visibleEntries = entries.filter((e) => visibleIds.has(getUniqueEntryId(e)));
 
+  let hasIndirectEdges = false;
+
   const updatedEntries = visibleEntries.map((entry) => {
     const entryId = getUniqueEntryId(entry);
     const classifiedEdges = edges.get(entryId);
@@ -461,20 +481,16 @@ export function insertSyntheticNodes(
       return entry;
     }
     const newParents = classifiedEdges.map((edge) => {
-      const slashIndex = edge.targetId.indexOf("/");
-      if (slashIndex !== -1) {
-        return {
-          change_id: edge.targetId.substring(0, slashIndex),
-          divergent: false,
-          change_offset: edge.targetId.substring(slashIndex + 1),
-        };
+      if (edge.edgeType === "indirect") {
+        hasIndirectEdges = true;
+        return { change_id: syntheticNodeId(entryId, edge.targetId), divergent: false, change_offset: "" };
       }
-      return { change_id: edge.targetId, divergent: false, change_offset: "" };
+      return targetIdToParentRef(edge.targetId);
     });
     return { ...entry, parents: newParents };
   });
 
-  if (syntheticNodes.size === 0) {
+  if (syntheticNodes.size === 0 && !hasIndirectEdges) {
     return updatedEntries;
   }
 
@@ -489,7 +505,13 @@ export function insertSyntheticNodes(
 
     const syntheticNodesForEntry: SyntheticNode[] = [];
     for (const edge of classifiedEdges) {
-      if (!visibleIds.has(edge.targetId)) {
+      if (edge.edgeType === "indirect") {
+        syntheticNodesForEntry.push({
+          id: syntheticNodeId(entryId, edge.targetId),
+          targetId: edge.targetId,
+          edgeType: "indirect",
+        });
+      } else if (!visibleIds.has(edge.targetId)) {
         const synthNode = syntheticNodes.get(edge.targetId);
         if (synthNode) {
           syntheticNodesForEntry.push(synthNode);
@@ -515,8 +537,7 @@ export function insertSyntheticNodes(
 }
 
 function createSyntheticEntry(node: SyntheticNode): LogEntry {
-  const parents: ParentRef[] =
-    node.edgeType === "indirect" ? [{ change_id: node.targetId, divergent: false, change_offset: "" }] : [];
+  const parents: ParentRef[] = node.edgeType === "indirect" ? [targetIdToParentRef(node.targetId)] : [];
 
   return {
     change_id: node.id,
