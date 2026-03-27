@@ -7,10 +7,8 @@
     "rootDir": "src",
     "strict": true /* enable all strict type-checking options */,
     "outDir": "./dist",
-    /* Additional Checks */
-    // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-    // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-    // "noUnusedParameters": true,  /* Report errors on unused parameters. */
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "moduleResolution": "bundler",
     "skipLibCheck": true /* Needed to avoid error in lru-cache v10 https://github.com/isaacs/node-lru-cache/issues/354 */
   },
