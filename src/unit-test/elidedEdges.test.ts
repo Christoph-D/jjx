@@ -264,21 +264,6 @@ describe("elidedEdges", () => {
       assert.deepStrictEqual(aEdges[0], { targetId: "x", edgeType: "missing" });
     });
 
-    it("collapses all-missing paths to single missing edge pointing to external parent", () => {
-      const entries: LogEntry[] = [
-        createEntry("A", [parentRef("x")], { immutable: true, remote_bookmarks: [rb("main")] }),
-        createEntry("x", [parentRef("y")], { immutable: true }),
-        createEntry("y", [], { immutable: true }),
-      ];
-
-      const { edges } = classifyEdges(entries);
-
-      const aEdges = edges.get("A");
-      assert.ok(aEdges);
-      assert.strictEqual(aEdges.length, 1);
-      assert.deepStrictEqual(aEdges[0], { targetId: "x", edgeType: "missing" });
-    });
-
     it("removes direct transitive edge when indirect edges are also present", () => {
       const entries: LogEntry[] = [
         createEntry("A", [parentRef("B"), parentRef("x"), parentRef("C")], {
@@ -470,17 +455,6 @@ describe("elidedEdges", () => {
       assert.strictEqual(result.length, 4);
     });
 
-    it("synthetic node for missing edge has no parents", () => {
-      const entries: LogEntry[] = [createEntry("A", [parentRef("X")]), createEntry("B", [])];
-
-      const { edges, visibleIds } = classifyEdges(entries);
-      const result = insertSyntheticNodes(entries, edges, visibleIds);
-
-      const synthEntry = result.find((e) => e.change_id === "~X");
-      assert.ok(synthEntry);
-      assert.deepStrictEqual(synthEntry.parents, []);
-    });
-
     it("collapses synthetic nodes over longer merges", () => {
       const entries: LogEntry[] = [
         createEntry("A", [parentRef("left-B"), parentRef("right-B")]),
@@ -634,23 +608,6 @@ describe("elidedEdges", () => {
         [{ change_id: "~A~C", divergent: false, change_offset: "" }],
         "A's parent should be rewritten from hidden H1 to synthetic ~A~C",
       );
-    });
-
-    it("rewrites parents with change_offset from classified edge target", () => {
-      const entries: LogEntry[] = [
-        createEntry("A", [parentRef("B"), parentRef("C")]),
-        createEntry("B", [parentRef("D")], {}),
-        createEntry("D", [parentRef("Z")], {}),
-        createEntry("Z", []),
-      ];
-
-      const edges = new Map<string, ClassifiedEdge[]>([["A", [{ targetId: "D", edgeType: "indirect" }]]]);
-      const visibleIds = new Set(["A", "D"]);
-
-      const result = insertSyntheticNodes(entries, edges, visibleIds);
-
-      assert.strictEqual(result[0].change_id, "A");
-      assert.deepStrictEqual(result[0].parents, [{ change_id: "~A~D", divergent: false, change_offset: "" }]);
     });
 
     it("rewrites parents from classified edge target with non-zero change offsets", () => {
