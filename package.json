@@ -834,7 +834,7 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "1.56.0",
     "@types/cross-spawn": "^6.0.6",
     "@types/node": "20.x",
     "@types/vscode": "^1.96.0",
