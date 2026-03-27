@@ -42,9 +42,7 @@ function copyAssets() {
   fs.chmodSync("dist/jj-diff-tool.sh", 0o755);
   fs.chmodSync("dist/jj-squash-tool.sh", 0o755);
 
-  if (production) {
-    copyDir("node_modules/@vscode/codicons/dist", "dist/codicons");
-  }
+  copyDir("node_modules/@vscode/codicons/dist", "dist/codicons");
 }
 
 /**
