@@ -65,114 +65,42 @@ const esbuildProblemMatcherPlugin = {
   },
 };
 
+function createContext(entryPoint, outfile, overrides = {}) {
+  return esbuild.context({
+    entryPoints: [entryPoint],
+    bundle: true,
+    format: "cjs",
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: "node",
+    outfile,
+    logLevel: "silent",
+    plugins: [esbuildProblemMatcherPlugin],
+    ...overrides,
+  });
+}
+
 async function main() {
-  // Production/watch build for src/main.ts (extension code)
-  const ctx = await esbuild.context({
-    entryPoints: ["src/main.ts"],
-    bundle: true,
-    format: "cjs",
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
-    platform: "node",
-    outfile: "dist/main.js",
-    external: ["vscode"],
-    logLevel: "silent",
-    plugins: [esbuildProblemMatcherPlugin],
-  });
-
-  // Build jj-editor-main.ts (standalone script for JJ_EDITOR)
-  const jjEditorCtx = await esbuild.context({
-    entryPoints: ["src/jj-editor-main.ts"],
-    bundle: true,
-    format: "cjs",
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
-    platform: "node",
-    outfile: "dist/jj-editor-main.js",
-    logLevel: "silent",
-    plugins: [esbuildProblemMatcherPlugin],
-  });
-
-  // Build jj-merge-editor-main.ts (standalone script for merge tool)
-  const jjMergeEditorCtx = await esbuild.context({
-    entryPoints: ["src/jj-merge-editor-main.ts"],
-    bundle: true,
-    format: "cjs",
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
-    platform: "node",
-    outfile: "dist/jj-merge-editor-main.js",
-    logLevel: "silent",
-    plugins: [esbuildProblemMatcherPlugin],
-  });
-
-  // Build jj-diff-tool-main.ts (standalone script for diff tool)
-  const jjDiffToolCtx = await esbuild.context({
-    entryPoints: ["src/jj-diff-tool-main.ts"],
-    bundle: true,
-    format: "cjs",
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
-    platform: "node",
-    outfile: "dist/jj-diff-tool-main.js",
-    logLevel: "silent",
-    plugins: [esbuildProblemMatcherPlugin],
-  });
-
-  // Build jj-squash-tool-main.ts (standalone script for squash tool)
-  const jjSquashToolCtx = await esbuild.context({
-    entryPoints: ["src/jj-squash-tool-main.ts"],
-    bundle: true,
-    format: "cjs",
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
-    platform: "node",
-    outfile: "dist/jj-squash-tool-main.js",
-    logLevel: "silent",
-    plugins: [esbuildProblemMatcherPlugin],
-  });
-
-  // Build webview graph script (runs in VS Code webview sandbox)
-  const webviewGraphCtx = await esbuild.context({
-    entryPoints: ["src/webview/graph/main.ts"],
-    bundle: true,
-    format: "iife",
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
-    platform: "browser",
-    outfile: "dist/webview/graph.js",
-    logLevel: "silent",
-    plugins: [esbuildProblemMatcherPlugin],
-  });
+  const contexts = await Promise.all([
+    createContext("src/main.ts", "dist/main.js", { external: ["vscode"] }),
+    createContext("src/jj-editor-main.ts", "dist/jj-editor-main.js"),
+    createContext("src/jj-merge-editor-main.ts", "dist/jj-merge-editor-main.js"),
+    createContext("src/jj-diff-tool-main.ts", "dist/jj-diff-tool-main.js"),
+    createContext("src/jj-squash-tool-main.ts", "dist/jj-squash-tool-main.js"),
+    createContext("src/webview/graph/main.ts", "dist/webview/graph.js", {
+      format: "iife",
+      platform: "browser",
+    }),
+  ]);
 
   if (watch) {
     copyAssets();
-    await ctx.watch();
-    await jjEditorCtx.watch();
-    await jjMergeEditorCtx.watch();
-    await jjDiffToolCtx.watch();
-    await jjSquashToolCtx.watch();
-    await webviewGraphCtx.watch();
+    await Promise.all(contexts.map((ctx) => ctx.watch()));
   } else {
-    await ctx.rebuild();
-    await jjEditorCtx.rebuild();
-    await jjMergeEditorCtx.rebuild();
-    await jjDiffToolCtx.rebuild();
-    await jjSquashToolCtx.rebuild();
-    await webviewGraphCtx.rebuild();
+    await Promise.all(contexts.map((ctx) => ctx.rebuild()));
     copyAssets();
-    await ctx.dispose();
-    await jjEditorCtx.dispose();
-    await jjMergeEditorCtx.dispose();
-    await jjDiffToolCtx.dispose();
-    await jjSquashToolCtx.dispose();
-    await webviewGraphCtx.dispose();
+    await Promise.all(contexts.map((ctx) => ctx.dispose()));
   }
 }
 
