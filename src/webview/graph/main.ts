@@ -1,9 +1,9 @@
-import { state, type VSCodeAPI, type ChangeNode, type ChangeIdGraph } from "./types";
+import { state, type ChangeNode, type ChangeIdGraph } from "./types";
 import { updateGraph } from "./nodes";
 import { updateCirclePositions, updateConnections } from "./connections";
 import { hideAllMenus, handleContextMenuItemClick, handleRebaseMenuItemClick, hideMenu } from "./menu";
 
-declare function acquireVsCodeApi(): VSCodeAPI;
+declare function acquireVsCodeApi(): import("./types").VSCodeAPI;
 
 const vscode = acquireVsCodeApi();
 state.vscode = vscode;

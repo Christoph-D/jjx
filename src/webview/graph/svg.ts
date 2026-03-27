@@ -1,4 +1,4 @@
-import { state, CHANGE_ID_RIGHT_PADDING, SWIMLANE_WIDTH, colorRegistry, type ChangeNode } from "./types";
+import { state, CIRCLE_RADIUS, CHANGE_ID_RIGHT_PADDING, SWIMLANE_WIDTH, colorRegistry, type ChangeNode } from "./types";
 
 export function getLaneColor(colorIndex: number): string {
   return colorRegistry[colorIndex % colorRegistry.length];
@@ -13,7 +13,7 @@ export function createCircle(change: ChangeNode, colorIndex: number): SVGGElemen
   g.setAttribute("class", "node-circle");
   g.style.setProperty("--lane-color", getLaneColor(colorIndex));
 
-  const radius = change.currentWorkingCopy ? 7 : 5;
+  const radius = change.currentWorkingCopy ? 7 : CIRCLE_RADIUS;
 
   if (change.branchType === "~") {
     const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -82,14 +82,18 @@ export function createCircle(change: ChangeNode, colorIndex: number): SVGGElemen
     bgCircle.setAttribute("cy", "0");
     bgCircle.setAttribute("r", String(radius));
     bgCircle.classList.add("bg-match", "circle-bg");
-    if (isOpen) {bgCircle.classList.add("thin-stroke");}
+    if (isOpen) {
+      bgCircle.classList.add("thin-stroke");
+    }
     g.appendChild(bgCircle);
 
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", "0");
     circle.setAttribute("cy", "0");
     circle.setAttribute("r", String(radius));
-    if (isOpen) {circle.classList.add("bg-match", "thin-stroke");}
+    if (isOpen) {
+      circle.classList.add("bg-match", "thin-stroke");
+    }
     g.appendChild(circle);
   }
 
@@ -103,7 +107,11 @@ export function createPath(colorIndex: number, fromId: string, toId: string): SV
   path.setAttribute("stroke-linecap", "round");
   path.classList.add("connection-line");
   path.style.stroke = getLaneColor(colorIndex);
-  if (fromId) {path.dataset.fromId = fromId;}
-  if (toId) {path.dataset.toId = toId;}
+  if (fromId) {
+    path.dataset.fromId = fromId;
+  }
+  if (toId) {
+    path.dataset.toId = toId;
+  }
   return path;
 }

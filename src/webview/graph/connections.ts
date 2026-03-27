@@ -1,21 +1,29 @@
-import { state, type ChangeIdGraph } from "./types";
+import { state, EDGE_EXTENSION, type ChangeIdGraph } from "./types";
 import { getLaneX, createPath } from "./svg";
 
 export function updateCirclePositions() {
   const svg = document.getElementById("connections");
-  if (!svg) {return;}
+  if (!svg) {
+    return;
+  }
   const svgRect = svg.getBoundingClientRect();
 
-  if (!state.currentGraph || !state.currentGraph.nodes) {return;}
+  if (!state.currentGraph || !state.currentGraph.nodes) {
+    return;
+  }
 
   document.querySelectorAll(".node-circle").forEach((circle, index) => {
     const nodeData = state.currentGraph!.nodes[index];
-    if (!nodeData) {return;}
+    if (!nodeData) {
+      return;
+    }
 
     const changeId = (circle as HTMLElement).dataset.changeId;
     const node = document.querySelector(`.change-node[data-change-id="${changeId}"]`);
 
-    if (!node) {return;}
+    if (!node) {
+      return;
+    }
 
     const nodeRect = node.getBoundingClientRect();
     const x = getLaneX(nodeData.lane);
@@ -29,7 +37,9 @@ export function updateConnections() {
   const connectionLines = document.getElementById("connection-lines")!;
   connectionLines.innerHTML = "";
 
-  if (!state.currentGraph || !state.currentGraph.edges) {return;}
+  if (!state.currentGraph || !state.currentGraph.edges) {
+    return;
+  }
 
   const nodes = document.querySelectorAll(".change-node");
   const svg = document.getElementById("connections")!;
@@ -48,7 +58,9 @@ export function updateConnections() {
   const sortedEdges = [...state.currentGraph.edges].sort((a, b) => {
     const aStart = a.lanePath[0];
     const bStart = b.lanePath[0];
-    if (aStart !== bStart) {return bStart - aStart;}
+    if (aStart !== bStart) {
+      return bStart - aStart;
+    }
     const aEnd = a.lanePath[a.lanePath.length - 1];
     const bEnd = b.lanePath[b.lanePath.length - 1];
     return bEnd - aEnd;
@@ -56,8 +68,12 @@ export function updateConnections() {
 
   for (const edge of sortedEdges) {
     const fromY = rowYList[edge.fromRow];
-    if (fromY === undefined) {continue;}
-    if (!edge.lanePath || edge.lanePath.length < 2) {continue;}
+    if (fromY === undefined) {
+      continue;
+    }
+    if (!edge.lanePath || edge.lanePath.length < 2) {
+      continue;
+    }
 
     const path = buildConnectionPath(edge, rowYList, bottomY, ARC_RADIUS);
     connectionLines.appendChild(path);
@@ -88,7 +104,9 @@ function buildConnectionPath(
       segToY = rowYList[segToRow];
     }
 
-    if (segFromY === undefined || segToY === undefined) {continue;}
+    if (segFromY === undefined || segToY === undefined) {
+      continue;
+    }
 
     const fromX = getLaneX(segFromLane);
     const toX = getLaneX(segToLane);
@@ -102,9 +120,9 @@ function buildConnectionPath(
     } else {
       let prevToY: number;
       if (edge.extendsToBottom && i === lastSegmentIndex) {
-        prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - 20;
+        prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
       } else {
-        prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - 20;
+        prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
       }
       const horizontalY = (segToY + prevToY) / 2;
       const r = arcRadius;
