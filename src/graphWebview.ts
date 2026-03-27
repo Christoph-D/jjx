@@ -410,7 +410,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const config = vscode.workspace.getConfiguration("jjx");
       const graphStyle = config.get<string>("graphStyle") || "full";
 
-      const rawEntries = await this.repository.log(getLogRevset(this.repository.repositoryRoot));
+      const rawEntries = await this.repository.log(getLogRevset());
       const elideImmutableCommits = this.getEffectiveEliding();
       const { edges, visibleIds } = classifyEdges(rawEntries, {
         elideImmutableCommits,

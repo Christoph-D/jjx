@@ -81,10 +81,8 @@ export async function getJJPath(
   throw new Error(`jj CLI not found in PATH nor in common locations.`);
 }
 
-export function getLogRevset(repositoryRoot: string): string {
-  const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
-  const numParents = config.get<number>("numberOfImmutableParentsInLog") ?? 1;
-  return `connected(present(@) | ancestors(immutable_heads().., ${numParents + 1}) | trunk())`;
+export function getLogRevset(): string {
+  return `connected(present(@) | ancestors(immutable_heads()..) | trunk())`;
 }
 
 export function getNumberOfImmutableParentsInLog(repositoryRoot: string): number {
