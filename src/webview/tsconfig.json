@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "Preserve",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "sourceMap": true,
+    "strict": true,
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["graph/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

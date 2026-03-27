@@ -465,12 +465,16 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     );
     const codiconUri = webview.asWebviewUri(codiconPath);
 
+    const graphJsPath = vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "graph.js");
+    const graphJsUri = webview.asWebviewUri(graphJsPath);
+
     const htmlPath = vscode.Uri.joinPath(this.extensionUri, webviewPath, "webview", "graph.html");
     let html = fs.readFileSync(htmlPath.fsPath, "utf8");
 
     // Replace placeholders in the HTML
     html = html.replace("${cssUri}", cssUri.toString());
     html = html.replace("${codiconUri}", codiconUri.toString());
+    html = html.replace("${graphJsUri}", graphJsUri.toString());
 
     return html;
   }

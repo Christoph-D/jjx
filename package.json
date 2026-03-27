@@ -821,7 +821,7 @@
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit && tsc --noEmit --project src/webview/tsconfig.json",
     "lint": "eslint esbuild.js src tests-integration/*.ts tests-integration/tests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

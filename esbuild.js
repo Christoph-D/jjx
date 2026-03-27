@@ -30,7 +30,8 @@ function copyFile(src, dest) {
 }
 
 function copyAssets() {
-  copyDir("src/webview", "dist/webview");
+  fs.copyFileSync("src/webview/graph.html", "dist/webview/graph.html");
+  fs.copyFileSync("src/webview/graph.css", "dist/webview/graph.css");
   copyFile("src/config.toml", "dist/config.toml");
   copyFile("src/jj-editor.sh", "dist/jj-editor.sh");
   copyFile("src/jj-merge-editor.sh", "dist/jj-merge-editor.sh");
@@ -138,6 +139,20 @@ async function main() {
     plugins: [esbuildProblemMatcherPlugin],
   });
 
+  // Build webview graph script (runs in VS Code webview sandbox)
+  const webviewGraphCtx = await esbuild.context({
+    entryPoints: ["src/webview/graph/main.ts"],
+    bundle: true,
+    format: "iife",
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: "browser",
+    outfile: "dist/webview/graph.js",
+    logLevel: "silent",
+    plugins: [esbuildProblemMatcherPlugin],
+  });
+
   if (watch) {
     copyAssets();
     await ctx.watch();
@@ -145,18 +160,21 @@ async function main() {
     await jjMergeEditorCtx.watch();
     await jjDiffToolCtx.watch();
     await jjSquashToolCtx.watch();
+    await webviewGraphCtx.watch();
   } else {
     await ctx.rebuild();
     await jjEditorCtx.rebuild();
     await jjMergeEditorCtx.rebuild();
     await jjDiffToolCtx.rebuild();
     await jjSquashToolCtx.rebuild();
+    await webviewGraphCtx.rebuild();
     copyAssets();
     await ctx.dispose();
     await jjEditorCtx.dispose();
     await jjMergeEditorCtx.dispose();
     await jjDiffToolCtx.dispose();
     await jjSquashToolCtx.dispose();
+    await webviewGraphCtx.dispose();
   }
 }
 
