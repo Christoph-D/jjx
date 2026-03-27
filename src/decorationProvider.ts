@@ -16,7 +16,7 @@ const colorOfType = (type: FileStatusType) => {
     case "C":
       return new ThemeColor("jjDecoration.renamedResourceForeground");
     case "X":
-      return new ThemeColor("gitDecoration.conflictingResourceForeground");
+      return new ThemeColor("jjDecoration.conflictingResourceForeground");
   }
 };
 
@@ -67,13 +67,13 @@ export class JJDecorationProvider implements FileDecorationProvider {
         if (!existingDecoration) {
           nextRepositoryDecorations.set(key, {
             badge: "!",
-            color: new ThemeColor("gitDecoration.conflictingResourceForeground"),
+            color: new ThemeColor("jjDecoration.conflictingResourceForeground"),
           });
         } else {
           nextRepositoryDecorations.set(key, {
             ...existingDecoration,
             badge: `${existingDecoration.badge}!`,
-            color: new ThemeColor("gitDecoration.conflictingResourceForeground"),
+            color: new ThemeColor("jjDecoration.conflictingResourceForeground"),
           });
         }
       }
