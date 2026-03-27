@@ -6,7 +6,6 @@ import path from "path";
 import { showErrorMessage } from "./utils";
 import { assignLanes } from "./laneAssigner";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elidedEdges";
-import type { SyntheticNode } from "./elidedEdges";
 import { logger } from "./logger";
 import { getLogRevset, getNumberOfImmutableParentsInLog } from "./config";
 
@@ -413,16 +412,12 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
       const rawEntries = await this.repository.log(getLogRevset(this.repository.repositoryRoot));
       const elideImmutableCommits = this.getEffectiveEliding();
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(rawEntries, {
+      const { edges, visibleIds } = classifyEdges(rawEntries, {
         elideImmutableCommits,
         numberOfImmutableParentsInLog: getNumberOfImmutableParentsInLog(this.repository.repositoryRoot),
       });
-      const entriesWithSynthetics = insertSyntheticNodes(rawEntries, syntheticNodes, edges, visibleIds);
-      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(
-        entriesWithSynthetics,
-        graphStyle,
-        syntheticNodes,
-      );
+      const entriesWithSynthetics = insertSyntheticNodes(rawEntries, edges, visibleIds);
+      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entriesWithSynthetics, graphStyle);
 
       this.selectedNodes.clear();
       const changeEditAction = config.get<string>("changeEditAction");
@@ -501,9 +496,8 @@ function description(entry: LogEntry) {
 export function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
-  syntheticNodes: Map<string, SyntheticNode> = new Map(),
 ): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
-  const nonSyntheticEntries = entries.filter((e) => !syntheticNodes.has(getUniqueEntryId(e)));
+  const nonSyntheticEntries = entries.filter((e) => !getUniqueEntryId(e).startsWith("~"));
 
   const changeIdCountsTotal = new Map<string, number>();
   const changeIdCountsNonHidden = new Map<string, number>();
@@ -535,8 +529,7 @@ export function parseJJLogJson(
 
   const changes = entries.map((entry) => {
     const entryUniqueId = getUniqueEntryId(entry);
-    const synthNode = syntheticNodes.get(entryUniqueId);
-    if (synthNode || entry.change_id.startsWith("~")) {
+    if (entryUniqueId.startsWith("~") || entry.change_id.startsWith("~")) {
       const uniqueParentIds = entry.parents.map((p: ParentRef) =>
         p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
       );

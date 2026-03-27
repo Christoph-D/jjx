@@ -2,7 +2,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId, getParentUniqueId } from "../elidedEdges";
-import type { ClassifiedEdge, SyntheticNode } from "../elidedEdges";
+import type { ClassifiedEdge } from "../elidedEdges";
 import type { LogEntry, ParentRef } from "../types";
 
 function createEntry(changeId: string, parents: ParentRef[] = [], extra: Partial<LogEntry> = {}): LogEntry {
@@ -92,25 +92,22 @@ describe("elidedEdges", () => {
         createEntry("C", []),
       ];
 
-      const { edges, syntheticNodes } = classifyEdges(entries);
+      const { edges } = classifyEdges(entries);
 
       assert.strictEqual(edges.size, 3);
       assert.deepStrictEqual(edges.get("A"), [{ targetId: "B", edgeType: "direct" }]);
       assert.deepStrictEqual(edges.get("B"), [{ targetId: "C", edgeType: "direct" }]);
       assert.deepStrictEqual(edges.get("C"), []);
-      assert.strictEqual(syntheticNodes.size, 0);
     });
 
     it("classifies missing edges for non-visible parents with no path to visible", () => {
       const entries: LogEntry[] = [createEntry("A", [parentRef("B")]), createEntry("B", [parentRef("X")])];
 
-      const { edges, syntheticNodes } = classifyEdges(entries);
+      const { edges } = classifyEdges(entries);
 
       assert.strictEqual(edges.size, 2);
       assert.deepStrictEqual(edges.get("A"), [{ targetId: "B", edgeType: "direct" }]);
       assert.deepStrictEqual(edges.get("B"), [{ targetId: "X", edgeType: "missing" }]);
-      assert.strictEqual(syntheticNodes.size, 1);
-      assert.strictEqual(syntheticNodes.get("X")?.edgeType, "missing");
     });
 
     it("classifies indirect edges when parent path leads to visible commit", () => {
@@ -121,29 +118,24 @@ describe("elidedEdges", () => {
         createEntry("C", []),
       ];
 
-      const { edges, syntheticNodes } = classifyEdges(entries);
+      const { edges } = classifyEdges(entries);
 
       assert.strictEqual(edges.size, 4);
       assert.deepStrictEqual(edges.get("A"), [{ targetId: "X", edgeType: "direct" }]);
       assert.deepStrictEqual(edges.get("B"), [{ targetId: "X", edgeType: "direct" }]);
       assert.deepStrictEqual(edges.get("X"), [{ targetId: "C", edgeType: "direct" }]);
-      assert.strictEqual(syntheticNodes.size, 0);
     });
 
     it("creates synthetic node for missing edge", () => {
       const entries: LogEntry[] = [createEntry("A", [parentRef("B"), parentRef("X")]), createEntry("B", [])];
 
-      const { edges, syntheticNodes } = classifyEdges(entries);
+      const { edges } = classifyEdges(entries);
 
       const aEdges = edges.get("A");
       assert.ok(aEdges);
       assert.strictEqual(aEdges.length, 2);
       assert.ok(aEdges.some((e) => e.targetId === "B" && e.edgeType === "direct"));
       assert.ok(aEdges.some((e) => e.targetId === "X" && e.edgeType === "missing"));
-
-      const synthNode = syntheticNodes.get("X");
-      assert.ok(synthNode);
-      assert.strictEqual(synthNode.edgeType, "missing");
     });
 
     it("removes transitive indirect edges when target is reachable via direct edge", () => {
@@ -444,8 +436,8 @@ describe("elidedEdges", () => {
     it("returns entries unchanged when no synthetic nodes", () => {
       const entries: LogEntry[] = [createEntry("A", [parentRef("B")]), createEntry("B", [])];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const { edges, visibleIds } = classifyEdges(entries);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.strictEqual(result.length, 2);
     });
@@ -453,8 +445,8 @@ describe("elidedEdges", () => {
     it("inserts synthetic node after commit with missing parent", () => {
       const entries: LogEntry[] = [createEntry("A", [parentRef("X")]), createEntry("B", [])];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const { edges, visibleIds } = classifyEdges(entries);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.strictEqual(result.length, 3);
       assert.strictEqual(result[0].change_id, "A");
@@ -472,8 +464,8 @@ describe("elidedEdges", () => {
         createEntry("C", []),
       ];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const { edges, visibleIds } = classifyEdges(entries);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.strictEqual(result.length, 4);
     });
@@ -481,38 +473,12 @@ describe("elidedEdges", () => {
     it("synthetic node for missing edge has no parents", () => {
       const entries: LogEntry[] = [createEntry("A", [parentRef("X")]), createEntry("B", [])];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const { edges, visibleIds } = classifyEdges(entries);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       const synthEntry = result.find((e) => e.change_id === "X");
       assert.ok(synthEntry);
       assert.deepStrictEqual(synthEntry.parents, []);
-    });
-
-    it("collapses synthetic nodes", () => {
-      const entries: LogEntry[] = [
-        createEntry("A", [parentRef("B")]),
-        createEntry("B", [parentRef("C")], { immutable: true }),
-        createEntry("C", [parentRef("D")], { immutable: true }),
-        createEntry("D", [parentRef("E")], { immutable: true }),
-      ];
-
-      const { syntheticNodes } = classifyEdges(entries);
-
-      assert.strictEqual(syntheticNodes.size, 1, "There should be one synthetic node");
-    });
-
-    it("collapses synthetic nodes over simple merges", () => {
-      const entries: LogEntry[] = [
-        createEntry("A", [parentRef("left-B"), parentRef("right-B")]),
-        createEntry("right-B", [parentRef("C")], { immutable: true }),
-        createEntry("left-B", [parentRef("C")], { immutable: true }),
-        createEntry("C", [parentRef("X")], { immutable: true }),
-      ];
-
-      const { syntheticNodes } = classifyEdges(entries);
-
-      assert.strictEqual(syntheticNodes.size, 1);
     });
 
     it("collapses synthetic nodes over longer merges", () => {
@@ -526,15 +492,9 @@ describe("elidedEdges", () => {
         createEntry("X", [], { immutable: true }),
       ];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+      const { edges, visibleIds } = classifyEdges(entries);
 
-      assert.strictEqual(syntheticNodes.size, 2);
-      assert.ok(syntheticNodes.has("left-C"), "left-C should be a synthetic node");
-      assert.ok(syntheticNodes.has("right-C"), "right-C should be a synthetic node");
-      assert.strictEqual(syntheticNodes.get("left-C")?.edgeType, "missing");
-      assert.strictEqual(syntheticNodes.get("right-C")?.edgeType, "missing");
-
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.strictEqual(result.length, 5, "should have 5 entries: A, left-B, right-B, ~left-C, ~right-C");
       const changeIds = result.map((e) => e.change_id);
@@ -556,7 +516,7 @@ describe("elidedEdges", () => {
         createEntry("D", [], { immutable: true }),
       ];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+      const { edges, visibleIds } = classifyEdges(entries);
 
       assert.deepStrictEqual([...visibleIds].sort(), ["A", "D", "left-B", "right-B"]);
 
@@ -565,9 +525,7 @@ describe("elidedEdges", () => {
       assert.strictEqual(bEdges[0].edgeType, "indirect");
       assert.strictEqual(bEdges[0].targetId, "D");
 
-      assert.strictEqual(syntheticNodes.size, 0);
-
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       const changeIds = result.map((e) => e.change_id);
       assert.deepStrictEqual(changeIds, ["A", "right-B", "~right-B~D", "left-B", "D"]);
@@ -586,7 +544,7 @@ describe("elidedEdges", () => {
         createEntry("G", [], { immutable: true }),
       ];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+      const { edges, visibleIds } = classifyEdges(entries);
 
       assert.deepStrictEqual([...visibleIds].sort(), ["A", "B", "D", "Z"]);
 
@@ -598,11 +556,7 @@ describe("elidedEdges", () => {
         { targetId: "X", edgeType: "missing" },
       ]);
 
-      assert.deepStrictEqual([...syntheticNodes.keys()].sort(), ["E", "X"]);
-      assert.strictEqual(syntheticNodes.get("E")?.edgeType, "missing");
-      assert.strictEqual(syntheticNodes.get("X")?.edgeType, "missing");
-
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       const changeIds = result.map((e) => e.change_id);
       assert.deepStrictEqual(changeIds, ["A", "B", "X", "~B~D", "Z", "D", "E"]);
@@ -636,7 +590,7 @@ describe("elidedEdges", () => {
         createEntry("zz/0", [], { immutable: true, root: true, empty: true }),
       ];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+      const { edges, visibleIds } = classifyEdges(entries);
 
       assert.deepStrictEqual([...visibleIds].sort(), ["qs", "vw", "wt", "ww"]);
 
@@ -647,9 +601,7 @@ describe("elidedEdges", () => {
         { targetId: "ww", edgeType: "indirect" },
       ]);
 
-      assert.deepStrictEqual([...syntheticNodes.keys()].sort(), ["nx/0", "zz/0"]);
-
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       const wtEntry = result[1];
       assert.strictEqual(wtEntry.change_id, "wt");
@@ -670,9 +622,8 @@ describe("elidedEdges", () => {
 
       const edges = new Map<string, ClassifiedEdge[]>([["A", [{ targetId: "C", edgeType: "indirect" }]]]);
       const visibleIds = new Set(["A", "C"]);
-      const syntheticNodes = new Map<string, SyntheticNode>();
 
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.deepStrictEqual(
         result.map((e) => e.change_id),
@@ -695,9 +646,8 @@ describe("elidedEdges", () => {
 
       const edges = new Map<string, ClassifiedEdge[]>([["A", [{ targetId: "D", edgeType: "indirect" }]]]);
       const visibleIds = new Set(["A", "D"]);
-      const syntheticNodes = new Map<string, SyntheticNode>();
 
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.strictEqual(result[0].change_id, "A");
       assert.deepStrictEqual(result[0].parents, [{ change_id: "~A~D", divergent: false, change_offset: "" }]);
@@ -717,8 +667,8 @@ describe("elidedEdges", () => {
         }),
       ];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const { edges, visibleIds } = classifyEdges(entries);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.strictEqual(result[0].change_id, "w");
       assert.deepStrictEqual(result[0].parents, [
@@ -739,9 +689,8 @@ describe("elidedEdges", () => {
         ["C", [{ targetId: "X", edgeType: "missing" }]],
       ]);
       const visibleIds = new Set(["A", "C"]);
-      const syntheticNodes = new Map<string, SyntheticNode>([["X", { id: "X", targetId: "X", edgeType: "missing" }]]);
 
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.deepStrictEqual(
         result.map((e) => e.change_id),
@@ -766,7 +715,7 @@ describe("elidedEdges", () => {
         createEntry("C", [], { immutable: true }),
       ];
 
-      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+      const { edges, visibleIds } = classifyEdges(entries);
 
       assert.deepStrictEqual([...visibleIds].sort(), ["A/0", "A/1", "C"]);
 
@@ -780,9 +729,7 @@ describe("elidedEdges", () => {
       assert.strictEqual(a1Edges[0].edgeType, "direct");
       assert.strictEqual(a1Edges[0].targetId, "C");
 
-      assert.strictEqual(syntheticNodes.size, 0);
-
-      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+      const result = insertSyntheticNodes(entries, edges, visibleIds);
 
       assert.deepStrictEqual(
         result.map((e) => e.change_id),

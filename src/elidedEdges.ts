@@ -137,13 +137,11 @@ export function classifyEdges(
   options?: ClassifyEdgesOptions,
 ): {
   edges: Map<string, ClassifiedEdge[]>;
-  syntheticNodes: Map<string, SyntheticNode>;
   visibleIds: Set<string>;
 } {
   const elideImmutableCommits = options?.elideImmutableCommits ?? true;
   const immutableParentDepth = options?.numberOfImmutableParentsInLog ?? 1;
   const edges = new Map<string, ClassifiedEdge[]>();
-  const syntheticNodes = new Map<string, SyntheticNode>();
   const { visibleIds, parentMap, ancestorOfVisible } = buildAncestryInfo(
     entries,
     elideImmutableCommits,
@@ -202,23 +200,7 @@ export function classifyEdges(
     edges.set(id, classifiedEdges);
   }
 
-  for (const [id, classifiedEdges] of edges.entries()) {
-    if (!visibleIds.has(id)) {
-      continue;
-    }
-    for (const edge of classifiedEdges) {
-      if (!visibleIds.has(edge.targetId) && !syntheticNodes.has(edge.targetId)) {
-        const reachableVisible = findReachableVisible(edge.targetId, visibleIds, parentMap);
-        syntheticNodes.set(edge.targetId, {
-          id: edge.targetId,
-          targetId: reachableVisible || edge.targetId,
-          edgeType: reachableVisible ? "indirect" : "missing",
-        });
-      }
-    }
-  }
-
-  return { edges, syntheticNodes, visibleIds };
+  return { edges, visibleIds };
 }
 
 function resolveExternalEdges(
@@ -466,10 +448,31 @@ function syntheticNodeId(sourceId: string, targetId: string): string {
 
 export function insertSyntheticNodes(
   entries: LogEntry[],
-  syntheticNodes: Map<string, SyntheticNode>,
   edges: Map<string, ClassifiedEdge[]>,
   visibleIds: Set<string>,
 ): LogEntry[] {
+  const parentMap = new Map<string, string[]>();
+  for (const entry of entries) {
+    parentMap.set(getUniqueEntryId(entry), entry.parents.map(getParentUniqueId));
+  }
+
+  const syntheticNodes = new Map<string, SyntheticNode>();
+  for (const [id, classifiedEdges] of edges.entries()) {
+    if (!visibleIds.has(id)) {
+      continue;
+    }
+    for (const edge of classifiedEdges) {
+      if (!visibleIds.has(edge.targetId) && !syntheticNodes.has(edge.targetId)) {
+        const reachableVisible = findReachableVisible(edge.targetId, visibleIds, parentMap);
+        syntheticNodes.set(edge.targetId, {
+          id: edge.targetId,
+          targetId: reachableVisible || edge.targetId,
+          edgeType: reachableVisible ? "indirect" : "missing",
+        });
+      }
+    }
+  }
+
   const visibleEntries = entries.filter((e) => visibleIds.has(getUniqueEntryId(e)));
 
   let hasIndirectEdges = false;
