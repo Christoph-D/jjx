@@ -601,23 +601,25 @@ describe("elidedEdges", () => {
       assert.strictEqual(bEdges.length, 2);
       bEdges.sort((a, b) => a.targetId.localeCompare(b.targetId));
       assert.deepStrictEqual(bEdges, [
-        { targetId: "C", edgeType: "direct" },
+        { targetId: "D", edgeType: "indirect" },
         { targetId: "X", edgeType: "missing" },
       ]);
 
-      assert.deepStrictEqual([...syntheticNodes.keys()].sort(), ["C", "E", "X"]);
-      assert.strictEqual(syntheticNodes.get("C")?.edgeType, "indirect");
+      assert.deepStrictEqual([...syntheticNodes.keys()].sort(), ["E", "X"]);
       assert.strictEqual(syntheticNodes.get("E")?.edgeType, "missing");
       assert.strictEqual(syntheticNodes.get("X")?.edgeType, "missing");
 
       const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
 
       const changeIds = result.map((e) => e.change_id);
-      assert.deepStrictEqual(changeIds, ["A", "B", "X", "C", "Z", "D", "E"]);
+      assert.deepStrictEqual(changeIds, ["A", "B", "X", "Z", "D", "E"]);
 
-      const synthEntry = result.find((e) => e.change_id === "C");
-      assert.ok(synthEntry);
-      assert.deepStrictEqual(synthEntry.parents, [{ change_id: "D", divergent: false, change_offset: "" }]);
+      const bEntry = result.find((e) => e.change_id === "B");
+      assert.ok(bEntry);
+      assert.deepStrictEqual(bEntry.parents, [
+        { change_id: "D", divergent: false, change_offset: "" },
+        { change_id: "X", divergent: false, change_offset: "" },
+      ]);
     });
 
     it("real-world repo with missing parent", () => {
@@ -687,16 +689,10 @@ describe("elidedEdges", () => {
 
     it("rewrites parents with change_offset from classified edge target", () => {
       const entries: LogEntry[] = [
-        createEntry("A", [{ change_id: "hidden", divergent: false, change_offset: "0" }]),
-        createEntry("hidden", [{ change_id: "D", divergent: false, change_offset: "0" }], {
-          immutable: true,
-          change_offset: "0",
-        }),
-        createEntry("D", [{ change_id: "zz", divergent: false, change_offset: "0" }], {
-          immutable: true,
-          change_offset: "0",
-        }),
-        createEntry("zz/0", [], { immutable: true, root: true, empty: true }),
+        createEntry("A", [parentRef("B"), parentRef("C")]),
+        createEntry("B", [parentRef("D")], {}),
+        createEntry("D", [parentRef("Z")], {}),
+        createEntry("Z", []),
       ];
 
       const edges = new Map<string, ClassifiedEdge[]>([["A", [{ targetId: "D", edgeType: "indirect" }]]]);
@@ -707,6 +703,30 @@ describe("elidedEdges", () => {
 
       assert.strictEqual(result[0].change_id, "A");
       assert.deepStrictEqual(result[0].parents, [{ change_id: "D", divergent: false, change_offset: "" }]);
+    });
+
+    it("rewrites parents from classified edge target with non-zero change offsets", () => {
+      const entries: LogEntry[] = [
+        createEntry("w", [parentRef("zyo"), parentRef("s")]),
+        createEntry("s", [parentRef("zyo")]),
+        createEntry("zyo", [parentRef("p")]),
+        createEntry("kk", [parentRef("p")]),
+        createEntry("p", [parentRef("xlyl")], { immutable: true }),
+        createEntry("l", [{ change_id: "zyu", divergent: false, change_offset: "1" }], { change_offset: "1" }),
+        createEntry("zyu", [{ change_id: "vw", divergent: false, change_offset: "1" }], {
+          immutable: true,
+          change_offset: "1",
+        }),
+      ];
+
+      const { edges, syntheticNodes, visibleIds } = classifyEdges(entries);
+      const result = insertSyntheticNodes(entries, syntheticNodes, edges, visibleIds);
+
+      assert.strictEqual(result[0].change_id, "w");
+      assert.deepStrictEqual(result[0].parents, [
+        { change_id: "zyo", divergent: false, change_offset: "" },
+        { change_id: "s", divergent: false, change_offset: "" },
+      ]);
     });
 
     it("rewrites parents and inserts synthetic nodes simultaneously", () => {

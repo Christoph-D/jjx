@@ -149,28 +149,10 @@ export function classifyEdges(
 
   const externalEdgesCache = new Map<string, ClassifiedEdge[]>();
 
-  const visibleChildCount = new Map<string, number>();
-  for (const entry of entries) {
-    const id = getUniqueEntryId(entry);
-    if (!visibleIds.has(id)) {
-      continue;
-    }
-    for (const parent of entry.parents) {
-      const parentId = getParentUniqueId(parent);
-      if (!visibleIds.has(parentId)) {
-        visibleChildCount.set(parentId, (visibleChildCount.get(parentId) || 0) + 1);
-      }
-    }
-  }
-
   for (const entry of entries) {
     const id = getUniqueEntryId(entry);
     const classifiedEdges: ClassifiedEdge[] = [];
     const knownAncestors = new Set<string>();
-    const ancestorOfVisibleParentIds = entry.parents
-      .map(getParentUniqueId)
-      .filter((pid) => !visibleIds.has(pid) && ancestorOfVisible.has(pid));
-    const hasMultipleAncestorOfVisibleParents = ancestorOfVisibleParentIds.length > 1;
 
     for (const parent of entry.parents) {
       const parentId = getParentUniqueId(parent);
@@ -187,26 +169,17 @@ export function classifyEdges(
             classifiedEdges.push({ targetId: parentId, edgeType: "missing" });
             knownAncestors.add(parentId);
           }
+        } else if (entry.parents.length === 1) {
+          if (!knownAncestors.has(parentId)) {
+            classifiedEdges.push({ targetId: parentId, edgeType: "direct" });
+            knownAncestors.add(parentId);
+          }
         } else {
           const indirectEdges = parentEdges.filter((e) => e.edgeType === "indirect");
-          const parentIsMerge = (parentMap.get(parentId)?.length ?? 0) > 1;
-          const hasMultipleVisibleChildren = (visibleChildCount.get(parentId) ?? 0) > 1;
-          if (
-            hasMultipleAncestorOfVisibleParents ||
-            parentIsMerge ||
-            indirectEdges.length > 1 ||
-            hasMultipleVisibleChildren
-          ) {
-            for (const edge of indirectEdges) {
-              if (!knownAncestors.has(edge.targetId)) {
-                classifiedEdges.push(edge);
-                knownAncestors.add(edge.targetId);
-              }
-            }
-          } else {
-            if (!knownAncestors.has(parentId)) {
-              classifiedEdges.push({ targetId: parentId, edgeType: "direct" });
-              knownAncestors.add(parentId);
+          for (const edge of indirectEdges) {
+            if (!knownAncestors.has(edge.targetId)) {
+              classifiedEdges.push(edge);
+              knownAncestors.add(edge.targetId);
             }
           }
         }
@@ -218,7 +191,9 @@ export function classifyEdges(
       }
     }
 
-    removeTransitiveEdges(classifiedEdges, parentMap, visibleIds);
+    if (entry.parents.length > 1) {
+      removeTransitiveEdges(classifiedEdges, parentMap, visibleIds);
+    }
     edges.set(id, classifiedEdges);
   }
 
@@ -329,6 +304,10 @@ function removeTransitiveEdges(
   parentMap: Map<string, string[]>,
   visibleIds: Set<string>,
 ): void {
+  if (!edges.some((edge) => edge.edgeType === "indirect")) {
+    return;
+  }
+
   const initialTargets = new Set<string>();
   for (const edge of edges) {
     if (edge.edgeType !== "missing") {
