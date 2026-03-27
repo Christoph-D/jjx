@@ -1,3 +1,6 @@
+// Similar to lib/src/default_index/revset_graph_iterator.rs
+// in https://github.com/jj-vcs/jj.git
+
 import type { LogEntry, ParentRef } from "./types";
 
 export type GraphEdgeType = "direct" | "indirect" | "missing";
