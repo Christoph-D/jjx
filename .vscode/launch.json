@@ -16,6 +16,7 @@
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
+            "sourceMaps": true,
 			"preLaunchTask": "${defaultBuildTask}"
 		}
 	]
