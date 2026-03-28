@@ -8,6 +8,7 @@ import {
   rebaseMenu,
   tooltip,
   tooltipTimeout,
+  diffStatsPrefetchTimeout,
   isDragging,
   justFinishedDrag,
   dropTargetId,
@@ -19,6 +20,9 @@ import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types"
 import type { LaneNode } from "../../../graph-protocol";
 import type { ChangeNode } from "../../../graph-protocol";
 import { abbreviateName } from "../utils";
+
+const TOOLTIP_DELAY_MS = 500;
+const DIFF_STATS_PREFETCH_DELAY_MS = 300;
 
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
   return changeId !== "z".repeat(32) && branchType !== "~";
@@ -71,10 +75,7 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
   const handleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
     if (change.changeId === rootChangeId || isElided) return;
-    if (tooltipTimeout.value) {
-      clearTimeout(tooltipTimeout.value);
-      tooltipTimeout.value = null;
-    }
+    clearHoverTimers();
     tooltip.value = null;
     contextMenu.value = {
       change,
@@ -91,8 +92,27 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
 
   const showTooltip = (change: ChangeNode, pageX: number, pageY: number) => {
     tooltip.value = { change, pageX, pageY };
+  };
+
+  const startHoverTimers = (change: ChangeNode, pageX: number, pageY: number) => {
     if (!diffStatsCache.value.has(change.changeId)) {
-      vscode.postMessage({ command: "fetchDiffStats", changeId: change.changeId });
+      diffStatsPrefetchTimeout.value = setTimeout(() => {
+        vscode.postMessage({ command: "fetchDiffStats", changeId: change.changeId });
+      }, DIFF_STATS_PREFETCH_DELAY_MS);
+    }
+    tooltipTimeout.value = setTimeout(() => {
+      showTooltip(change, pageX, pageY);
+    }, TOOLTIP_DELAY_MS);
+  };
+
+  const clearHoverTimers = () => {
+    if (diffStatsPrefetchTimeout.value) {
+      clearTimeout(diffStatsPrefetchTimeout.value);
+      diffStatsPrefetchTimeout.value = null;
+    }
+    if (tooltipTimeout.value) {
+      clearTimeout(tooltipTimeout.value);
+      tooltipTimeout.value = null;
     }
   };
 
@@ -101,21 +121,15 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
     document.querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)?.classList.add("hovered");
     if (isDragging.value || isMenuOpen()) return;
     if (shouldShowTooltip(change.changeId, change.branchType)) {
-      tooltipTimeout.value = setTimeout(() => {
-        showTooltip(change, e.pageX, e.pageY);
-      }, 500);
+      startHoverTimers(change, e.pageX, e.pageY);
     }
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (tooltipTimeout.value) {
-      clearTimeout(tooltipTimeout.value);
-    }
+    clearHoverTimers();
     if (isDragging.value || isMenuOpen()) return;
     if (shouldShowTooltip(change.changeId, change.branchType)) {
-      tooltipTimeout.value = setTimeout(() => {
-        showTooltip(change, e.pageX, e.pageY);
-      }, 500);
+      startHoverTimers(change, e.pageX, e.pageY);
     }
   };
 
@@ -124,10 +138,7 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
     document
       .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
       ?.classList.remove("hovered");
-    if (tooltipTimeout.value) {
-      clearTimeout(tooltipTimeout.value);
-      tooltipTimeout.value = null;
-    }
+    clearHoverTimers();
     tooltip.value = null;
   };
 

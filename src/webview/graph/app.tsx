@@ -47,6 +47,10 @@ export function App() {
           const newCache = new Map(diffStatsCache.value);
           newCache.set(message.changeId, message.stats);
           diffStatsCache.value = newCache;
+          const state = tooltip.value;
+          if (state && state.change.changeId === message.changeId) {
+            tooltip.value = { ...state };
+          }
           break;
         }
       }

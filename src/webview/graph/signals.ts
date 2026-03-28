@@ -25,6 +25,7 @@ export const changeEditAction = signal("edit");
 export const scrollY = signal(0);
 export const offsetWidth = signal(0);
 export const tooltipTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
+export const diffStatsPrefetchTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
 
 export interface ContextMenuState {
   change: ChangeNode;
