@@ -16,7 +16,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["**/*.ts"],
+    files: ["**/*.{ts,tsx}"],
     extends: [tseslint.configs.recommendedTypeChecked],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
@@ -60,7 +60,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/webview/graph/**/*.ts"],
+    files: ["src/webview/graph/**/*.{ts,tsx}"],
     languageOptions: {
       parser: tseslint.parser,
       ecmaVersion: 2022,

@@ -74,15 +74,21 @@ export function ConnectionLines() {
 
   useEffect(() => {
     const g = gRef.current;
-    if (!g) return;
+    if (!g) {
+      return;
+    }
     g.innerHTML = "";
 
     const graph = currentGraph.value;
-    if (!graph?.edges) return;
+    if (!graph?.edges) {
+      return;
+    }
 
     const nodes = document.querySelectorAll(".change-node");
     const svg = document.getElementById("connections");
-    if (!svg) return;
+    if (!svg) {
+      return;
+    }
 
     const svgRect = svg.getBoundingClientRect();
     const rowYList: number[] = [];
@@ -93,14 +99,18 @@ export function ConnectionLines() {
     const bottomY = Math.max(...rowYList, 0) + 50;
 
     const sortedEdges = [...graph.edges].sort((a, b) => {
-      if (a.lanePath[0] !== b.lanePath[0]) return b.lanePath[0] - a.lanePath[0];
+      if (a.lanePath[0] !== b.lanePath[0]) {
+        return b.lanePath[0] - a.lanePath[0];
+      }
       return b.lanePath[b.lanePath.length - 1] - a.lanePath[a.lanePath.length - 1];
     });
 
     for (let i = 0; i < sortedEdges.length; i++) {
       const edge = sortedEdges[i];
       const d = buildPathD(edge, rowYList, bottomY, 12);
-      if (!d) continue;
+      if (!d) {
+        continue;
+      }
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", d);
       path.setAttribute("fill", "none");

@@ -4,7 +4,7 @@ import { CIRCLE_RADIUS } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
 
-function Circle({ change, colorIndex }: { change: ChangeNode; colorIndex: number }) {
+function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; colorIndex: number }) {
   if (change.branchType === "~") {
     return (
       <g>
@@ -54,18 +54,26 @@ export function NodeCircles() {
   const gRef = useRef<SVGGElement>(null);
 
   useEffect(() => {
-    if (!gRef.current || !currentGraph.value) return;
+    if (!gRef.current || !currentGraph.value) {
+      return;
+    }
     const svg = document.getElementById("connections");
-    if (!svg) return;
+    if (!svg) {
+      return;
+    }
     const svgRect = svg.getBoundingClientRect();
 
     const circles = gRef.current.querySelectorAll(".node-circle");
     circles.forEach((circle, index) => {
       const nodeData = currentGraph.value!.nodes[index];
-      if (!nodeData) return;
+      if (!nodeData) {
+        return;
+      }
       const changeId = (circle as HTMLElement).dataset.changeId!;
       const node = document.querySelector(`.change-node[data-change-id="${changeId}"]`);
-      if (!node) return;
+      if (!node) {
+        return;
+      }
       const nodeRect = node.getBoundingClientRect();
       const x = getLaneX(nodeData.lane);
       const y = nodeRect.top - svgRect.top + nodeRect.height / 2;

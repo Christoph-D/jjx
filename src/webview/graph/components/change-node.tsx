@@ -41,15 +41,19 @@ interface Props {
   changeIdRef?: RefObject<HTMLDivElement>;
 }
 
-export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
+export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: Props) {
   const dragProps = useDragDrop(change);
   const highlightProps = useConnectedHighlight(change.changeId, change.parentChangeIds);
   const isElided = change.branchType === "~";
   const graphW = SWIMLANE_WIDTH * (nodeData?.numLanesActiveVisually ?? 0);
 
   const handleClick = (e: MouseEvent) => {
-    if (isDragging.value || justFinishedDrag.value) return;
-    if (isElided) return;
+    if (isDragging.value || justFinishedDrag.value) {
+      return;
+    }
+    if (isElided) {
+      return;
+    }
 
     const newSelected = new Set(selectedNodes.value);
     if (e.shiftKey) {
@@ -70,13 +74,17 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
   };
 
   const handleDoubleClick = () => {
-    if (change.currentWorkingCopy) return;
+    if (change.currentWorkingCopy) {
+      return;
+    }
     vscode.postMessage({ command: "editChange", changeId: change.changeId });
   };
 
   const handleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
-    if (change.changeId === rootChangeId || isElided) return;
+    if (change.changeId === rootChangeId || isElided) {
+      return;
+    }
     clearHoverTimers();
     tooltip.value = null;
     contextMenu.value = {
@@ -120,7 +128,9 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
       clearTimeout(tooltipHideTimeout.value);
       tooltipHideTimeout.value = null;
     }
-    if (isDragging.value || isMenuOpen()) return;
+    if (isDragging.value || isMenuOpen()) {
+      return;
+    }
     if (shouldShowTooltip(change.changeId, change.branchType)) {
       startHoverTimers(change, e.pageX, e.pageY);
     }
@@ -132,7 +142,9 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
       clearTimeout(tooltipHideTimeout.value);
       tooltipHideTimeout.value = null;
     }
-    if (isDragging.value || isMenuOpen()) return;
+    if (isDragging.value || isMenuOpen()) {
+      return;
+    }
     if (shouldShowTooltip(change.changeId, change.branchType)) {
       startHoverTimers(change, e.pageX, e.pageY);
     }

@@ -6,7 +6,9 @@ import { useMenuPosition } from "./menu-container";
 export function ContextMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
   const state = contextMenu.value;
-  if (!state) return null;
+  if (!state) {
+    return null;
+  }
 
   const { change } = state;
   const isImmutable = change.branchType === "◆";

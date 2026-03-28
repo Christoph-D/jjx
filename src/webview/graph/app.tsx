@@ -11,7 +11,6 @@ import {
   selectedNodes,
   contextMenu,
   rebaseMenu,
-  isDragging,
   vscode,
   diffStatsCache,
   tooltip,
@@ -21,7 +20,7 @@ import { ContextMenu } from "./components/context-menu";
 import { RebaseMenu } from "./components/rebase-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
-import type { ChangeNode, ChangeIdGraph, ExtensionToWebviewMessage } from "../../graph-protocol";
+import type { ExtensionToWebviewMessage } from "../../graph-protocol";
 
 export function App() {
   useEffect(() => {

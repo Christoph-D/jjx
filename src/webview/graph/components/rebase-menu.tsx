@@ -5,7 +5,9 @@ import { useMenuPosition } from "./menu-container";
 export function RebaseMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
   const state = rebaseMenu.value;
-  if (!state) return null;
+  if (!state) {
+    return null;
+  }
 
   const { sourceId, targetId, targetChange } = state;
   const isDivergent = !!targetChange.changeOffset && targetChange.changeOffset !== "";

@@ -3,12 +3,16 @@ import type { RefObject } from "preact";
 
 export function useMenuPosition(menuRef: RefObject<HTMLDivElement | null>, pageX: number, pageY: number): void {
   useEffect(() => {
-    if (!menuRef.current) return;
+    if (!menuRef.current) {
+      return;
+    }
     menuRef.current.style.left = "-9999px";
     menuRef.current.style.top = "-9999px";
     menuRef.current.style.display = "block";
     requestAnimationFrame(() => {
-      if (!menuRef.current) return;
+      if (!menuRef.current) {
+        return;
+      }
       positionMenu(menuRef.current, pageX, pageY);
       positionSubmenus(menuRef.current);
       setupSubmenuHover(menuRef.current);
@@ -52,7 +56,9 @@ function positionSubmenus(menu: HTMLElement): void {
   menu.querySelectorAll(`#${menu.id} .has-submenu`).forEach((item) => {
     const menuItem = item as HTMLElement;
     const submenu = menuItem.querySelector(".context-submenu");
-    if (!submenu) return;
+    if (!submenu) {
+      return;
+    }
     const sub = submenu as HTMLElement;
 
     const itemRect = menuItem.getBoundingClientRect();

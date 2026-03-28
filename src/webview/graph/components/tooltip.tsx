@@ -18,7 +18,9 @@ export function Tooltip() {
   }, []);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return;
+    }
     if (!state) {
       ref.current.style.display = "none";
       return;
