@@ -1,4 +1,13 @@
-import { dragStartChangeId, isDragging, dropTargetId, justFinishedDrag, rebaseMenu, tooltipTimeout } from "../signals";
+import {
+  dragStartChangeId,
+  isDragging,
+  dropTargetId,
+  justFinishedDrag,
+  rebaseMenu,
+  tooltip,
+  tooltipTimeout,
+  tooltipHideTimeout,
+} from "../signals";
 import { rootChangeId } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
 
@@ -25,6 +34,11 @@ export function useDragDrop(change: ChangeNode) {
             clearTimeout(tooltipTimeout.value);
             tooltipTimeout.value = null;
           }
+          if (tooltipHideTimeout.value) {
+            clearTimeout(tooltipHideTimeout.value);
+            tooltipHideTimeout.value = null;
+          }
+          tooltip.value = null;
           e.dataTransfer!.setData("text/plain", change.changeId);
           e.dataTransfer!.effectAllowed = "move";
 
@@ -76,6 +90,11 @@ export function useDragDrop(change: ChangeNode) {
         clearTimeout(tooltipTimeout.value);
         tooltipTimeout.value = null;
       }
+      if (tooltipHideTimeout.value) {
+        clearTimeout(tooltipHideTimeout.value);
+        tooltipHideTimeout.value = null;
+      }
+      tooltip.value = null;
 
       justFinishedDrag.value = true;
       rebaseMenu.value = {
