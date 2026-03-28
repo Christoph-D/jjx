@@ -428,7 +428,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const entriesWithSynthetics = insertSyntheticNodes(rawEntries, edges, visibleIds, reachableVisibleFrom);
       const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entriesWithSynthetics, graphStyle);
 
-      this.selectedNodes.clear();
+      const changeIdsInGraph = new Set(changes.map((c) => c.changeId));
+      const preservedSelection = new Set(Array.from(this.selectedNodes).filter((id) => changeIdsInGraph.has(id)));
+      this.selectedNodes = preservedSelection;
       const changeDoubleClickAction = config.get<string>("changeDoubleClickAction") || "edit";
 
       const laneInfo = assignLanes(entriesWithSynthetics);
@@ -443,6 +445,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         offsetWidth,
         preserveScroll: true,
         showTooltips: config.get<boolean>("showTooltips") ?? true,
+        selectedNodes: Array.from(preservedSelection),
       };
       this.panel.webview.postMessage(msg);
     } catch (error) {

@@ -103,6 +103,7 @@ export type ExtensionToWebviewMessage =
       offsetWidth: number;
       preserveScroll: boolean;
       showTooltips: boolean;
+      selectedNodes: string[];
     }
   | { command: "showStaleState" }
   | { command: "diffStatsResponse"; changeId: string; stats: DiffStats };

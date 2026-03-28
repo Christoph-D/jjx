@@ -24,8 +24,7 @@ test("create new child change from context menu", async ({ graphFrame, testRepo 
   }).toPass();
 });
 
-// TODO: Reenable after "Graph view refresh loses selected commits" is fixed
-test.skip("create new change with multiple parents via toolbar", async ({ graphFrame, testRepo, workbox }) => {
+test("create new change with multiple parents via toolbar", async ({ graphFrame, testRepo, workbox }) => {
   const changeIdA = await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.jjCommand(["new", changeIdA]);
