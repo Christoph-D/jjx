@@ -172,33 +172,6 @@ body {
   content: "??";
 }
 
-.edit-button {
-  opacity: 0;
-  background: none;
-  border: none;
-  color: var(--vscode-button-foreground);
-  cursor: pointer;
-  padding: 2px 6px;
-  font-size: 0.9em;
-  border-radius: 3px;
-}
-
-.change-node:hover .edit-button {
-  opacity: 1;
-}
-
-.edit-button:hover {
-  background-color: var(--vscode-button-secondaryHoverBackground);
-}
-
-.edit-button .codicon {
-  color: var(--vscode-icon-foreground);
-}
-
-.edit-button:hover .codicon {
-  color: var(--vscode-button-secondaryForeground);
-}
-
 .node-circle {
   min-width: 12px;
   height: 12px;

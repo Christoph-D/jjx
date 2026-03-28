@@ -87,11 +87,6 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
     };
   };
 
-  const handleEdit = (e: Event) => {
-    e.stopPropagation();
-    vscode.postMessage({ command: "editChange", changeId: change.changeId });
-  };
-
   const showTooltip = (change: ChangeNode, pageX: number, pageY: number) => {
     tooltip.value = { change, pageX, pageY };
   };
@@ -159,9 +154,6 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
 
   const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
   const localTagNames = new Set(change.localTags.map((t) => t.name));
-
-  const showEditButton =
-    !change.currentWorkingCopy && !(changeEditAction.value === "edit" && change.changeId === rootChangeId);
 
   return (
     <div
@@ -235,15 +227,6 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
         </div>
         {graphStyle.value !== "compact" && <div class="description">{change.description}</div>}
       </div>
-      {showEditButton && (
-        <button
-          class="edit-button"
-          onClick={handleEdit}
-          title={changeEditAction.value === "new" ? "Create and Edit a New Empty Change on Top" : "Edit This Change"}
-        >
-          <i class="codicon codicon-log-in"></i>
-        </button>
-      )}
     </div>
   );
 }
