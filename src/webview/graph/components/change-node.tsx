@@ -27,7 +27,7 @@ const TOOLTIP_HIDE_DELAY_MS = 100;
 const DIFF_STATS_PREFETCH_DELAY_MS = 100;
 
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
-  return changeId !== "z".repeat(32) && branchType !== "~";
+  return changeId !== rootChangeId && branchType !== "~";
 }
 
 function isMenuOpen(): boolean {
