@@ -89,7 +89,8 @@ export type WebviewToExtensionMessage =
   | { command: "revertAfter"; changeId: string; targetChangeId: string }
   | { command: "revertBefore"; changeId: string; targetChangeId: string }
   | { command: "copyUrl"; changeId: string }
-  | { command: "updateStale" };
+  | { command: "updateStale" }
+  | { command: "reportError"; message: string; stack?: string };
 
 export type ExtensionToWebviewMessage =
   | {

@@ -20,6 +20,7 @@ import { ContextMenu } from "./components/context-menu";
 import { RebaseMenu } from "./components/rebase-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
+import { ErrorBoundary } from "./components/error-boundary";
 import type { ExtensionToWebviewMessage } from "../../graph-protocol";
 
 export function App() {
@@ -77,11 +78,11 @@ export function App() {
   }, []);
 
   return (
-    <>
+    <ErrorBoundary>
       {isStale.value ? <StaleState /> : <Graph />}
       <ContextMenu />
       <RebaseMenu />
       <Tooltip />
-    </>
+    </ErrorBoundary>
   );
 }

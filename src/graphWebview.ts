@@ -357,6 +357,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             // Silently ignore - tooltip simply won't show diff stats
           }
           break;
+        case "reportError":
+          logger.error(`Webview error: ${message.message}${message.stack ? `\n${message.stack}` : ""}`);
+          break;
       }
     });
 
