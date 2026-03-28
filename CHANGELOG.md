@@ -1,5 +1,32 @@
 # Change Log
 
+## 1.3.0
+
+### New Features
+
+- **jjx.logLimit** - New config option to control the number of commits shown in the graph view
+- **Improved elided commits** - The `jjx.elidedVisibleImmutableParents` setting now only applies to elided (collapsed)
+  immutable commits, and the setting has been renamed from `jjx.numberOfImmutableParentsInLog`
+
+### Performance
+
+- Faster elided edge computation (replaced O(N\*G) ancestry DFS with single reverse BFS)
+
+### Bug Fixes
+
+- Show commits that have local bookmarks/tags in the graph
+- Fix rendering bug where some parent edges were missing
+- Fix missing synthetic node IDs causing incorrect graph rendering
+
+### Internal
+
+- Extract webview graph inline script into 8 focused TypeScript modules for type checking and linting
+- Deduplicate esbuild build configurations
+- Replace unmaintained npm-run-all with npm-run-all2
+- Enable stricter TypeScript checking (noImplicitReturns, noFallthroughCasesInSwitch)
+- Add CI caching for node_modules and Playwright browsers
+- Various cleanup and fixes (stale files, broken tasks, source maps, duplicate tests)
+
 ## 1.2.2
 
 ### Bug Fixes

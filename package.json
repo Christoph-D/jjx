@@ -4,7 +4,7 @@
   "publisher": "jjx",
   "description": "First-class VS Code integration for Jujutsu (jj) with visual history and fluid workflows",
   "icon": "images/logo.png",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "engines": {
     "vscode": "^1.96.0",
     "node": ">=20"
