@@ -2,6 +2,11 @@
   --dimmed-opacity: 0.3;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   padding: 0;
   color: var(--vscode-foreground);

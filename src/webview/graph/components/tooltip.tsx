@@ -31,7 +31,6 @@ export function Tooltip() {
     el.style.top = "-9999px";
 
     requestAnimationFrame(() => {
-      const scrollX = window.scrollX || window.pageXOffset;
       const scrollY = window.scrollY || window.pageYOffset;
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
@@ -39,10 +38,8 @@ export function Tooltip() {
       const changeIdEl = document.querySelector(
         `.change-node[data-change-id="${state.change.changeId}"] .change-id-left`,
       );
-      const minLeft = changeIdEl
-        ? changeIdEl.getBoundingClientRect().right + CHANGE_ID_RIGHT_PADDING + scrollX
-        : scrollX + 10;
-      const maxAllowedWidth = viewportWidth + scrollX - 100 - minLeft;
+      const minLeft = changeIdEl ? changeIdEl.getBoundingClientRect().right + CHANGE_ID_RIGHT_PADDING : 10;
+      const maxAllowedWidth = viewportWidth - 100 - minLeft;
 
       if (maxAllowedWidth > 0) {
         el.style.maxWidth = maxAllowedWidth + "px";
@@ -53,7 +50,7 @@ export function Tooltip() {
       let left = state.pageX + offset;
       let top = state.pageY + offset;
 
-      if (left + tooltipRect.width > viewportWidth + scrollX - 10) {
+      if (left + tooltipRect.width > viewportWidth - 10) {
         left = state.pageX - tooltipRect.width - offset;
       }
 
@@ -65,8 +62,8 @@ export function Tooltip() {
         top = scrollY + 10;
       }
 
-      if (left < scrollX + 10) {
-        left = scrollX + 10;
+      if (left < 10) {
+        left = 10;
       }
 
       if (left < minLeft) {

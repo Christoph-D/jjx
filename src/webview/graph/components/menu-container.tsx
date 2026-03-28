@@ -20,13 +20,12 @@ function positionMenu(menu: HTMLElement, pageX: number, pageY: number): void {
   const menuRect = menu.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const scrollX = window.scrollX || window.pageXOffset;
   const scrollY = window.scrollY || window.pageYOffset;
 
   let left = pageX;
   let top = pageY;
 
-  if (left + menuRect.width > viewportWidth + scrollX - 10) {
+  if (left + menuRect.width > viewportWidth - 10) {
     left = pageX - menuRect.width;
   }
 
@@ -34,8 +33,8 @@ function positionMenu(menu: HTMLElement, pageX: number, pageY: number): void {
     top = pageY - menuRect.height;
   }
 
-  if (left < scrollX + 10) {
-    left = scrollX + 10;
+  if (left < 10) {
+    left = 10;
   }
 
   if (top < scrollY + 10) {
