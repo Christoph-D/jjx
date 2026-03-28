@@ -1,6 +1,5 @@
 import { useEffect, useRef, useCallback } from "preact/hooks";
 import { tooltip, tooltipHideTimeout, diffStatsCache } from "../signals";
-import { escapeHtml } from "../utils";
 
 export function Tooltip() {
   const ref = useRef<HTMLDivElement>(null);
@@ -106,22 +105,22 @@ export function Tooltip() {
             <span
               class={"tooltip-pill tooltip-bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
             >
-              {escapeHtml(b.name)}
+              {b.name}
             </span>
           ))}
           {change.remoteBookmarks.map((b) => (
             <span class="tooltip-pill tooltip-bookmark-pill">
-              {escapeHtml(b.name)}@{escapeHtml(b.remote)}
+              {b.name}@{b.remote}
             </span>
           ))}
           {change.localTags.map((t) => (
             <span class={"tooltip-pill tooltip-tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}>
-              {escapeHtml(t.name)}
+              {t.name}
             </span>
           ))}
           {change.remoteTags.map((t) => (
             <span class="tooltip-pill tooltip-tag-pill">
-              {escapeHtml(t.name)}@{escapeHtml(t.remote)}
+              {t.name}@{t.remote}
             </span>
           ))}
         </div>
@@ -135,7 +134,7 @@ export function Tooltip() {
       ) : (
         <div class="tooltip-summary">Loading...</div>
       )}
-      {change.fullDescription && <div class="tooltip-description">{escapeHtml(change.fullDescription)}</div>}
+      {change.fullDescription && <div class="tooltip-description">{change.fullDescription}</div>}
     </div>
   );
 }

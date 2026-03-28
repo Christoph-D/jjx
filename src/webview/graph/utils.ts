@@ -1,9 +1,3 @@
-export function escapeHtml(text: string): string {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 export function abbreviateName(name: string, maxLength = 20): string {
   if (name.length <= maxLength) {
     return name;
@@ -18,7 +12,9 @@ export function cleanupSeparators(menu: Element) {
   const visibleItems = items.filter((item) => (item as HTMLElement).style.display !== "none");
 
   visibleItems.forEach((item, index) => {
-    if (!item.classList.contains("context-menu-separator")) {return;}
+    if (!item.classList.contains("context-menu-separator")) {
+      return;
+    }
 
     if (index === 0) {
       (item as HTMLElement).style.display = "none";
