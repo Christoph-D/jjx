@@ -382,11 +382,13 @@ body {
 
 .tooltip-author {
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .tooltip-email {
   opacity: 0.7;
   font-size: 0.9em;
+  overflow-wrap: anywhere;
 }
 
 .tooltip-timestamp {

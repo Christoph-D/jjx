@@ -105,12 +105,8 @@ export function Tooltip() {
     >
       {(change.authorName || change.authorEmail || change.authorTimestamp) && (
         <div class="tooltip-header">
-          {change.authorName && (
-            <span class="tooltip-author">
-              {change.authorName}
-              {change.authorEmail && <span class="tooltip-email"> {change.authorEmail}</span>}
-            </span>
-          )}
+          {change.authorName && <div class="tooltip-author">{change.authorName}</div>}
+          {change.authorEmail && <div class="tooltip-email">{change.authorEmail}</div>}
         </div>
       )}
       {change.authorTimestamp && <div class="tooltip-timestamp">{change.authorTimestamp}</div>}
