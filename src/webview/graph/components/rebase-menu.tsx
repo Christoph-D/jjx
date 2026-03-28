@@ -13,7 +13,7 @@ export function RebaseMenu() {
   const isDivergent = !!targetChange.changeOffset && targetChange.changeOffset !== "";
   const isImmutable = targetChange.branchType === "◆";
 
-  useMenuPosition(menuRef, state.pageX, state.pageY);
+  useMenuPosition(menuRef, state);
 
   const sendCommand = (command: string, withDescendants = false) => {
     vscode.postMessage({ command, changeId: sourceId, targetChangeId: targetId, withDescendants });

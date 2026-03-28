@@ -1,7 +1,10 @@
 import { useEffect } from "preact/hooks";
 import type { RefObject } from "preact";
 
-export function useMenuPosition(menuRef: RefObject<HTMLDivElement | null>, pageX: number, pageY: number): void {
+export function useMenuPosition(
+  menuRef: RefObject<HTMLDivElement | null>,
+  state: { pageX: number; pageY: number },
+): void {
   useEffect(() => {
     if (!menuRef.current) {
       return;
@@ -13,11 +16,11 @@ export function useMenuPosition(menuRef: RefObject<HTMLDivElement | null>, pageX
       if (!menuRef.current) {
         return;
       }
-      positionMenu(menuRef.current, pageX, pageY);
+      positionMenu(menuRef.current, state.pageX, state.pageY);
       positionSubmenus(menuRef.current);
       setupSubmenuHover(menuRef.current);
     });
-  });
+  }, [state]);
 }
 
 function positionMenu(menu: HTMLElement, pageX: number, pageY: number): void {

@@ -21,7 +21,7 @@ export function ContextMenu() {
     ),
   ].sort();
 
-  useMenuPosition(menuRef, state.pageX, state.pageY);
+  useMenuPosition(menuRef, state);
 
   return (
     <div
