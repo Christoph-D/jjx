@@ -362,7 +362,10 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const graphStyle = config.get<string>("graphStyle") || "full";
 
       const logLimit = config.get<number>("logLimit") ?? 100;
+      const logStart = performance.now();
       const rawEntries = await this.repository.log(getLogRevset(), logLimit);
+      const logDuration = performance.now() - logStart;
+      logger.info(`jj log took ${logDuration.toFixed(1)}ms`);
       const elideImmutableCommits = this.getEffectiveEliding();
       const { edges, visibleIds, reachableVisibleFrom } = classifyEdges(rawEntries, {
         elideImmutableCommits,
