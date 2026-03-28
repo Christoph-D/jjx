@@ -116,23 +116,27 @@ export function Tooltip() {
         <div class="tooltip-pills">
           {change.localBookmarks.map((b) => (
             <span
+              key={b.name}
               class={"tooltip-pill tooltip-bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
             >
               {b.name}
             </span>
           ))}
           {change.remoteBookmarks.map((b) => (
-            <span class="tooltip-pill tooltip-bookmark-pill">
+            <span key={b.name + "@" + b.remote} class="tooltip-pill tooltip-bookmark-pill">
               {b.name}@{b.remote}
             </span>
           ))}
           {change.localTags.map((t) => (
-            <span class={"tooltip-pill tooltip-tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}>
+            <span
+              key={t.name}
+              class={"tooltip-pill tooltip-tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
+            >
               {t.name}
             </span>
           ))}
           {change.remoteTags.map((t) => (
-            <span class="tooltip-pill tooltip-tag-pill">
+            <span key={t.name + "@" + t.remote} class="tooltip-pill tooltip-tag-pill">
               {t.name}@{t.remote}
             </span>
           ))}

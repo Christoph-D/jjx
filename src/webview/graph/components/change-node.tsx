@@ -201,9 +201,14 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
         }}
       >
         <div>
-          {change.workingCopies?.map((wc) => <span class="pill workspace-pill">{wc}</span>)}
+          {change.workingCopies?.map((wc) => (
+            <span key={wc} class="pill workspace-pill">
+              {wc}
+            </span>
+          ))}
           {change.localBookmarks.map((b) => (
             <span
+              key={b.name}
               class={"pill bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
               data-bookmark={b.name}
             >
@@ -213,12 +218,13 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
           {change.remoteBookmarks
             .filter((b) => !localBookmarkNames.has(b.name))
             .map((b) => (
-              <span class="pill bookmark-pill">
+              <span key={b.name + "@" + b.remote} class="pill bookmark-pill">
                 {abbreviateName(b.name)}@{b.remote}
               </span>
             ))}
           {change.localTags.map((t) => (
             <span
+              key={t.name}
               class={"pill tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
               data-tag={t.name}
             >
@@ -228,7 +234,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
           {change.remoteTags
             .filter((t) => !localTagNames.has(t.name))
             .map((t) => (
-              <span class="pill tag-pill">
+              <span key={t.name + "@" + t.remote} class="pill tag-pill">
                 {abbreviateName(t.name)}@{t.remote}
               </span>
             ))}

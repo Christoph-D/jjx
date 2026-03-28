@@ -79,6 +79,7 @@ export function ContextMenu() {
         <div class="context-submenu" id="bookmark-submenu">
           {allBookmarks.map((name) => (
             <div
+              key={name}
               class="context-submenu-item"
               data-bookmark={name}
               onClick={() => {
@@ -109,6 +110,7 @@ export function ContextMenu() {
         <div class="context-submenu" id="delete-bookmark-submenu">
           {change.localBookmarks.map((b) => (
             <div
+              key={b.name}
               class="context-submenu-item"
               data-delete-bookmark={b.name}
               onClick={() => {
@@ -140,6 +142,7 @@ export function ContextMenu() {
         <div class="context-submenu" id="delete-tag-submenu">
           {change.localTags.map((t) => (
             <div
+              key={t.name}
               class="context-submenu-item"
               data-delete-tag={t.name}
               onClick={() => {
