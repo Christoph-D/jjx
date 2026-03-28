@@ -1,4 +1,3 @@
-/.*
 out/**
 node_modules/**
 src/**
@@ -14,3 +13,11 @@ vsc-extension-quickstart.md
 **/.vscode-test.*
 .jj
 *.vsix
+.agents/
+.devcontainer/
+.github/
+.gitignore
+.jj-workspaces/
+.prettierignore
+test-results/
+tests-integration/
