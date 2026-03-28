@@ -91,7 +91,7 @@ export function Tooltip() {
           {change.authorName && (
             <span class="tooltip-author">
               {change.authorName}
-              {change.authorEmail && <span class="tooltip-email"> &lt;{change.authorEmail}&gt;</span>}
+              {change.authorEmail && <span class="tooltip-email"> {change.authorEmail}</span>}
             </span>
           )}
         </div>
