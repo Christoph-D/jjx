@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useRef } from "preact/hooks";
+import { useSignalEffect } from "@preact/signals";
 import { currentChanges, currentGraph, changeIdHorizontalOffset, selectedNodes } from "../signals";
 import { CIRCLE_RADIUS } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
@@ -53,7 +54,10 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
 export function NodeCircles() {
   const gRef = useRef<SVGGElement>(null);
 
-  useEffect(() => {
+  useSignalEffect(() => {
+    void currentChanges.value;
+    void changeIdHorizontalOffset.value;
+
     if (!gRef.current || !currentGraph.value) {
       return;
     }
@@ -79,7 +83,7 @@ export function NodeCircles() {
       const y = nodeRect.top - svgRect.top + nodeRect.height / 2;
       circle.setAttribute("transform", `translate(${x}, ${y})`);
     });
-  }, [currentChanges.value, changeIdHorizontalOffset.value]);
+  });
 
   const changes = currentChanges.value;
   const graph = currentGraph.value;

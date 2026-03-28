@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useRef } from "preact/hooks";
+import { useSignalEffect } from "@preact/signals";
 import { currentChanges, currentGraph, changeIdHorizontalOffset } from "../signals";
 import { EDGE_EXTENSION } from "../types";
 import type { ChangeIdGraph } from "../../../graph-protocol";
@@ -67,7 +68,10 @@ function buildPathD(
 export function ConnectionLines() {
   const gRef = useRef<SVGGElement>(null);
 
-  useEffect(() => {
+  useSignalEffect(() => {
+    void currentChanges.value;
+    void changeIdHorizontalOffset.value;
+
     const g = gRef.current;
     if (!g) {
       return;
@@ -118,7 +122,7 @@ export function ConnectionLines() {
       path.style.stroke = color;
       g.appendChild(path);
     }
-  }, [currentChanges.value, changeIdHorizontalOffset.value]);
+  });
 
   return <g id="connection-lines" ref={gRef}></g>;
 }
