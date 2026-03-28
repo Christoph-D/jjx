@@ -674,11 +674,13 @@ export class JJRepository {
     );
   }
 
-  async abandonRetryImmutable(rev: string) {
+  async abandonRetryImmutable(revs: string[], customMessage?: string) {
+    const revset = revs.join("|");
     return this.retryWithImmutable(
-      rev,
-      () => this.abandon(rev),
-      () => this.abandon(rev, true),
+      revset,
+      () => this.abandon(revs),
+      () => this.abandon(revs, true),
+      customMessage,
     );
   }
 
@@ -720,9 +722,10 @@ export class JJRepository {
     }
   }
 
-  private async abandon(rev: string, ignoreImmutable = false) {
+  private async abandon(revs: string[], ignoreImmutable = false) {
+    const revset = revs.join("|");
     return await handleJJCommand(
-      this.spawnJJ(["abandon", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
+      this.spawnJJ(["abandon", "-r", revset, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
         timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),

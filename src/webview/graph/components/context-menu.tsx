@@ -1,5 +1,5 @@
 import { useRef } from "preact/hooks";
-import { contextMenu, currentChanges, vscode } from "../signals";
+import { contextMenu, currentChanges, selectedNodes, vscode } from "../signals";
 import { abbreviateName } from "../utils";
 import { useMenuPosition } from "./menu-container";
 
@@ -194,6 +194,18 @@ export function ContextMenu() {
       >
         Abandon Change
       </div>
+      {selectedNodes.value.size > 1 && selectedNodes.value.has(change.changeId) && (
+        <div
+          class="context-menu-item"
+          data-action="abandonSelected"
+          onClick={() => {
+            vscode.postMessage({ command: "abandonChanges", changeIds: Array.from(selectedNodes.value) });
+            contextMenu.value = null;
+          }}
+        >
+          Abandon All Selected Changes
+        </div>
+      )}
     </div>
   );
 }

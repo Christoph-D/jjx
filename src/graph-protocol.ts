@@ -77,6 +77,7 @@ export type WebviewToExtensionMessage =
   | { command: "describeChange"; changeId: string }
   | { command: "absorbChange"; changeId: string }
   | { command: "abandonChange"; changeId: string }
+  | { command: "abandonChanges"; changeIds: string[] }
   | { command: "rebaseOnto"; changeId: string; targetChangeId: string; withDescendants: boolean }
   | { command: "rebaseAfter"; changeId: string; targetChangeId: string; withDescendants: boolean }
   | { command: "rebaseBefore"; changeId: string; targetChangeId: string; withDescendants: boolean }

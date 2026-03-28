@@ -226,10 +226,30 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (confirm !== "Abandon") {
               return;
             }
-            await this.repository.abandonRetryImmutable(message.changeId);
+            await this.repository.abandonRetryImmutable([message.changeId]);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to abandon change", error);
+          }
+          break;
+        case "abandonChanges":
+          try {
+            const count = message.changeIds.length;
+            const confirm = await vscode.window.showWarningMessage(
+              `Are you sure you want to abandon ${count} changes?`,
+              { modal: true },
+              "Abandon",
+            );
+            if (confirm !== "Abandon") {
+              return;
+            }
+            await this.repository.abandonRetryImmutable(
+              message.changeIds,
+              "Some of the selected changes are immutable, are you sure?",
+            );
+            await this.refresh();
+          } catch (error: unknown) {
+            showErrorMessage("Failed to abandon changes", error);
           }
           break;
         case "copyUrl":
