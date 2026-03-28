@@ -1,4 +1,5 @@
 import { useEffect } from "preact/hooks";
+import { effect } from "@preact/signals";
 import {
   currentChanges,
   currentGraph,
@@ -8,9 +9,11 @@ import {
   offsetWidth,
   scrollY,
   isStale,
+  isDragging,
   selectedNodes,
   contextMenu,
   rebaseMenu,
+  pendingGraphUpdate,
   vscode,
   diffStatsCache,
   tooltip,
@@ -21,24 +24,41 @@ import { RebaseMenu } from "./components/rebase-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
 import { ErrorBoundary } from "./components/error-boundary";
+import type { PendingGraphUpdate } from "./signals";
 import type { ExtensionToWebviewMessage } from "../../graph-protocol";
 
 export function App() {
   useEffect(() => {
+    const applyGraphUpdate = (message: PendingGraphUpdate) => {
+      isStale.value = false;
+      selectedNodes.value = new Set();
+      diffStatsCache.value = new Map();
+      currentChanges.value = message.changes;
+      currentGraph.value = message.laneInfo;
+      changeDoubleClickAction.value = message.changeDoubleClickAction;
+      graphStyle.value = message.graphStyle;
+      maxPrefixLength.value = message.maxPrefixLength;
+      offsetWidth.value = message.offsetWidth;
+      scrollY.value = message.preserveScroll ? window.scrollY : 0;
+    };
+
+    effect(() => {
+      if (!isDragging.value && pendingGraphUpdate.value) {
+        const update = pendingGraphUpdate.value;
+        pendingGraphUpdate.value = null;
+        applyGraphUpdate(update);
+      }
+    });
+
     window.addEventListener("message", (event) => {
       const message = event.data as ExtensionToWebviewMessage;
       switch (message.command) {
         case "updateGraph":
-          isStale.value = false;
-          selectedNodes.value = new Set();
-          diffStatsCache.value = new Map();
-          currentChanges.value = message.changes;
-          currentGraph.value = message.laneInfo;
-          changeDoubleClickAction.value = message.changeDoubleClickAction;
-          graphStyle.value = message.graphStyle;
-          maxPrefixLength.value = message.maxPrefixLength;
-          offsetWidth.value = message.offsetWidth;
-          scrollY.value = message.preserveScroll ? window.scrollY : 0;
+          if (isDragging.value) {
+            pendingGraphUpdate.value = message;
+            break;
+          }
+          applyGraphUpdate(message);
           break;
         case "showStaleState":
           isStale.value = true;

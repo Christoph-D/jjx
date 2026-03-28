@@ -53,3 +53,15 @@ export const contextMenu = signal<ContextMenuState | null>(null);
 export const rebaseMenu = signal<RebaseMenuState | null>(null);
 export const tooltip = signal<TooltipState | null>(null);
 export const diffStatsCache = signal<Map<string, DiffStats>>(new Map());
+
+export interface PendingGraphUpdate {
+  changes: ChangeNode[];
+  laneInfo: import("../../graph-protocol").ChangeIdGraph;
+  changeDoubleClickAction: string;
+  graphStyle: string;
+  maxPrefixLength: number;
+  offsetWidth: number;
+  preserveScroll: boolean;
+}
+
+export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);
