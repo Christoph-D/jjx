@@ -22,9 +22,9 @@ import type { LaneNode } from "../../../graph-protocol";
 import type { ChangeNode } from "../../../graph-protocol";
 import { abbreviateName } from "../utils";
 
-const TOOLTIP_DELAY_MS = 500;
+const TOOLTIP_DELAY_MS = 300;
 const TOOLTIP_HIDE_DELAY_MS = 100;
-const DIFF_STATS_PREFETCH_DELAY_MS = 300;
+const DIFF_STATS_PREFETCH_DELAY_MS = 100;
 
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
   return changeId !== "z".repeat(32) && branchType !== "~";
