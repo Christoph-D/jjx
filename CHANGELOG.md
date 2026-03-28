@@ -1,5 +1,40 @@
 # Change Log
 
+## 1.4.0
+
+### New Features
+
+- **Preact migration** - Rewrote the graph webview from vanilla TypeScript to Preact with JSX and signals for a more
+  maintainable component architecture and improved performance
+- **On-demand diff stat fetching** - Greatly improved jj graph performance by making tooltips fetch diff stats on demand
+  with prefetching
+- **Absorb Into Parents** - New context menu option to absorb selected changes into their parent commits
+- **Abandon All Selected Changes** - New context menu option to abandon all selected changes at once
+- **New Child** - New context menu option to create a new child change from a selected commit
+- **Hoverable tooltips** - Tooltips can now be hovered to scroll through long descriptions before they hide
+- **Double-click opens new change** - Changed the default double-click action to create a new child change instead of
+  editing to prevent accidentally editing past changes
+- **Deferred graph updates during drag & drop** - Graph no longer refreshes during drag operations to preserve the drop
+  target
+- **jjx.showTooltips** - New config option to control whether tooltips are shown in the graph view
+
+### Bug Fixes
+
+- Hard-wrap long name and email in tooltip
+- Reduce tooltip hover delays for snappier interaction
+- Prevent tooltip from overlapping change IDs in graph view
+- Remove angle brackets around email address in tooltip
+- Remove quick action buttons from graph change nodes to have more space for the description
+
+### Internal
+
+- Share message protocol types between extension and webview
+- Enable eslint for the webview files
+- Add integration tests for rebase with descendants
+- Suppress tooltips in integration tests for more reliable tests
+- Exclude development and CI paths from VSIX package
+- Many smaller cleanups
+
 ## 1.3.0
 
 ### New Features
