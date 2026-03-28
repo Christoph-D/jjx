@@ -17,7 +17,7 @@ export function useMenuPosition(menuRef: RefObject<HTMLDivElement | null>, pageX
       positionSubmenus(menuRef.current);
       setupSubmenuHover(menuRef.current);
     });
-  }, [pageX, pageY]);
+  });
 }
 
 function positionMenu(menu: HTMLElement, pageX: number, pageY: number): void {

@@ -1,7 +1,7 @@
-import { test, expect, increaseJJVisibleSize } from "./baseTest";
+import { test, expect } from "./baseTest";
 import { getParents } from "../testRepo";
 
-test("rebase commit onto another via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
+test("rebase commit onto another via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
@@ -9,7 +9,6 @@ test("rebase commit onto another via drag and drop", async ({ workbox, graphFram
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
 
-  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -32,15 +31,13 @@ test("rebase commit onto another via drag and drop", async ({ workbox, graphFram
   }).toPass();
 });
 
-test("rebase after another commit via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
+test("rebase after another commit via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
-
-  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -63,15 +60,13 @@ test("rebase after another commit via drag and drop", async ({ workbox, graphFra
   }).toPass();
 });
 
-test("rebase before another commit via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
+test("rebase before another commit via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
-
-  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitB = nodes.nth(2);
@@ -95,15 +90,13 @@ test("rebase before another commit via drag and drop", async ({ workbox, graphFr
   }).toPass();
 });
 
-test("rebase commit with descendants onto another via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
+test("rebase commit with descendants onto another via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
-
-  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -133,15 +126,13 @@ test("rebase commit with descendants onto another via drag and drop", async ({ w
   }).toPass();
 });
 
-test("rebase commit with descendants after another via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
+test("rebase commit with descendants after another via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
-
-  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
@@ -170,15 +161,13 @@ test("rebase commit with descendants after another via drag and drop", async ({ 
   }).toPass();
 });
 
-test("rebase commit with descendants before another via drag and drop", async ({ workbox, graphFrame, testRepo }) => {
+test("rebase commit with descendants before another via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.commitFile("c.txt", "content c", "C");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
-
-  await increaseJJVisibleSize(workbox);
 
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);

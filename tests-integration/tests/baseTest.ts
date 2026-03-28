@@ -197,12 +197,14 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       throw new Error("Graph frame not found");
     }).toPass();
 
+    await increaseJJVisibleSize(workbox);
+
     await use(graphFrame!);
   },
 });
 
 // Closes the chat window and increases the size of the jj graph
-export async function increaseJJVisibleSize(workbox: Page) {
+async function increaseJJVisibleSize(workbox: Page) {
   // Hide auxiliary side bar (chat window)
   await workbox.keyboard.press("Control+Alt+b");
 
