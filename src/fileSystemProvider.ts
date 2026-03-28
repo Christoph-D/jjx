@@ -33,12 +33,19 @@ export class JJFileSystemProvider implements FileSystemProvider {
   private mtime = Date.now();
   private disposables: Disposable[] = [];
   private cleanupInterval?: ReturnType<typeof setInterval>;
+  private disposed = false;
+  private disposedPromise = new Promise<void>((resolve) => {
+    this._disposeResolve = resolve;
+  });
+  private _disposeResolve: () => void = () => {};
 
   constructor(private repositories: WorkspaceSourceControlManager) {
     this.cleanupInterval = setInterval(() => this.cleanup(), FIVE_MINUTES);
   }
 
   dispose() {
+    this.disposed = true;
+    this._disposeResolve();
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
@@ -56,7 +63,11 @@ export class JJFileSystemProvider implements FileSystemProvider {
   private async _fireChangeEvents(): Promise<void> {
     if (!window.state.focused) {
       const onDidFocusWindow = filterEvent(window.onDidChangeWindowState, (e) => e.focused);
-      await eventToPromise(onDidFocusWindow);
+      await Promise.race([eventToPromise(onDidFocusWindow), this.disposedPromise]);
+    }
+
+    if (this.disposed) {
+      return;
     }
 
     const events: FileChangeEvent[] = [];
