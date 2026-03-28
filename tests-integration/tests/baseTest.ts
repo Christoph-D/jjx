@@ -140,6 +140,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "git.enabled": false,
         "diffEditor.renderSideBySide": true,
         "diffEditor.renderSideBySideInlineBreakpoint": 50,
+        "jjx.showTooltips": false, // tooltips interfere with mouse positioning
         "window.dialogStyle": "custom",
         "window.autoDetectColorScheme": false,
       }),
