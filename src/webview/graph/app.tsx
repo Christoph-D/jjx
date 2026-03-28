@@ -19,22 +19,22 @@ import { ContextMenu } from "./components/context-menu";
 import { RebaseMenu } from "./components/rebase-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
-import type { ChangeNode, ChangeIdGraph } from "./types";
+import type { ChangeNode, ChangeIdGraph, ExtensionToWebviewMessage } from "../../graph-protocol";
 
 export function App() {
   useEffect(() => {
     window.addEventListener("message", (event) => {
-      const message = event.data as { command: string; [key: string]: unknown };
+      const message = event.data as ExtensionToWebviewMessage;
       switch (message.command) {
         case "updateGraph":
           isStale.value = false;
           selectedNodes.value = new Set();
-          currentChanges.value = message.changes as ChangeNode[];
-          currentGraph.value = message.laneInfo as ChangeIdGraph;
-          changeEditAction.value = message.changeEditAction as string;
-          graphStyle.value = message.graphStyle as string;
-          maxPrefixLength.value = message.maxPrefixLength as number;
-          offsetWidth.value = message.offsetWidth as number;
+          currentChanges.value = message.changes;
+          currentGraph.value = message.laneInfo;
+          changeEditAction.value = message.changeEditAction;
+          graphStyle.value = message.graphStyle;
+          maxPrefixLength.value = message.maxPrefixLength;
+          offsetWidth.value = message.offsetWidth;
           scrollY.value = message.preserveScroll ? window.scrollY : 0;
           break;
         case "showStaleState":

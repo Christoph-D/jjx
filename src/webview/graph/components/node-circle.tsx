@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "preact/hooks";
 import { currentChanges, currentGraph, changeIdHorizontalOffset, selectedNodes } from "../signals";
-import { CIRCLE_RADIUS, type ChangeNode } from "../types";
+import { CIRCLE_RADIUS } from "../types";
+import type { ChangeNode } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
 
 function Circle({ change, colorIndex }: { change: ChangeNode; colorIndex: number }) {

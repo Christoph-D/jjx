@@ -15,7 +15,8 @@ import {
   vscode,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
-import type { ChangeNode, LaneNode } from "../types";
+import type { LaneNode } from "../../../graph-protocol";
+import type { ChangeNode } from "../../../graph-protocol";
 import { abbreviateName } from "../utils";
 
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {

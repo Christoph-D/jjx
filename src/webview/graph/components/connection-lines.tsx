@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "preact/hooks";
 import { currentChanges, currentGraph, changeIdHorizontalOffset } from "../signals";
-import { EDGE_EXTENSION, type ChangeIdGraph } from "../types";
+import { EDGE_EXTENSION } from "../types";
+import type { ChangeIdGraph } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
 
 function buildPathD(

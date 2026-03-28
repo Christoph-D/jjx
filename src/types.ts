@@ -38,16 +38,8 @@ export interface LogEntryFile {
   status_char: FileStatusType;
 }
 
-export interface LogEntryLocalRef {
-  name: string;
-  synced: boolean;
-  conflict: boolean;
-}
-
-export interface LogEntryRemoteRef {
-  name: string;
-  remote: string;
-}
+import type { LogEntryLocalRef, LogEntryRemoteRef } from "./graph-protocol";
+export type { LogEntryLocalRef, LogEntryRemoteRef };
 
 export interface ParentRef {
   change_id: string;

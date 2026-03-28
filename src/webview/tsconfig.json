@@ -11,6 +11,6 @@
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
   },
-  "include": ["graph/**/*"],
+  "include": ["graph/**/*", "../graph-protocol.ts"],
   "exclude": ["node_modules", "dist"]
 }

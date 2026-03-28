@@ -1,70 +1,21 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
-import type { JJRepository, LogEntry, LogEntryLocalRef, LogEntryRemoteRef, ParentRef } from "./repository";
+import type { JJRepository, LogEntry, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { showErrorMessage } from "./utils";
 import { assignLanes } from "./laneAssigner";
+import type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elidedEdges";
 import { logger } from "./logger";
 import { getLogRevset, getElidedVisibleImmutableParents } from "./config";
 
 export type { LaneNode, LaneEdge, ChangeIdGraph } from "./laneAssigner";
+export type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
 
 const rootChangeId = "z".repeat(32);
 
-type Message =
-  | { command: "webviewReady" }
-  | { command: "editChange"; changeId: string }
-  | { command: "editChangeDirect"; changeId: string }
-  | { command: "selectChange"; selectedNodes: string[] }
-  | { command: "moveBookmark"; bookmark: string; targetChangeId: string }
-  | { command: "createBookmark"; targetChangeId: string }
-  | { command: "createTag"; targetChangeId: string }
-  | { command: "deleteBookmark"; bookmark: string }
-  | { command: "deleteTag"; tag: string }
-  | { command: "describeChange"; changeId: string }
-  | { command: "abandonChange"; changeId: string }
-  | { command: "rebaseOnto"; changeId: string; targetChangeId: string; withDescendants: boolean }
-  | { command: "rebaseAfter"; changeId: string; targetChangeId: string; withDescendants: boolean }
-  | { command: "rebaseBefore"; changeId: string; targetChangeId: string; withDescendants: boolean }
-  | { command: "squashInto"; changeId: string; targetChangeId: string }
-  | { command: "duplicateOnto"; changeId: string; targetChangeId: string }
-  | { command: "duplicateAfter"; changeId: string; targetChangeId: string }
-  | { command: "duplicateBefore"; changeId: string; targetChangeId: string }
-  | { command: "revertOnto"; changeId: string; targetChangeId: string }
-  | { command: "revertAfter"; changeId: string; targetChangeId: string }
-  | { command: "revertBefore"; changeId: string; targetChangeId: string }
-  | { command: "copyUrl"; changeId: string }
-  | { command: "updateStale" };
-
-export interface ChangeNode {
-  changeId: string;
-  changeIdPrefix: string;
-  changeIdSuffix: string;
-  changeOffset: string | null;
-  label: string;
-  description: string;
-  tooltip: string;
-  currentWorkingCopy: boolean;
-  localBookmarks: LogEntryLocalRef[];
-  remoteBookmarks: LogEntryRemoteRef[];
-  localTags: LogEntryLocalRef[];
-  remoteTags: LogEntryRemoteRef[];
-  workingCopies: string[];
-  parentChangeIds?: string[];
-  branchType?: string;
-  authorName: string;
-  authorEmail: string;
-  authorTimestamp: string;
-  fullDescription: string;
-  filesChanged: number;
-  linesAdded: number;
-  linesRemoved: number;
-  mine: boolean;
-  conflict: boolean;
-  elided?: number;
-}
+type Message = WebviewToExtensionMessage;
 
 export { assignLanes } from "./laneAssigner";
 
@@ -421,11 +372,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entriesWithSynthetics, graphStyle);
 
       this.selectedNodes.clear();
-      const changeEditAction = config.get<string>("changeEditAction");
+      const changeEditAction = config.get<string>("changeEditAction") || "edit";
 
       const laneInfo = assignLanes(entriesWithSynthetics);
 
-      this.panel.webview.postMessage({
+      const msg: ExtensionToWebviewMessage = {
         command: "updateGraph",
         changes: changes,
         laneInfo,
@@ -434,12 +385,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         maxPrefixLength,
         offsetWidth,
         preserveScroll: true,
-      });
+      };
+      this.panel.webview.postMessage(msg);
     } catch (error) {
       if (error instanceof StaleWorkingCopyError) {
-        this.panel.webview.postMessage({
+        const msg: ExtensionToWebviewMessage = {
           command: "showStaleState",
-        });
+        };
+        this.panel.webview.postMessage(msg);
         return;
       }
       logger.error(`Failed to refresh graph: ${error instanceof Error ? error.message : String(error)}`);

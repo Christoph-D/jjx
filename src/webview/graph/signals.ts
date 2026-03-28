@@ -1,5 +1,6 @@
 import { signal } from "@preact/signals";
-import type { ChangeNode, ChangeIdGraph, VSCodeAPI } from "./types";
+import type { VSCodeAPI } from "./types";
+import type { ChangeNode, ChangeIdGraph } from "../../graph-protocol";
 
 declare function acquireVsCodeApi(): VSCodeAPI;
 

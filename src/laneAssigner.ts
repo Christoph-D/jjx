@@ -1,29 +1,8 @@
 import type { LogEntry, ParentRef } from "./types";
+import type { LaneNode, LaneEdge, ChangeIdGraph } from "./graph-protocol";
+export type { LaneNode, LaneEdge, ChangeIdGraph };
 
 const colorRegistryLength = 5;
-
-export interface LaneNode {
-  lane: number;
-  changeId: string;
-  colorIndex: number;
-  // Only for display purposes to calculate where to place the label
-  numLanesActiveVisually: number;
-}
-
-export interface LaneEdge {
-  fromRow: number;
-  toRow: number;
-  lanePath: number[];
-  fromId: string;
-  toId: string;
-  colorIndex: number;
-  extendsToBottom?: boolean;
-}
-
-export interface ChangeIdGraph {
-  nodes: LaneNode[];
-  edges: LaneEdge[];
-}
 
 function rot(n: number, length: number): number {
   return ((n % length) + length) % length;

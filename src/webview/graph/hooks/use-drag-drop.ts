@@ -1,6 +1,6 @@
 import { dragStartChangeId, isDragging, dropTargetId, justFinishedDrag, rebaseMenu, tooltipTimeout } from "../signals";
 import { rootChangeId } from "../types";
-import type { ChangeNode } from "../types";
+import type { ChangeNode } from "../../../graph-protocol";
 
 export function useDragDrop(change: ChangeNode) {
   const isElided = change.branchType === "~";
