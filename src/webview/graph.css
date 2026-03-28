@@ -1,5 +1,9 @@
 :root {
   --dimmed-opacity: 0.3;
+  --pill-foreground: #ffffff;
+  --bookmark-pill-bg: #393a9b;
+  --tag-pill-bg: #ac681b;
+  --workspace-pill-bg: #1a6b6b;
 }
 
 html,
@@ -139,20 +143,20 @@ body {
   border-radius: 3px;
   font-size: 0.85em;
   font-family: var(--vscode-font-family);
-  color: #ffffff;
+  color: var(--pill-foreground);
   vertical-align: middle;
 }
 
 .bookmark-pill {
-  background-color: #393a9b;
+  background-color: var(--bookmark-pill-bg);
 }
 
 .tag-pill {
-  background-color: #ac681b;
+  background-color: var(--tag-pill-bg);
 }
 
 .workspace-pill {
-  background-color: #1a6b6b;
+  background-color: var(--workspace-pill-bg);
 }
 
 .workspace-pill::after {
@@ -179,7 +183,7 @@ body {
 }
 
 .node-circle .heart-path {
-  fill: whitesmoke;
+  fill: var(--vscode-sideBar-background);
 }
 
 .node-circle .bg-match {
@@ -387,16 +391,16 @@ body {
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 0.85em;
-  color: #ffffff;
+  color: var(--pill-foreground);
   white-space: nowrap;
 }
 
 .tooltip-bookmark-pill {
-  background-color: #393a9b;
+  background-color: var(--bookmark-pill-bg);
 }
 
 .tooltip-tag-pill {
-  background-color: #ac681b;
+  background-color: var(--tag-pill-bg);
 }
 
 .tooltip-bookmark-pill.unsynced::after,
