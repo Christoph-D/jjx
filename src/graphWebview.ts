@@ -442,6 +442,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         maxPrefixLength,
         offsetWidth,
         preserveScroll: true,
+        showTooltips: config.get<boolean>("showTooltips") ?? true,
       };
       this.panel.webview.postMessage(msg);
     } catch (error) {

@@ -17,6 +17,7 @@ import {
   vscode,
   diffStatsCache,
   tooltip,
+  showTooltips,
 } from "./signals";
 import { Graph } from "./components/graph";
 import { ContextMenu } from "./components/context-menu";
@@ -37,6 +38,7 @@ export function App() {
       currentGraph.value = message.laneInfo;
       changeDoubleClickAction.value = message.changeDoubleClickAction;
       graphStyle.value = message.graphStyle;
+      showTooltips.value = message.showTooltips;
       maxPrefixLength.value = message.maxPrefixLength;
       offsetWidth.value = message.offsetWidth;
       scrollY.value = message.preserveScroll ? window.scrollY : 0;

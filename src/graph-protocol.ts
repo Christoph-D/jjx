@@ -102,6 +102,7 @@ export type ExtensionToWebviewMessage =
       maxPrefixLength: number;
       offsetWidth: number;
       preserveScroll: boolean;
+      showTooltips: boolean;
     }
   | { command: "showStaleState" }
   | { command: "diffStatsResponse"; changeId: string; stats: DiffStats };

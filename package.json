@@ -682,6 +682,12 @@
           "default": "",
           "description": "Base URL for the 'Copy URL' feature. When set, this overrides git_web_url() for generating commit URLs (e.g., 'https://github.com/user/repo'). If empty, git_web_url() is used.",
           "scope": "resource"
+        },
+        "jjx.showTooltips": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tooltips when hovering over commits in the graph view",
+          "scope": "resource"
         }
       }
     },

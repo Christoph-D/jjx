@@ -22,6 +22,7 @@ export const changeIdHorizontalOffset = signal(0);
 export const isStale = signal(false);
 export const graphStyle = signal("full");
 export const changeDoubleClickAction = signal("new");
+export const showTooltips = signal(true);
 export const scrollY = signal(0);
 export const offsetWidth = signal(0);
 export const tooltipTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
@@ -62,6 +63,7 @@ export interface PendingGraphUpdate {
   maxPrefixLength: number;
   offsetWidth: number;
   preserveScroll: boolean;
+  showTooltips: boolean;
 }
 
 export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);

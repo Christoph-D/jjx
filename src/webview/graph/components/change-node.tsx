@@ -16,6 +16,7 @@ import {
   graphStyle,
   vscode,
   diffStatsCache,
+  showTooltips,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
@@ -128,7 +129,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
       clearTimeout(tooltipHideTimeout.value);
       tooltipHideTimeout.value = null;
     }
-    if (isDragging.value || isMenuOpen()) {
+    if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
     }
     if (shouldShowTooltip(change.changeId, change.branchType)) {
@@ -142,7 +143,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
       clearTimeout(tooltipHideTimeout.value);
       tooltipHideTimeout.value = null;
     }
-    if (isDragging.value || isMenuOpen()) {
+    if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
     }
     if (shouldShowTooltip(change.changeId, change.branchType)) {
