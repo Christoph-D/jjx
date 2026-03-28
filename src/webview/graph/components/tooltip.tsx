@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "preact/hooks";
 import { tooltip, tooltipHideTimeout, diffStatsCache } from "../signals";
+import { CHANGE_ID_RIGHT_PADDING } from "../types";
 
 export function Tooltip() {
   const ref = useRef<HTMLDivElement>(null);
@@ -25,16 +26,29 @@ export function Tooltip() {
 
     const el = ref.current;
     el.style.display = "block";
+    el.style.maxWidth = "";
     el.style.left = "-9999px";
     el.style.top = "-9999px";
 
     requestAnimationFrame(() => {
-      const tooltipRect = el.getBoundingClientRect();
       const scrollX = window.scrollX || window.pageXOffset;
       const scrollY = window.scrollY || window.pageYOffset;
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 
+      const changeIdEl = document.querySelector(
+        `.change-node[data-change-id="${state.change.changeId}"] .change-id-left`,
+      );
+      const minLeft = changeIdEl
+        ? changeIdEl.getBoundingClientRect().right + CHANGE_ID_RIGHT_PADDING + scrollX
+        : scrollX + 10;
+      const maxAllowedWidth = viewportWidth + scrollX - 100 - minLeft;
+
+      if (maxAllowedWidth > 0) {
+        el.style.maxWidth = maxAllowedWidth + "px";
+      }
+
+      const tooltipRect = el.getBoundingClientRect();
       const offset = 15;
       let left = state.pageX + offset;
       let top = state.pageY + offset;
@@ -53,6 +67,10 @@ export function Tooltip() {
 
       if (left < scrollX + 10) {
         left = scrollX + 10;
+      }
+
+      if (left < minLeft) {
+        left = minLeft;
       }
 
       el.style.left = left + "px";
