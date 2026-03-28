@@ -13,6 +13,8 @@ import {
   rebaseMenu,
   isDragging,
   vscode,
+  diffStatsCache,
+  tooltip,
 } from "./signals";
 import { Graph } from "./components/graph";
 import { ContextMenu } from "./components/context-menu";
@@ -29,6 +31,7 @@ export function App() {
         case "updateGraph":
           isStale.value = false;
           selectedNodes.value = new Set();
+          diffStatsCache.value = new Map();
           currentChanges.value = message.changes;
           currentGraph.value = message.laneInfo;
           changeEditAction.value = message.changeEditAction;
@@ -40,6 +43,12 @@ export function App() {
         case "showStaleState":
           isStale.value = true;
           break;
+        case "diffStatsResponse": {
+          const newCache = new Map(diffStatsCache.value);
+          newCache.set(message.changeId, message.stats);
+          diffStatsCache.value = newCache;
+          break;
+        }
       }
     });
 

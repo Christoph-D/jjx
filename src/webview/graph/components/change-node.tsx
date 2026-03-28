@@ -13,6 +13,7 @@ import {
   dropTargetId,
   graphStyle,
   vscode,
+  diffStatsCache,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
@@ -88,17 +89,20 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
     vscode.postMessage({ command: "editChange", changeId: change.changeId });
   };
 
+  const showTooltip = (change: ChangeNode, pageX: number, pageY: number) => {
+    tooltip.value = { change, pageX, pageY };
+    if (!diffStatsCache.value.has(change.changeId)) {
+      vscode.postMessage({ command: "fetchDiffStats", changeId: change.changeId });
+    }
+  };
+
   const handleMouseEnter = (e: MouseEvent) => {
     highlightProps.onMouseEnter();
     document.querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)?.classList.add("hovered");
     if (isDragging.value || isMenuOpen()) return;
     if (shouldShowTooltip(change.changeId, change.branchType)) {
       tooltipTimeout.value = setTimeout(() => {
-        tooltip.value = {
-          change,
-          pageX: e.pageX,
-          pageY: e.pageY,
-        };
+        showTooltip(change, e.pageX, e.pageY);
       }, 500);
     }
   };
@@ -110,11 +114,7 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
     if (isDragging.value || isMenuOpen()) return;
     if (shouldShowTooltip(change.changeId, change.branchType)) {
       tooltipTimeout.value = setTimeout(() => {
-        tooltip.value = {
-          change,
-          pageX: e.pageX,
-          pageY: e.pageY,
-        };
+        showTooltip(change, e.pageX, e.pageY);
       }, 500);
     }
   };

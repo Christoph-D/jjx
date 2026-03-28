@@ -306,6 +306,19 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             showErrorMessage("Failed to update stale working copy", error);
           }
           break;
+        case "fetchDiffStats":
+          try {
+            const stats = await this.repository.getDiffStats(message.changeId);
+            const response: ExtensionToWebviewMessage = {
+              command: "diffStatsResponse",
+              changeId: message.changeId,
+              stats,
+            };
+            this.panel?.webview.postMessage(response);
+          } catch {
+            // Silently ignore - tooltip simply won't show diff stats
+          }
+          break;
       }
     });
 
@@ -511,9 +524,6 @@ export function parseJJLogJson(
         authorEmail: "",
         authorTimestamp: "",
         fullDescription: "",
-        filesChanged: 0,
-        linesAdded: 0,
-        linesRemoved: 0,
         mine: false,
         conflict: false,
       };
@@ -550,10 +560,6 @@ export function parseJJLogJson(
     }
     const formattedDescription = entry.mine || entry.root ? timestamp : `${email} ${timestamp}`;
 
-    const filesChanged = entry.diff?.files?.length ?? 0;
-    const linesAdded = entry.diff?.total_added ?? 0;
-    const linesRemoved = entry.diff?.total_removed ?? 0;
-
     const uniqueParentIds = entry.parents.map((p: ParentRef) =>
       p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
     );
@@ -578,9 +584,6 @@ export function parseJJLogJson(
       authorEmail: entry.author.email,
       authorTimestamp: entry.author.timestamp,
       fullDescription: entry.description,
-      filesChanged: filesChanged,
-      linesAdded: linesAdded,
-      linesRemoved: linesRemoved,
       mine: entry.mine,
       conflict: entry.conflict,
     };

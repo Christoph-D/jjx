@@ -29,7 +29,6 @@ function makeEntry(change_id: string, parents: string[] | ParentRef[], overrides
       email: "test@test.com",
       timestamp: "2025-01-01",
     },
-    diff: { total_added: 0, total_removed: 0, files: [] },
     parents: parentRefs,
     local_bookmarks: [],
     remote_bookmarks: [],

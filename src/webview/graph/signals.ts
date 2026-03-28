@@ -1,6 +1,6 @@
 import { signal } from "@preact/signals";
 import type { VSCodeAPI } from "./types";
-import type { ChangeNode, ChangeIdGraph } from "../../graph-protocol";
+import type { ChangeNode, ChangeIdGraph, DiffStats } from "../../graph-protocol";
 
 declare function acquireVsCodeApi(): VSCodeAPI;
 
@@ -50,3 +50,4 @@ export interface TooltipState {
 export const contextMenu = signal<ContextMenuState | null>(null);
 export const rebaseMenu = signal<RebaseMenuState | null>(null);
 export const tooltip = signal<TooltipState | null>(null);
+export const diffStatsCache = signal<Map<string, DiffStats>>(new Map());

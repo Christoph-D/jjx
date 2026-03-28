@@ -33,11 +33,6 @@ export interface ChangeWithDetails extends Change {
   authoredDate: string;
 }
 
-export interface LogEntryFile {
-  path: string;
-  status_char: FileStatusType;
-}
-
 import type { LogEntryLocalRef, LogEntryRemoteRef } from "./graph-protocol";
 export type { LogEntryLocalRef, LogEntryRemoteRef };
 
@@ -71,11 +66,6 @@ export interface LogEntry {
     name: string;
     email: string;
     timestamp: string;
-  };
-  diff: {
-    total_added: number;
-    total_removed: number;
-    files: LogEntryFile[];
   };
   parents: ParentRef[];
   local_bookmarks: LogEntryLocalRef[];

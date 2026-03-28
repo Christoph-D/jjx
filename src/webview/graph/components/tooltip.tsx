@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "preact/hooks";
-import { tooltip, tooltipTimeout, isDragging } from "../signals";
+import { tooltip, tooltipTimeout, isDragging, diffStatsCache } from "../signals";
 import { escapeHtml } from "../utils";
 
 export function Tooltip() {
@@ -55,6 +55,7 @@ export function Tooltip() {
   }
 
   const { change } = state;
+  const stats = diffStatsCache.value.get(change.changeId);
 
   return (
     <div id="tooltip" class="tooltip" ref={ref} style="display: none">
@@ -98,11 +99,15 @@ export function Tooltip() {
           ))}
         </div>
       )}
-      <div class="tooltip-summary">
-        {change.filesChanged} file{change.filesChanged !== 1 ? "s" : ""} changed,{" "}
-        <span class="tooltip-added">+{change.linesAdded}</span>{" "}
-        <span class="tooltip-removed">-{change.linesRemoved}</span>
-      </div>
+      {stats ? (
+        <div class="tooltip-summary">
+          {stats.filesChanged} file{stats.filesChanged !== 1 ? "s" : ""} changed,{" "}
+          <span class="tooltip-added">+{stats.linesAdded}</span>{" "}
+          <span class="tooltip-removed">-{stats.linesRemoved}</span>
+        </div>
+      ) : (
+        <div class="tooltip-summary">Loading...</div>
+      )}
       {change.fullDescription && <div class="tooltip-description">{escapeHtml(change.fullDescription)}</div>}
     </div>
   );

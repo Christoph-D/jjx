@@ -256,28 +256,6 @@ const LOG_ENTRY_FIELDS: TemplateFields = {
     expr: "self.current_working_copy()",
   },
   description: { type: "string", expr: "description" },
-  diff: {
-    type: "dict",
-    contents: {
-      files: {
-        type: "array",
-        expr: "self.diff().stat().files()",
-        loopVar: "f",
-        contents: {
-          path: { type: "string", expr: "f.path().display()" },
-          status_char: { type: "string", expr: "f.status_char()" },
-        },
-      },
-      total_added: {
-        type: "number",
-        expr: "self.diff().stat().total_added()",
-      },
-      total_removed: {
-        type: "number",
-        expr: "self.diff().stat().total_removed()",
-      },
-    },
-  },
   empty: { type: "boolean", expr: "self.empty()" },
   immutable: { type: "boolean", expr: "self.immutable()" },
   mine: { type: "boolean", expr: "self.mine()" },
@@ -337,7 +315,23 @@ const OPERATION_ENTRY_FIELDS: TemplateFields = {
   snapshot: { type: "boolean", expr: "self.snapshot()" },
 };
 
+const DIFF_STATS_FIELDS: TemplateFields = {
+  files_changed: {
+    type: "number",
+    expr: "self.diff().stat().files().len()",
+  },
+  total_added: {
+    type: "number",
+    expr: "self.diff().stat().total_added()",
+  },
+  total_removed: {
+    type: "number",
+    expr: "self.diff().stat().total_removed()",
+  },
+};
+
 export const SHOW_TEMPLATE = generateTemplate(SHOW_ENTRY_FIELDS);
 export const STATUS_TEMPLATE = generateTemplate(STATUS_ENTRY_FIELDS);
 export const LOG_TEMPLATE = generateTemplate(LOG_ENTRY_FIELDS);
 export const OPERATION_TEMPLATE = generateTemplate(OPERATION_ENTRY_FIELDS);
+export const DIFF_STATS_TEMPLATE = generateTemplate(DIFF_STATS_FIELDS);

@@ -29,9 +29,6 @@ export interface ChangeNode {
   authorEmail: string;
   authorTimestamp: string;
   fullDescription: string;
-  filesChanged: number;
-  linesAdded: number;
-  linesRemoved: number;
   mine: boolean;
   conflict: boolean;
   elided?: number;
@@ -59,8 +56,15 @@ export interface ChangeIdGraph {
   edges: LaneEdge[];
 }
 
+export interface DiffStats {
+  filesChanged: number;
+  linesAdded: number;
+  linesRemoved: number;
+}
+
 export type WebviewToExtensionMessage =
   | { command: "webviewReady" }
+  | { command: "fetchDiffStats"; changeId: string }
   | { command: "editChange"; changeId: string }
   | { command: "editChangeDirect"; changeId: string }
   | { command: "selectChange"; selectedNodes: string[] }
@@ -95,4 +99,5 @@ export type ExtensionToWebviewMessage =
       offsetWidth: number;
       preserveScroll: boolean;
     }
-  | { command: "showStaleState" };
+  | { command: "showStaleState" }
+  | { command: "diffStatsResponse"; changeId: string; stats: DiffStats };

@@ -530,7 +530,6 @@ function createSyntheticEntry(node: SyntheticNode): LogEntry {
     description: "",
     author: { name: "", email: "", timestamp: "" },
     committer: { name: "", email: "", timestamp: "" },
-    diff: { total_added: 0, total_removed: 0, files: [] },
     parents,
     local_bookmarks: [],
     remote_bookmarks: [],

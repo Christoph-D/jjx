@@ -23,7 +23,6 @@ function createEntry(changeId: string, parents: ParentRef[] = [], extra: Partial
     description: `Commit ${changeId}`,
     author: { name: "Test", email: "test@test.com", timestamp: "2024-01-01" },
     committer: { name: "Test", email: "test@test.com", timestamp: "2024-01-01" },
-    diff: { total_added: 0, total_removed: 0, files: [] },
     parents,
     local_bookmarks: [],
     remote_bookmarks: [],

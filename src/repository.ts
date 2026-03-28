@@ -2,7 +2,13 @@ import path from "path";
 import * as crypto from "crypto";
 import * as vscode from "vscode";
 import fs from "fs/promises";
-import { SHOW_TEMPLATE, STATUS_TEMPLATE, LOG_TEMPLATE, OPERATION_TEMPLATE } from "./templateBuilder";
+import {
+  SHOW_TEMPLATE,
+  STATUS_TEMPLATE,
+  LOG_TEMPLATE,
+  OPERATION_TEMPLATE,
+  DIFF_STATS_TEMPLATE,
+} from "./templateBuilder";
 import { ImmutableError, convertJJErrors } from "./errors";
 import { spawnJJ, handleJJCommand, type SpawnOptions, collectProcessOutput } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
@@ -584,6 +590,29 @@ export class JJRepository {
       entries.push(JSON.parse(line.slice(jsonStart)) as LogEntry);
     }
     return entries;
+  }
+
+  async getDiffStats(changeId: string): Promise<{ filesChanged: number; linesAdded: number; linesRemoved: number }> {
+    const output = (
+      await handleJJCommand(
+        this.spawnJJRead(["log", "-r", changeId, "-n", "1", "--no-graph", "-T", DIFF_STATS_TEMPLATE], {
+          timeout: TIMEOUTS.DEFAULT,
+          cwd: this.repositoryRoot,
+        }),
+      )
+    ).toString();
+
+    const entry = JSON.parse(output.trim()) as {
+      files_changed: number;
+      total_added: number;
+      total_removed: number;
+    };
+
+    return {
+      filesChanged: entry.files_changed,
+      linesAdded: entry.total_added,
+      linesRemoved: entry.total_removed,
+    };
   }
 
   async editRetryImmutable(rev: string) {
