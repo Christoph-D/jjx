@@ -149,7 +149,10 @@ export class TestRepo {
 }
 
 export function getParents(logEntries: LogEntry[], description: string): string[] {
-  const entry = logEntries.find((e) => e.description.trim() === description);
+  const entry =
+    description === "@"
+      ? logEntries.find((e) => e.current_working_copy)
+      : logEntries.find((e) => e.description.trim() === description);
   if (!entry) {
     throw new Error(`Commit with description "${description}" not found`);
   }
@@ -157,6 +160,9 @@ export function getParents(logEntries: LogEntry[], description: string): string[
     const parentEntry = logEntries.find((e) => e.change_id === parent.change_id);
     if (!parentEntry) {
       throw new Error(`Parent commit with change_id "${parent.change_id}" not found`);
+    }
+    if (parentEntry.current_working_copy) {
+      return "@";
     }
     return parentEntry.description.trim();
   });
