@@ -63,17 +63,3 @@ export interface ChangeNode {
   conflict: boolean;
   elided?: number;
 }
-
-export const state = {
-  vscode: null as unknown as VSCodeAPI,
-  selectedNodes: new Set<string>(),
-  tooltipTimeout: null as ReturnType<typeof setTimeout> | null,
-  currentGraph: null as ChangeIdGraph | null,
-  currentChanges: [] as ChangeNode[],
-  maxPrefixLength: 4,
-  changeIdHorizontalOffset: 0,
-  isDragging: false,
-  dragStartChangeId: null as string | null,
-  dropTargetId: null as string | null,
-  justFinishedDrag: false,
-};
