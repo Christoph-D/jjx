@@ -28,6 +28,7 @@ interface AncestryInfo {
   visibleIds: Set<string>;
   parentMap: Map<string, string[]>;
   ancestorOfVisible: Set<string>;
+  reachableVisibleFrom: Map<string, string>;
 }
 
 function buildAncestryInfo(
@@ -37,7 +38,6 @@ function buildAncestryInfo(
 ): AncestryInfo {
   const visibleIds = new Set<string>();
   const parentMap = new Map<string, string[]>();
-  const allParents = new Set<string>();
   const allEntryIds = new Set<string>();
   const mutableIds = new Set<string>();
 
@@ -47,10 +47,6 @@ function buildAncestryInfo(
 
     const parentIds = entry.parents.map(getParentUniqueId);
     parentMap.set(id, parentIds);
-
-    for (const pid of parentIds) {
-      allParents.add(pid);
-    }
 
     if (!entry.immutable) {
       mutableIds.add(id);
@@ -88,45 +84,46 @@ function buildAncestryInfo(
     currentLevel = nextLevel;
   }
 
+  const reverseMap = new Map<string, string[]>();
+  for (const [id, parentIds] of parentMap) {
+    for (const pid of parentIds) {
+      let children = reverseMap.get(pid);
+      if (!children) {
+        children = [];
+        reverseMap.set(pid, children);
+      }
+      children.push(id);
+    }
+  }
+
   const ancestorOfVisible = new Set<string>();
-  for (const pid of allParents) {
-    if (!visibleIds.has(pid)) {
-      if (canReachVisible(pid, visibleIds, parentMap)) {
-        ancestorOfVisible.add(pid);
+  const reachableVisibleFrom = new Map<string, string>();
+  const queue: string[] = [];
+  for (const vid of visibleIds) {
+    reachableVisibleFrom.set(vid, vid);
+    queue.push(vid);
+  }
+
+  let queueIdx = 0;
+  while (queueIdx < queue.length) {
+    const current = queue[queueIdx++];
+    const children = reverseMap.get(current);
+    if (!children) {
+      continue;
+    }
+    for (const child of children) {
+      if (reachableVisibleFrom.has(child)) {
+        continue;
       }
+      reachableVisibleFrom.set(child, reachableVisibleFrom.get(current)!);
+      if (!visibleIds.has(child)) {
+        ancestorOfVisible.add(child);
+      }
+      queue.push(child);
     }
   }
 
-  return { visibleIds, parentMap, ancestorOfVisible };
-}
-
-function canReachVisible(startId: string, visibleIds: Set<string>, parentMap: Map<string, string[]>): boolean {
-  const visited = new Set<string>();
-  const stack = [startId];
-
-  while (stack.length > 0) {
-    const current = stack.pop()!;
-    if (visited.has(current)) {
-      continue;
-    }
-    visited.add(current);
-
-    const parents = parentMap.get(current);
-    if (!parents) {
-      continue;
-    }
-
-    for (const parent of parents) {
-      if (visibleIds.has(parent)) {
-        return true;
-      }
-      if (!visited.has(parent)) {
-        stack.push(parent);
-      }
-    }
-  }
-
-  return false;
+  return { visibleIds, parentMap, ancestorOfVisible, reachableVisibleFrom };
 }
 
 export interface ClassifyEdgesOptions {
@@ -140,11 +137,13 @@ export function classifyEdges(
 ): {
   edges: Map<string, ClassifiedEdge[]>;
   visibleIds: Set<string>;
+  parentMap: Map<string, string[]>;
+  reachableVisibleFrom: Map<string, string>;
 } {
   const elideImmutableCommits = options?.elideImmutableCommits ?? true;
   const immutableParentDepth = options?.elidedVisibleImmutableParents ?? 1;
   const edges = new Map<string, ClassifiedEdge[]>();
-  const { visibleIds, parentMap, ancestorOfVisible } = buildAncestryInfo(
+  const { visibleIds, parentMap, ancestorOfVisible, reachableVisibleFrom } = buildAncestryInfo(
     entries,
     elideImmutableCommits,
     immutableParentDepth,
@@ -202,7 +201,7 @@ export function classifyEdges(
     edges.set(id, classifiedEdges);
   }
 
-  return { edges, visibleIds };
+  return { edges, visibleIds, parentMap, reachableVisibleFrom };
 }
 
 function resolveExternalEdges(
@@ -399,39 +398,6 @@ function findVisibleAncestors(startId: string, visibleIds: Set<string>, parentMa
   return result;
 }
 
-function findReachableVisible(
-  startId: string,
-  visibleIds: Set<string>,
-  parentMap: Map<string, string[]>,
-): string | null {
-  const visited = new Set<string>();
-  const stack = [startId];
-
-  while (stack.length > 0) {
-    const current = stack.pop()!;
-    if (visited.has(current)) {
-      continue;
-    }
-    visited.add(current);
-
-    const parents = parentMap.get(current);
-    if (!parents) {
-      continue;
-    }
-
-    for (const parent of parents) {
-      if (visibleIds.has(parent)) {
-        return parent;
-      }
-      if (!visited.has(parent)) {
-        stack.push(parent);
-      }
-    }
-  }
-
-  return null;
-}
-
 function targetIdToParentRef(targetId: string): ParentRef {
   const slashIndex = targetId.indexOf("/");
   if (slashIndex !== -1) {
@@ -452,12 +418,8 @@ export function insertSyntheticNodes(
   entries: LogEntry[],
   edges: Map<string, ClassifiedEdge[]>,
   visibleIds: Set<string>,
+  reachableVisibleFrom: Map<string, string>,
 ): LogEntry[] {
-  const parentMap = new Map<string, string[]>();
-  for (const entry of entries) {
-    parentMap.set(getUniqueEntryId(entry), entry.parents.map(getParentUniqueId));
-  }
-
   const syntheticNodes = new Map<string, SyntheticNode>();
   for (const [id, classifiedEdges] of edges.entries()) {
     if (!visibleIds.has(id)) {
@@ -465,7 +427,7 @@ export function insertSyntheticNodes(
     }
     for (const edge of classifiedEdges) {
       if (!visibleIds.has(edge.targetId) && !syntheticNodes.has(edge.targetId)) {
-        const reachableVisible = findReachableVisible(edge.targetId, visibleIds, parentMap);
+        const reachableVisible = reachableVisibleFrom.get(edge.targetId) ?? null;
         const synthId = reachableVisible ? syntheticNodeId(id, edge.targetId) : `~${edge.targetId}`;
         syntheticNodes.set(edge.targetId, {
           id: synthId,
