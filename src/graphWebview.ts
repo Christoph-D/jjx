@@ -101,6 +101,13 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             showErrorMessage("Failed to switch to change", error);
           }
           break;
+        case "newChildChange":
+          try {
+            await this.repository.new(undefined, [message.changeId]);
+          } catch (error: unknown) {
+            showErrorMessage("Failed to create new child change", error);
+          }
+          break;
         case "selectChange":
           this.selectedNodes = new Set(message.selectedNodes);
           vscode.commands.executeCommand("setContext", "jjGraphView.nodesSelected", message.selectedNodes.length);

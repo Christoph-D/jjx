@@ -46,6 +46,18 @@ export function ContextMenu() {
       )}
       <div
         class="context-menu-item"
+        data-action="newChild"
+        title="Create a New Child Change"
+        onClick={() => {
+          vscode.postMessage({ command: "newChildChange", changeId: change.changeId });
+          contextMenu.value = null;
+        }}
+      >
+        New Child
+      </div>
+      <div class="context-menu-separator"></div>
+      <div
+        class="context-menu-item"
         data-action="describe"
         onClick={() => {
           vscode.postMessage({ command: "describeChange", changeId: change.changeId });

@@ -67,6 +67,7 @@ export type WebviewToExtensionMessage =
   | { command: "fetchDiffStats"; changeId: string }
   | { command: "editChange"; changeId: string }
   | { command: "editChangeDirect"; changeId: string }
+  | { command: "newChildChange"; changeId: string }
   | { command: "selectChange"; selectedNodes: string[] }
   | { command: "moveBookmark"; bookmark: string; targetChangeId: string }
   | { command: "createBookmark"; targetChangeId: string }
