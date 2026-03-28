@@ -1,31 +1,24 @@
 import { type RefObject } from "preact";
 import { useDragDrop } from "../hooks/use-drag-drop";
 import { useConnectedHighlight } from "../hooks/use-connected-highlight";
+import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import {
   selectedNodes,
   changeDoubleClickAction,
   contextMenu,
   rebaseMenu,
   tooltip,
-  tooltipTimeout,
-  tooltipHideTimeout,
-  diffStatsPrefetchTimeout,
   isDragging,
   justFinishedDrag,
   dropTargetId,
   graphStyle,
   vscode,
-  diffStatsCache,
   showTooltips,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
 import type { ChangeNode } from "../../../graph-protocol";
 import { abbreviateName } from "../utils";
-
-const TOOLTIP_DELAY_MS = 300;
-const TOOLTIP_HIDE_DELAY_MS = 100;
-const DIFF_STATS_PREFETCH_DELAY_MS = 100;
 
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
   return changeId !== rootChangeId && branchType !== "~";
@@ -45,6 +38,7 @@ interface Props {
 export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: Props) {
   const dragProps = useDragDrop(change);
   const highlightProps = useConnectedHighlight(change.changeId, change.parentChangeIds);
+  const { startHoverTimers, clearHoverTimers, clearHideTimer, scheduleHideTooltip } = useTooltipTimers();
   const isElided = change.branchType === "~";
   const graphW = SWIMLANE_WIDTH * (nodeData?.numLanesActiveVisually ?? 0);
 
@@ -96,39 +90,10 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
     };
   };
 
-  const showTooltip = (change: ChangeNode, pageX: number, pageY: number) => {
-    tooltip.value = { change, pageX, pageY };
-  };
-
-  const startHoverTimers = (change: ChangeNode, pageX: number, pageY: number) => {
-    if (!diffStatsCache.value.has(change.changeId)) {
-      diffStatsPrefetchTimeout.value = setTimeout(() => {
-        vscode.postMessage({ command: "fetchDiffStats", changeId: change.changeId });
-      }, DIFF_STATS_PREFETCH_DELAY_MS);
-    }
-    tooltipTimeout.value = setTimeout(() => {
-      showTooltip(change, pageX, pageY);
-    }, TOOLTIP_DELAY_MS);
-  };
-
-  const clearHoverTimers = () => {
-    if (diffStatsPrefetchTimeout.value) {
-      clearTimeout(diffStatsPrefetchTimeout.value);
-      diffStatsPrefetchTimeout.value = null;
-    }
-    if (tooltipTimeout.value) {
-      clearTimeout(tooltipTimeout.value);
-      tooltipTimeout.value = null;
-    }
-  };
-
   const handleMouseEnter = (e: MouseEvent) => {
     highlightProps.onMouseEnter();
     document.querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)?.classList.add("hovered");
-    if (tooltipHideTimeout.value) {
-      clearTimeout(tooltipHideTimeout.value);
-      tooltipHideTimeout.value = null;
-    }
+    clearHideTimer();
     if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
     }
@@ -139,10 +104,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
 
   const handleMouseMove = (e: MouseEvent) => {
     clearHoverTimers();
-    if (tooltipHideTimeout.value) {
-      clearTimeout(tooltipHideTimeout.value);
-      tooltipHideTimeout.value = null;
-    }
+    clearHideTimer();
     if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
     }
@@ -157,12 +119,8 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
       .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
       ?.classList.remove("hovered");
     clearHoverTimers();
-    if (tooltipHideTimeout.value) {
-      clearTimeout(tooltipHideTimeout.value);
-    }
-    tooltipHideTimeout.value = setTimeout(() => {
-      tooltip.value = null;
-    }, TOOLTIP_HIDE_DELAY_MS);
+    clearHideTimer();
+    scheduleHideTooltip();
   };
 
   const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));

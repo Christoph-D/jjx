@@ -1,19 +1,12 @@
-import {
-  dragStartChangeId,
-  isDragging,
-  dropTargetId,
-  justFinishedDrag,
-  rebaseMenu,
-  tooltip,
-  tooltipTimeout,
-  tooltipHideTimeout,
-} from "../signals";
+import { dragStartChangeId, isDragging, dropTargetId, justFinishedDrag, rebaseMenu, tooltip } from "../signals";
+import { useTooltipTimers } from "./use-tooltip-timers";
 import { rootChangeId } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
 
 export function useDragDrop(change: ChangeNode) {
   const isElided = change.branchType === "~";
   const isRoot = change.changeId === rootChangeId || change.branchType === "◆" || change.branchType === "~";
+  const { clearAllTimers } = useTooltipTimers();
 
   if (isElided) {
     return {};
@@ -30,14 +23,7 @@ export function useDragDrop(change: ChangeNode) {
           }
           dragStartChangeId.value = change.changeId;
           isDragging.value = true;
-          if (tooltipTimeout.value) {
-            clearTimeout(tooltipTimeout.value);
-            tooltipTimeout.value = null;
-          }
-          if (tooltipHideTimeout.value) {
-            clearTimeout(tooltipHideTimeout.value);
-            tooltipHideTimeout.value = null;
-          }
+          clearAllTimers();
           tooltip.value = null;
           e.dataTransfer!.setData("text/plain", change.changeId);
           e.dataTransfer!.effectAllowed = "move";
@@ -86,14 +72,7 @@ export function useDragDrop(change: ChangeNode) {
         return;
       }
 
-      if (tooltipTimeout.value) {
-        clearTimeout(tooltipTimeout.value);
-        tooltipTimeout.value = null;
-      }
-      if (tooltipHideTimeout.value) {
-        clearTimeout(tooltipHideTimeout.value);
-        tooltipHideTimeout.value = null;
-      }
+      clearAllTimers();
       tooltip.value = null;
 
       justFinishedDrag.value = true;
