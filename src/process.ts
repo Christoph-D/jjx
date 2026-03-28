@@ -9,6 +9,15 @@ export type SpawnOptions = NodeSpawnOptions & { cwd: string };
 
 export type ProcessOutput = { stdout: Buffer; stderr: Buffer };
 
+const activeProcesses = new Set<ChildProcess>();
+
+export function killAllProcesses(): void {
+  for (const proc of activeProcesses) {
+    proc.kill();
+  }
+  activeProcesses.clear();
+}
+
 export function collectProcessOutput(childProcess: ChildProcess): Promise<ProcessOutput> {
   return new Promise((resolve, reject) => {
     const stdout: Buffer[] = [];
@@ -58,7 +67,10 @@ export function spawnJJ(jjPath: string, args: string[], options: SpawnOptions) {
 
   logger.trace(`spawn: ${JSON.stringify([jjPath, ...args])} ${JSON.stringify({ spawnOptions: finalOptions })}`);
 
-  return spawn(jjPath, args, finalOptions);
+  const childProcess = spawn(jjPath, args, finalOptions);
+  activeProcesses.add(childProcess);
+  childProcess.on("close", () => activeProcesses.delete(childProcess));
+  return childProcess;
 }
 
 export function handleJJCommand(childProcess: ChildProcess): Promise<Buffer> {

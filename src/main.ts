@@ -17,7 +17,7 @@ import { match } from "arktype";
 import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals, showErrorMessage } from "./utils";
 import { createIPCServer } from "./ipc/ipcServer";
 import { JJEditor, JJMergeEditor, JJDiffTool, JJSquashTool, getMergeEditorPath } from "./jjEditor";
-import { handleJJCommand } from "./process";
+import { handleJJCommand, killAllProcesses } from "./process";
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Jujutsu X", {
@@ -1410,7 +1410,9 @@ function inferErrorPrefix(command: string): string {
   return `Failed to ${spaced}`;
 }
 
-export function deactivate() {}
+export function deactivate() {
+  killAllProcesses();
+}
 
 /**
  * Checks if a file or directory exists at the given URI
