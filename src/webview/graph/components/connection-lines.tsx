@@ -41,12 +41,7 @@ function buildPathD(
       d.push(`M ${fromX} ${segFromY}`);
       d.push(`C ${fromX} ${segFromY + c} ${toX} ${segToY - c} ${toX} ${segToY}`);
     } else {
-      let prevToY: number;
-      if (edge.extendsToBottom && i === lastSegmentIndex) {
-        prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
-      } else {
-        prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
-      }
+      const prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
       const horizontalY = (segToY + prevToY) / 2;
       const r = arcRadius;
       const goingRight = toX > fromX;
