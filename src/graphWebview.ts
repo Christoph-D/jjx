@@ -207,7 +207,10 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "absorbChange":
           try {
-            await this.repository.absorb(message.changeId);
+            const absorbResult = await this.repository.absorb(message.changeId);
+            if (absorbResult.stderr.toString().includes("Nothing changed.")) {
+              vscode.window.showInformationMessage("Absorb: Nothing changed.");
+            }
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to absorb change", error);

@@ -669,7 +669,7 @@ export class JJRepository {
   }
 
   async absorb(fromRev: string) {
-    return await handleJJCommand(
+    return await collectProcessOutput(
       this.spawnJJ(["absorb", "-f", fromRev], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
     );
   }
