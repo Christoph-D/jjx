@@ -119,6 +119,7 @@ export class IPCServer implements IIPCServer, Disposable {
 
   dispose(): void {
     this.handlers.clear();
+    this.server.closeAllConnections();
     this.server.close();
 
     if (this._ipcHandlePath && process.platform !== "win32") {
