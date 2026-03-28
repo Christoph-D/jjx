@@ -94,7 +94,7 @@ export type ExtensionToWebviewMessage =
       command: "updateGraph";
       changes: ChangeNode[];
       laneInfo: ChangeIdGraph;
-      changeEditAction: string;
+      changeDoubleClickAction: string;
       graphStyle: string;
       maxPrefixLength: number;
       offsetWidth: number;

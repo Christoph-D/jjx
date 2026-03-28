@@ -35,7 +35,9 @@ export function ContextMenu() {
         <div
           class="context-menu-item"
           data-action="edit"
-          title={state.changeEditAction === "new" ? "Create and Edit a New Empty Change on Top" : "Edit This Change"}
+          title={
+            state.changeDoubleClickAction === "new" ? "Create and Edit a New Empty Change on Top" : "Edit This Change"
+          }
           onClick={() => {
             vscode.postMessage({ command: "editChangeDirect", changeId: change.changeId });
             contextMenu.value = null;

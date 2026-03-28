@@ -3,7 +3,7 @@ import { useDragDrop } from "../hooks/use-drag-drop";
 import { useConnectedHighlight } from "../hooks/use-connected-highlight";
 import {
   selectedNodes,
-  changeEditAction,
+  changeDoubleClickAction,
   contextMenu,
   rebaseMenu,
   tooltip,
@@ -83,7 +83,7 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
       change,
       pageX: e.pageX,
       pageY: e.pageY,
-      changeEditAction: changeEditAction.value,
+      changeDoubleClickAction: changeDoubleClickAction.value,
     };
   };
 

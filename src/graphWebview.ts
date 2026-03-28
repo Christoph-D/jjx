@@ -74,8 +74,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "editChange":
           try {
             const config = vscode.workspace.getConfiguration("jjx");
-            const changeEditAction = config.get<string>("changeEditAction") || "edit";
-            if (changeEditAction === "new") {
+            const changeDoubleClickAction = config.get<string>("changeDoubleClickAction") || "edit";
+            if (changeDoubleClickAction === "new") {
               await this.repository.new(undefined, [message.changeId]);
             } else {
               if (message.changeId === rootChangeId) {
@@ -395,7 +395,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entriesWithSynthetics, graphStyle);
 
       this.selectedNodes.clear();
-      const changeEditAction = config.get<string>("changeEditAction") || "edit";
+      const changeDoubleClickAction = config.get<string>("changeDoubleClickAction") || "edit";
 
       const laneInfo = assignLanes(entriesWithSynthetics);
 
@@ -403,7 +403,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         command: "updateGraph",
         changes: changes,
         laneInfo,
-        changeEditAction,
+        changeDoubleClickAction,
         graphStyle,
         maxPrefixLength,
         offsetWidth,

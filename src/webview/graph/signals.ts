@@ -21,7 +21,7 @@ export const maxPrefixLength = signal(4);
 export const changeIdHorizontalOffset = signal(0);
 export const isStale = signal(false);
 export const graphStyle = signal("full");
-export const changeEditAction = signal("edit");
+export const changeDoubleClickAction = signal("edit");
 export const scrollY = signal(0);
 export const offsetWidth = signal(0);
 export const tooltipTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
@@ -32,7 +32,7 @@ export interface ContextMenuState {
   change: ChangeNode;
   pageX: number;
   pageY: number;
-  changeEditAction: string;
+  changeDoubleClickAction: string;
 }
 
 export interface RebaseMenuState {

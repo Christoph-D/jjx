@@ -592,7 +592,7 @@
           "description": "Path to the jj executable. If not set, your PATH and common locations will be searched for a jj executable.",
           "scope": "resource"
         },
-        "jjx.changeEditAction": {
+        "jjx.changeDoubleClickAction": {
           "type": "string",
           "default": "edit",
           "enum": [
@@ -603,7 +603,7 @@
             "Edits the change (jj edit)",
             "Creates an empty change on top and switches to it (jj new)"
           ],
-          "description": "Action to perform when clicking the edit button on a change in the graph view",
+          "description": "Action to perform when double-clicking a change in the graph view",
           "scope": "resource"
         },
         "jjx.commitAction": {

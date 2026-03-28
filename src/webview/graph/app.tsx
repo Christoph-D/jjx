@@ -3,7 +3,7 @@ import {
   currentChanges,
   currentGraph,
   graphStyle,
-  changeEditAction,
+  changeDoubleClickAction,
   maxPrefixLength,
   offsetWidth,
   scrollY,
@@ -34,7 +34,7 @@ export function App() {
           diffStatsCache.value = new Map();
           currentChanges.value = message.changes;
           currentGraph.value = message.laneInfo;
-          changeEditAction.value = message.changeEditAction;
+          changeDoubleClickAction.value = message.changeDoubleClickAction;
           graphStyle.value = message.graphStyle;
           maxPrefixLength.value = message.maxPrefixLength;
           offsetWidth.value = message.offsetWidth;
