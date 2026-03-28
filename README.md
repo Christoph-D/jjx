@@ -15,19 +15,29 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
   ![compact graph](images/compact-view.png)
   - Alternative: [Extended graph view](images/full-view.png)
 - High information density
-  - Minimal change IDs
-  - No unnecessary information
-  - No author name if it's your own change
+- Author name omitted if it's your own change
 - Elided commits  
   ![elided commits](images/elided-commits.gif)
-- Right-click on a change for a context menu, for example to abandon the change
 - Select a change to see its affected files and diffs
 - Create merge changes with shift-select and then pressing the "+" button
 - Drag & drop changes onto other changes
 
+### 🖱️ Context menu
+
+- Right click on a change for a context menu  
+  ![context menu](images/context-menu.png)
+- Edit the change, new child change
+- Describe the change
+- Manage bookmarks/tags
+- Copy the commit's web URL, for example the Github URL
+- Copy the full change ID
+- Absorb the change into its parents
+- Abandon one or more changes (shift-click to select multiple)
+
 ### ✋ Drag & drop operations
 
-- Rebase a change (with or without descendants) onto/after/before any other change
+- Rebase a change (with or without descendants) onto/after/before any other change  
+  ![rebase menu](images/rebase-menu.png)
 - Squash a change into any other change
 - Duplicate a change onto/after/before any other change
 - Apply the reverse of change (revert) onto/after/before any other change
