@@ -1,10 +1,21 @@
-import { useEffect, useRef } from "preact/hooks";
-import { tooltip, tooltipTimeout, isDragging, diffStatsCache } from "../signals";
+import { useEffect, useRef, useCallback } from "preact/hooks";
+import { tooltip, tooltipHideTimeout, diffStatsCache } from "../signals";
 import { escapeHtml } from "../utils";
 
 export function Tooltip() {
   const ref = useRef<HTMLDivElement>(null);
   const state = tooltip.value;
+
+  const handleMouseEnter = useCallback(() => {
+    if (tooltipHideTimeout.value) {
+      clearTimeout(tooltipHideTimeout.value);
+      tooltipHideTimeout.value = null;
+    }
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    tooltip.value = null;
+  }, []);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -51,14 +62,30 @@ export function Tooltip() {
   }, [state]);
 
   if (!state) {
-    return <div id="tooltip" class="tooltip" ref={ref} style="display: none"></div>;
+    return (
+      <div
+        id="tooltip"
+        class="tooltip"
+        ref={ref}
+        style="display: none"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      ></div>
+    );
   }
 
   const { change } = state;
   const stats = diffStatsCache.value.get(change.changeId);
 
   return (
-    <div id="tooltip" class="tooltip" ref={ref} style="display: none">
+    <div
+      id="tooltip"
+      class="tooltip"
+      ref={ref}
+      style="display: none"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {(change.authorName || change.authorEmail || change.authorTimestamp) && (
         <div class="tooltip-header">
           {change.authorName && (

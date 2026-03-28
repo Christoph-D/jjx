@@ -373,7 +373,7 @@ body {
   padding: 8px 12px;
   font-size: var(--vscode-font-size);
   color: var(--vscode-editor-foreground);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .tooltip-header {

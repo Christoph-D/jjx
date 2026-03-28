@@ -8,6 +8,7 @@ import {
   rebaseMenu,
   tooltip,
   tooltipTimeout,
+  tooltipHideTimeout,
   diffStatsPrefetchTimeout,
   isDragging,
   justFinishedDrag,
@@ -22,6 +23,7 @@ import type { ChangeNode } from "../../../graph-protocol";
 import { abbreviateName } from "../utils";
 
 const TOOLTIP_DELAY_MS = 500;
+const TOOLTIP_HIDE_DELAY_MS = 100;
 const DIFF_STATS_PREFETCH_DELAY_MS = 300;
 
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
@@ -119,6 +121,10 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
   const handleMouseEnter = (e: MouseEvent) => {
     highlightProps.onMouseEnter();
     document.querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)?.classList.add("hovered");
+    if (tooltipHideTimeout.value) {
+      clearTimeout(tooltipHideTimeout.value);
+      tooltipHideTimeout.value = null;
+    }
     if (isDragging.value || isMenuOpen()) return;
     if (shouldShowTooltip(change.changeId, change.branchType)) {
       startHoverTimers(change, e.pageX, e.pageY);
@@ -127,6 +133,10 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
 
   const handleMouseMove = (e: MouseEvent) => {
     clearHoverTimers();
+    if (tooltipHideTimeout.value) {
+      clearTimeout(tooltipHideTimeout.value);
+      tooltipHideTimeout.value = null;
+    }
     if (isDragging.value || isMenuOpen()) return;
     if (shouldShowTooltip(change.changeId, change.branchType)) {
       startHoverTimers(change, e.pageX, e.pageY);
@@ -139,7 +149,12 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef }: Props) {
       .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
       ?.classList.remove("hovered");
     clearHoverTimers();
-    tooltip.value = null;
+    if (tooltipHideTimeout.value) {
+      clearTimeout(tooltipHideTimeout.value);
+    }
+    tooltipHideTimeout.value = setTimeout(() => {
+      tooltip.value = null;
+    }, TOOLTIP_HIDE_DELAY_MS);
   };
 
   const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
