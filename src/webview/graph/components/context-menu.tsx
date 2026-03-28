@@ -171,6 +171,17 @@ export function ContextMenu() {
       >
         Copy Change ID
       </div>
+      <div class="context-menu-separator"></div>
+      <div
+        class="context-menu-item"
+        data-action="absorb"
+        onClick={() => {
+          vscode.postMessage({ command: "absorbChange", changeId: change.changeId });
+          contextMenu.value = null;
+        }}
+      >
+        Absorb Into Parents
+      </div>
       <div
         class="context-menu-item"
         data-action="abandon"

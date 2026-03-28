@@ -75,6 +75,7 @@ export type WebviewToExtensionMessage =
   | { command: "deleteBookmark"; bookmark: string }
   | { command: "deleteTag"; tag: string }
   | { command: "describeChange"; changeId: string }
+  | { command: "absorbChange"; changeId: string }
   | { command: "abandonChange"; changeId: string }
   | { command: "rebaseOnto"; changeId: string; targetChangeId: string; withDescendants: boolean }
   | { command: "rebaseAfter"; changeId: string; targetChangeId: string; withDescendants: boolean }

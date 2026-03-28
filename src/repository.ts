@@ -668,6 +668,12 @@ export class JJRepository {
     );
   }
 
+  async absorb(fromRev: string) {
+    return await handleJJCommand(
+      this.spawnJJ(["absorb", "-f", fromRev], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
+    );
+  }
+
   async abandonRetryImmutable(rev: string) {
     return this.retryWithImmutable(
       rev,
