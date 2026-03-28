@@ -70,7 +70,7 @@ export function App() {
         requestAnimationFrame(() => {
           currentGraph.value = { ...currentGraph.value! };
         });
-      }, 2);
+      }, 100);
     });
 
     vscode.postMessage({ command: "webviewReady" });
