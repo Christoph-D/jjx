@@ -1,4 +1,5 @@
-import { type RefObject } from "preact";
+import { type HTMLAttributes, type RefObject } from "preact";
+import { memo } from "preact/compat";
 import { useDragDrop } from "../hooks/use-drag-drop";
 import { useConnectedHighlight } from "../hooks/use-connected-highlight";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
@@ -123,18 +124,11 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
     scheduleHideTooltip();
   };
 
-  const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
-  const localTagNames = new Set(change.localTags.map((t) => t.name));
-
   return (
-    <div
-      class={
-        "change-node" +
-        (change.currentWorkingCopy ? " working-copy" : "") +
-        (isElided ? " elided-node" : "") +
-        (selectedNodes.value.has(change.changeId) ? " selected" : "") +
-        (dropTargetId.value === change.changeId ? " drop-target" : "")
-      }
+    <ChangeNodeClass
+      changeId={change.changeId}
+      currentWorkingCopy={change.currentWorkingCopy}
+      isElided={isElided}
       data-change-id={change.changeId}
       data-parent-ids={JSON.stringify(change.parentChangeIds ?? [])}
       data-branch-type={change.branchType ?? ""}
@@ -152,58 +146,102 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
         <span class="change-id-suffix">{change.changeIdSuffix}</span>
         {change.changeOffset && <span class="change-id-offset">/{change.changeOffset}</span>}
       </div>
-      <div
-        class="text-content"
-        style={{
-          "--graph-width": `${graphW}px`,
-          "--change-id-right-padding": `${CHANGE_ID_RIGHT_PADDING}px`,
-        }}
-      >
-        <div>
-          {change.workingCopies?.map((wc) => (
-            <span key={wc} class="pill workspace-pill">
-              {wc}
-            </span>
-          ))}
-          {change.localBookmarks.map((b) => (
-            <span
-              key={b.name}
-              class={"pill bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
-              data-bookmark={b.name}
-            >
-              {abbreviateName(b.name)}
-            </span>
-          ))}
-          {change.remoteBookmarks
-            .filter((b) => !localBookmarkNames.has(b.name))
-            .map((b) => (
-              <span key={b.name + "@" + b.remote} class="pill bookmark-pill">
-                {abbreviateName(b.name)}@{b.remote}
-              </span>
-            ))}
-          {change.localTags.map((t) => (
-            <span
-              key={t.name}
-              class={"pill tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
-              data-tag={t.name}
-            >
-              {abbreviateName(t.name)}
-            </span>
-          ))}
-          {change.remoteTags
-            .filter((t) => !localTagNames.has(t.name))
-            .map((t) => (
-              <span key={t.name + "@" + t.remote} class="pill tag-pill">
-                {abbreviateName(t.name)}@{t.remote}
-              </span>
-            ))}
-          <span>{change.label}</span>
-          {graphStyle.value === "compact" && !change.mine && change.authorName && (
-            <span class="author-subdued">{change.authorName}</span>
-          )}
-        </div>
-        {graphStyle.value !== "compact" && <div class="description">{change.description}</div>}
-      </div>
+      <MemoizedChangeNodeTextContent change={change} graphW={graphW} />
+    </ChangeNodeClass>
+  );
+}
+
+function ChangeNodeClass({
+  changeId,
+  currentWorkingCopy,
+  isElided,
+  children,
+  ...rest
+}: {
+  changeId: string;
+  currentWorkingCopy: boolean;
+  isElided: boolean;
+  children?: preact.ComponentChildren;
+} & HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      class={
+        "change-node" +
+        (currentWorkingCopy ? " working-copy" : "") +
+        (isElided ? " elided-node" : "") +
+        (selectedNodes.value.has(changeId) ? " selected" : "") +
+        (dropTargetId.value === changeId ? " drop-target" : "")
+      }
+      {...rest}
+    >
+      {children}
     </div>
   );
 }
+
+const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
+  change,
+  graphW,
+}: {
+  change: ChangeNode;
+  graphW: number;
+}) {
+  const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
+  const localTagNames = new Set(change.localTags.map((t) => t.name));
+  const style = graphStyle.value;
+
+  return (
+    <div
+      class="text-content"
+      style={{
+        "--graph-width": `${graphW}px`,
+        "--change-id-right-padding": `${CHANGE_ID_RIGHT_PADDING}px`,
+      }}
+    >
+      <div>
+        {change.workingCopies?.map((wc) => (
+          <span key={wc} class="pill workspace-pill">
+            {wc}
+          </span>
+        ))}
+        {change.localBookmarks.map((b) => (
+          <span
+            key={b.name}
+            class={"pill bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
+            data-bookmark={b.name}
+          >
+            {abbreviateName(b.name)}
+          </span>
+        ))}
+        {change.remoteBookmarks
+          .filter((b) => !localBookmarkNames.has(b.name))
+          .map((b) => (
+            <span key={b.name + "@" + b.remote} class="pill bookmark-pill">
+              {abbreviateName(b.name)}@{b.remote}
+            </span>
+          ))}
+        {change.localTags.map((t) => (
+          <span
+            key={t.name}
+            class={"pill tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
+            data-tag={t.name}
+          >
+            {abbreviateName(t.name)}
+          </span>
+        ))}
+        {change.remoteTags
+          .filter((t) => !localTagNames.has(t.name))
+          .map((t) => (
+            <span key={t.name + "@" + t.remote} class="pill tag-pill">
+              {abbreviateName(t.name)}@{t.remote}
+            </span>
+          ))}
+        <span>{change.label}</span>
+        {style === "compact" && !change.mine && change.authorName && (
+          <span class="author-subdued">{change.authorName}</span>
+        )}
+      </div>
+      {style !== "compact" && <div class="description">{change.description}</div>}
+    </div>
+  );
+});
