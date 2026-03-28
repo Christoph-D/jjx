@@ -11,11 +11,13 @@ import {
 import { ChangeNodeRow } from "./change-node";
 import { NodeCircles } from "./node-circle";
 import { ConnectionLines } from "./connection-lines";
+import { invalidateHighlightCache } from "../hooks/use-connected-highlight";
 
 export function Graph() {
   const firstChangeIdRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    invalidateHighlightCache();
     document.fonts.ready.then(() => {
       if (firstChangeIdRef.current) {
         changeIdHorizontalOffset.value = firstChangeIdRef.current.offsetWidth;
