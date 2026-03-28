@@ -1,9 +1,15 @@
-import { useRef } from "preact/hooks";
-import { useSignalEffect } from "@preact/signals";
+import { useSignal, useSignalEffect } from "@preact/signals";
 import { currentChanges, currentGraph, changeIdHorizontalOffset } from "../signals";
 import { EDGE_EXTENSION } from "../types";
 import type { ChangeIdGraph } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
+
+interface PathData {
+  d: string;
+  fromId: string;
+  toId: string;
+  color: string;
+}
 
 function buildPathD(
   edge: ChangeIdGraph["edges"][number],
@@ -66,26 +72,22 @@ function buildPathD(
 }
 
 export function ConnectionLines() {
-  const gRef = useRef<SVGGElement>(null);
+  const paths = useSignal<PathData[]>([]);
 
   useSignalEffect(() => {
     void currentChanges.value;
     void changeIdHorizontalOffset.value;
 
-    const g = gRef.current;
-    if (!g) {
-      return;
-    }
-    g.innerHTML = "";
-
     const graph = currentGraph.value;
     if (!graph?.edges) {
+      paths.value = [];
       return;
     }
 
     const nodes = document.querySelectorAll(".change-node");
     const svg = document.getElementById("connections");
     if (!svg) {
+      paths.value = [];
       return;
     }
 
@@ -104,25 +106,36 @@ export function ConnectionLines() {
       return b.lanePath[b.lanePath.length - 1] - a.lanePath[a.lanePath.length - 1];
     });
 
-    for (let i = 0; i < sortedEdges.length; i++) {
-      const edge = sortedEdges[i];
+    const result: PathData[] = [];
+    for (const edge of sortedEdges) {
       const d = buildPathD(edge, rowYList, bottomY, 12);
-      if (!d) {
-        continue;
+      if (d) {
+        result.push({
+          d,
+          fromId: edge.fromId,
+          toId: edge.toId,
+          color: getLaneColor(edge.colorIndex),
+        });
       }
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", d);
-      path.setAttribute("fill", "none");
-      path.setAttribute("stroke-width", "2");
-      path.setAttribute("stroke-linecap", "round");
-      path.setAttribute("class", "connection-line");
-      path.setAttribute("data-from-id", edge.fromId);
-      path.setAttribute("data-to-id", edge.toId);
-      const color = getLaneColor(edge.colorIndex);
-      path.style.stroke = color;
-      g.appendChild(path);
     }
+    paths.value = result;
   });
 
-  return <g id="connection-lines" ref={gRef}></g>;
+  return (
+    <g id="connection-lines">
+      {paths.value.map((p, i) => (
+        <path
+          key={i}
+          d={p.d}
+          fill="none"
+          stroke-width="2"
+          stroke-linecap="round"
+          class="connection-line"
+          data-from-id={p.fromId}
+          data-to-id={p.toId}
+          style={{ stroke: p.color }}
+        />
+      ))}
+    </g>
+  );
 }

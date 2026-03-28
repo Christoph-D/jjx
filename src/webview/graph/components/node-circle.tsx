@@ -1,5 +1,4 @@
-import { useRef } from "preact/hooks";
-import { useSignalEffect } from "@preact/signals";
+import { useSignal, useSignalEffect } from "@preact/signals";
 import { currentChanges, currentGraph, changeIdHorizontalOffset, selectedNodes } from "../signals";
 import { CIRCLE_RADIUS } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
@@ -51,47 +50,50 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
   );
 }
 
+interface NodePosition {
+  x: number;
+  y: number;
+}
+
 export function NodeCircles() {
-  const gRef = useRef<SVGGElement>(null);
+  const nodePositions = useSignal<NodePosition[]>([]);
 
   useSignalEffect(() => {
     void currentChanges.value;
     void changeIdHorizontalOffset.value;
 
-    if (!gRef.current || !currentGraph.value) {
+    const graph = currentGraph.value;
+    if (!graph) {
+      nodePositions.value = [];
       return;
     }
     const svg = document.getElementById("connections");
     if (!svg) {
+      nodePositions.value = [];
       return;
     }
     const svgRect = svg.getBoundingClientRect();
 
-    const circles = gRef.current.querySelectorAll(".node-circle");
-    circles.forEach((circle, index) => {
-      const nodeData = currentGraph.value!.nodes[index];
-      if (!nodeData) {
-        return;
-      }
-      const changeId = (circle as HTMLElement).dataset.changeId!;
-      const node = document.querySelector(`.change-node[data-change-id="${changeId}"]`);
-      if (!node) {
-        return;
-      }
+    const domNodes = document.querySelectorAll(".change-node");
+    const newPositions: NodePosition[] = [];
+    domNodes.forEach((node, i) => {
+      const nodeData = graph.nodes[i];
+      const x = getLaneX(nodeData?.lane ?? 0);
       const nodeRect = node.getBoundingClientRect();
-      const x = getLaneX(nodeData.lane);
       const y = nodeRect.top - svgRect.top + nodeRect.height / 2;
-      circle.setAttribute("transform", `translate(${x}, ${y})`);
+      newPositions.push({ x, y });
     });
+    nodePositions.value = newPositions;
   });
 
   const changes = currentChanges.value;
   const graph = currentGraph.value;
 
   return (
-    <g id="node-circles" ref={gRef}>
+    <g id="node-circles">
       {changes.map((change, i) => {
         const nodeData = graph?.nodes[i];
+        const pos = nodePositions.value[i];
         return (
           <g
             key={change.changeId}
@@ -99,6 +101,7 @@ export function NodeCircles() {
             data-change-id={change.changeId}
             data-node-lane={nodeData?.lane ?? 0}
             style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}
+            transform={pos ? `translate(${pos.x}, ${pos.y})` : undefined}
           >
             <Circle change={change} colorIndex={nodeData?.colorIndex ?? 0} />
           </g>
