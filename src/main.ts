@@ -1353,7 +1353,7 @@ export async function activate(context: vscode.ExtensionContext) {
     { errorPrefix: "Failed to open file" },
   );
 
-  registerCommand(context, "jj.openMergeEditor", async (uri: vscode.Uri) => {
+  registerCommand(context, "jj.openMergeEditor", async (uri: vscode.Uri, changeId?: string) => {
     const repo = workspaceSCM.getRepositoryFromUri(uri);
     if (!repo) {
       throw new Error("Repository not found");
@@ -1364,8 +1364,13 @@ export async function activate(context: vscode.ExtensionContext) {
     }
     const relativePath = path.relative(repo.repositoryRoot, uri.fsPath);
     const mergeToolConfig = `merge-tools.jjx-vscode-merge.program="${mergeEditorScriptPath}"`;
+    const args = ["resolve", "--tool=jjx-vscode-merge", "--config", mergeToolConfig];
+    if (changeId) {
+      args.push("-r", changeId);
+    }
+    args.push("--", relativePath);
     await handleJJCommand(
-      repo.spawnJJ(["resolve", "--tool=jjx-vscode-merge", "--config", mergeToolConfig, "--", relativePath], {
+      repo.spawnJJ(args, {
         cwd: repo.repositoryRoot,
       }),
     );

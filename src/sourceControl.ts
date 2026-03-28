@@ -526,7 +526,8 @@ export class RepositorySourceControlManager {
               `(${parentChange.changeId.substring(0, 8)})`,
               fileClickAction,
               workingCopyUri,
-              false,
+              this.conflictedFilesByChange.get(parentChange.changeId)?.has(parentStatus.path) ?? false,
+              parentChange.changeId,
             ),
           };
         });
@@ -570,7 +571,8 @@ export class RepositorySourceControlManager {
                 `(${changeId.substring(0, 8)})`,
                 fileClickAction,
                 workingCopyUri,
-                false,
+                this.conflictedFilesByChange.get(changeId)?.has(fileStatus.path) ?? false,
+                changeId,
               ),
             };
           },
@@ -634,12 +636,13 @@ function getResourceStateCommand(
   fileClickAction: "diff" | "at-revision" | "working-copy",
   workingCopyUri: vscode.Uri,
   isConflicted: boolean,
+  changeId?: string,
 ): vscode.Command {
   if (isConflicted) {
     return {
       title: "Resolve Conflict",
       command: "jj.openMergeEditor",
-      arguments: [workingCopyUri],
+      arguments: [workingCopyUri, changeId],
     };
   }
   if (fileStatus.type === "D") {
