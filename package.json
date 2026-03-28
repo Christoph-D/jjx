@@ -594,7 +594,7 @@
         },
         "jjx.changeDoubleClickAction": {
           "type": "string",
-          "default": "edit",
+          "default": "new",
           "enum": [
             "edit",
             "new"
