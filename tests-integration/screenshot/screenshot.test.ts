@@ -22,6 +22,7 @@ async function initializeSettings(userDataDir: string, zoomLevel: number) {
   addSettings(userDataDir, {
     "window.zoomLevel": zoomLevel,
     "workbench.colorTheme": "Dark+",
+    "jjx.graphStyle": "compact",
   });
 }
 
@@ -93,6 +94,25 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
   };
 
   await screenshot(workbox, "compact-view.png", clip);
+
+  await addSettings(userDataDir, { "workbench.colorTheme": "Light+" });
+  await workbox.waitForTimeout(1000);
+  await screenshot(workbox, "compact-view-light.png", clip);
+
+  await addSettings(userDataDir, {
+    "workbench.colorTheme": "Dark+",
+    "jjx.graphStyle": "full",
+  });
+  await expect(graphFrame.locator(".compact")).toHaveCount(0);
+  await screenshot(workbox, "full-view.png", {
+    x: clip.x,
+    y: clip.y,
+    width: clip.width,
+    height: 500,
+  });
+
+  await addSettings(userDataDir, { "jjx.graphStyle": "compact" });
+  await expect(graphFrame.locator(".compact").first()).toBeVisible();
 
   const secondCommit = nodes.nth(1);
   await secondCommit.hover();

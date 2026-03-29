@@ -12,7 +12,7 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 ### 🔗 Graph view
 
 - Compact graph view  
-  ![compact graph](images/compact-view.png)
+  ![compact graph dark theme](images/compact-view.png) ![compact graph light theme](images/compact-view-light.png)
   - Alternative: [Extended graph view](images/full-view.png)
 - High information density
 - Author name omitted if it's your own change
