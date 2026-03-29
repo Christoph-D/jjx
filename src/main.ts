@@ -838,6 +838,8 @@ export async function activate(context: vscode.ExtensionContext) {
           throw new Error("Repository not found");
         }
         await repository.operationUndo(item.operation.id);
+        await operationLogManager.refresh();
+        await graphWebview?.refresh();
       },
       { errorPrefix: "Failed to undo operation" },
     );
@@ -854,6 +856,8 @@ export async function activate(context: vscode.ExtensionContext) {
           throw new Error("Repository not found");
         }
         await repository.operationRestore(item.operation.id);
+        await operationLogManager.refresh();
+        await graphWebview?.refresh();
       },
       { errorPrefix: "Failed to restore operation" },
     );
