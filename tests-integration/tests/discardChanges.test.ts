@@ -13,7 +13,9 @@ test("discard changes for a single file via inline button", async ({ graphFrame,
 
   const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
 
-  const aFileItem = scmTree.getByRole("treeitem", { name: /^a\.txt/ }).first();
+  const aFileItems = scmTree.getByRole("treeitem", { name: /^a\.txt/ });
+  await expect(aFileItems).toHaveCount(2);
+  const aFileItem = aFileItems.first();
   await expect(aFileItem).toBeVisible();
   await aFileItem.hover();
 
