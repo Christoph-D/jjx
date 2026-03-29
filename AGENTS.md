@@ -24,14 +24,21 @@ seconds.
 
 ## Architecture
 
-| File                        | Purpose                                       |
-| --------------------------- | --------------------------------------------- |
-| `src/main.ts`               | Extension entry point, command registration   |
-| `src/repository.ts`         | Core JJ command execution, repository state   |
-| `src/templateBuilder.ts`    | JJ template string generation for JSON output |
-| `src/graphWebview.ts`       | Interactive commit graph visualization        |
-| `src/laneAssigner.ts`       | Algorithm for commit graph lane layout        |
-| `src/fileSystemProvider.ts` | Virtual file system for `jj://` URIs          |
+| File                          | Purpose                                                      |
+| ----------------------------- | ------------------------------------------------------------ |
+| `src/main.ts`                 | Extension entry point, command registration                  |
+| `src/repository.ts`           | Core JJ command execution, repository state                  |
+| `src/sourceControl.ts`        | VS Code source control integration                           |
+| `src/templateBuilder.ts`      | JJ template string generation for JSON output                |
+| `src/graphWebview.ts`         | Commit graph webview host                                    |
+| `src/webview/graph/`          | Commit graph UI (Preact)                                     |
+| `src/laneAssigner.ts`         | Algorithm for commit graph lane layout                       |
+| `src/elidedEdges.ts`          | Collapsed edge rendering for graph                           |
+| `src/fileSystemProvider.ts`   | Virtual file system for `jj://` URIs                         |
+| `src/ipc/`                    | IPC server/client for extension subprocess communication     |
+| `src/jjEditor.ts`             | External editor integration (`jj edit`, squash, merge, diff) |
+| `src/decorationProvider.ts`   | In-editor line decorations (change IDs, etc.)                |
+| `src/operationLogTreeView.ts` | Tree view for JJ operation log                               |
 
 ## JJ Templating Reference
 
