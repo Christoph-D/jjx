@@ -1,5 +1,48 @@
 # Change Log
 
+## 1.5.0
+
+### New Features
+
+- **Preact JSX for graph rendering** - Converted imperative SVG construction to declarative Preact JSX for better
+  maintainability and easier component composition
+- **Replace vendored diff engine with `diff` package** - Removed the vendored VS Code diff engine (~30 files) in favor
+  of the `diff` npm package, significantly reducing code complexity and maintenance burden
+
+### Bug Fixes
+
+- Merge editor now works for conflicts in divergent commits
+- Refresh graph view and operation log after operation undo/restore
+- Ensure Selected Commit section always appears last in change view
+- Use basename instead of relative path for diff editor titles
+- Preserve graph view selection across refreshes
+- Replace useEffect with useSignalEffect for signal deps to avoid unnecessary re-renders
+- Split ChangeNodeRow into sub-components to avoid O(n) re-renders on signal changes
+- Cache DOM queries in use-connected-highlight to avoid full traversal per hover
+- Extract tooltip timeout management into useTooltipTimers hook
+- Kill spawned jj processes on extension deactivation
+- Cancel filesystem provider event firing on dispose
+- Force-close IPC server connections on shutdown
+
+### Internal
+
+- Add integration tests for many more commands:
+  - Squash selected ranges
+  - Operation log generic undo/redo via buttons or command palette
+  - Undo or restore a specific operation
+  - Update change description
+  - Move Changes to Parent/Working Copy
+  - Create new change via command palette and SCM input box
+  - Edit this change
+  - Create new change with selected changes as parents
+  - Discard changes
+- Update npm package versions
+- Automate screenshots for light theme and the full graph style
+- Install jj version 0.38 in GitHub workflows
+- Fix the Playwright browser path for caching
+- Retry Xvfb display number allocation on conflict in the integration test setup
+- Remove unused CSS classes
+
 ## 1.4.0
 
 ### New Features
