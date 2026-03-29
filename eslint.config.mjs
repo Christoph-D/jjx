@@ -66,7 +66,6 @@ export default tseslint.config(
       ecmaVersion: 2022,
       sourceType: "module",
       parserOptions: {
-        project: "./src/webview/tsconfig.json",
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {

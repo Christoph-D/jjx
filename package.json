@@ -849,28 +849,29 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
-    "@playwright/test": "1.56.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.58.2",
     "@types/cross-spawn": "^6.0.6",
-    "@types/node": "20.x",
-    "@types/vscode": "^1.96.0",
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.110.0",
     "@types/which": "^3.0.4",
-    "@vscode/test-electron": "^2.4.1",
-    "esbuild": "^0.24.0",
-    "eslint": "^9.16.0",
-    "globals": "^15.14.0",
-    "npm-run-all2": "^7.0.0",
-    "prettier": "^3.4.2",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.2",
-    "typescript-eslint": "^8.20.0"
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.27.4",
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0",
+    "npm-run-all2": "^8.0.4",
+    "prettier": "^3.8.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.2"
   },
   "dependencies": {
     "@preact/signals": "^2.9.0",
-    "@vscode/codicons": "^0.0.36",
-    "ansi-regex": "^6.1.0",
-    "arktype": "^2.1.19",
+    "@vscode/codicons": "^0.0.45",
+    "ansi-regex": "^6.2.2",
+    "arktype": "^2.2.0",
     "cross-spawn": "^7.0.6",
     "preact": "^10.29.0",
-    "which": "^5.0.0"
+    "which": "^6.0.1"
   }
 }
