@@ -1,5 +1,15 @@
 # Change Log
 
+## 1.5.1
+
+### Bug Fixes
+
+- Bump `engines.vscode` minimum to `^1.110.0` to match `@types/vscode` to fix error when packaging the sources
+
+### Internal
+
+- Cache jj binary in GitHub workflows to speed up CI
+
 ## 1.5.0
 
 ### New Features
