@@ -38,7 +38,15 @@ jobs:
       - name: Unit tests
         run: npm run unit-test
 
+      - name: Cache jj
+        id: cache-jj
+        uses: actions/cache@v5
+        with:
+          path: /usr/local/bin/jj
+          key: jj-v0.38.0-${{ runner.os }}-x86_64
+
       - name: Install jj
+        if: steps.cache-jj.outputs.cache-hit != 'true'
         run: |
           curl -L https://github.com/jj-vcs/jj/releases/download/v0.38.0/jj-v0.38.0-x86_64-unknown-linux-musl.tar.gz -o /tmp/jj.tar.gz
           echo "ed830d9a34a304f8ba258806b52521250a9fffded32ae89c4eb5285b33556a17  /tmp/jj.tar.gz" | sha256sum -c
