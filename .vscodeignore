@@ -4,7 +4,9 @@ src/**
 !dist/**
 !images/**
 AGENTS.md
+.vscode/
 esbuild.js
+images/togif.sh
 vsc-extension-quickstart.md
 **/tsconfig.json
 **/eslint.config.mjs
@@ -20,4 +22,5 @@ vsc-extension-quickstart.md
 .jj-workspaces/
 .prettierignore
 test-results/
+playwright-report/
 tests-integration/
