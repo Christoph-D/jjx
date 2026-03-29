@@ -308,29 +308,39 @@
           "group": "navigation@4"
         },
         {
-          "command": "jj.refreshGraphWebview",
+          "command": "jj.undo",
           "when": "view == jjGraphWebview",
           "group": "navigation@1"
         },
         {
+          "command": "jj.redo",
+          "when": "view == jjGraphWebview",
+          "group": "navigation@2"
+        },
+        {
+          "command": "jj.refreshGraphWebview",
+          "when": "view == jjGraphWebview",
+          "group": "navigation@3"
+        },
+        {
           "command": "jj.newGraphWebview",
           "when": "view == jjGraphWebview && jjGraphView.nodesSelected",
-          "group": "navigation@2"
+          "group": "navigation@4"
         },
         {
           "command": "jj.toggleElideImmutableCommits.show",
           "when": "view == jjGraphWebview && jjGraphView.elidingActive",
-          "group": "navigation@3"
+          "group": "navigation@5"
         },
         {
           "command": "jj.toggleElideImmutableCommits.elide",
           "when": "view == jjGraphWebview && !jjGraphView.elidingActive",
-          "group": "navigation@3"
+          "group": "navigation@5"
         },
         {
           "command": "jj.selectGraphWebviewRepo",
           "when": "view == jjGraphWebview",
-          "group": "navigation@4"
+          "group": "navigation@6"
         }
       ],
       "view/item/context": [
