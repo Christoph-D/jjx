@@ -55,3 +55,50 @@ test("create new change with multiple parents via toolbar", async ({ graphFrame,
     expect(parents).toContain("C");
   }).toPass();
 });
+
+test("create new change via command palette", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.writeFile("c.txt", "content c");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const scmEditor = workbox.locator(".scm-view .scm-editor").first();
+  await scmEditor.click();
+  await workbox.keyboard.type("C");
+
+  await workbox.keyboard.press("Control+Shift+P");
+  const quickInput = workbox.locator(".quick-input-widget input").first();
+  await expect(quickInput).toBeVisible();
+  await quickInput.fill(">Create New Change");
+  await workbox.keyboard.press("Enter");
+
+  await expect(nodes).toHaveCount(5);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@-");
+    expect(logEntries.find((e) => e.description.trim() === "C")).toBeDefined();
+  }).toPass();
+});
+
+test("create new change via SCM input box", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.writeFile("c.txt", "content c");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const scmEditor = workbox.locator(".scm-view .scm-editor").first();
+  await scmEditor.click();
+  await workbox.keyboard.type("C");
+  await workbox.keyboard.press("Control+Enter");
+
+  await expect(nodes).toHaveCount(5);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@-");
+    expect(logEntries.find((e) => e.description.trim() === "C")).toBeDefined();
+  }).toPass();
+});

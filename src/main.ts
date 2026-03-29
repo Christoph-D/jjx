@@ -346,7 +346,13 @@ export async function activate(context: vscode.ExtensionContext) {
     registerCommand(
       context,
       "jj.new",
-      async (sourceControl: vscode.SourceControl) => {
+      async (sourceControl?: vscode.SourceControl) => {
+        if (!sourceControl) {
+          sourceControl = workspaceSCM.repoSCMs[0]?.sourceControl;
+        }
+        if (!sourceControl) {
+          throw new Error("Repository not found");
+        }
         const repository = workspaceSCM.getRepositoryFromSourceControl(sourceControl);
         if (!repository) {
           throw new Error("Repository not found");
