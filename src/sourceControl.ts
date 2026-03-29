@@ -1,4 +1,5 @@
 import path from "path";
+import os from "os";
 import fs from "fs";
 import * as vscode from "vscode";
 import { resolveRev, toJJUri } from "./uri";
@@ -12,7 +13,42 @@ import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
 import type { FileStatus, RepositoryStatus, Show, Change } from "./types";
 import { getRevFromChange } from "./types";
-import { TIMEOUTS } from "./constants";
+import { TIMEOUTS, MINIMUM_JJ_VERSION } from "./constants";
+
+const checkedJjVersions = new Set<string>();
+
+async function checkJJVersion(jjFilepath: string): Promise<void> {
+  if (checkedJjVersions.has(jjFilepath)) {
+    return;
+  }
+  checkedJjVersions.add(jjFilepath);
+
+  try {
+    const output = await collectProcessOutput(
+      spawnJJ(jjFilepath, ["version", "--ignore-working-copy"], {
+        timeout: TIMEOUTS.DEFAULT,
+        cwd: os.homedir(),
+      }),
+    );
+    const match = output.stdout
+      .toString()
+      .trim()
+      .match(/^jj (\d+)\.(\d+)\.(\d+)/);
+    if (!match) {
+      return;
+    }
+    const major = parseInt(match[1], 10);
+    const minor = parseInt(match[2], 10);
+    const patch = parseInt(match[3], 10);
+    if (major < MINIMUM_JJ_VERSION.major || (major === MINIMUM_JJ_VERSION.major && minor < MINIMUM_JJ_VERSION.minor)) {
+      void vscode.window.showErrorMessage(
+        `Jujutsu X requires jj version ${MINIMUM_JJ_VERSION.major}.${MINIMUM_JJ_VERSION.minor}.${MINIMUM_JJ_VERSION.patch} or later. It may work incorrectly with the currently installed version: ${major}.${minor}.${patch}.`,
+      );
+    }
+  } catch (error) {
+    logger.error(`Failed to check jj version: ${String(error)}`);
+  }
+}
 
 export class WorkspaceSourceControlManager {
   repoInfos:
@@ -61,6 +97,7 @@ export class WorkspaceSourceControlManager {
     for (const workspaceFolder of vscode.workspace.workspaceFolders || []) {
       try {
         const jjPath = await getJJPath(workspaceFolder.uri.fsPath);
+        await checkJJVersion(jjPath.filepath);
         const jjConfigArgs = getConfigArgs(extensionDir);
 
         const repoRoot = (

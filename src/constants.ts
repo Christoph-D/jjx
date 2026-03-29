@@ -7,3 +7,5 @@ export const TIMEOUTS = {
   FALLBACK: 30000,
   REPO_WATCHER_DEBOUNCE: 500,
 } as const;
+
+export const MINIMUM_JJ_VERSION = { major: 0, minor: 38, patch: 0 } as const;
