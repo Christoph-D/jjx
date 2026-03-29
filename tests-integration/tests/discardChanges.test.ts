@@ -50,6 +50,9 @@ test("discard changes for entire resource group via inline button", async ({ gra
   await scmView.waitFor();
 
   const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
+  const bFileItem = scmTree.getByRole("treeitem", { name: /^b\.txt/ }).first();
+  await expect(bFileItem).toBeVisible();
+
   const workingCopyItem = scmTree.getByRole("treeitem", { name: "Working Copy" });
   await expect(workingCopyItem).toBeVisible();
   await workingCopyItem.hover();
