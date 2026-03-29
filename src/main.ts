@@ -453,7 +453,7 @@ export async function activate(context: vscode.ExtensionContext) {
           originalUri,
           uri,
           (fileStatus?.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") +
-            `${path.relative(repo.repositoryRoot, originalUri.path)} ${diffTitleSuffix}`,
+            `${path.basename(originalUri.path)} ${diffTitleSuffix}`,
         );
       },
       { errorPrefix: "Failed to open diff" },
@@ -1331,7 +1331,7 @@ export async function activate(context: vscode.ExtensionContext) {
         beforeUri,
         afterUri,
         (fileStatus?.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") +
-          `${path.relative(repo.repositoryRoot, filePath)} ${diffTitleSuffix}`,
+          `${path.basename(filePath)} ${diffTitleSuffix}`,
       );
     },
     { errorPrefix: "Failed to open diff" },
