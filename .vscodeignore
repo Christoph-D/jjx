@@ -18,6 +18,7 @@ vsc-extension-quickstart.md
 .github/
 .gitignore
 .jj-workspaces/
+.vscode-repo/
 .prettierignore
 test-results/
 tests-integration/

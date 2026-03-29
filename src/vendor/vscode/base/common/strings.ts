@@ -21,6 +21,7 @@ const _formatRegexp = /{(\d+)}/g;
  * @param value string to which formatting is applied
  * @param args replacements for {n}-entries
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function format(value: string, ...args: any[]): string {
 	if (args.length === 0) {
 		return value;
@@ -100,7 +101,7 @@ export function count(value: string, substr: string): number {
 	return result;
 }
 
-export function truncate(value: string, maxLength: number, suffix = '…'): string {
+export function truncate(value: string, maxLength: number, suffix = Ellipsis): string {
 	if (value.length <= maxLength) {
 		return value;
 	}
@@ -108,7 +109,7 @@ export function truncate(value: string, maxLength: number, suffix = '…'): stri
 	return `${value.substr(0, maxLength)}${suffix}`;
 }
 
-export function truncateMiddle(value: string, maxLength: number, suffix = '…'): string {
+export function truncateMiddle(value: string, maxLength: number, suffix = Ellipsis): string {
 	if (value.length <= maxLength) {
 		return value;
 	}
@@ -140,14 +141,16 @@ export function ltrim(haystack: string, needle: string): string {
 	}
 
 	const needleLen = needle.length;
-	if (needleLen === 0 || haystack.length === 0) {
-		return haystack;
-	}
-
 	let offset = 0;
-
-	while (haystack.indexOf(needle, offset) === offset) {
-		offset = offset + needleLen;
+	if (needleLen === 1) {
+		const ch = needle.charCodeAt(0);
+		while (offset < haystack.length && haystack.charCodeAt(offset) === ch) {
+			offset++;
+		}
+	} else {
+		while (haystack.startsWith(needle, offset)) {
+			offset += needleLen;
+		}
 	}
 	return haystack.substring(offset);
 }
@@ -165,22 +168,18 @@ export function rtrim(haystack: string, needle: string): string {
 	const needleLen = needle.length,
 		haystackLen = haystack.length;
 
-	if (needleLen === 0 || haystackLen === 0) {
-		return haystack;
+	if (needleLen === 1) {
+		let end = haystackLen;
+		const ch = needle.charCodeAt(0);
+		while (end > 0 && haystack.charCodeAt(end - 1) === ch) {
+			end--;
+		}
+		return haystack.substring(0, end);
 	}
 
-	let offset = haystackLen,
-		idx = -1;
-
-	while (true) {
-		idx = haystack.lastIndexOf(needle, offset - 1);
-		if (idx === -1 || idx + needleLen !== offset) {
-			break;
-		}
-		if (idx === 0) {
-			return '';
-		}
-		offset = idx;
+	let offset = haystackLen;
+	while (offset > 0 && haystack.endsWith(needle, offset)) {
+		offset -= needleLen;
 	}
 
 	return haystack.substring(0, offset);
@@ -188,10 +187,6 @@ export function rtrim(haystack: string, needle: string): string {
 
 export function convertSimple2RegExpPattern(pattern: string): string {
 	return pattern.replace(/[\-\\\{\}\+\?\|\^\$\.\,\[\]\(\)\#\s]/g, '\\$&').replace(/[\*]/g, '.*');
-}
-
-export function stripWildcards(pattern: string): string {
-	return pattern.replace(/\*/g, '');
 }
 
 export interface RegExpOptions {
@@ -264,6 +259,14 @@ export function splitLinesIncludeSeparators(str: string): string[] {
 	return linesWithSeparators;
 }
 
+export function indexOfPattern(str: string, re: RegExp) {
+	const match = re.exec(str);
+	if (match) {
+		return match.index;
+	}
+	return -1;
+}
+
 /**
  * Returns first index of the string that is not whitespace.
  * If string is empty or contains only whitespaces, returns -1
@@ -316,7 +319,7 @@ export function getIndentationLength(str: string): number {
  * Function that works identically to String.prototype.replace, except, the
  * replace function is allowed to be async and return a Promise.
  */
-export function replaceAsync(str: string, search: RegExp, replacer: (match: string, ...args: any[]) => Promise<string>): Promise<string> {
+export function replaceAsync(str: string, search: RegExp, replacer: (match: string, ...args: unknown[]) => Promise<string>): Promise<string> {
 	const parts: (string | Promise<string>)[] = [];
 
 	let last = 0;
@@ -432,13 +435,19 @@ export function equalsIgnoreCase(a: string, b: string): boolean {
 	return a.length === b.length && compareSubstringIgnoreCase(a, b) === 0;
 }
 
-export function startsWithIgnoreCase(str: string, candidate: string): boolean {
-	const candidateLength = candidate.length;
-	if (candidate.length > str.length) {
-		return false;
-	}
+export function equals(a: string | undefined, b: string | undefined, ignoreCase?: boolean): boolean {
+	return a === b || (!!ignoreCase && a !== undefined && b !== undefined && equalsIgnoreCase(a, b));
+}
 
-	return compareSubstringIgnoreCase(str, candidate, 0, candidateLength) === 0;
+export function startsWithIgnoreCase(str: string, candidate: string): boolean {
+	const len = candidate.length;
+	return len <= str.length && compareSubstringIgnoreCase(str, candidate, 0, len) === 0;
+}
+
+export function endsWithIgnoreCase(str: string, candidate: string): boolean {
+	const len = str.length;
+	const start = len - candidate.length;
+	return start >= 0 && compareSubstringIgnoreCase(str, candidate, start, len) === 0;
 }
 
 /**
@@ -719,12 +728,14 @@ export function isFullWidthCharacter(charCode: number): boolean {
 	//          FF00 - FFEF   Halfwidth and Fullwidth Forms
 	//               [https://en.wikipedia.org/wiki/Halfwidth_and_fullwidth_forms]
 	//               of which FF01 - FF5E fullwidth ASCII of 21 to 7E
+	//               and FFE0 - FFE6 fullwidth symbol variants
 	// [IGNORE]    and FF65 - FFDC halfwidth of Katakana and Hangul
 	// [IGNORE] FFF0 - FFFF   Specials
 	return (
 		(charCode >= 0x2E80 && charCode <= 0xD7AF)
 		|| (charCode >= 0xF900 && charCode <= 0xFAFF)
 		|| (charCode >= 0xFF01 && charCode <= 0xFF5E)
+		|| (charCode >= 0xFFE0 && charCode <= 0xFFE6)
 	);
 }
 
@@ -773,41 +784,66 @@ export function lcut(text: string, n: number, prefix = ''): string {
 }
 
 /**
- * Given a string and a max length returns a shorted version. Shorting
- * happens at favorable positions - such as whitespace or punctuation characters.
- * The return value can be longer than the given value of `n`. Trailing whitespace is always trimmed.
+ * Given a string and a max length returns a shortened version keeping the beginning.
+ * Shortening happens at favorable positions - such as whitespace or punctuation characters.
+ * Trailing whitespace is always trimmed.
  */
 export function rcut(text: string, n: number, suffix = ''): string {
 	const trimmed = text.trimEnd();
 
-	if (trimmed.length < n) {
+	if (trimmed.length <= n) {
 		return trimmed;
 	}
 
-	const parts = text.split(/\b/);
-	let result = '';
-	for (const part of parts) {
-		if (result.length > 0 && result.length + part.length > n) {
+	const re = /\b/g;
+	let lastGoodBreak = 0;
+	let foundBoundaryAfterN = false;
+	while (re.test(trimmed)) {
+		if (re.lastIndex > n) {
+			foundBoundaryAfterN = true;
 			break;
 		}
-		result += part;
+		lastGoodBreak = re.lastIndex;
+		re.lastIndex += 1;
 	}
 
-	if (result === trimmed) {
-		return result;
+	// If no boundary was found after n, return the full trimmed string
+	// (there's no good place to cut)
+	if (!foundBoundaryAfterN) {
+		return trimmed;
 	}
 
-	return result.trim().replace(/b$/, '') + suffix;
+	// If the only boundary <= n is at position 0 (start of string),
+	// cutting there gives empty string, so just return the suffix
+	if (lastGoodBreak === 0) {
+		return suffix;
+	}
+
+	const result = trimmed.substring(0, lastGoodBreak).trimEnd();
+
+	// If trimEnd removed more than half of what we cut (meaning we cut
+	// mostly through whitespace), return the full string instead
+	if (result.length < lastGoodBreak / 2) {
+		return trimmed;
+	}
+
+	return result + suffix;
 }
 
-// Escape codes, compiled from https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Functions-using-CSI-_-ordered-by-the-final-character_s_
-// Plus additional markers for custom `\x1b]...\x07` instructions.
-const CSI_SEQUENCE = /(?:(?:\x1b\[|\x9B)[=?>!]?[\d;:]*["$#'* ]?[a-zA-Z@^`{}|~])|(:?\x1b\].*?\x07)/g;
+// Defacto standard: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+const CSI_SEQUENCE = /(?:\x1b\[|\x9b)[=?>!]?[\d;:]*["$#'* ]?[a-zA-Z@^`{}|~]/;
+const OSC_SEQUENCE = /(?:\x1b\]|\x9d).*?(?:\x1b\\|\x07|\x9c)/;
+const ESC_SEQUENCE = /\x1b(?:[ #%\(\)\*\+\-\.\/]?[a-zA-Z0-9\|}~@])/;
+const CONTROL_SEQUENCES = new RegExp('(?:' + [
+	CSI_SEQUENCE.source,
+	OSC_SEQUENCE.source,
+	ESC_SEQUENCE.source,
+].join('|') + ')', 'g');
 
 /** Iterates over parts of a string with CSI sequences */
 export function* forAnsiStringParts(str: string) {
 	let last = 0;
-	for (const match of str.matchAll(CSI_SEQUENCE)) {
+	for (const match of str.matchAll(CONTROL_SEQUENCES)) {
 		if (last !== match.index) {
 			yield { isCode: false, str: str.substring(last, match.index) };
 		}
@@ -831,7 +867,7 @@ export function* forAnsiStringParts(str: string) {
  */
 export function removeAnsiEscapeCodes(str: string): string {
 	if (str) {
-		str = str.replace(CSI_SEQUENCE, '');
+		str = str.replace(CONTROL_SEQUENCES, '');
 	}
 
 	return str;
@@ -1186,6 +1222,37 @@ const enum CodePoint {
 	 * Combining Enclosing Keycap
 	 */
 	enclosingKeyCap = 0x20E3,
+
+	space = 0x0020,
 }
 
 export const noBreakWhitespace = '\xa0';
+
+export const Ellipsis = '\u2026';
+
+/**
+ * Convert a Unicode string to a string in which each 16-bit unit occupies only one byte
+ *
+ * From https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/btoa
+ */
+function toBinary(str: string): string {
+	const codeUnits = new Uint16Array(str.length);
+	for (let i = 0; i < codeUnits.length; i++) {
+		codeUnits[i] = str.charCodeAt(i);
+	}
+	let binary = '';
+	const uint8array = new Uint8Array(codeUnits.buffer);
+	for (let i = 0; i < uint8array.length; i++) {
+		binary += String.fromCharCode(uint8array[i]);
+	}
+	return binary;
+}
+
+/**
+ * Version of the global `btoa` function that handles multi-byte characters instead
+ * of throwing an exception.
+ */
+
+export function multibyteAwareBtoa(str: string): string {
+	return btoa(toBinary(str));
+}

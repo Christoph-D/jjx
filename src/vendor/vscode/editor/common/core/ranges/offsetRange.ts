@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { BugIndicatingError } from '../../../base/common/errors.js';
+import { BugIndicatingError } from '../../../../base/common/errors.js';
 
 export interface IOffsetRange {
 	readonly start: number;
@@ -16,6 +16,10 @@ export interface IOffsetRange {
 export class OffsetRange implements IOffsetRange {
 	public static fromTo(start: number, endExclusive: number): OffsetRange {
 		return new OffsetRange(start, endExclusive);
+	}
+
+	public static equals(r1: IOffsetRange, r2: IOffsetRange): boolean {
+		return r1.start === r2.start && r1.endExclusive === r2.endExclusive;
 	}
 
 	public static addRange(range: OffsetRange, sortedRanges: OffsetRange[]): void {
@@ -126,6 +130,10 @@ export class OffsetRange implements IOffsetRange {
 		return Math.max(0, end - start);
 	}
 
+	/**
+	 * `a.intersects(b)` iff there exists a number n so that `a.contains(n)` and `b.contains(n)`.
+	 * Warning: If one range is empty, this method returns always false.
+	*/
 	public intersects(other: OffsetRange): boolean {
 		const start = Math.max(this.start, other.start);
 		const end = Math.min(this.endExclusive, other.endExclusive);
@@ -146,7 +154,7 @@ export class OffsetRange implements IOffsetRange {
 		return this.start >= other.endExclusive;
 	}
 
-	public slice<T>(arr: T[]): T[] {
+	public slice<T>(arr: readonly T[]): T[] {
 		return arr.slice(this.start, this.endExclusive);
 	}
 
@@ -197,10 +205,34 @@ export class OffsetRange implements IOffsetRange {
 			f(i);
 		}
 	}
+
+	/**
+	 * this: [ 5, 10), range: [10, 15) => [5, 15)]
+	 * Throws if the ranges are not touching.
+	*/
+	public joinRightTouching(range: OffsetRange): OffsetRange {
+		if (this.endExclusive !== range.start) {
+			throw new BugIndicatingError(`Invalid join: ${this.toString()} and ${range.toString()}`);
+		}
+		return new OffsetRange(this.start, range.endExclusive);
+	}
+
+	public withMargin(margin: number): OffsetRange;
+	public withMargin(marginStart: number, marginEnd: number): OffsetRange;
+	public withMargin(marginStart: number, marginEnd?: number): OffsetRange {
+		if (marginEnd === undefined) {
+			marginEnd = marginStart;
+		}
+		return new OffsetRange(this.start - marginStart, this.endExclusive + marginEnd);
+	}
 }
 
 export class OffsetRangeSet {
 	private readonly _sortedRanges: OffsetRange[] = [];
+
+	public get ranges(): OffsetRange[] {
+		return [...this._sortedRanges];
+	}
 
 	public addRange(range: OffsetRange): void {
 		let i = 0;
@@ -225,7 +257,7 @@ export class OffsetRangeSet {
 	}
 
 	/**
-	 * Returns of there is a value that is contained in this instance and the given range.
+	 * Returns if there is a value that is contained in this instance and the given range.
 	 */
 	public intersectsStrict(other: OffsetRange): boolean {
 		// TODO use binary search

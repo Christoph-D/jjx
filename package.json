@@ -846,7 +846,8 @@
     "playwright-test:only-test": "npx playwright test --config=tests-integration/playwright.config.ts",
     "update-screenshots": "npm run build && npx playwright test --config=tests-integration/screenshot/screenshot.config.ts",
     "package": "npx @vscode/vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "update-vendor": "node scripts/update-vendor.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

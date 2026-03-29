@@ -3,22 +3,29 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { BugIndicatingError } from '../../../base/common/errors.js';
+import { BugIndicatingError } from '../../../../base/common/errors.js';
 import { OffsetRange } from './offsetRange.js';
-import { Range } from './range.js';
-import { findFirstIdxMonotonousOrArrLen, findLastIdxMonotonous, findLastMonotonous } from '../../../base/common/arraysFind.js';
+import { IRange, Range } from '../range.js';
+import { findFirstIdxMonotonousOrArrLen, findLastIdxMonotonous, findLastMonotonous } from '../../../../base/common/arraysFind.js';
+import { Comparator, compareBy, numberComparator } from '../../../../base/common/arrays.js';
 
 /**
  * A range of lines (1-based).
  */
 export class LineRange {
-	public static fromRange(range: Range): LineRange {
+	public static ofLength(startLineNumber: number, length: number): LineRange {
+		return new LineRange(startLineNumber, startLineNumber + length);
+	}
+
+	public static fromRange(range: IRange): LineRange {
 		return new LineRange(range.startLineNumber, range.endLineNumber);
 	}
 
-	public static fromRangeInclusive(range: Range): LineRange {
+	public static fromRangeInclusive(range: IRange): LineRange {
 		return new LineRange(range.startLineNumber, range.endLineNumber + 1);
 	}
+
+	public static readonly compareByStart: Comparator<LineRange> = compareBy(l => l.startLineNumber, numberComparator);
 
 	public static subtract(a: LineRange, b: LineRange | undefined): LineRange[] {
 		if (!b) {
@@ -39,7 +46,7 @@ export class LineRange {
 	}
 
 	/**
-	 * @param lineRanges An array of sorted line ranges.
+	 * @param lineRanges An array of arrays of of sorted line ranges.
 	 */
 	public static joinMany(lineRanges: readonly (readonly LineRange[])[]): readonly LineRange[] {
 		if (lineRanges.length === 0) {
@@ -63,10 +70,6 @@ export class LineRange {
 			endLineNumberExclusive = Math.max(endLineNumberExclusive, lineRanges[i].endLineNumberExclusive);
 		}
 		return new LineRange(startLineNumber, endLineNumberExclusive);
-	}
-
-	public static ofLength(startLineNumber: number, length: number): LineRange {
-		return new LineRange(startLineNumber, startLineNumber + length);
 	}
 
 	/**
@@ -102,6 +105,10 @@ export class LineRange {
 	 */
 	public contains(lineNumber: number): boolean {
 		return this.startLineNumber <= lineNumber && lineNumber < this.endLineNumberExclusive;
+	}
+
+	public containsRange(range: LineRange): boolean {
+		return this.startLineNumber <= range.startLineNumber && range.endLineNumberExclusive <= this.endLineNumberExclusive;
 	}
 
 	/**
@@ -160,7 +167,7 @@ export class LineRange {
 		return this.startLineNumber < other.endLineNumberExclusive && other.startLineNumber < this.endLineNumberExclusive;
 	}
 
-	public overlapOrTouch(other: LineRange): boolean {
+	public intersectsOrTouches(other: LineRange): boolean {
 		return this.startLineNumber <= other.endLineNumberExclusive && other.startLineNumber <= this.endLineNumberExclusive;
 	}
 
@@ -201,10 +208,6 @@ export class LineRange {
 	 */
 	public serialize(): ISerializedLineRange {
 		return [this.startLineNumber, this.endLineNumberExclusive];
-	}
-
-	public includes(lineNumber: number): boolean {
-		return this.startLineNumber <= lineNumber && lineNumber < this.endLineNumberExclusive;
 	}
 
 	/**

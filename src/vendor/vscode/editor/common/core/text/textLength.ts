@@ -2,9 +2,10 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { LineRange } from './lineRange.js';
-import { Position } from './position.js';
-import { Range } from './range.js';
+import { LineRange } from '../ranges/lineRange.js';
+import { Position } from '../position.js';
+import { Range } from '../range.js';
+import { OffsetRange } from '../ranges/offsetRange.js';
 
 /**
  * Represents a non-negative length of text in terms of line and column count.
@@ -51,6 +52,14 @@ export class TextLength {
 			}
 		}
 		return new TextLength(line, column);
+	}
+
+	public static ofSubstr(str: string, range: OffsetRange): TextLength {
+		return TextLength.ofText(range.substring(str));
+	}
+
+	public static sum<T>(fragments: readonly T[], getLength: (f: T) => TextLength): TextLength {
+		return fragments.reduce((acc, f) => acc.add(getLength(f)), TextLength.zero);
 	}
 
 	constructor(

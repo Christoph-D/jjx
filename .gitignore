@@ -9,5 +9,6 @@ src/**/*.js
 src/**/*.js.map
 .jj
 .jj-workspaces
+.vscode-repo/
 test-results/
 tests-integration/.vscode-path
