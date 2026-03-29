@@ -487,6 +487,7 @@ export class RepositorySourceControlManager {
     }
     this.parentResourceGroups = updatedGroups;
 
+    let newParentCreated = false;
     for (const parentChange of this.status.parentChanges) {
       let parentChangeResourceGroup!: vscode.SourceControlResourceGroup;
 
@@ -497,6 +498,7 @@ export class RepositorySourceControlManager {
           RepositorySourceControlManager.getLabel("Parent Commit", parentChange, showParentChangeId),
         );
         this.parentResourceGroups.push(parentChangeResourceGroup);
+        newParentCreated = true;
       } else {
         parentChangeResourceGroup = parentGroup;
       }
@@ -532,6 +534,11 @@ export class RepositorySourceControlManager {
           };
         });
       }
+    }
+
+    if (newParentCreated && this.selectedCommitResourceGroup) {
+      this.selectedCommitResourceGroup.dispose();
+      this.selectedCommitResourceGroup = undefined;
     }
 
     if (this.selectedCommitShowResult) {
