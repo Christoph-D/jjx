@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import type { LinesDiff } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
+import { diffArrays } from "diff";
 
 export interface LineChange {
   readonly originalStartLineNumber: number;
@@ -8,36 +8,60 @@ export interface LineChange {
   readonly modifiedEndLineNumber: number;
 }
 
-export function toLineChanges(diffInformation: LinesDiff): LineChange[] {
-  return diffInformation.changes.map((x) => {
-    let originalStartLineNumber: number;
-    let originalEndLineNumber: number;
-    let modifiedStartLineNumber: number;
-    let modifiedEndLineNumber: number;
+export function computeLineChanges(originalLines: string[], modifiedLines: string[]): LineChange[] {
+  const changes = diffArrays(originalLines, modifiedLines);
+  const result: LineChange[] = [];
 
-    if (x.original.startLineNumber === x.original.endLineNumberExclusive) {
-      originalStartLineNumber = x.original.startLineNumber - 1;
-      originalEndLineNumber = 0;
+  let originalLine = 1;
+  let modifiedLine = 1;
+
+  let i = 0;
+  while (i < changes.length) {
+    const change = changes[i];
+    const count = change.value.length;
+
+    if (!change.added && !change.removed) {
+      originalLine += count;
+      modifiedLine += count;
+      i++;
+    } else if (change.removed) {
+      const next = changes[i + 1];
+      const origStart = originalLine;
+      const origEnd = originalLine + count - 1;
+      originalLine += count;
+
+      if (next && next.added) {
+        const addedCount = next.value.length;
+        result.push({
+          originalStartLineNumber: origStart,
+          originalEndLineNumber: origEnd,
+          modifiedStartLineNumber: modifiedLine,
+          modifiedEndLineNumber: modifiedLine + addedCount - 1,
+        });
+        modifiedLine += addedCount;
+        i += 2;
+      } else {
+        result.push({
+          originalStartLineNumber: origStart,
+          originalEndLineNumber: origEnd,
+          modifiedStartLineNumber: modifiedLine - 1,
+          modifiedEndLineNumber: 0,
+        });
+        i++;
+      }
     } else {
-      originalStartLineNumber = x.original.startLineNumber;
-      originalEndLineNumber = x.original.endLineNumberExclusive - 1;
+      result.push({
+        originalStartLineNumber: originalLine - 1,
+        originalEndLineNumber: 0,
+        modifiedStartLineNumber: modifiedLine,
+        modifiedEndLineNumber: modifiedLine + count - 1,
+      });
+      modifiedLine += count;
+      i++;
     }
+  }
 
-    if (x.modified.startLineNumber === x.modified.endLineNumberExclusive) {
-      modifiedStartLineNumber = x.modified.startLineNumber - 1;
-      modifiedEndLineNumber = 0;
-    } else {
-      modifiedStartLineNumber = x.modified.startLineNumber;
-      modifiedEndLineNumber = x.modified.endLineNumberExclusive - 1;
-    }
-
-    return {
-      originalStartLineNumber,
-      originalEndLineNumber,
-      modifiedStartLineNumber,
-      modifiedEndLineNumber,
-    };
-  });
+  return result;
 }
 
 export function toLineRanges(

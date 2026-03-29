@@ -846,13 +846,13 @@
     "playwright-test:only-test": "npx playwright test --config=tests-integration/playwright.config.ts",
     "update-screenshots": "npm run build && npx playwright test --config=tests-integration/screenshot/screenshot.config.ts",
     "package": "npx @vscode/vsce package",
-    "publish": "vsce publish",
-    "update-vendor": "node scripts/update-vendor.mjs"
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
     "@types/cross-spawn": "^6.0.6",
+    "@types/diff": "^7.0.2",
     "@types/node": "^25.5.0",
     "@types/vscode": "^1.110.0",
     "@types/which": "^3.0.4",
@@ -872,6 +872,7 @@
     "ansi-regex": "^6.2.2",
     "arktype": "^2.2.0",
     "cross-spawn": "^7.0.6",
+    "diff": "^8.0.4",
     "preact": "^10.29.0",
     "which": "^6.0.1"
   }

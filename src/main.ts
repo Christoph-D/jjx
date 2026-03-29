@@ -10,9 +10,13 @@ import { OperationLogManager, OperationLogTreeDataProvider, OperationTreeItem } 
 import { JJGraphWebview } from "./graphWebview";
 import { getParams, resolveRev, toJJUri } from "./uri";
 import { initLogger, logger } from "./logger";
-import { linesDiffComputers } from "./vendor/vscode/editor/common/diff/linesDiffComputers";
-import { ILinesDiffComputer } from "./vendor/vscode/editor/common/diff/linesDiffComputer";
-import { toLineChanges, toLineRanges, intersectDiffWithRange, applyLineChanges, type LineChange } from "./diffUtils";
+import {
+  computeLineChanges,
+  toLineRanges,
+  intersectDiffWithRange,
+  applyLineChanges,
+  type LineChange,
+} from "./diffUtils";
 import { match } from "arktype";
 import { createThrottledAsyncFn, getActiveTextEditorDiff, pathEquals, showErrorMessage } from "./utils";
 import { createIPCServer } from "./ipc/ipcServer";
@@ -933,20 +937,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
           async function computeAndSquashSelectedDiff(
             repository: JJRepository,
-            diffComputer: ILinesDiffComputer,
             originalUri: vscode.Uri,
             textEditor: vscode.TextEditor,
           ) {
             const originalDocument = await vscode.workspace.openTextDocument(originalUri);
             const originalLines = originalDocument.getText().split("\n");
             const editorLines = textEditor.document.getText().split("\n");
-            const diff = diffComputer.computeDiff(originalLines, editorLines, {
-              ignoreTrimWhitespace: false,
-              maxComputationTimeMs: 5000,
-              computeMoves: false,
-            });
-
-            const lineChanges = toLineChanges(diff);
+            const lineChanges = computeLineChanges(originalLines, editorLines);
             const selectedLines = toLineRanges(textEditor.selections, textEditor.document);
             const selectedChanges = lineChanges
               .map((change) =>
@@ -984,16 +981,10 @@ export async function activate(context: vscode.ExtensionContext) {
               )
               .default(() => false)(getParams(diffInput.original))
           ) {
-            await computeAndSquashSelectedDiff(
-              repository,
-              linesDiffComputers.getDefault(),
-              diffInput.original,
-              textEditor,
-            );
+            await computeAndSquashSelectedDiff(repository, diffInput.original, textEditor);
           } else if (textEditor.document.uri.scheme === "file") {
             await computeAndSquashSelectedDiff(
               repository,
-              linesDiffComputers.getLegacy(),
               toJJUri(textEditor.document.uri, {
                 diffOriginalRev: status.workingCopy.commitId,
               }),
