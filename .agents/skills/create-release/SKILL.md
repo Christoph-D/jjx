@@ -31,7 +31,6 @@ Create a new release for the JJX extension following semantic versioning.
    ```
 
 4. **Determine the new version using semantic versioning:**
-
    - `fix:` commits → patch version bump (e.g., 1.0.0 → 1.0.1)
    - `feat:` commits → minor version bump (e.g., 1.0.0 → 1.1.0)
    - Breaking changes → major version bump (e.g., 1.0.0 → 2.0.0)
@@ -48,10 +47,10 @@ Create a new release for the JJX extension following semantic versioning.
 
 7. **Update package.json** with the new version in the `version` field.
 
-8. **Run npm install** to update package-lock.json:
+8. **Run pnpm install** to update pnpm-lock.yaml:
 
    ```
-   npm install
+   pnpm install
    ```
 
 9. **Commit the version bump:**

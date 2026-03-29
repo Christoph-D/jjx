@@ -34,7 +34,11 @@ test("move single file changes from working copy to parent", async ({ graphFrame
   }).toPass();
 });
 
-test("move last single file changes from working copy to parent with squash message editor", async ({ graphFrame, testRepo, workbox }) => {
+test("move last single file changes from working copy to parent with squash message editor", async ({
+  graphFrame,
+  testRepo,
+  workbox,
+}) => {
   await testRepo.commitFile("a.txt", "original", "A");
 
   await testRepo.writeFile("a.txt", "modified");

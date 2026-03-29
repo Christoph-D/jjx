@@ -9,7 +9,6 @@ test("rebase commit onto another via drag and drop", async ({ graphFrame, testRe
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
 
-
   const commitC = nodes.nth(1);
   const commitA = nodes.nth(3);
 

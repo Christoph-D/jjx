@@ -14,29 +14,26 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v5
+        with:
+          cache: true
+
       - uses: actions/setup-node@v6
         with:
           node-version: "24.x"
-
-      - name: Cache node_modules
-        id: cache-node-modules
-        uses: actions/cache@v5
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          cache: "pnpm"
 
       - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Type check
-        run: npm run check-types
+        run: pnpm run check-types
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Unit tests
-        run: npm run unit-test
+        run: pnpm run unit-test
 
       - name: Cache jj
         id: cache-jj
@@ -57,14 +54,14 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .vscode-test
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install Playwright browsers
         if: steps.cache-playwright.outputs.cache-hit != 'true'
-        run: npx playwright install
+        run: pnpm exec playwright install
 
       - name: Playwright tests
-        run: npm run playwright-test
+        run: pnpm run playwright-test
 
       - name: Upload Playwright artifacts
         if: ${{ !cancelled() }}
@@ -75,10 +72,10 @@ jobs:
           retention-days: 30
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Package extension
-        run: npx vsce package
+        run: pnpm exec vsce package
 
       - name: Get version info
         id: version
@@ -98,6 +95,6 @@ jobs:
           body_path: release-notes.md
 
       - name: Publish to VS Code Marketplace
-        run: npx vsce publish
+        run: pnpm exec vsce publish
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}

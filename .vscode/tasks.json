@@ -6,9 +6,9 @@
 		{
             "label": "watch",
             "dependsOn": [
-                "npm: watch:tsc",
-                "npm: watch:tsc:webview",
-                "npm: watch:esbuild"
+                "pnpm: watch:tsc",
+                "pnpm: watch:tsc:webview",
+                "pnpm: watch:esbuild"
             ],
             "presentation": {
                 "reveal": "never"
@@ -24,7 +24,7 @@
             "group": "build",
             "problemMatcher": "$esbuild-watch",
             "isBackground": true,
-            "label": "npm: watch:esbuild",
+            "label": "pnpm: watch:esbuild",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"
@@ -36,7 +36,7 @@
             "group": "build",
             "problemMatcher": "$tsc-watch",
             "isBackground": true,
-            "label": "npm: watch:tsc",
+            "label": "pnpm: watch:tsc",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"
@@ -48,7 +48,7 @@
             "group": "build",
             "problemMatcher": "$tsc-watch",
             "isBackground": true,
-            "label": "npm: watch:tsc:webview",
+            "label": "pnpm: watch:tsc:webview",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"

@@ -11,3 +11,4 @@ src/**/*.js.map
 .jj-workspaces
 test-results/
 tests-integration/.vscode-path
+.pnpm-store/

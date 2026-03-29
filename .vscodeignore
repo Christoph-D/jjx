@@ -24,3 +24,4 @@ vsc-extension-quickstart.md
 test-results/
 playwright-report/
 tests-integration/
+.pnpm-store/

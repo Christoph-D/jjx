@@ -4,20 +4,20 @@ A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version
 
 ## Development
 
-- **Build**: `npm run build`
-- **Watch**: `npm run watch`
-- **Type check**: `npm run check-types`
-- **Lint**: `npm run lint`
+- **Build**: `pnpm run build`
+- **Watch**: `pnpm run watch`
+- **Type check**: `pnpm run check-types`
+- **Lint**: `pnpm run lint`
 
 ## Testing
 
-- Unit tests in `src/unit-test`: `npm run unit-test`
-- VSCode tests in `src/test`: `npm run vscode-test`
-- Run all tests: `npm run test`
+- Unit tests in `src/unit-test`: `pnpm run unit-test`
+- Integration tests in `src/tests-integration`: `pnpm run playwright-test`
+- Run all tests: `pnpm run test`
 
 ### Integration Tests
 
-To iterate on an integration test, change the test to `test.only()` and then run `npm run playwright-test:only-test`.
+To iterate on an integration test, change the test to `test.only()` and then run `pnpm run playwright-test:only-test`.
 
 Do not add custom timeouts to Playwright expectations. The Playwright config already sets `expect.timeout` to 20
 seconds.
@@ -94,4 +94,4 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 - Description: sentence case, imperative mood, no trailing period
 
 Examples: `feat: Use HTML5 drag&drop API`, `test: Test rebase drag&drop`,
-`fix: Run npm install in the create-release agent`
+`fix: Run pnpm install in the create-release agent`
