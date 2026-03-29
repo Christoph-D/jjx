@@ -73,30 +73,41 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         return;
       }
 
-      const display = `:${99 + workerInfo.workerIndex}`;
-      const xvfb: ChildProcess = spawn("Xvfb", [display, "-screen", "0", "1920x1080x24"], {
-        stdio: "ignore",
-        detached: true,
-      });
+      const maxAttempts = 20;
+      let startedXvfb: ChildProcess | undefined;
+      let startedDisplay: string | undefined;
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const display = `:${99 + workerInfo.workerIndex + attempt}`;
+        const xvfb: ChildProcess = spawn("Xvfb", [display, "-screen", "0", "1920x1080x24"], {
+          stdio: "ignore",
+          detached: true,
+        });
 
-      if (xvfb.exitCode !== null) {
-        console.log(`Xvfb failed to start on ${display}, using existing display`);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        if (xvfb.exitCode === null) {
+          startedXvfb = xvfb;
+          startedDisplay = display;
+          if (xvfb.pid) {
+            xvfbPids.add(xvfb.pid);
+          }
+          break;
+        }
+      }
+
+      if (!startedXvfb || !startedDisplay) {
+        console.log(`Xvfb failed to start after ${maxAttempts} attempts, using existing display`);
         await use(process.env.DISPLAY ?? ":0");
         return;
       }
 
-      if (xvfb.pid) {
-        xvfbPids.add(xvfb.pid);
-      }
+      await use(startedDisplay);
 
-      await use(display);
-
-      if (xvfb.pid) {
-        xvfbPids.delete(xvfb.pid);
+      if (startedXvfb.pid) {
+        xvfbPids.delete(startedXvfb.pid);
         try {
-          process.kill(xvfb.pid, "SIGTERM");
+          process.kill(startedXvfb.pid, "SIGTERM");
         } catch {
           // Process may already be gone
         }
