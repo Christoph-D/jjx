@@ -20,7 +20,7 @@ test("undo a specific operation from operation log tree view", async ({ graphFra
   const treeItems = paneBody.locator('[role="treeitem"]');
   await expect(treeItems.first()).toBeVisible();
 
-  const firstItem = treeItems.first();
+  const firstItem = treeItems.filter({ hasText: /^jj commit/ }).first();
   await firstItem.hover();
   const undoBtn = firstItem.getByRole("button", { name: "Undo Operation" });
   await undoBtn.click({ force: true });
@@ -35,37 +35,12 @@ test("undo a specific operation from operation log tree view", async ({ graphFra
 });
 
 test("restore repo to a specific operation from operation log tree view", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.commitFile("a.txt", "content a", "A");
-  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.commitFile("a.txt", "content a", "commit A");
+  await testRepo.commitFile("a.txt", "content b", "commit B");
+  await testRepo.commitFile("a.txt", "content c", "commit C");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(4);
-
-  const opsResult = await testRepo.jjCommand([
-    "operation",
-    "log",
-    "--limit",
-    "10",
-    "--no-graph",
-    "-T",
-    'tags ++ "\\n"',
-  ]);
-  const opTags = opsResult.stdout.trim().split("\n").filter(Boolean);
-
-  let commitCount = 0;
-  let commitAIndex = -1;
-  for (let i = 0; i < opTags.length; i++) {
-    if (opTags[i].includes("commit")) {
-      commitCount++;
-      if (commitCount === 2) {
-        commitAIndex = i;
-        break;
-      }
-    }
-  }
-  if (commitAIndex === -1) {
-    commitAIndex = opTags.length - 2;
-  }
+  await expect(nodes).toHaveCount(5);
 
   const opLogHeader = workbox.getByRole("button", { name: /Operation Log/ });
   const isExpanded = await opLogHeader.getAttribute("aria-expanded");
@@ -80,14 +55,18 @@ test("restore repo to a specific operation from operation log tree view", async 
   const treeItems = paneBody.locator('[role="treeitem"]');
   await expect(treeItems.first()).toBeVisible();
 
-  const targetItem = treeItems.nth(commitAIndex);
+  const targetItem = treeItems.filter({ hasText: /commit A/ }).first();
   await targetItem.hover();
   const restoreBtn = targetItem.getByRole("button", { name: "Restore Repo to the State at This Operation" });
   await restoreBtn.click({ force: true });
 
   await expect(async () => {
     const logEntries = await testRepo.log();
-    expect(logEntries.find((e) => e.description.trim() === "B")).toBeUndefined();
-    expect(logEntries.find((e) => e.description.trim() === "A")).toBeDefined();
+    expect(logEntries.find((e) => e.description.trim() === "commit B")).toBeUndefined();
+    expect(logEntries.find((e) => e.description.trim() === "commit C")).toBeUndefined();
+    expect(logEntries.find((e) => e.description.trim() === "commit A")).toBeDefined();
   }).toPass();
+
+  const fileContent = await testRepo.readFile("a.txt");
+  expect(fileContent.trim()).toBe("content a");
 });

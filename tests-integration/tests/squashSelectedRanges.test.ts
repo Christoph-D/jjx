@@ -49,7 +49,7 @@ test("squash selected line ranges into parent change", async ({ graphFrame, test
   }).toPass();
 
   await expect(async () => {
-    const diffResult = await testRepo.jjCommand(["diff"]);
+    const diffResult = await testRepo.jjCommand(["diff", "--git"]);
     expect(diffResult.stdout).toContain("-line2");
     expect(diffResult.stdout).toContain("+MODIFIED");
     expect(diffResult.stdout).not.toContain("+ADDED");
