@@ -84,12 +84,7 @@ body {
 
 /* Dimming and highlighting effects */
 .node-circle.dimmed circle,
-.node-circle.dimmed .heart-path {
-  opacity: var(--dimmed-opacity);
-}
-
-.node-circle.highlighted circle,
-.node-circle.highlighted .heart-path {
+.node-circle.highlighted circle {
   opacity: 1;
 }
 
@@ -123,11 +118,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.label-text {
-  line-height: 1.2;
-  word-wrap: break-word;
 }
 
 .description {
@@ -182,10 +172,6 @@ body {
   pointer-events: none;
 }
 
-.node-circle .heart-path {
-  fill: var(--vscode-sideBar-background);
-}
-
 .node-circle .bg-match {
   fill: var(--vscode-sideBar-background);
 }
@@ -226,13 +212,6 @@ body {
 
 .node-circle.selected.hovered .circle-bg {
   stroke: var(--vscode-list-activeSelectionBackground);
-}
-
-.node-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
 }
 
 .node-circle.dimmed .diamond-path {
@@ -456,10 +435,6 @@ body {
   margin-left: 4px;
 }
 
-.change-id {
-  font-family: var(--vscode-editor-font-family, monospace);
-}
-
 .change-id-prefix {
   font-family: var(--vscode-editor-font-family, monospace);
   font-weight: bold;
@@ -477,10 +452,6 @@ body {
 
 .change-node.working-copy .text-content {
   font-weight: bold;
-}
-
-.change-node.dragging {
-  opacity: 0.4;
 }
 
 .change-node.drop-target {
@@ -566,11 +537,6 @@ body {
 
 .change-node.elided-node .text-content {
   height: 20px;
-}
-
-.elided-label {
-  opacity: 0.5;
-  font-style: italic;
 }
 
 .node-circle .elided-symbol {
