@@ -64,7 +64,6 @@ export interface PendingGraphUpdate {
   offsetWidth: number;
   preserveScroll: boolean;
   showTooltips: boolean;
-  selectedNodes: string[];
 }
 
 export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);

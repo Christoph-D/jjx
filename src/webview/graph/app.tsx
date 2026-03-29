@@ -32,7 +32,9 @@ export function App() {
   useEffect(() => {
     const applyGraphUpdate = (message: PendingGraphUpdate) => {
       isStale.value = false;
-      selectedNodes.value = new Set(message.selectedNodes);
+      const newChangeIds = new Set(message.changes.map((c) => c.changeId));
+      const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(id)));
+      selectedNodes.value = preserved;
       diffStatsCache.value = new Map();
       currentChanges.value = message.changes;
       currentGraph.value = message.laneInfo;
