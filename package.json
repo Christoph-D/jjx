@@ -102,6 +102,11 @@
         "icon": "$(plus)"
       },
       {
+        "command": "jj.newWithEditor",
+        "title": "Create New Change With Editor",
+        "category": "Jujutsu"
+      },
+      {
         "command": "jj.squashToParentResourceGroup",
         "title": "Move Changes to Parent",
         "category": "Jujutsu",
@@ -577,6 +582,14 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "jj.newWithEditor",
+        "key": "ctrl+shift+enter",
+        "mac": "cmd+shift+enter",
+        "when": "scmRepository"
+      }
+    ],
     "configuration": {
       "title": "Jujutsu X",
       "properties": {

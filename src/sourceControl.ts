@@ -310,9 +310,7 @@ export class RepositorySourceControlManager {
     this.workingCopyResourceGroup = this.sourceControl.createResourceGroup("@", "Working Copy");
     this.subscriptions.push(this.workingCopyResourceGroup);
 
-    const config = vscode.workspace.getConfiguration("jjx");
-    const commitAction = config.get<string>("commitAction") || "commit";
-    this.updatePlaceholderText(commitAction);
+    this.updatePlaceholderText();
 
     this.sourceControl.acceptInputCommand = {
       command: "jj.new",
@@ -382,9 +380,8 @@ export class RepositorySourceControlManager {
     }, TIMEOUTS.REPO_WATCHER_DEBOUNCE);
   }
 
-  updatePlaceholderText(commitAction: string) {
-    this.sourceControl.inputBox.placeholder =
-      commitAction === "commit" ? "Describe Current Change (Ctrl+Enter)" : "Describe New Change (Ctrl+Enter)";
+  updatePlaceholderText() {
+    this.sourceControl.inputBox.placeholder = "Commit Message... (Ctrl+Enter or Shift+Ctrl+Enter)";
   }
 
   async checkForUpdates() {

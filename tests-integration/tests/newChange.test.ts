@@ -1,5 +1,6 @@
 import { test, expect } from "./baseTest";
 import { getParents } from "../testRepo";
+import { Page } from "@playwright/test";
 
 test("create new child change from context menu", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
@@ -82,7 +83,7 @@ test("create new change via command palette", async ({ graphFrame, testRepo, wor
   }).toPass();
 });
 
-test("create new change via SCM input box", async ({ graphFrame, testRepo, workbox }) => {
+test("commit change via SCM input box", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
   await testRepo.writeFile("c.txt", "content c");
@@ -99,6 +100,136 @@ test("create new change via SCM input box", async ({ graphFrame, testRepo, workb
 
   await expect(async () => {
     const logEntries = await testRepo.log("@-");
-    expect(logEntries.find((e) => e.description.trim() === "C")).toBeDefined();
+    expect(logEntries).toHaveLength(1);
+    expect(logEntries[0].description.trim()).toBe("C");
+  }).toPass();
+
+  // Commit without a commit message should succeed without opening an editor.
+  await workbox.keyboard.press("Control+Enter");
+  await expect(nodes).toHaveCount(6);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@-");
+    expect(logEntries).toHaveLength(1);
+    expect(logEntries[0].description.trim()).toBe("");
+  }).toPass();
+});
+
+test("create new change via SCM input box", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.commitAction": "new"}');
+
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.writeFile("c.txt", "content c");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const scmEditor = workbox.locator(".scm-view .scm-editor").first();
+  await scmEditor.click();
+  await workbox.keyboard.type("C");
+  await workbox.keyboard.press("Control+Enter");
+
+  await expect(nodes).toHaveCount(5);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@");
+    expect(logEntries).toHaveLength(1);
+    expect(logEntries[0].description.trim()).toBe("C");
+  }).toPass();
+
+  // Commit without a commit message should succeed without opening an editor.
+  await workbox.keyboard.press("Control+Enter");
+  await expect(nodes).toHaveCount(6);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@");
+    expect(logEntries).toHaveLength(1);
+    expect(logEntries[0].description.trim()).toBe("");
+  }).toPass();
+});
+
+async function handleEditor(workbox: Page, expectedContent: string, newContent: string) {
+  const editor = workbox.locator('.monaco-editor[role="code"][data-uri*=".jj"]');
+  await expect(editor).toBeVisible();
+  await editor.click();
+  if (expectedContent !== "") {
+    await expect(editor.getByText(expectedContent)).toBeVisible();
+  }
+  await workbox.keyboard.press("Control+a");
+  await workbox.keyboard.type(newContent);
+  await workbox.keyboard.press("Control+s");
+  await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
+  await workbox.keyboard.press("Control+w");
+  await expect(editor).toBeHidden();
+}
+
+test("commit change via SCM input box with editor", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.writeFile("c.txt", "content c");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const scmEditor = workbox.locator(".scm-view .scm-editor").first();
+  await scmEditor.click();
+  await workbox.keyboard.type("some message");
+  await workbox.keyboard.press("Shift+Control+Enter");
+  await handleEditor(workbox, "some message", "edited message");
+
+  await expect(nodes).toHaveCount(5);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@-");
+    expect(logEntries).toHaveLength(1);
+    expect(logEntries[0].description.trim()).toBe("edited message");
+  }).toPass();
+
+  await scmEditor.click();
+  await workbox.keyboard.press("Shift+Control+Enter");
+  await handleEditor(workbox, "", "another edited message");
+  await expect(nodes).toHaveCount(6);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@-");
+    expect(logEntries).toHaveLength(1);
+    expect(logEntries[0].description.trim()).toBe("another edited message");
+  }).toPass();
+});
+
+test("create new change via SCM input box with editor", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.commitAction": "new"}');
+
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.writeFile("c.txt", "content c");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const scmEditor = workbox.locator(".scm-view .scm-editor").first();
+  await scmEditor.click();
+  await workbox.keyboard.type("some message");
+  await workbox.keyboard.press("Shift+Control+Enter");
+  await handleEditor(workbox, "some message", "edited message");
+
+  await expect(nodes).toHaveCount(5);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@");
+    expect(logEntries).toHaveLength(1);
+    expect(logEntries[0].description.trim()).toBe("edited message");
+  }).toPass();
+
+  await scmEditor.click();
+  await workbox.keyboard.press("Shift+Control+Enter");
+  await handleEditor(workbox, "", "another edited message");
+  await expect(nodes).toHaveCount(6);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log("@");
+    expect(logEntries).toHaveLength(1);
+    expect(logEntries[0].description.trim()).toBe("another edited message");
   }).toPass();
 });

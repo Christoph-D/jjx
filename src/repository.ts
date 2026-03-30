@@ -371,17 +371,26 @@ export class JJRepository {
 
   async new(message?: string, revs?: string[]) {
     return await handleJJCommand(
-      this.spawnJJ(["new", ...(message ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])], {
+      this.spawnJJ(["new", ...(message !== undefined ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])], {
         timeout: TIMEOUTS.DEFAULT,
         cwd: this.repositoryRoot,
       }),
     );
   }
 
-  async commit(message?: string) {
+  async commit(message?: string, editor?: boolean) {
     return await handleJJCommand(
-      this.spawnJJ(["commit", ...(message ? ["-m", message] : [])], {
-        timeout: message ? TIMEOUTS.DEFAULT : 0,
+      this.spawnJJ(["commit", ...(message !== undefined ? ["-m", message] : []), ...(editor ? ["--editor"] : [])], {
+        timeout: editor ? 0 : message !== undefined ? TIMEOUTS.DEFAULT : 0,
+        cwd: this.repositoryRoot,
+      }),
+    );
+  }
+
+  async describeOpenEditor() {
+    return await handleJJCommand(
+      this.spawnJJ(["describe"], {
+        timeout: 0,
         cwd: this.repositoryRoot,
       }),
     );

@@ -115,10 +115,8 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       }
       if (e.affectsConfiguration("jjx.commitAction")) {
-        const config = vscode.workspace.getConfiguration("jjx");
-        const commitAction = config.get<string>("commitAction") || "commit";
         for (const repoSCM of workspaceSCM.repoSCMs) {
-          repoSCM.updatePlaceholderText(commitAction);
+          repoSCM.updatePlaceholderText();
         }
       }
       if (e.affectsConfiguration("jjx.fileClickAction")) {
@@ -363,11 +361,39 @@ export async function activate(context: vscode.ExtensionContext) {
         }
         const config = vscode.workspace.getConfiguration("jjx");
         const commitAction = config.get<string>("commitAction") || "commit";
-        const message = sourceControl.inputBox.value.trim() || undefined;
+        const message = sourceControl.inputBox.value.trim();
         if (commitAction === "commit") {
           await repository.commit(message);
         } else {
           await repository.new(message);
+        }
+        sourceControl.inputBox.value = "";
+      },
+      { errorPrefix: "Failed to create change" },
+    );
+
+    registerCommand(
+      context,
+      "jj.newWithEditor",
+      async (sourceControl?: vscode.SourceControl) => {
+        if (!sourceControl) {
+          sourceControl = workspaceSCM.repoSCMs[0]?.sourceControl;
+        }
+        if (!sourceControl) {
+          throw new Error("Repository not found");
+        }
+        const repository = workspaceSCM.getRepositoryFromSourceControl(sourceControl);
+        if (!repository) {
+          throw new Error("Repository not found");
+        }
+        const config = vscode.workspace.getConfiguration("jjx");
+        const commitAction = config.get<string>("commitAction") || "commit";
+        const message = sourceControl.inputBox.value.trim();
+        if (commitAction === "commit") {
+          await repository.commit(message, true);
+        } else {
+          await repository.new(message);
+          await repository.describeOpenEditor();
         }
         sourceControl.inputBox.value = "";
       },
