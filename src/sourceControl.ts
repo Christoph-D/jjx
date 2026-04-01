@@ -413,6 +413,8 @@ export class RepositorySourceControlManager {
           await this.checkForUpdatesUnsafe();
           return;
         }
+        // Need to update the graph view to show the stale state.
+        this._onDidUpdate.fire(undefined);
       }
       throw error;
     }
