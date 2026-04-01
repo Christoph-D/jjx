@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, handleEditor } from "./baseTest";
 
 test("update change description via graph context menu", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "Original A");
@@ -14,15 +14,7 @@ test("update change description via graph context menu", async ({ graphFrame, te
   await expect(describeItem).toBeVisible();
   await describeItem.click();
 
-  const editor = workbox.locator('.monaco-editor[role="code"][data-uri*=".jjdescription"]');
-  await expect(editor).toBeVisible();
-  await editor.click();
-  await workbox.keyboard.press("Control+a");
-  await workbox.keyboard.type("Updated B");
-  await workbox.keyboard.press("Control+s");
-  await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
-  await workbox.keyboard.press("Control+w");
-  await expect(editor).toBeHidden();
+  await handleEditor(workbox, "", "Updated B");
 
   await expect(async () => {
     const logEntries = await testRepo.log();

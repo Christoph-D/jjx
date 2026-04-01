@@ -1,6 +1,5 @@
-import { test, expect } from "./baseTest";
+import { test, expect, handleEditor } from "./baseTest";
 import { getParents } from "../testRepo";
-import { Page } from "@playwright/test";
 
 test("create new child change from context menu", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
@@ -148,21 +147,6 @@ test("create new change via SCM input box", async ({ graphFrame, testRepo, workb
     expect(logEntries[0].description.trim()).toBe("");
   }).toPass();
 });
-
-async function handleEditor(workbox: Page, expectedContent: string, newContent: string) {
-  const editor = workbox.locator('.monaco-editor[role="code"][data-uri*=".jj"]');
-  await expect(editor).toBeVisible();
-  await editor.click();
-  if (expectedContent !== "") {
-    await expect(editor.getByText(expectedContent)).toBeVisible();
-  }
-  await workbox.keyboard.press("Control+a");
-  await workbox.keyboard.type(newContent);
-  await workbox.keyboard.press("Control+s");
-  await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
-  await workbox.keyboard.press("Control+w");
-  await expect(editor).toBeHidden();
-}
 
 test("commit change via SCM input box with editor", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "A");

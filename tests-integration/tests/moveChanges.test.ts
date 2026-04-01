@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, handleEditor } from "./baseTest";
 
 test("move single file changes from working copy to parent", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "original", "A");
@@ -61,15 +61,7 @@ test("move last single file changes from working copy to parent with squash mess
   await expect(moveButton).toBeVisible();
   await moveButton.click();
 
-  const editor = workbox.locator('.monaco-editor[role="code"][data-uri^="file://"]');
-  await expect(editor).toBeVisible();
-  await editor.click();
-  await workbox.keyboard.press("Control+a");
-  await workbox.keyboard.type("moved");
-  await workbox.keyboard.press("Control+s");
-  await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
-  await workbox.keyboard.press("Control+w");
-  await expect(editor).toBeHidden();
+  await handleEditor(workbox, "", "moved");
 
   await expect(async () => {
     const diffResult = await testRepo.jjCommand(["diff", "--name-only"]);

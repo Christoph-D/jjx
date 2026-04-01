@@ -1,4 +1,4 @@
-import { test as base, type Page, type Frame, _electron } from "@playwright/test";
+import { test as base, type Page, type Frame, _electron, expect as pwExpect } from "@playwright/test";
 import { getVscodePath } from "../globalSetup";
 import { expect } from "@playwright/test";
 export { expect };
@@ -215,6 +215,21 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(graphFrame!);
   },
 });
+
+export async function handleEditor(workbox: Page, expectedContent: string, newContent: string) {
+  const editor = workbox.locator('.monaco-editor[role="code"][data-uri*=".jj"]');
+  await pwExpect(editor).toBeVisible();
+  await editor.click();
+  if (expectedContent !== "") {
+    await pwExpect(editor.getByText(expectedContent)).toBeVisible();
+  }
+  await workbox.keyboard.press("Control+a");
+  await workbox.keyboard.type(newContent);
+  await workbox.keyboard.press("Control+s");
+  await pwExpect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
+  await workbox.keyboard.press("Control+w");
+  await pwExpect(editor).toBeHidden();
+}
 
 // Closes the chat window and increases the size of the jj graph
 async function increaseJJVisibleSize(workbox: Page) {

@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, handleEditor } from "./baseTest";
 
 test("squash commit into another via drag and drop", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
@@ -16,15 +16,7 @@ test("squash commit into another via drag and drop", async ({ graphFrame, testRe
   await expect(squashIntoItem).toBeVisible();
   await squashIntoItem.click();
 
-  const editor = workbox.locator('.monaco-editor[role="code"][data-uri^="file://"]');
-  await expect(editor).toBeVisible();
-  await editor.click();
-  await workbox.keyboard.press("Control+a");
-  await workbox.keyboard.type("squashed");
-  await workbox.keyboard.press("Control+s");
-  await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
-  await workbox.keyboard.press("Control+w");
-  await expect(editor).toBeHidden();
+  await handleEditor(workbox, "", "squashed");
 
   await expect(nodes).toHaveCount(3);
 
