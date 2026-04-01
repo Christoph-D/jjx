@@ -1,5 +1,30 @@
 # Change Log
 
+## 1.6.0
+
+### New Features
+
+- **Undo/Redo buttons in graph view** - Added undo and redo buttons to the graph view title bar for quick operation
+  management
+- **Ctrl+Shift+Enter to commit with editor** - Press Ctrl+Shift+Enter to open the commit message in the full VS Code
+  editor; empty commit messages are now allowed with Ctrl+Enter without opening an editor
+- **jjx.autoUpdateStaleWorkspace** - New config option to automatically run `jj workspace update-stale` when the working
+  copy is stale
+- **jjx.pollIntervalSeconds** - Renamed from `jjx.pollInterval`; the value is now in seconds instead of milliseconds
+  (default: 30)
+- **Migrated from npm to pnpm** for better security, faster installs, and higher disk efficiency
+
+### Bug Fixes
+
+- More reliably show the stale working copy message in graph view when polling fails
+- Check minimum jj version (0.38.0) at startup and show a warning if the installed version is too old
+- Exclude unnecessary files (playwright-report, images/togif.sh, .vscode/) from the VSIX package
+
+### Internal
+
+- Add integration tests for workspaces
+- Add integration tests for committing via SCM input box with and without editor
+
 ## 1.5.1
 
 ### Bug Fixes
