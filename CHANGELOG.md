@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.6.1
+
+This is a bug fix release. See 1.6.0 for the full release notes.
+
+### Internal
+
+- Fix flaky integration test for commit action by waiting for settings to be applied
+- Pin VS Code version to 1.114.0 in integration tests for reproducible CI runs
+
 ## 1.6.0
 
 ### New Features
