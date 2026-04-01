@@ -11,6 +11,7 @@ import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ } from "./process";
 import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
+import { StaleWorkingCopyError } from "./errors";
 import type { FileStatus, RepositoryStatus, Show, Change } from "./types";
 import { getRevFromChange } from "./types";
 import { TIMEOUTS, MINIMUM_JJ_VERSION } from "./constants";
@@ -401,7 +402,20 @@ export class RepositorySourceControlManager {
    * This should never be called concurrently.
    */
   async checkForUpdatesUnsafe() {
-    const latestOperationId = await this.repository.getLatestOperationId(false);
+    let latestOperationId: string;
+    try {
+      latestOperationId = await this.repository.getLatestOperationId(false);
+      this.repository.resetAutoUpdateStaleAttempted();
+    } catch (error) {
+      if (error instanceof StaleWorkingCopyError) {
+        const didAutoUpdate = await this.repository.tryAutoUpdateStale();
+        if (didAutoUpdate) {
+          await this.checkForUpdatesUnsafe();
+          return;
+        }
+      }
+      throw error;
+    }
     if (this.operationId !== latestOperationId) {
       this.operationId = latestOperationId;
       const status = await this.repository.getStatus();

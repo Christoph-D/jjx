@@ -412,6 +412,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
     try {
       await this.repository.getLatestOperationId(false);
+      this.repository.resetAutoUpdateStaleAttempted();
       const config = vscode.workspace.getConfiguration("jjx");
       const graphStyle = config.get<string>("graphStyle") || "full";
 
@@ -448,6 +449,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       this.panel.webview.postMessage(msg);
     } catch (error) {
       if (error instanceof StaleWorkingCopyError) {
+        const didAutoUpdate = await this.repository.tryAutoUpdateStale();
+        if (didAutoUpdate) {
+          await this.refresh();
+          return;
+        }
         const msg: ExtensionToWebviewMessage = {
           command: "showStaleState",
         };

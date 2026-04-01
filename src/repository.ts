@@ -65,6 +65,7 @@ type ParsedFileStatuses = {
 export class JJRepository {
   statusCache: RepositoryStatus | undefined;
   gitFetchPromise: Promise<void> | undefined;
+  private autoUpdateStaleAttempted = false;
 
   constructor(
     public repositoryRoot: string,
@@ -846,6 +847,29 @@ export class JJRepository {
         cwd: this.repositoryRoot,
       }),
     );
+  }
+
+  async tryAutoUpdateStale(): Promise<boolean> {
+    const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
+    if (!config.get<boolean>("autoUpdateStaleWorkspace")) {
+      return false;
+    }
+    if (this.autoUpdateStaleAttempted) {
+      return false;
+    }
+    this.autoUpdateStaleAttempted = true;
+    try {
+      await this.updateStale();
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Auto update-stale failed: ${errorMessage}`);
+      return false;
+    }
+  }
+
+  resetAutoUpdateStaleAttempted() {
+    this.autoUpdateStaleAttempted = false;
   }
 
   async annotate(filepath: string, rev: string): Promise<string[]> {

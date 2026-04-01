@@ -711,6 +711,12 @@
           "default": true,
           "description": "Show tooltips when hovering over commits in the graph view",
           "scope": "resource"
+        },
+        "jjx.autoUpdateStaleWorkspace": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically run 'jj workspace update-stale' when the working copy is stale",
+          "scope": "resource"
         }
       }
     },

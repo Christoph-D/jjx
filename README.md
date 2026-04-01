@@ -89,6 +89,7 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 - Show workspace labels in the graph view  
   ![workspaces](images/workspaces.png)
 - Handle "workspace is stale" errors by prompting the user to click a button "update stale workspace"
+- Optionally auto-update a stale workspace (enable with `jjx.autoUpdateStaleWorkspace`)
 
 ### 🔄 Operation management
 
@@ -121,6 +122,7 @@ The following settings can be configured in VS Code's settings:
 | `jjx.elidedVisibleImmutableParents` | `1`         | Number of immutable parent commits to show in the log when eliding commits                                                                             |
 | `jjx.showTooltips`                  | `true`      | Show tooltips when hovering over commits in the graph view                                                                                             |
 | `jjx.baseWebURL`                    | `""`        | Base URL for the 'Copy URL' feature (e.g., `https://github.com/user/repo`). Overrides `git_web_url()` when set                                         |
+| `jjx.autoUpdateStaleWorkspace`      | `false`     | Automatically run `jj workspace update-stale` when the current workspace is stale                                                                      |
 
 ## 🐛 Known issues
 
