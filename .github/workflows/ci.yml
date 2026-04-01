@@ -53,7 +53,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .vscode-test
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests-integration/vscode-version.json') }}
 
       - name: Install Playwright browsers
         if: steps.cache-playwright.outputs.cache-hit != 'true'

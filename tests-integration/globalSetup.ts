@@ -20,7 +20,10 @@ export default async () => {
     console.log(`Using existing vscode binary: ${vscodePath}`);
     return;
   }
-  const vscodePath = await downloadAndUnzipVSCode("stable");
+  const version = (
+    JSON.parse(fs.readFileSync(path.join(__dirname, "vscode-version.json"), "utf-8")) as { version: string }
+  ).version;
+  const vscodePath = await downloadAndUnzipVSCode(version);
   await fs.promises.writeFile(vscodePathFile, vscodePath);
 };
 
