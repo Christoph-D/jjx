@@ -109,20 +109,20 @@ The following settings can be configured in VS Code's settings:
 
 | Setting                             | Default     | Description                                                                                                                                            |
 | ----------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `jjx.enableAnnotations`             | `true`      | Enables in-line blame annotations                                                                                                                      |
-| `jjx.commandTimeout`                | `null`      | Global timeout in milliseconds for all jj commands. If not set, per-command defaults will be used                                                      |
-| `jjx.jjPath`                        | `""`        | Path to the jj executable. If not set, your PATH and common locations will be searched                                                                 |
+| `jjx.autoUpdateStaleWorkspace`      | `false`     | Automatically run `jj workspace update-stale` when the current workspace is stale                                                                      |
+| `jjx.baseWebURL`                    | `""`        | Base URL for the 'Copy URL' feature (e.g., `https://github.com/user/repo`). Overrides `git_web_url()` when set                                         |
 | `jjx.changeDoubleClickAction`       | `"new"`     | Action when double-clicking a change in the graph view: `"edit"` (jj edit) or `"new"` (jj new)                                                         |
+| `jjx.commandTimeout`                | `null`      | Global timeout in milliseconds for all jj commands. If not set, per-command defaults will be used                                                      |
 | `jjx.commitAction`                  | `"commit"`  | Action when pressing Ctrl+Enter in source control: `"commit"` (jj commit) or `"new"` (jj new). Ctrl+Shift+Enter does the same but also opens an editor |
-| `jjx.graphStyle`                    | `"compact"` | Display style for commits: `"full"` shows all details, `"compact"` shows single line                                                                   |
-| `jjx.logLimit`                      | `100`       | Maximum number of commits shown in the graph view                                                                                                      |
-| `jjx.pollIntervalSeconds`           | `30`        | Interval in seconds between repository polls. Set to 0 to disable                                                                                      |
-| `jjx.fileClickAction`               | `"diff"`    | Action when clicking a file: `"diff"` (compare to parent), `"at-revision"` (open at clicked revision), or `"working-copy"` (open in working copy)      |
 | `jjx.elideImmutableCommits`         | `true`      | Hide chains of immutable commits between relevant commits in the graph view                                                                            |
 | `jjx.elidedVisibleImmutableParents` | `1`         | Number of immutable parent commits to show in the log when eliding commits                                                                             |
+| `jjx.enableAnnotations`             | `true`      | Enables in-line blame annotations                                                                                                                      |
+| `jjx.fileClickAction`               | `"diff"`    | Action when clicking a file: `"diff"` (compare to parent), `"at-revision"` (open at clicked revision), or `"working-copy"` (open in working copy)      |
+| `jjx.graphStyle`                    | `"compact"` | Display style for commits: `"full"` shows all details, `"compact"` shows single line                                                                   |
+| `jjx.jjPath`                        | `""`        | Path to the jj executable. If not set, your PATH and common locations will be searched                                                                 |
+| `jjx.logLimit`                      | `100`       | Maximum number of commits shown in the graph view                                                                                                      |
+| `jjx.pollIntervalSeconds`           | `30`        | Interval in seconds between repository polls. Set to 0 to disable                                                                                      |
 | `jjx.showTooltips`                  | `true`      | Show tooltips when hovering over commits in the graph view                                                                                             |
-| `jjx.baseWebURL`                    | `""`        | Base URL for the 'Copy URL' feature (e.g., `https://github.com/user/repo`). Overrides `git_web_url()` when set                                         |
-| `jjx.autoUpdateStaleWorkspace`      | `false`     | Automatically run `jj workspace update-stale` when the current workspace is stale                                                                      |
 
 ## 🐛 Known issues
 
