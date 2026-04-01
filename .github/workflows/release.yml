@@ -75,7 +75,7 @@ jobs:
         run: pnpm run build
 
       - name: Package extension
-        run: pnpm exec vsce package
+        run: pnpm run package
 
       - name: Get version info
         id: version
@@ -95,6 +95,6 @@ jobs:
           body_path: release-notes.md
 
       - name: Publish to VS Code Marketplace
-        run: pnpm exec vsce publish
+        run: pnpm run publish
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
