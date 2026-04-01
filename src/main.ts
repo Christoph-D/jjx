@@ -1288,9 +1288,9 @@ export async function activate(context: vscode.ExtensionContext) {
     } catch (err) {
       logger.error(`Error during background poll: ${String(err)}`);
     } finally {
-      const pollInterval = vscode.workspace.getConfiguration("jjx").get<number>("pollInterval");
-      if (pollInterval !== undefined && pollInterval > 0) {
-        pollTimeoutId = setTimeout(() => void scheduleNextPoll(), pollInterval);
+      const pollIntervalSeconds = vscode.workspace.getConfiguration("jjx").get<number>("pollIntervalSeconds");
+      if (pollIntervalSeconds !== undefined && pollIntervalSeconds > 0) {
+        pollTimeoutId = setTimeout(() => void scheduleNextPoll(), pollIntervalSeconds * 1000);
       }
     }
   };

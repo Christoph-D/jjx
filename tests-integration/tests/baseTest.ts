@@ -152,7 +152,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "diffEditor.renderSideBySide": true,
         "diffEditor.renderSideBySideInlineBreakpoint": 50,
         "jjx.showTooltips": false, // tooltips interfere with mouse positioning
-        "jjx.pollInterval": 1000,
+        "jjx.pollIntervalSeconds": 1,
         "window.dialogStyle": "custom",
         "window.autoDetectColorScheme": false,
       }),

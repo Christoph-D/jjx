@@ -657,10 +657,10 @@
           "description": "Display style for commits in the graph view",
           "scope": "resource"
         },
-        "jjx.pollInterval": {
+        "jjx.pollIntervalSeconds": {
           "type": "number",
-          "default": 30000,
-          "description": "Interval in milliseconds between repository polls. Set to 0 to disable polling.",
+          "default": 30,
+          "description": "Interval in seconds between repository polls. Set to 0 to disable polling.",
           "scope": "resource",
           "minimum": 0
         },
