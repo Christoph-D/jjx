@@ -115,7 +115,8 @@ test("commit change via SCM input box", async ({ graphFrame, testRepo, workbox }
 });
 
 test("create new change via SCM input box", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.writeFile(".vscode/settings.json", '{"jjx.commitAction": "new"}');
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.commitAction": "new", "jjx.graphStyle": "full"}');
+  await expect(graphFrame.locator(".compact")).toHaveCount(0);
 
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
@@ -183,7 +184,8 @@ test("commit change via SCM input box with editor", async ({ graphFrame, testRep
 });
 
 test("create new change via SCM input box with editor", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.writeFile(".vscode/settings.json", '{"jjx.commitAction": "new"}');
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.commitAction": "new", "jjx.graphStyle": "full"}');
+  await expect(graphFrame.locator(".compact")).toHaveCount(0);
 
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
