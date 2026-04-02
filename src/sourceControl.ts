@@ -52,16 +52,14 @@ async function checkJJVersion(jjFilepath: string): Promise<void> {
 }
 
 export class WorkspaceSourceControlManager {
-  repoInfos:
-    | Map<
-        string,
-        {
-          jjPath: Awaited<ReturnType<typeof getJJPath>>;
-          jjConfigArgs: string[];
-          repoRoot: string;
-        }
-      >
-    | undefined;
+  repoInfos: Map<
+    string,
+    {
+      jjPath: Awaited<ReturnType<typeof getJJPath>>;
+      jjConfigArgs: string[];
+      repoRoot: string;
+    }
+  > = new Map();
   repoSCMs: RepositorySourceControlManager[] = [];
   subscriptions: {
     dispose(): unknown;
@@ -163,7 +161,7 @@ export class WorkspaceSourceControlManager {
     let isAnyRepoChanged = false;
 
     for (const [key, value] of newRepoInfos) {
-      const oldValue = oldRepoInfos?.get(key);
+      const oldValue = oldRepoInfos.get(key);
       if (!oldValue) {
         isAnyRepoChanged = true;
         keysToRecreate.add(key);
@@ -178,7 +176,7 @@ export class WorkspaceSourceControlManager {
         logger.info(`Detected change that requires reinitialization in workspace: ${key}`);
       }
     }
-    for (const key of oldRepoInfos?.keys() || []) {
+    for (const key of oldRepoInfos.keys()) {
       if (!newRepoInfos.has(key)) {
         isAnyRepoChanged = true;
         keysToRemove.add(key);
@@ -293,7 +291,7 @@ export class WorkspaceSourceControlManager {
     for (const subscription of this.subscriptions) {
       subscription.dispose();
     }
-    this.repoInfos = undefined;
+    this.repoInfos.clear();
     this.repoSCMs = [];
   }
 }
