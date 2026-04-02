@@ -31,20 +31,13 @@ test("undo and redo a commit", async ({ graphFrame, testRepo, workbox }) => {
   }).toPass();
 });
 
-test("undo and redo via operation log toolbar buttons", async ({ graphFrame, testRepo, workbox }) => {
+test("undo and redo via operation log toolbar buttons", async ({ graphFrame, opLog, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(3);
 
-  const opLogHeader = workbox.getByRole("button", { name: /Operation Log/ });
-  const isExpanded = await opLogHeader.getAttribute("aria-expanded");
-  if (isExpanded === "false") {
-    await opLogHeader.click();
-  }
-
-  const opLogPaneHeader = workbox.locator(".pane-header", { hasText: "Operation Log" });
-
+  const opLogPaneHeader = opLog.locator(".pane-header");
   const undoButton = opLogPaneHeader.getByRole("button", { name: "Undo" });
   await undoButton.click();
 

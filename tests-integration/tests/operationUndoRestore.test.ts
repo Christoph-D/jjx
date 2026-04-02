@@ -1,22 +1,13 @@
 import { test, expect } from "./baseTest";
 
-test("undo a specific operation from operation log tree view", async ({ graphFrame, testRepo, workbox }) => {
+test("undo a specific operation from operation log tree view", async ({ graphFrame, opLog, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(4);
 
-  const opLogHeader = workbox.getByRole("button", { name: /Operation Log/ });
-  const isExpanded = await opLogHeader.getAttribute("aria-expanded");
-  if (isExpanded === "false") {
-    await opLogHeader.click();
-  }
-
-  const opLogPane = workbox
-    .locator(".pane")
-    .filter({ has: workbox.locator(".pane-header", { hasText: "Operation Log" }) });
-  const paneBody = opLogPane.locator(".pane-body");
+  const paneBody = opLog.locator(".pane-body");
   const treeItems = paneBody.locator('[role="treeitem"]');
   await expect(treeItems.first()).toBeVisible();
 
@@ -34,7 +25,7 @@ test("undo a specific operation from operation log tree view", async ({ graphFra
   }).toPass();
 });
 
-test("restore repo to a specific operation from operation log tree view", async ({ graphFrame, testRepo, workbox }) => {
+test("restore repo to a specific operation from operation log tree view", async ({ graphFrame, opLog, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "commit A");
   await testRepo.commitFile("a.txt", "content b", "commit B");
   await testRepo.commitFile("a.txt", "content c", "commit C");
@@ -42,16 +33,7 @@ test("restore repo to a specific operation from operation log tree view", async 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
 
-  const opLogHeader = workbox.getByRole("button", { name: /Operation Log/ });
-  const isExpanded = await opLogHeader.getAttribute("aria-expanded");
-  if (isExpanded === "false") {
-    await opLogHeader.click();
-  }
-
-  const opLogPane = workbox
-    .locator(".pane")
-    .filter({ has: workbox.locator(".pane-header", { hasText: "Operation Log" }) });
-  const paneBody = opLogPane.locator(".pane-body");
+  const paneBody = opLog.locator(".pane-body");
   const treeItems = paneBody.locator('[role="treeitem"]');
   await expect(treeItems.first()).toBeVisible();
 

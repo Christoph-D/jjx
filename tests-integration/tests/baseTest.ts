@@ -1,4 +1,4 @@
-import { test as base, type Page, type Frame, _electron, expect as pwExpect } from "@playwright/test";
+import { test as base, type Page, type Frame, _electron, expect as pwExpect, Locator } from "@playwright/test";
 import { getVscodePath } from "../globalSetup";
 import { expect } from "@playwright/test";
 export { expect };
@@ -18,6 +18,7 @@ type TestFixtures = TestOptions & {
   cachePath: string;
   workbox: Page;
   graphFrame: Frame;
+  opLog: Locator;
   testRepo: TestRepo;
   userDataDir: string;
 };
@@ -213,6 +214,18 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await increaseJJVisibleSize(workbox);
 
     await use(graphFrame!);
+  },
+
+  opLog: async ({ workbox }, use) => {
+    const opLogHeader = workbox.getByRole("button", { name: /Operation Log/ });
+    await opLogHeader.click();
+
+    const opLogPane = workbox
+      .locator(".pane")
+      .filter({ has: workbox.locator(".pane-header", { hasText: "Operation Log" }) });
+    await expect(opLogPane).toBeVisible();
+
+    await use(opLogPane);
   },
 });
 
