@@ -179,6 +179,44 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
   });
 });
 
+test("take screenshot of workspace labels", async ({ userDataDir, graphFrame, testRepo, workbox }) => {
+  await workbox.setViewportSize({ width: 1920, height: 1080 });
+  await workbox.mouse.move(0, 0);
+  await initializeSettings(userDataDir, ZOOM_LEVEL);
+  await testRepo.commitFile("initial.txt", "", "initial commit");
+
+  const workspace2Path = path.join(testRepo.repoPath, "workspace2");
+  await testRepo.jjCommand(["workspace", "add", workspace2Path]);
+  const workspace2 = new TestRepo(workspace2Path);
+  await workspace2.writeFile("some-file", "");
+  await workspace2.jjCommand(["describe", "-m", "experiment"]);
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+  await expect(nodes.filter({ hasText: "experiment" })).toBeVisible();
+
+  const graphHeader = workbox.getByRole("button", { name: /JJ Graph.*Section/i }).first();
+  const headerBox = await graphHeader.boundingBox();
+  if (!headerBox) {
+    throw new Error("Graph header not found");
+  }
+
+  const sideBar = workbox.locator(".part.sidebar");
+  const sideBarBox = await sideBar.boundingBox();
+  if (!sideBarBox) {
+    throw new Error("Sidebar not found");
+  }
+
+  const clip = {
+    x: scaleToZoomLevel(headerBox.x),
+    y: scaleToZoomLevel(headerBox.y) + 1,
+    width: scaleToZoomLevel(sideBarBox.x + sideBarBox.width - headerBox.x),
+    height: 130,
+  };
+
+  await screenshot(workbox, "workspaces.png", clip);
+});
+
 test("take screenshot of oplog for readme", async ({ userDataDir, scmView, opLog, testRepo, workbox }) => {
   await initializeSettings(userDataDir, ZOOM_LEVEL);
   await initializeExampleRepo(testRepo);
