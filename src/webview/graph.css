@@ -37,6 +37,8 @@ body {
 
 /* Transition effects */
 .node-circle circle,
+.node-circle .diamond-path,
+.node-circle .elided-symbol,
 .connection-line {
   transition: opacity 0.2s ease-in-out;
 }
