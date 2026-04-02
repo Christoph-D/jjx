@@ -252,6 +252,8 @@ export class WorkspaceSourceControlManager {
     for (const subscription of this.subscriptions) {
       subscription.dispose();
     }
+    this.repoInfos = undefined;
+    this.repoSCMs = [];
   }
 }
 
