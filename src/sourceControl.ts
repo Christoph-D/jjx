@@ -500,29 +500,10 @@ export class RepositorySourceControlManager {
       this.status.workingCopy,
       false,
     );
-    this.workingCopyResourceGroup.resourceStates = this.status.fileStatuses.map((fileStatus) => {
-      const workingCopyUri = vscode.Uri.file(fileStatus.path);
-      const isConflicted = this.status?.conflictedFiles?.has(fileStatus.path) ?? false;
-      const beforeUri =
-        fileStatus.type === "A"
-          ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
-          : toJJUri(vscode.Uri.file(fileStatus.path), { diffOriginalRev: "@" });
-      return {
-        resourceUri: workingCopyUri,
-        decorations: {
-          strikeThrough: fileStatus.type === "D",
-          tooltip: path.basename(fileStatus.file),
-        },
-        command: getResourceStateCommand(
-          fileStatus,
-          beforeUri,
-          workingCopyUri,
-          "(Working Copy)",
-          fileClickAction,
-          workingCopyUri,
-          isConflicted,
-        ),
-      };
+    this.workingCopyResourceGroup.resourceStates = buildResourceStates(this.status.fileStatuses, {
+      diffTitleSuffix: "(Working Copy)",
+      fileClickAction,
+      conflictedFiles: this.status.conflictedFiles,
     });
     this.sourceControl.count = this.status.fileStatuses.length;
 
@@ -557,33 +538,11 @@ export class RepositorySourceControlManager {
 
       const showResult = this.parentShowResults.get(parentChange.changeId);
       if (showResult) {
-        parentChangeResourceGroup.resourceStates = showResult.fileStatuses.map((parentStatus) => {
-          const workingCopyUri = vscode.Uri.file(parentStatus.path);
-          const beforeUri =
-            parentStatus.type === "A"
-              ? toJJUri(vscode.Uri.file(parentStatus.path), { deleted: true })
-              : toJJUri(vscode.Uri.file(parentStatus.path), { diffOriginalRev: parentChange.changeId });
-          return {
-            resourceUri: toJJUri(workingCopyUri, {
-              rev: parentChange.changeId,
-            }),
-            decorations: {
-              strikeThrough: parentStatus.type === "D",
-              tooltip: path.basename(parentStatus.file),
-            },
-            command: getResourceStateCommand(
-              parentStatus,
-              beforeUri,
-              toJJUri(vscode.Uri.file(parentStatus.path), {
-                rev: parentChange.changeId,
-              }),
-              `(${parentChange.changeId.substring(0, 8)})`,
-              fileClickAction,
-              workingCopyUri,
-              this.conflictedFilesByChange.get(parentChange.changeId)?.has(parentStatus.path) ?? false,
-              parentChange.changeId,
-            ),
-          };
+        parentChangeResourceGroup.resourceStates = buildResourceStates(showResult.fileStatuses, {
+          changeId: parentChange.changeId,
+          diffTitleSuffix: `(${parentChange.changeId.substring(0, 8)})`,
+          fileClickAction,
+          conflictedFiles: this.conflictedFilesByChange.get(parentChange.changeId),
         });
       }
     }
@@ -610,30 +569,13 @@ export class RepositorySourceControlManager {
           "Selected Commit",
           this.selectedCommitShowResult.change,
         );
-        this.selectedCommitResourceGroup.resourceStates = this.selectedCommitShowResult.fileStatuses.map(
-          (fileStatus) => {
-            const workingCopyUri = vscode.Uri.file(fileStatus.path);
-            const beforeUri =
-              fileStatus.type === "A"
-                ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
-                : toJJUri(vscode.Uri.file(fileStatus.path), { diffOriginalRev: changeId });
-            return {
-              resourceUri: toJJUri(workingCopyUri, { rev: changeId }),
-              decorations: {
-                strikeThrough: fileStatus.type === "D",
-                tooltip: path.basename(fileStatus.file),
-              },
-              command: getResourceStateCommand(
-                fileStatus,
-                beforeUri,
-                toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }),
-                `(${changeId.substring(0, 8)})`,
-                fileClickAction,
-                workingCopyUri,
-                this.conflictedFilesByChange.get(changeId)?.has(fileStatus.path) ?? false,
-                changeId,
-              ),
-            };
+        this.selectedCommitResourceGroup.resourceStates = buildResourceStates(
+          this.selectedCommitShowResult.fileStatuses,
+          {
+            changeId,
+            diffTitleSuffix: `(${changeId.substring(0, 8)})`,
+            fileClickAction,
+            conflictedFiles: this.conflictedFilesByChange.get(changeId),
           },
         );
       }
@@ -685,6 +627,46 @@ export class RepositorySourceControlManager {
     }
     this.selectedCommitResourceGroup?.dispose();
   }
+}
+
+function buildResourceStates(
+  fileStatuses: FileStatus[],
+  options: {
+    changeId?: string;
+    diffTitleSuffix: string;
+    fileClickAction: "diff" | "at-revision" | "working-copy";
+    conflictedFiles: Set<string> | undefined;
+  },
+): vscode.SourceControlResourceState[] {
+  const { changeId, diffTitleSuffix, fileClickAction, conflictedFiles } = options;
+  const diffOriginalRev = changeId ?? "@";
+
+  return fileStatuses.map((fileStatus) => {
+    const workingCopyUri = vscode.Uri.file(fileStatus.path);
+    const isConflicted = conflictedFiles?.has(fileStatus.path) ?? false;
+    const beforeUri =
+      fileStatus.type === "A"
+        ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
+        : toJJUri(vscode.Uri.file(fileStatus.path), { diffOriginalRev });
+    const afterUri = changeId ? toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }) : workingCopyUri;
+    return {
+      resourceUri: afterUri,
+      decorations: {
+        strikeThrough: fileStatus.type === "D",
+        tooltip: path.basename(fileStatus.file),
+      },
+      command: getResourceStateCommand(
+        fileStatus,
+        beforeUri,
+        afterUri,
+        diffTitleSuffix,
+        fileClickAction,
+        workingCopyUri,
+        isConflicted,
+        changeId,
+      ),
+    };
+  });
 }
 
 function getResourceStateCommand(
