@@ -70,7 +70,8 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 
 ### 🔀 Divergent changes
 
-- Show divergent changes in the graph and change view
+- Show divergent changes in the graph and change view  
+  ![divergent commits](images/divergent-commits.png)
 - Allow all meaningful operations on divergent changes
 
 ### 🙈 Hidden changes

@@ -245,6 +245,41 @@ test("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, 
   });
 });
 
+test("take screenshot of divergent commits", async ({ userDataDir, scmView, graphFrame, testRepo, workbox }) => {
+  await workbox.setViewportSize({ width: 1920, height: 1080 });
+  await initializeSettings(userDataDir, ZOOM_LEVEL);
+
+  await testRepo.writeFile("file.txt", "content");
+  await testRepo.jjCommand(["describe", "-m", "commit"]);
+  const initialCommit = await testRepo.commitFile("file.txt", "new content", "commit");
+  await testRepo.jjCommand(["new", `${initialCommit}/1`]);
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+  await expect(nodes.filter({ hasText: "/0" })).toBeVisible();
+
+  const graphHeader = workbox.getByRole("button", { name: /JJ Graph.*Section/i }).first();
+  const headerBox = await graphHeader.boundingBox();
+  if (!headerBox) {
+    throw new Error("Graph header not found");
+  }
+
+  const sideBar = workbox.locator(".part.sidebar");
+  const sideBarBox = await sideBar.boundingBox();
+  if (!sideBarBox) {
+    throw new Error("Sidebar not found");
+  }
+
+  const clip = {
+    x: scaleToZoomLevel(headerBox.x),
+    y: scaleToZoomLevel(headerBox.y) + 1,
+    width: scaleToZoomLevel(sideBarBox.x + sideBarBox.width - headerBox.x),
+    height: 130,
+  };
+
+  await screenshot(workbox, "divergent-commits.png", clip);
+});
+
 test("take screenshot of workspace labels", async ({ userDataDir, graphFrame, testRepo, workbox }) => {
   await workbox.setViewportSize({ width: 1920, height: 1080 });
   await workbox.mouse.move(0, 0);
