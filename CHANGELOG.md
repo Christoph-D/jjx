@@ -1,5 +1,20 @@
 # Change Log
 
+## 1.6.2
+
+### Bug Fixes
+
+- Restrict diff to requested file instead of diffing all files, significantly improving diff performance
+- Cancel in-flight operations when the extension deactivates
+- Fix a graph view glitch: Synchronize dimming transition speed across all graph elements (diamonds and elided symbols)
+
+### Internal
+
+- Automate screenshots for divergent changes, conflicts, workspaces, and op log for the README file
+- Incrementally update repos in refresh() instead of full teardown/rebuild
+- Break up monolithic activate() into modules
+- More code cleanup
+
 ## 1.6.1
 
 This is a bug fix release. See 1.6.0 for the full release notes.
