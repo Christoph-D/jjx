@@ -7,6 +7,9 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
+  use: {
+    screenshot: "only-on-failure",
+  },
   globalSetup: "../globalSetup",
   testMatch: "screenshot.test.ts",
 });

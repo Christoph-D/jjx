@@ -18,6 +18,7 @@ type TestFixtures = TestOptions & {
   cachePath: string;
   workbox: Page;
   graphFrame: Frame;
+  scmView: Locator;
   opLog: Locator;
   testRepo: TestRepo;
   userDataDir: string;
@@ -187,13 +188,16 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await electronApp.close();
   },
 
-  graphFrame: async ({ workbox }, use) => {
+  scmView: async ({ workbox }, use) => {
     await workbox.locator(".monaco-workbench").waitFor();
-
     await workbox.getByRole("tab", { name: /Source Control/i }).click();
-    await workbox.locator(".scm-view").first().waitFor();
+    const scmView = workbox.locator(".sidebar").filter({ hasText: /JJ Graph/i });
+    await scmView.waitFor();
+    await use(scmView);
+  },
 
-    const graphHeader = workbox.getByRole("button", { name: /JJ Graph/i });
+  graphFrame: async ({ scmView, workbox }, use) => {
+    const graphHeader = scmView.getByRole("button", { name: /JJ Graph/i });
     const isExpanded = await graphHeader.getAttribute("aria-expanded");
     if (isExpanded === "false") {
       await graphHeader.click();
@@ -216,15 +220,11 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(graphFrame!);
   },
 
-  opLog: async ({ workbox }, use) => {
-    const opLogHeader = workbox.getByRole("button", { name: /Operation Log/ });
+  opLog: async ({ scmView }, use) => {
+    const opLogHeader = scmView.getByRole("button", { name: /Operation Log/ });
     await opLogHeader.click();
-
-    const opLogPane = workbox
-      .locator(".pane")
-      .filter({ has: workbox.locator(".pane-header", { hasText: "Operation Log" }) });
+    const opLogPane = scmView.locator(".pane", { hasText: "Operation Log" });
     await expect(opLogPane).toBeVisible();
-
     await use(opLogPane);
   },
 });

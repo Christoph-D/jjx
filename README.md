@@ -94,7 +94,7 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 ### 🔄 Operation management
 
 - Browse the operations log with quick undo/redo buttons  
-  ![oplog](images/undo-redo.png)
+  ![oplog](images/oplog.png)
 - Undo any jj operation or restore repository to a previous state
 
 ## 📋 Prerequisites

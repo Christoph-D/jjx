@@ -1,4 +1,4 @@
-import { test, expect } from "../tests/baseTest";
+import { test, expect, TestRepo } from "../tests/baseTest";
 import path from "path";
 import fs from "fs/promises";
 import { execSync } from "child_process";
@@ -42,9 +42,23 @@ async function screenshot(
   execSync(`convert "${TEMP_SCREENSHOT}" -strip -define png:compression-level=9 "${outputPath}"`);
 }
 
-test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame, testRepo, workbox }) => {
-  await initializeSettings(userDataDir, ZOOM_LEVEL);
+async function screenshotClipAfter(
+  workbox: Page,
+  filename: string,
+  clip: { x: number; y: number; width: number; height: number },
+) {
+  const fullScreenshot = await workbox.screenshot();
+  const fullScreenshotPath = "/tmp/jjx-full-screenshot.png";
+  await fs.writeFile(fullScreenshotPath, fullScreenshot);
+  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  const outputPath = path.join(OUTPUT_DIR, filename);
+  const { x, y, width, height } = clip;
+  execSync(
+    `convert "${fullScreenshotPath}" -crop ${width}x${height}+${x}+${y} +repage -strip -define png:compression-level=9 "${outputPath}"`,
+  );
+}
 
+async function initializeExampleRepo(testRepo: TestRepo) {
   await testRepo.commitFile("a1", "", "Elided commit");
   const elidedCommit = await testRepo.commitFile("a2", "", "Old change");
   await testRepo.commitFile("a2", "", "Elided commit");
@@ -66,7 +80,11 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
   await testRepo.commitFile("f", "", "merge into main");
   await testRepo.commitFile("g", "", "fix: Critical bugfix");
   await testRepo.commitFile("h", "", "docs: Prepare for release");
+}
 
+test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame, testRepo, workbox }) => {
+  await initializeSettings(userDataDir, ZOOM_LEVEL);
+  await initializeExampleRepo(testRepo);
   await workbox.mouse.move(0, 0);
 
   const nodes = graphFrame.locator("#nodes > div");
@@ -159,4 +177,62 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
     width: 390,
     height: 390,
   });
+});
+
+test("take screenshot of oplog for readme", async ({ userDataDir, scmView, opLog, testRepo, workbox }) => {
+  await initializeSettings(userDataDir, ZOOM_LEVEL);
+  await initializeExampleRepo(testRepo);
+
+  // Click elsewhere to remove the highlight frame around the op log header
+  const scmViewTitle = scmView.locator(".title-label");
+  await scmViewTitle.click();
+
+  // Make the op log larger
+  const sash = workbox.locator(".monaco-sash.horizontal.maximum").nth(1);
+  const sashBox = await sash.boundingBox();
+  if (!sashBox) {
+    throw new Error("Failed to resize op log vertically");
+  }
+  const sashCenterX = sashBox.x + sashBox.width / 2;
+  const sashCenterY = sashBox.y + sashBox.height / 2;
+  await workbox.mouse.move(sashCenterX, sashCenterY);
+  await workbox.mouse.down();
+  await workbox.mouse.move(sashCenterX, sashCenterY - 300);
+  await workbox.mouse.up();
+
+  const sashVertical = workbox.locator(".monaco-sash.vertical").nth(1);
+  const sashVBox = await sashVertical.boundingBox();
+  if (!sashVBox) {
+    throw new Error("Failed to resize op log horizontally");
+  }
+  const sashVCenterX = sashVBox.x + sashVBox.width / 2;
+  const sashVCenterY = sashVBox.y + sashVBox.height / 2;
+  await workbox.mouse.move(sashVCenterX, sashVCenterY);
+  await workbox.mouse.down();
+  await workbox.mouse.move(sashVCenterX + 300, sashVCenterY);
+  await workbox.mouse.up();
+
+  const opLogEntries = opLog.locator(".pane-body").getByRole("treeitem").filter({ hasText: "jj commit -m 'docs" });
+  await expect(opLogEntries).toHaveCount(2);
+  await opLogEntries.first().hover();
+
+  const opLogBox = await opLog.boundingBox();
+  if (!opLogBox) {
+    throw new Error("Op log not found");
+  }
+
+  const sideBar = workbox.locator(".part.sidebar");
+  const sideBarBox = await sideBar.boundingBox();
+  if (!sideBarBox) {
+    throw new Error("Sidebar not found");
+  }
+
+  const clip = {
+    x: scaleToZoomLevel(opLogBox.x),
+    y: scaleToZoomLevel(opLogBox.y) + 2,
+    width: scaleToZoomLevel(sideBarBox.x + sideBarBox.width - opLogBox.x),
+    height: 90,
+  };
+
+  await screenshotClipAfter(workbox, "oplog.png", clip);
 });
