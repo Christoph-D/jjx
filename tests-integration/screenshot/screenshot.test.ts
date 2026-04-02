@@ -179,6 +179,72 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
   });
 });
 
+test("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, testRepo, workbox }) => {
+  const sash = scmView.locator(".monaco-sash.horizontal").first();
+  const sashBox = await sash.boundingBox();
+  if (!sashBox) {
+    throw new Error("Failed to resize jj graph");
+  }
+  const sashCenterX = sashBox.x + sashBox.width / 2;
+  const sashCenterY = sashBox.y + sashBox.height / 2;
+  await workbox.mouse.move(sashCenterX, sashCenterY);
+  await workbox.mouse.down();
+  await workbox.mouse.move(sashCenterX, sashCenterY - 190);
+  await workbox.mouse.up();
+  await workbox.mouse.move(0, 0);
+
+  await workbox.setViewportSize({ width: 1920, height: 1080 });
+  await initializeSettings(userDataDir, ZOOM_LEVEL);
+
+  const initialCommit = await testRepo.commit("initial commit");
+  const commitA = await testRepo.commitFile("file.txt", "content: A", "write A");
+  await testRepo.jjCommand(["new", initialCommit]);
+  await testRepo.commitFile("file.txt", "content: B", "write B");
+  await testRepo.jjCommand(["rebase", "-o", commitA]);
+  await testRepo.jjCommand(["abandon", initialCommit]);
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+  await expect(nodes.locator(".conflict-indicator")).toHaveCount(2);
+
+  const conflicts = scmView.getByRole("treeitem").filter({ hasText: "file.txt" });
+  await expect(conflicts).toHaveCount(2);
+
+  const graphHeader = workbox.getByRole("button", { name: /JJ Graph.*Section/i }).first();
+  const headerBox = await graphHeader.boundingBox();
+  if (!headerBox) {
+    throw new Error("Graph header not found");
+  }
+
+  const sideBar = workbox.locator(".part.sidebar");
+  const sideBarBox = await sideBar.boundingBox();
+  if (!sideBarBox) {
+    throw new Error("Sidebar not found");
+  }
+
+  const clip = {
+    x: scaleToZoomLevel(headerBox.x),
+    y: 45,
+    width: scaleToZoomLevel(sideBarBox.x + sideBarBox.width - headerBox.x),
+    height: 350,
+  };
+
+  await screenshot(workbox, "conflicts.png", clip);
+
+  await workbox.setViewportSize({ width: 1000, height: 600 });
+
+  conflicts.first().click();
+  const mergeEditorLeft = workbox.locator('.monaco-editor[role="code"][data-uri*="left_file.txt"]');
+  await expect(mergeEditorLeft).toBeVisible();
+
+  await screenshot(workbox, "merge-editor.png", {
+    x: 0,
+    y: 0,
+    width: 1000,
+    height: 600,
+  });
+});
+
 test("take screenshot of workspace labels", async ({ userDataDir, graphFrame, testRepo, workbox }) => {
   await workbox.setViewportSize({ width: 1920, height: 1080 });
   await workbox.mouse.move(0, 0);
