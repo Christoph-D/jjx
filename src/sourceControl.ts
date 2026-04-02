@@ -8,7 +8,7 @@ import { logger } from "./logger";
 import { anyEvent, filterEvent, isDescendant } from "./utils";
 import { JJFileSystemProvider } from "./fileSystemProvider";
 import { getConfigArgs, getJJPath } from "./config";
-import { collectProcessOutput, spawnJJ } from "./process";
+import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
 import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
 import { StaleWorkingCopyError } from "./errors";
@@ -67,6 +67,7 @@ export class WorkspaceSourceControlManager {
     dispose(): unknown;
   }[] = [];
   fileSystemProvider: JJFileSystemProvider;
+  private cancellationTokenSource = new vscode.CancellationTokenSource();
 
   private _onDidRepoUpdate = new vscode.EventEmitter<{
     repoSCM: RepositorySourceControlManager;
@@ -86,7 +87,9 @@ export class WorkspaceSourceControlManager {
     );
   }
 
-  async refresh() {
+  async refresh(token?: vscode.CancellationToken) {
+    const effectiveToken = token ?? this.cancellationTokenSource.token;
+
     const newRepoInfos = new Map<
       string,
       {
@@ -96,9 +99,18 @@ export class WorkspaceSourceControlManager {
       }
     >();
     for (const workspaceFolder of vscode.workspace.workspaceFolders || []) {
+      if (effectiveToken.isCancellationRequested) {
+        return false;
+      }
       try {
         const jjPath = await getJJPath(workspaceFolder.uri.fsPath);
+        if (effectiveToken.isCancellationRequested) {
+          return false;
+        }
         await checkJJVersion(jjPath.filepath);
+        if (effectiveToken.isCancellationRequested) {
+          return false;
+        }
         const jjConfigArgs = getConfigArgs(extensionDir);
 
         const repoRoot = (
@@ -107,10 +119,14 @@ export class WorkspaceSourceControlManager {
               timeout: TIMEOUTS.DEFAULT,
               cwd: workspaceFolder.uri.fsPath,
             }),
+            effectiveToken,
           )
         ).stdout
           .toString()
           .trim();
+        if (effectiveToken.isCancellationRequested) {
+          return false;
+        }
 
         const repoUri = vscode.Uri.file(repoRoot.replace(/^\\\\\?\\UNC\\/, "\\\\")).toString();
 
@@ -122,6 +138,9 @@ export class WorkspaceSourceControlManager {
           });
         }
       } catch (e) {
+        if (e instanceof CancelledError) {
+          return false;
+        }
         if (e instanceof Error && e.message.includes("no jj repo in")) {
           logger.debug(`No jj repo in ${workspaceFolder.uri.fsPath}`);
         } else {
@@ -181,6 +200,9 @@ export class WorkspaceSourceControlManager {
 
     const updatedRepoSCMs = [...oldRepoSCMsByKey.values()];
     for (const key of keysToRecreate) {
+      if (effectiveToken.isCancellationRequested) {
+        break;
+      }
       const { repoRoot, jjPath, jjConfigArgs } = newRepoInfos.get(key)!;
       logger.info(`Initializing jjx in workspace ${key}. Using jj at ${jjPath.filepath} (${jjPath.source}).`);
       const repoSCM = new RepositorySourceControlManager(
@@ -200,7 +222,6 @@ export class WorkspaceSourceControlManager {
       updatedRepoSCMs.push(repoSCM);
     }
     this.repoSCMs = updatedRepoSCMs;
-
     return isAnyRepoChanged;
   }
 
@@ -264,6 +285,8 @@ export class WorkspaceSourceControlManager {
   }
 
   dispose() {
+    this.cancellationTokenSource.cancel();
+    this.cancellationTokenSource.dispose();
     for (const subscription of this.repoSCMs) {
       subscription.dispose();
     }
@@ -304,6 +327,7 @@ export class RepositorySourceControlManager {
   selectedCommitChangeId: string | undefined;
   repository: JJRepository;
   checkForUpdatesPromise: Promise<void> | undefined;
+  private cancellationTokenSource = new vscode.CancellationTokenSource();
 
   private _onDidUpdate = new vscode.EventEmitter<void>();
   readonly onDidUpdate: vscode.Event<void> = this._onDidUpdate.event;
@@ -405,9 +429,15 @@ export class RepositorySourceControlManager {
     this.sourceControl.inputBox.placeholder = "Commit Message... (Ctrl+Enter or Shift+Ctrl+Enter)";
   }
 
-  async checkForUpdates() {
+  async checkForUpdates(token?: vscode.CancellationToken) {
+    const effectiveToken = token ?? this.cancellationTokenSource.token;
     if (!this.checkForUpdatesPromise) {
-      this.checkForUpdatesPromise = this.checkForUpdatesUnsafe();
+      this.checkForUpdatesPromise = this.checkForUpdatesUnsafe(effectiveToken).catch((e) => {
+        if (e instanceof CancelledError) {
+          return;
+        }
+        throw e;
+      });
       try {
         await this.checkForUpdatesPromise;
       } finally {
@@ -421,16 +451,25 @@ export class RepositorySourceControlManager {
   /**
    * This should never be called concurrently.
    */
-  async checkForUpdatesUnsafe() {
+  async checkForUpdatesUnsafe(token: vscode.CancellationToken) {
     let latestOperationId: string;
     try {
-      latestOperationId = await this.repository.getLatestOperationId(false);
+      latestOperationId = await this.repository.getLatestOperationId(false, token);
+      if (token.isCancellationRequested) {
+        return;
+      }
       this.repository.resetAutoUpdateStaleAttempted();
     } catch (error) {
+      if (error instanceof CancelledError) {
+        return;
+      }
       if (error instanceof StaleWorkingCopyError) {
-        const didAutoUpdate = await this.repository.tryAutoUpdateStale();
+        const didAutoUpdate = await this.repository.tryAutoUpdateStale(token);
+        if (token.isCancellationRequested) {
+          return;
+        }
         if (didAutoUpdate) {
-          await this.checkForUpdatesUnsafe();
+          await this.checkForUpdatesUnsafe(token);
           return;
         }
         // Need to update the graph view to show the stale state.
@@ -438,24 +477,36 @@ export class RepositorySourceControlManager {
       }
       throw error;
     }
+    if (token.isCancellationRequested) {
+      return;
+    }
     if (this.operationId !== latestOperationId) {
       this.operationId = latestOperationId;
-      const status = await this.repository.getStatus();
+      const status = await this.repository.getStatus(false, token);
 
-      await this.updateState(status);
+      if (token.isCancellationRequested) {
+        return;
+      }
+      await this.updateState(status, token);
+      if (token.isCancellationRequested) {
+        return;
+      }
       this.render();
 
       this._onDidUpdate.fire(undefined);
     }
   }
 
-  async updateState(status: RepositoryStatus) {
+  async updateState(status: RepositoryStatus, token: vscode.CancellationToken) {
     const newTrackedFiles = new Set<string>();
     const newParentShowResults = new Map<string, Show>();
     const newFileStatusesByChange = new Map<string, FileStatus[]>([["@", status.fileStatuses]]);
     const newConflictedFilesByChange = new Map<string, Set<string>>([["@", status.conflictedFiles]]);
 
-    const trackedFilesList = await this.repository.fileList();
+    const trackedFilesList = await this.repository.fileList(token);
+    if (token.isCancellationRequested) {
+      return;
+    }
     for (const t of trackedFilesList) {
       const pathParts = t.split(path.sep);
       let currentPath = this.repositoryRoot + path.sep;
@@ -468,11 +519,14 @@ export class RepositorySourceControlManager {
 
     const parentShowPromises = status.parentChanges.map(async (parentChange) => {
       const rev = getRevFromChange(parentChange);
-      const showResult = await this.repository.show(rev);
+      const showResult = await this.repository.show(rev, token);
       return { changeId: parentChange.changeId, showResult };
     });
 
     const parentShowResultsArray = await Promise.all(parentShowPromises);
+    if (token.isCancellationRequested) {
+      return;
+    }
 
     for (const { changeId, showResult } of parentShowResultsArray) {
       newParentShowResults.set(changeId, showResult);
@@ -633,6 +687,8 @@ export class RepositorySourceControlManager {
   }
 
   dispose() {
+    this.cancellationTokenSource.cancel();
+    this.cancellationTokenSource.dispose();
     if (this.repoWatcherTimer) {
       clearTimeout(this.repoWatcherTimer);
       this.repoWatcherTimer = undefined;

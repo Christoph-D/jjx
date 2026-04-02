@@ -161,20 +161,21 @@ export class JJRepository {
    * Note: this command may itself snapshot the working copy and add an operation to the log, in which case it will
    * return the new operation id.
    */
-  async getLatestOperationId(ignoreWorkingCopy: boolean = true) {
+  async getLatestOperationId(ignoreWorkingCopy: boolean = true, token?: vscode.CancellationToken) {
     const spawn = ignoreWorkingCopy ? this.spawnJJRead.bind(this) : this.spawnJJ.bind(this);
     return (
       await handleJJCommand(
         spawn(["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"], {
           cwd: this.repositoryRoot,
         }),
+        token,
       )
     )
       .toString()
       .trim();
   }
 
-  async getStatus(useCache = false): Promise<RepositoryStatus> {
+  async getStatus(useCache = false, token?: vscode.CancellationToken): Promise<RepositoryStatus> {
     if (useCache && this.statusCache) {
       return this.statusCache;
     }
@@ -185,6 +186,7 @@ export class JJRepository {
           timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
+        token,
       )
     ).toString();
 
@@ -251,13 +253,14 @@ export class JJRepository {
     return status;
   }
 
-  async fileList() {
+  async fileList(token?: vscode.CancellationToken) {
     return (
       await handleJJCommand(
         this.spawnJJRead(["file", "list"], {
           timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
+        token,
       )
     )
       .toString()
@@ -265,8 +268,8 @@ export class JJRepository {
       .split("\n");
   }
 
-  async show(rev: string) {
-    const results = await this.showAll([rev]);
+  async show(rev: string, token?: vscode.CancellationToken) {
+    const results = await this.showAll([rev], token);
     if (results.length > 1) {
       throw new Error("Multiple results found for the given revision.");
     }
@@ -276,13 +279,14 @@ export class JJRepository {
     return results[0];
   }
 
-  async showAll(revsets: string[]) {
+  async showAll(revsets: string[], token?: vscode.CancellationToken) {
     const output = (
       await handleJJCommand(
         this.spawnJJRead(["log", "-T", SHOW_TEMPLATE, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])], {
           timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),
+        token,
       )
     ).toString();
 
@@ -840,16 +844,17 @@ export class JJRepository {
     return this.gitFetchPromise;
   }
 
-  async updateStale(): Promise<void> {
+  async updateStale(token?: vscode.CancellationToken): Promise<void> {
     await handleJJCommand(
       this.spawnJJ(["workspace", "update-stale"], {
         timeout: TIMEOUTS.UPDATE_STALE,
         cwd: this.repositoryRoot,
       }),
+      token,
     );
   }
 
-  async tryAutoUpdateStale(): Promise<boolean> {
+  async tryAutoUpdateStale(token?: vscode.CancellationToken): Promise<boolean> {
     const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
     if (!config.get<boolean>("autoUpdateStaleWorkspace")) {
       return false;
@@ -859,7 +864,7 @@ export class JJRepository {
     }
     this.autoUpdateStaleAttempted = true;
     try {
-      await this.updateStale();
+      await this.updateStale(token);
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

@@ -1,9 +1,16 @@
 import spawn from "cross-spawn";
 import type { ChildProcess, SpawnOptions as NodeSpawnOptions } from "child_process";
+import * as vscode from "vscode";
 import { logger } from "./logger";
 import { getCommandTimeout } from "./config";
 import { convertJJErrors } from "./errors";
 import { getJjEditorEnv } from "./jjEditor";
+
+export class CancelledError extends Error {
+  constructor() {
+    super("Operation cancelled");
+  }
+}
 
 export type SpawnOptions = NodeSpawnOptions & { cwd: string };
 
@@ -18,10 +25,14 @@ export function killAllProcesses(): void {
   activeProcesses.clear();
 }
 
-export function collectProcessOutput(childProcess: ChildProcess): Promise<ProcessOutput> {
+export function collectProcessOutput(
+  childProcess: ChildProcess,
+  token?: vscode.CancellationToken,
+): Promise<ProcessOutput> {
   return new Promise((resolve, reject) => {
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
+    let settled = false;
 
     childProcess.stdout?.on("data", (data: Buffer) => {
       stdout.push(data);
@@ -32,28 +43,44 @@ export function collectProcessOutput(childProcess: ChildProcess): Promise<Proces
     });
 
     childProcess.on("error", (error: Error) => {
-      reject(new Error(`Spawning command failed: ${error.message}`));
+      if (!settled) {
+        settled = true;
+        reject(new Error(`Spawning command failed: ${error.message}`));
+      }
     });
 
     childProcess.on("close", (code, signal) => {
-      const stdoutBuf = Buffer.concat(stdout);
-      const stderrBuf = Buffer.concat(stderr);
-      if (code) {
-        reject(
-          new Error(
-            `Command failed with exit code ${code}.\nstdout: ${stdoutBuf.toString()}\nstderr: ${stderrBuf.toString()}`,
-          ),
-        );
-      } else if (signal) {
-        reject(
-          new Error(
-            `Command failed with signal ${signal}.\nstdout: ${stdoutBuf.toString()}\nstderr: ${stderrBuf.toString()}`,
-          ),
-        );
-      } else {
-        resolve({ stdout: stdoutBuf, stderr: stderrBuf });
+      if (!settled) {
+        settled = true;
+        const stdoutBuf = Buffer.concat(stdout);
+        const stderrBuf = Buffer.concat(stderr);
+        if (code) {
+          reject(
+            new Error(
+              `Command failed with exit code ${code}.\nstdout: ${stdoutBuf.toString()}\nstderr: ${stderrBuf.toString()}`,
+            ),
+          );
+        } else if (signal) {
+          reject(
+            new Error(
+              `Command failed with signal ${signal}.\nstdout: ${stdoutBuf.toString()}\nstderr: ${stderrBuf.toString()}`,
+            ),
+          );
+        } else {
+          resolve({ stdout: stdoutBuf, stderr: stderrBuf });
+        }
       }
     });
+
+    if (token) {
+      token.onCancellationRequested(() => {
+        if (!settled) {
+          settled = true;
+          childProcess.kill();
+          reject(new CancelledError());
+        }
+      });
+    }
   });
 }
 
@@ -73,8 +100,8 @@ export function spawnJJ(jjPath: string, args: string[], options: SpawnOptions) {
   return childProcess;
 }
 
-export function handleJJCommand(childProcess: ChildProcess): Promise<Buffer> {
-  return collectProcessOutput(childProcess)
+export function handleJJCommand(childProcess: ChildProcess, token?: vscode.CancellationToken): Promise<Buffer> {
+  return collectProcessOutput(childProcess, token)
     .catch(convertJJErrors)
     .then((output) => output.stdout);
 }
