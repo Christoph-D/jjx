@@ -131,11 +131,23 @@ export class WorkspaceSourceControlManager {
       }
     }
 
+    const oldRepoInfos = this.repoInfos;
+
+    const oldRepoSCMsByKey = new Map<string, RepositorySourceControlManager>();
+    for (const repoSCM of this.repoSCMs) {
+      const key = vscode.Uri.file(repoSCM.repositoryRoot.replace(/^\\\\\?\\UNC\\/, "\\\\")).toString();
+      oldRepoSCMsByKey.set(key, repoSCM);
+    }
+
+    const keysToRecreate = new Set<string>();
+    const keysToRemove = new Set<string>();
     let isAnyRepoChanged = false;
+
     for (const [key, value] of newRepoInfos) {
-      const oldValue = this.repoInfos?.get(key);
+      const oldValue = oldRepoInfos?.get(key);
       if (!oldValue) {
         isAnyRepoChanged = true;
+        keysToRecreate.add(key);
         logger.info(`Detected new jj repo in workspace: ${key}`);
       } else if (
         oldValue.jjPath.filepath !== value.jjPath.filepath ||
@@ -143,46 +155,52 @@ export class WorkspaceSourceControlManager {
         oldValue.repoRoot !== value.repoRoot
       ) {
         isAnyRepoChanged = true;
+        keysToRecreate.add(key);
         logger.info(`Detected change that requires reinitialization in workspace: ${key}`);
       }
     }
-    for (const key of this.repoInfos?.keys() || []) {
+    for (const key of oldRepoInfos?.keys() || []) {
       if (!newRepoInfos.has(key)) {
         isAnyRepoChanged = true;
+        keysToRemove.add(key);
         logger.info(`Detected jj repo removal in workspace: ${key}`);
       }
     }
+
     this.repoInfos = newRepoInfos;
     this.decorationProvider.removeStaleRepositories([...newRepoInfos.values()].map(({ repoRoot }) => repoRoot));
 
-    if (isAnyRepoChanged) {
-      const repoSCMs: RepositorySourceControlManager[] = [];
-      for (const [workspaceFolder, { repoRoot, jjPath, jjConfigArgs }] of newRepoInfos.entries()) {
-        logger.info(
-          `Initializing jjx in workspace ${workspaceFolder}. Using jj at ${jjPath.filepath} (${jjPath.source}).`,
-        );
-        const repoSCM = new RepositorySourceControlManager(
-          repoRoot,
-          this.decorationProvider,
-          this.fileSystemProvider,
-          jjPath.filepath,
-          jjConfigArgs,
-        );
-        repoSCM.onDidUpdate(
-          () => {
-            this._onDidRepoUpdate.fire({ repoSCM });
-          },
-          undefined,
-          repoSCM.subscriptions,
-        );
-        repoSCMs.push(repoSCM);
-      }
-
-      for (const repoSCM of this.repoSCMs) {
-        repoSCM.dispose();
-      }
-      this.repoSCMs = repoSCMs;
+    for (const key of keysToRemove) {
+      oldRepoSCMsByKey.get(key)?.dispose();
+      oldRepoSCMsByKey.delete(key);
     }
+    for (const key of keysToRecreate) {
+      oldRepoSCMsByKey.get(key)?.dispose();
+      oldRepoSCMsByKey.delete(key);
+    }
+
+    const updatedRepoSCMs = [...oldRepoSCMsByKey.values()];
+    for (const key of keysToRecreate) {
+      const { repoRoot, jjPath, jjConfigArgs } = newRepoInfos.get(key)!;
+      logger.info(`Initializing jjx in workspace ${key}. Using jj at ${jjPath.filepath} (${jjPath.source}).`);
+      const repoSCM = new RepositorySourceControlManager(
+        repoRoot,
+        this.decorationProvider,
+        this.fileSystemProvider,
+        jjPath.filepath,
+        jjConfigArgs,
+      );
+      repoSCM.onDidUpdate(
+        () => {
+          this._onDidRepoUpdate.fire({ repoSCM });
+        },
+        undefined,
+        repoSCM.subscriptions,
+      );
+      updatedRepoSCMs.push(repoSCM);
+    }
+    this.repoSCMs = updatedRepoSCMs;
+
     return isAnyRepoChanged;
   }
 
