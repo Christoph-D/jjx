@@ -979,11 +979,8 @@ export class JJRepository {
     const requestId = crypto.randomUUID();
     const pathPromise = expectDiffToolRequest(requestId);
 
+    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
     const childProcess = this.spawnJJRead(
-      // We don't pass the filepath to diff because we need the left folder to have all files,
-      // in case the file was renamed or copied. If we knew the status of the file, we could
-      // pass the previous filename in addition to the current filename upon seeing a rename or copy.
-      // We don't have the status though, which is why we're using `--summary` here.
       [
         "diff",
         "--summary",
@@ -992,6 +989,8 @@ export class JJRepository {
         `merge-tools.jjx-vscode-diff.program="${diffToolSh}"`,
         "-r",
         rev,
+        "--",
+        filepathToFileset(relativePath),
       ],
       {
         timeout: 10_000,

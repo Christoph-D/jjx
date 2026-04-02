@@ -113,10 +113,10 @@ export class JJFileSystemProvider implements FileSystemProvider {
     return new Disposable(() => {});
   }
 
-  async stat(uri: Uri): Promise<FileStat> {
+  stat(_uri: Uri): FileStat {
     return {
       type: FileType.File,
-      size: (await this.readFile(uri)).length,
+      size: 0,
       mtime: this.mtime,
       ctime: 0,
     };
