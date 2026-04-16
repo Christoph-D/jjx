@@ -3,10 +3,13 @@ import { test, expect } from "./baseTest";
 test("shows diff when clicking modified files", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.writeFile("deleted-first.txt", "Deleted first");
   await testRepo.writeFile("deleted-second.txt", "Deleted second");
+  await testRepo.writeFile("moved.txt", "Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n");
   await testRepo.commitFile("test.txt", "A", "Initial commit");
 
   await testRepo.writeFile("added-first.txt", "Added first");
   await testRepo.deleteFile("deleted-first.txt");
+  await testRepo.deleteFile("moved.txt");
+  await testRepo.writeFile("moved2.txt", "Line 1\nLine 2\nLine 3 changed\nLine 4\nLine 5\n");
   await testRepo.commitFile("test.txt", "B", "Second commit");
 
   await testRepo.writeFile("added-second.txt", "Added second");
@@ -45,6 +48,12 @@ test("shows diff when clicking modified files", async ({ graphFrame, testRepo, w
   // Click the second one (Parent Commit)
   await testFiles.nth(1).click();
   await validateDiff("A", "B");
+
+  // Moved file
+  const movedFile = scmView.getByRole("treeitem", { name: /moved2\.txt/ });
+  await expect(movedFile).toHaveCount(1);
+  await movedFile.click();
+  await validateDiff("Line 3", "Line 3 changed");
 
   // Deleted files
   const deletedFirstItems = scmView.getByRole("treeitem", { name: /deleted-first\.txt/ });

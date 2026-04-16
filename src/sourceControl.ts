@@ -719,7 +719,10 @@ function buildResourceStates(
     const beforeUri =
       fileStatus.type === "A"
         ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
-        : toJJUri(vscode.Uri.file(fileStatus.path), { diffOriginalRev });
+        : toJJUri(vscode.Uri.file(fileStatus.path), {
+            diffOriginalRev,
+            ...(fileStatus.renamedFrom ? { renamedFrom: fileStatus.renamedFrom } : {}),
+          });
     const afterUri = changeId ? toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }) : workingCopyUri;
     return {
       resourceUri: afterUri,

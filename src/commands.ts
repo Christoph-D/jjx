@@ -254,7 +254,10 @@ export function registerPreInitCommands(state: ExtensionState): void {
       const beforeUri =
         fileStatus?.type === "A"
           ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
-          : toJJUri(vscode.Uri.file(filePath), { diffOriginalRev: changeId });
+          : toJJUri(vscode.Uri.file(filePath), {
+              diffOriginalRev: changeId,
+              ...(fileStatus?.renamedFrom ? { renamedFrom: fileStatus.renamedFrom } : {}),
+            });
       const afterUri =
         fileStatus?.type === "D"
           ? toJJUri(vscode.Uri.file(filePath), { deleted: true })

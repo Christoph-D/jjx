@@ -148,7 +148,8 @@ export class JJFileSystemProvider implements FileSystemProvider {
     this.cache.set(uri.toString(), cacheValue);
 
     if ("diffOriginalRev" in params) {
-      const originalContent = await repository.getDiffOriginal(params.diffOriginalRev, uri.fsPath);
+      const renamedFrom = "renamedFrom" in params ? params.renamedFrom : undefined;
+      const originalContent = await repository.getDiffOriginal(params.diffOriginalRev, uri.fsPath, renamedFrom);
       if (!originalContent) {
         try {
           const data = await repository.readFile(params.diffOriginalRev, uri.fsPath);

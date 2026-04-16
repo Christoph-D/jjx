@@ -970,7 +970,7 @@ export class JJRepository {
   /**
    * @returns undefined if the file was not modified in `rev`
    */
-  async getDiffOriginal(rev: string, filepath: string): Promise<Buffer | undefined> {
+  async getDiffOriginal(rev: string, filepath: string, renamedFrom?: string): Promise<Buffer | undefined> {
     const diffToolSh = getDiffToolPath();
     if (!diffToolSh) {
       throw new Error("Diff tool not initialized.");
@@ -980,6 +980,9 @@ export class JJRepository {
     const pathPromise = expectDiffToolRequest(requestId);
 
     const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    const filesetArgs = renamedFrom
+      ? [filepathToFileset(renamedFrom.replace(/\\/g, "/")), filepathToFileset(relativePath)]
+      : [filepathToFileset(relativePath)];
     const childProcess = this.spawnJJRead(
       [
         "diff",
@@ -990,7 +993,7 @@ export class JJRepository {
         "-r",
         rev,
         "--",
-        filepathToFileset(relativePath),
+        ...filesetArgs,
       ],
       {
         timeout: 10_000,

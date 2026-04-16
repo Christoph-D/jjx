@@ -4,6 +4,7 @@ import { type } from "arktype";
 const RevUriParams = type({ rev: "string" });
 const DiffOriginalRevUriParams = type({
   diffOriginalRev: "string",
+  "renamedFrom?": "string",
 });
 const DeletedUriParams = type({ deleted: "boolean" });
 const JJUriParams = RevUriParams.or(DiffOriginalRevUriParams).or(DeletedUriParams);
