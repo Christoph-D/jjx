@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.6.3
+
+### Bug Fixes
+
+- Fix diff of renamed files missing the left side of the diff
+
 ## 1.6.2
 
 ### Bug Fixes
