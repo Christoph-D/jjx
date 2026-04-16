@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, waitForSCMView } from "./baseTest";
 
 test("discard changes for a single file via inline button", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "original", "A");
@@ -6,14 +6,11 @@ test("discard changes for a single file via inline button", async ({ graphFrame,
   await testRepo.writeFile("a.txt", "modified");
   await testRepo.writeFile("b.txt", "new file");
 
-  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
+  await expect(graphFrame.locator("#nodes > div")).toHaveCount(3);
 
-  const scmView = workbox.locator(".scm-view").first();
-  await scmView.waitFor();
+  const scmView = await waitForSCMView(workbox, ["a.txt", "b.txt"], ["a.txt"]);
 
-  const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
-
-  const aFileItems = scmTree.getByRole("treeitem", { name: /^a\.txt/ });
+  const aFileItems = scmView.getByRole("treeitem", { name: /^a\.txt/ });
   await expect(aFileItems).toHaveCount(2);
   const aFileItem = aFileItems.first();
   await expect(aFileItem).toBeVisible();
@@ -29,6 +26,7 @@ test("discard changes for a single file via inline button", async ({ graphFrame,
   const confirmDiscard = dialog.getByRole("button", { name: "Discard" });
   await confirmDiscard.click();
 
+  const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
   await expect(scmTree.getByRole("treeitem", { name: /^a\.txt/ })).toHaveCount(1);
 
   await expect(async () => {
@@ -46,16 +44,14 @@ test("discard changes for entire resource group via inline button", async ({ gra
   await testRepo.writeFile("a.txt", "modified");
   await testRepo.writeFile("b.txt", "new file");
 
-  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
+  await expect(graphFrame.locator("#nodes > div")).toHaveCount(3);
 
-  const scmView = workbox.locator(".scm-view").first();
-  await scmView.waitFor();
+  const scmView = await waitForSCMView(workbox, ["a.txt", "b.txt"], ["a.txt"]);
 
-  const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
-  const bFileItem = scmTree.getByRole("treeitem", { name: /^b\.txt/ }).first();
+  const bFileItem = scmView.getByRole("treeitem", { name: /^b\.txt/ }).first();
   await expect(bFileItem).toBeVisible();
 
-  const workingCopyItem = scmTree.getByRole("treeitem", { name: "Working Copy" });
+  const workingCopyItem = scmView.getByRole("treeitem", { name: "Working Copy" });
   await expect(workingCopyItem).toBeVisible();
   await workingCopyItem.hover();
 
@@ -69,6 +65,7 @@ test("discard changes for entire resource group via inline button", async ({ gra
   const confirmDiscard = dialog.getByRole("button", { name: "Discard" });
   await confirmDiscard.click();
 
+  const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
   await expect(scmTree.getByRole("treeitem", { name: /^a\.txt/ })).toHaveCount(1);
   await expect(scmTree.getByRole("treeitem", { name: /^b\.txt/ })).toHaveCount(0);
 

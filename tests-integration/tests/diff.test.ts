@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, waitForSCMView } from "./baseTest";
 
 test("shows diff when clicking modified files", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.writeFile("deleted-first.txt", "Deleted first");
@@ -17,10 +17,9 @@ test("shows diff when clicking modified files", async ({ graphFrame, testRepo, w
   await testRepo.writeFile("test.txt", "C");
 
   await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
-  const scmView = workbox.locator(".scm-view").first();
-  await scmView.waitFor();
 
-  // Wait for both test.txt files to appear (Working Copy + Parent Commit)
+  const scmView = await waitForSCMView(workbox, ["test.txt"], ["test.txt"]);
+
   const testFiles = scmView.getByRole("treeitem", { name: /test\.txt/ });
   await expect(testFiles).toHaveCount(2);
 

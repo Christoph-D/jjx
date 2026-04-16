@@ -244,6 +244,63 @@ export async function handleEditor(workbox: Page, expectedContent: string, newCo
   await pwExpect(editor).toBeHidden();
 }
 
+export async function waitForSCMView(
+  workbox: Page,
+  workingCopy: string[],
+  firstParentCommit: string[],
+  selectedCommit?: string[],
+): Promise<Locator> {
+  const scmView = workbox.locator(".scm-view").first();
+  await scmView.waitFor();
+
+  const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
+
+  async function waitForFilesInSection(sectionLabel: string, files: string[]) {
+    if (files.length === 0) {
+      return;
+    }
+    await expect(async () => {
+      const sectionFiles = await scmTree.evaluate(
+        (el, args) => {
+          const items = Array.from(el.querySelectorAll("[role='treeitem']"));
+          let foundSection = false;
+          let inSection = false;
+          const foundFiles: string[] = [];
+          for (const item of items) {
+            const level = item.getAttribute("aria-level");
+            const label = item.getAttribute("aria-label") ?? "";
+            if (level === "1") {
+              if (!foundSection && label.includes(args.sectionLabel)) {
+                foundSection = true;
+                inSection = true;
+              } else {
+                inSection = false;
+              }
+            } else if (level === "2" && inSection) {
+              const fileName = label.split(",")[0].trim();
+              if (fileName) {
+                foundFiles.push(fileName);
+              }
+            }
+          }
+          return foundSection ? foundFiles : null;
+        },
+        { sectionLabel },
+      );
+      expect(sectionFiles).not.toBeNull();
+      expect(sectionFiles).toEqual(expect.arrayContaining(files));
+    }).toPass();
+  }
+
+  await waitForFilesInSection("Working Copy", workingCopy);
+  await waitForFilesInSection("Parent Commit", firstParentCommit);
+  if (selectedCommit) {
+    await waitForFilesInSection("Selected Commit", selectedCommit);
+  }
+
+  return scmView;
+}
+
 // Closes the chat window and increases the size of the jj graph
 async function increaseJJVisibleSize(workbox: Page) {
   // Hide auxiliary side bar (chat window)

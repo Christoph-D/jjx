@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, waitForSCMView } from "./baseTest";
 
 test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, workbox }) => {
   const baseChange = await testRepo.commitFile("test.txt", "A", "Base commit");
@@ -14,10 +14,8 @@ test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, wo
 
   await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
 
-  const scmView = workbox.locator(".scm-view").first();
-  await scmView.waitFor();
+  const scmView = await waitForSCMView(workbox, ["test.txt"], ["test.txt"]);
 
-  // Wait for the files to appear (two in the parent commits, one in the working copy)
   const conflictedFiles = scmView.getByRole("treeitem", { name: /test\.txt/ });
   await expect(conflictedFiles).toHaveCount(3);
   await conflictedFiles.first().click();
