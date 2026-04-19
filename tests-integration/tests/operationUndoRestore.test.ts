@@ -13,8 +13,8 @@ test("undo a specific operation from operation log tree view", async ({ graphFra
 
   const firstItem = treeItems.filter({ hasText: /^jj commit/ }).first();
   await firstItem.hover();
-  const undoBtn = firstItem.getByRole("button", { name: "Undo Operation" });
-  await undoBtn.click({ force: true });
+  const revertBtn = firstItem.getByRole("button", { name: "Revert Operation" });
+  await revertBtn.click({ force: true });
 
   await expect(nodes).toHaveCount(3);
 

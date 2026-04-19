@@ -927,10 +927,10 @@ export class JJRepository {
     return ret;
   }
 
-  async operationUndo(id: string) {
+  async operationRevert(id: string) {
     return (
       await handleJJCommand(
-        this.spawnJJ(["operation", "undo", id], {
+        this.spawnJJ(["operation", "revert", id], {
           timeout: TIMEOUTS.DEFAULT,
           cwd: this.repositoryRoot,
         }),

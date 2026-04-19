@@ -737,7 +737,7 @@ export function registerInitCommands(state: ExtensionState): void {
 
   registerCommand(
     context,
-    "jj.operationUndo",
+    "jj.operationRevert",
     async (item: unknown) => {
       if (!(item instanceof OperationTreeItem)) {
         throw new Error("OperationTreeItem expected");
@@ -746,11 +746,11 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repository) {
         throw new Error("Repository not found");
       }
-      await repository.operationUndo(item.operation.id);
+      await repository.operationRevert(item.operation.id);
       await state.operationLogManager!.refresh();
       await state.graphWebview?.refresh();
     },
-    { errorPrefix: "Failed to undo operation" },
+    { errorPrefix: "Failed to revert operation" },
   );
 
   registerCommand(

@@ -178,8 +178,8 @@
         "icon": "$(redo)"
       },
       {
-        "command": "jj.operationUndo",
-        "title": "Undo Operation",
+        "command": "jj.operationRevert",
+        "title": "Revert Operation",
         "category": "Jujutsu",
         "icon": "$(discard)"
       },
@@ -350,7 +350,7 @@
       ],
       "view/item/context": [
         {
-          "command": "jj.operationUndo",
+          "command": "jj.operationRevert",
           "when": "view == jjOperationLog",
           "group": "inline"
         },
@@ -549,7 +549,7 @@
           "when": "false"
         },
         {
-          "command": "jj.operationUndo",
+          "command": "jj.operationRevert",
           "when": "false"
         },
         {
