@@ -25,7 +25,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   }[] = [];
 
   public panel?: vscode.WebviewView;
-  public repository: JJRepository;
+  public repository: JJRepository | undefined;
   public selectedNodes: Set<string> = new Set();
   private elideOverride: boolean | null = null;
 
@@ -34,7 +34,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
   constructor(
     private readonly extensionUri: vscode.Uri,
-    repo: JJRepository,
+    repo: JJRepository | undefined,
     private readonly context: vscode.ExtensionContext,
   ) {
     this.repository = repo;
@@ -51,7 +51,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
   public async resolveWebviewView(webviewView: vscode.WebviewView): Promise<void> {
     this.panel = webviewView;
-    this.panel.title = `JJ Graph (${path.basename(this.repository.repositoryRoot)})`;
+    this.panel.title = this.repository
+      ? `JJ Graph (${path.basename(this.repository.repositoryRoot)})`
+      : "JJ Graph";
 
     webviewView.webview.options = {
       enableScripts: true,
@@ -69,19 +71,32 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       });
     });
 
+    if (!this.repository) {
+      const msg: ExtensionToWebviewMessage = { command: "showJJNotFoundState" };
+      webviewView.webview.postMessage(msg);
+    }
+
     webviewView.webview.onDidReceiveMessage(async (message: Message) => {
+      if (
+        !this.repository &&
+        message.command !== "selectChange" &&
+        message.command !== "reportError"
+      ) {
+        return;
+      }
+      const repo = this.repository!;
       switch (message.command) {
         case "editChange":
           try {
             const config = vscode.workspace.getConfiguration("jjx");
             const changeDoubleClickAction = config.get<string>("changeDoubleClickAction") || "edit";
             if (changeDoubleClickAction === "new") {
-              await this.repository.new(undefined, [message.changeId]);
+              await repo.new(undefined, [message.changeId]);
             } else {
               if (message.changeId === rootChangeId) {
                 return;
               }
-              await this.repository.editRetryImmutable(message.changeId);
+              await repo.editRetryImmutable(message.changeId);
             }
           } catch (error: unknown) {
             showErrorMessage("Failed to switch to change", error);
@@ -92,18 +107,18 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (message.changeId === rootChangeId) {
               return;
             }
-            const status = await this.repository.getStatus(true);
+            const status = await repo.getStatus(true);
             if (message.changeId === status.workingCopy.changeId) {
               return;
             }
-            await this.repository.editRetryImmutable(message.changeId);
+            await repo.editRetryImmutable(message.changeId);
           } catch (error: unknown) {
             showErrorMessage("Failed to switch to change", error);
           }
           break;
         case "newChildChange":
           try {
-            await this.repository.new(undefined, [message.changeId]);
+            await repo.new(undefined, [message.changeId]);
           } catch (error: unknown) {
             showErrorMessage("Failed to create new child change", error);
           }
@@ -115,7 +130,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "moveBookmark":
           try {
-            await this.repository.moveBookmark(message.bookmark, message.targetChangeId);
+            await repo.moveBookmark(message.bookmark, message.targetChangeId);
             await this.refresh();
           } catch (error: unknown) {
             if (error instanceof BookmarkBackwardsError) {
@@ -124,7 +139,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               });
               if (choice) {
                 try {
-                  await this.repository.moveBookmark(message.bookmark, message.targetChangeId, true);
+                  await repo.moveBookmark(message.bookmark, message.targetChangeId, true);
                   await this.refresh();
                 } catch (retryError: unknown) {
                   showErrorMessage("Failed to move bookmark", retryError);
@@ -144,7 +159,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (bookmarkName === undefined || bookmarkName === "") {
               return;
             }
-            await this.repository.createBookmark(bookmarkName, message.targetChangeId);
+            await repo.createBookmark(bookmarkName, message.targetChangeId);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to create bookmark", error);
@@ -159,7 +174,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (tagName === undefined || tagName === "") {
               return;
             }
-            await this.repository.createTag(tagName, message.targetChangeId);
+            await repo.createTag(tagName, message.targetChangeId);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to create tag", error);
@@ -175,7 +190,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (confirm !== "Delete") {
               return;
             }
-            await this.repository.deleteBookmark(message.bookmark);
+            await repo.deleteBookmark(message.bookmark);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to delete bookmark", error);
@@ -191,7 +206,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (confirm !== "Delete") {
               return;
             }
-            await this.repository.deleteTag(message.tag);
+            await repo.deleteTag(message.tag);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to delete tag", error);
@@ -199,7 +214,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "describeChange":
           try {
-            await this.repository.describeRetryImmutable(message.changeId);
+            await repo.describeRetryImmutable(message.changeId);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to describe change", error);
@@ -207,7 +222,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "absorbChange":
           try {
-            const absorbResult = await this.repository.absorb(message.changeId);
+            const absorbResult = await repo.absorb(message.changeId);
             if (absorbResult.stderr.toString().includes("Nothing changed.")) {
               vscode.window.showInformationMessage("Absorb: Nothing changed.");
             }
@@ -226,7 +241,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (confirm !== "Abandon") {
               return;
             }
-            await this.repository.abandonRetryImmutable([message.changeId]);
+            await repo.abandonRetryImmutable([message.changeId]);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to abandon change", error);
@@ -243,7 +258,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (confirm !== "Abandon") {
               return;
             }
-            await this.repository.abandonRetryImmutable(
+            await repo.abandonRetryImmutable(
               message.changeIds,
               "Some of the selected changes are immutable, are you sure?",
             );
@@ -254,7 +269,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "copyUrl":
           try {
-            const url = await this.repository.getCommitUrl(message.changeId);
+            const url = await repo.getCommitUrl(message.changeId);
             if (url) {
               await vscode.env.clipboard.writeText(url);
             } else {
@@ -266,7 +281,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "rebaseOnto":
           try {
-            await this.repository.rebaseRetryImmutable(
+            await repo.rebaseRetryImmutable(
               message.changeId,
               message.targetChangeId,
               "onto",
@@ -279,7 +294,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "rebaseAfter":
           try {
-            await this.repository.rebaseRetryImmutable(
+            await repo.rebaseRetryImmutable(
               message.changeId,
               message.targetChangeId,
               "after",
@@ -292,7 +307,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "rebaseBefore":
           try {
-            await this.repository.rebaseRetryImmutable(
+            await repo.rebaseRetryImmutable(
               message.changeId,
               message.targetChangeId,
               "before",
@@ -305,7 +320,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "squashInto":
           try {
-            await this.repository.squashRetryImmutable({
+            await repo.squashRetryImmutable({
               fromRev: message.changeId,
               toRev: message.targetChangeId,
             });
@@ -319,7 +334,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "duplicateBefore":
           try {
             const mode = message.command.replace("duplicate", "").toLowerCase() as "onto" | "after" | "before";
-            await this.repository.duplicate(message.changeId, message.targetChangeId, mode);
+            await repo.duplicate(message.changeId, message.targetChangeId, mode);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to duplicate", error);
@@ -330,7 +345,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "revertBefore":
           try {
             const mode = message.command.replace("revert", "").toLowerCase() as "onto" | "after" | "before";
-            await this.repository.revert(message.changeId, message.targetChangeId, mode);
+            await repo.revert(message.changeId, message.targetChangeId, mode);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to revert", error);
@@ -338,7 +353,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "updateStale":
           try {
-            await this.repository.updateStale();
+            await repo.updateStale();
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to update stale working copy", error);
@@ -346,7 +361,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "fetchDiffStats":
           try {
-            const stats = await this.repository.getDiffStats(message.changeId);
+            const stats = await repo.getDiffStats(message.changeId);
             const response: ExtensionToWebviewMessage = {
               command: "diffStatsResponse",
               changeId: message.changeId,
@@ -368,12 +383,12 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   }
 
   public async setSelectedRepository(repo: JJRepository) {
-    const prevRepo = this.repository;
+    const prevRoot = this.repository?.repositoryRoot;
     this.repository = repo;
     if (this.panel) {
       this.panel.title = `JJ Graph (${path.basename(this.repository.repositoryRoot)})`;
     }
-    if (prevRepo.repositoryRoot !== repo.repositoryRoot) {
+    if (prevRoot !== repo.repositoryRoot) {
       await this.refresh();
     }
   }
@@ -406,7 +421,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   }
 
   public async refresh() {
-    if (!this.panel) {
+    if (!this.panel || !this.repository) {
       return;
     }
 

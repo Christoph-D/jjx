@@ -9,6 +9,7 @@ import {
   offsetWidth,
   scrollY,
   isStale,
+  isJJNotFound,
   isDragging,
   selectedNodes,
   contextMenu,
@@ -24,6 +25,7 @@ import { ContextMenu } from "./components/context-menu";
 import { RebaseMenu } from "./components/rebase-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
+import { JJNotFoundState } from "./components/jj-not-found-state";
 import { ErrorBoundary } from "./components/error-boundary";
 import type { PendingGraphUpdate } from "./signals";
 import type { ExtensionToWebviewMessage } from "../../graph-protocol";
@@ -32,6 +34,7 @@ export function App() {
   useEffect(() => {
     const applyGraphUpdate = (message: PendingGraphUpdate) => {
       isStale.value = false;
+      isJJNotFound.value = false;
       const newChangeIds = new Set(message.changes.map((c) => c.changeId));
       const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(id)));
       selectedNodes.value = preserved;
@@ -66,6 +69,9 @@ export function App() {
           break;
         case "showStaleState":
           isStale.value = true;
+          break;
+        case "showJJNotFoundState":
+          isJJNotFound.value = true;
           break;
         case "diffStatsResponse": {
           const newCache = new Map(diffStatsCache.value);
@@ -103,7 +109,7 @@ export function App() {
 
   return (
     <ErrorBoundary>
-      {isStale.value ? <StaleState /> : <Graph />}
+      {isStale.value ? <StaleState /> : isJJNotFound.value ? <JJNotFoundState /> : <Graph />}
       <ContextMenu />
       <RebaseMenu />
       <Tooltip />

@@ -12,9 +12,8 @@ export class OperationLogManager {
     this.operationLogTreeView = window.createTreeView<OperationTreeItem>("jjOperationLog", {
       treeDataProvider: operationLogTreeDataProvider,
     });
-    this.operationLogTreeView.title = `Operation Log (${path.basename(
-      operationLogTreeDataProvider.getSelectedRepo().repositoryRoot,
-    )})`;
+    const repoRoot = operationLogTreeDataProvider.getSelectedRepo()?.repositoryRoot;
+    this.operationLogTreeView.title = `Operation Log${repoRoot ? ` (${path.basename(repoRoot)})` : ""}`;
     this.subscriptions.push(this.operationLogTreeView);
   }
 
@@ -50,7 +49,7 @@ export class OperationLogTreeDataProvider implements TreeDataProvider<unknown> {
 
   operationTreeItems: OperationTreeItem[] = [];
 
-  constructor(private selectedRepository: JJRepository) {}
+  constructor(private selectedRepository?: JJRepository) {}
 
   getTreeItem(element: TreeItem): TreeItem {
     return element;
@@ -61,10 +60,14 @@ export class OperationLogTreeDataProvider implements TreeDataProvider<unknown> {
   }
 
   async refresh() {
-    await this.selectedRepository.getLatestOperationId(false);
+    if (!this.selectedRepository) {
+      return;
+    }
+    const repo = this.selectedRepository;
+    await repo.getLatestOperationId(false);
     const prev = this.operationTreeItems;
-    const operations = await this.selectedRepository.operationLog();
-    this.operationTreeItems = operations.map((op) => new OperationTreeItem(op, this.selectedRepository.repositoryRoot));
+    const operations = await repo.operationLog();
+    this.operationTreeItems = operations.map((op) => new OperationTreeItem(op, repo.repositoryRoot));
     if (
       prev.length !== this.operationTreeItems.length ||
       !prev.every((op, i) => op.id === this.operationTreeItems[i].operation.id)
@@ -74,9 +77,9 @@ export class OperationLogTreeDataProvider implements TreeDataProvider<unknown> {
   }
 
   async setSelectedRepo(repo: JJRepository) {
-    const prevRepo = this.selectedRepository;
+    const prevRoot = this.selectedRepository?.repositoryRoot;
     this.selectedRepository = repo;
-    if (prevRepo.repositoryRoot !== repo.repositoryRoot) {
+    if (prevRoot !== repo.repositoryRoot) {
       await this.refresh();
     }
   }

@@ -10,7 +10,7 @@ import { killAllProcesses } from "./process";
 import { createExtensionState } from "./extensionState";
 import { registerPreInitCommands, registerInitCommands } from "./commands";
 import { registerAnnotations, registerStatusBar } from "./annotations";
-import { createPolling } from "./polling";
+import { createPolling, initInfrastructure } from "./polling";
 import { registerColocatedCheck } from "./colocatedCheck";
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -53,16 +53,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
   registerPreInitCommands(state);
 
-  const checkRepos = await registerColocatedCheck(state);
-
-  const { throttledPoll, scheduleNextPoll } = createPolling(state, checkRepos);
-  state.throttledPoll = throttledPoll;
-
   state.onInit(() => {
     registerInitCommands(state);
     registerAnnotations(state);
     registerStatusBar(state);
   });
+
+  initInfrastructure(state);
+
+  const checkRepos = await registerColocatedCheck(state);
+
+  const { throttledPoll, scheduleNextPoll } = createPolling(state, checkRepos);
+  state.throttledPoll = throttledPoll;
 
   void scheduleNextPoll();
 }

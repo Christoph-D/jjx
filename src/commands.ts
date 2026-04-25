@@ -694,7 +694,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (selectedNodes.length < 1) {
         return;
       }
-      await state.graphWebview!.repository.new(undefined, selectedNodes);
+      await state.graphWebview!.repository!.new(undefined, selectedNodes);
     },
     { errorPrefix: "Failed to create change" },
   );
@@ -714,6 +714,9 @@ export function registerInitCommands(state: ExtensionState): void {
 
   registerCommand(context, "jj.undo", async () => {
     const repository = state.getSelectedRepo();
+    if (!repository) {
+      return;
+    }
     await repository.undo();
     await state.operationLogManager!.refresh();
     await state.graphWebview?.refresh();
@@ -721,6 +724,9 @@ export function registerInitCommands(state: ExtensionState): void {
 
   registerCommand(context, "jj.redo", async () => {
     const repository = state.getSelectedRepo();
+    if (!repository) {
+      return;
+    }
     await repository.redo();
     await state.operationLogManager!.refresh();
     await state.graphWebview?.refresh();

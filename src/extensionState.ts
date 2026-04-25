@@ -10,7 +10,7 @@ export interface ExtensionState {
   graphWebview: JJGraphWebview | undefined;
   operationLogManager: OperationLogManager | undefined;
   throttledPoll: (() => Promise<void>) | undefined;
-  getSelectedRepo(): JJRepository;
+  getSelectedRepo(): JJRepository | undefined;
   setSelectedRepo(repository: JJRepository): void;
   onDidSetSelectedRepository: vscode.Event<void>;
   onInit(callback: () => void): void;
@@ -34,15 +34,15 @@ export function createExtensionState(
     _onDidSetSelectedRepository.fire();
   }
 
-  function getSelectedRepo(): JJRepository {
+  function getSelectedRepo(): JJRepository | undefined {
     const selectedRepo = context.workspaceState.get<string>("selectedRepository");
     if (selectedRepo) {
       return (
         workspaceSCM.repoSCMs.find((repo) => repo.repositoryRoot === selectedRepo)?.repository ||
-        workspaceSCM.repoSCMs[0].repository
+        workspaceSCM.repoSCMs[0]?.repository
       );
     }
-    return workspaceSCM.repoSCMs[0].repository;
+    return workspaceSCM.repoSCMs[0]?.repository;
   }
 
   return {

@@ -5,6 +5,69 @@ import { OperationLogManager, OperationLogTreeDataProvider } from "./operationLo
 import { JJGraphWebview } from "./graphWebview";
 import type { ExtensionState } from "./extensionState";
 
+export function initInfrastructure(state: ExtensionState) {
+  const context = state.context;
+  const initialSelectedRepo = state.getSelectedRepo();
+
+  const graphWebview = new JJGraphWebview(context.extensionUri, initialSelectedRepo, context);
+  context.subscriptions.push(graphWebview);
+
+  state.onDidSetSelectedRepository(
+    async () => {
+      const repo = state.getSelectedRepo();
+      if (repo) {
+        await graphWebview.setSelectedRepository(repo);
+      }
+    },
+    undefined,
+    context.subscriptions,
+  );
+
+  context.subscriptions.push(
+    graphWebview.onDidChangeSelection(async (selectedNodes) => {
+      const repoRoot = graphWebview.repository?.repositoryRoot;
+      if (!repoRoot) {
+        return;
+      }
+      const repoSCM = state.workspaceSCM.repoSCMs.find((r) => r.repositoryRoot === repoRoot);
+      if (repoSCM) {
+        const changeId = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
+        await repoSCM.setSelectedCommit(changeId);
+      }
+    }),
+  );
+
+  const operationLogTreeDataProvider = new OperationLogTreeDataProvider(initialSelectedRepo);
+  const operationLogManager = new OperationLogManager(operationLogTreeDataProvider);
+  context.subscriptions.push(operationLogManager);
+
+  state.onDidSetSelectedRepository(
+    async () => {
+      const repo = state.getSelectedRepo();
+      if (repo) {
+        await operationLogManager.setSelectedRepo(repo);
+      }
+    },
+    undefined,
+    context.subscriptions,
+  );
+
+  context.subscriptions.push(
+    state.workspaceSCM.onDidRepoUpdate(({ repoSCM }) => {
+      const opLogRepo = operationLogManager.operationLogTreeDataProvider.getSelectedRepo();
+      if (opLogRepo && opLogRepo.repositoryRoot === repoSCM.repositoryRoot) {
+        void operationLogManager.refresh();
+      }
+      if (graphWebview.repository && graphWebview.repository.repositoryRoot === repoSCM.repositoryRoot) {
+        void graphWebview.refresh();
+      }
+    }),
+  );
+
+  state.initialize(graphWebview, operationLogManager);
+  vscode.commands.executeCommand("setContext", "jj.reposExist", true);
+}
+
 export function createPolling(
   state: ExtensionState,
   checkRepos: (specificFolders?: string[]) => Promise<void>,
@@ -14,72 +77,13 @@ export function createPolling(
 } {
   const context = state.context;
 
-  function initInfrastructure() {
-    const initialSelectedRepo = state.getSelectedRepo();
-    const graphWebview = new JJGraphWebview(context.extensionUri, initialSelectedRepo, context);
-    context.subscriptions.push(graphWebview);
-    state.onDidSetSelectedRepository(
-      async () => {
-        await graphWebview.setSelectedRepository(state.getSelectedRepo());
-      },
-      undefined,
-      context.subscriptions,
-    );
-
-    context.subscriptions.push(
-      graphWebview.onDidChangeSelection(async (selectedNodes) => {
-        const repoSCM = state.workspaceSCM.repoSCMs.find(
-          (r) => r.repositoryRoot === graphWebview.repository.repositoryRoot,
-        );
-        if (repoSCM) {
-          const changeId = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
-          await repoSCM.setSelectedCommit(changeId);
-        }
-      }),
-    );
-
-    const operationLogTreeDataProvider = new OperationLogTreeDataProvider(initialSelectedRepo);
-    const operationLogManager = new OperationLogManager(operationLogTreeDataProvider);
-    context.subscriptions.push(operationLogManager);
-    state.onDidSetSelectedRepository(
-      async () => {
-        await operationLogManager.setSelectedRepo(state.getSelectedRepo());
-      },
-      undefined,
-      context.subscriptions,
-    );
-
-    context.subscriptions.push(
-      state.workspaceSCM.onDidRepoUpdate(({ repoSCM }) => {
-        if (
-          operationLogManager.operationLogTreeDataProvider.getSelectedRepo().repositoryRoot === repoSCM.repositoryRoot
-        ) {
-          void operationLogManager.refresh();
-        }
-        if (graphWebview.repository.repositoryRoot === repoSCM.repositoryRoot) {
-          void graphWebview.refresh();
-        }
-      }),
-    );
-
-    state.initialize(graphWebview, operationLogManager);
-  }
-
-  let isInitialized = false;
-
   async function poll() {
     const didUpdate = await state.workspaceSCM.refresh();
     if (didUpdate) {
-      state.setSelectedRepo(state.getSelectedRepo());
-    }
-    if (state.workspaceSCM.repoSCMs.length > 0) {
-      vscode.commands.executeCommand("setContext", "jj.reposExist", true);
-      if (!isInitialized) {
-        isInitialized = true;
-        initInfrastructure();
+      const repo = state.getSelectedRepo();
+      if (repo) {
+        state.setSelectedRepo(repo);
       }
-    } else {
-      vscode.commands.executeCommand("setContext", "jj.reposExist", false);
     }
 
     await Promise.all(state.workspaceSCM.repoSCMs.map((repoSCM) => repoSCM.checkForUpdates()));
@@ -98,9 +102,13 @@ export function createPolling(
     } catch (err) {
       logger.error(`Error during background poll: ${String(err)}`);
     } finally {
-      const pollIntervalSeconds = vscode.workspace.getConfiguration("jjx").get<number>("pollIntervalSeconds");
-      if (pollIntervalSeconds !== undefined && pollIntervalSeconds > 0) {
-        pollTimeoutId = setTimeout(() => void scheduleNextPoll(), pollIntervalSeconds * 1000);
+      if (state.workspaceSCM.repoSCMs.length === 0) {
+        pollTimeoutId = setTimeout(() => void scheduleNextPoll(), 5000);
+      } else {
+        const pollIntervalSeconds = vscode.workspace.getConfiguration("jjx").get<number>("pollIntervalSeconds");
+        if (pollIntervalSeconds !== undefined && pollIntervalSeconds > 0) {
+          pollTimeoutId = setTimeout(() => void scheduleNextPoll(), pollIntervalSeconds * 1000);
+        }
       }
     }
   };
@@ -117,7 +125,10 @@ export function createPolling(
       logger.info("Workspace folders changed");
       const didUpdate = await state.workspaceSCM.refresh();
       if (didUpdate) {
-        state.setSelectedRepo(state.getSelectedRepo());
+        const repo = state.getSelectedRepo();
+        if (repo) {
+          state.setSelectedRepo(repo);
+        }
       }
       await checkRepos();
     },

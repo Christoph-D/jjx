@@ -363,123 +363,123 @@
       "scm/title": [
         {
           "command": "jj.refresh",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && jj.jjBinaryFound",
           "group": "navigation"
         },
         {
           "command": "jj.new",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && jj.jjBinaryFound",
           "group": "navigation"
         }
       ],
       "scm/resourceGroup/context": [
         {
           "command": "jj.squashToParentResourceGroup",
-          "when": "scmProvider == jj && scmResourceGroup == @",
+          "when": "scmProvider == jj && scmResourceGroup == @ && jj.jjBinaryFound",
           "group": "inline"
         },
         {
           "command": "jj.squashToWorkingCopyResourceGroup",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && jj.jjBinaryFound",
           "group": "inline"
         },
         {
           "command": "jj.restoreResourceGroup",
-          "when": "scmProvider == jj && scmResourceGroup != selected",
+          "when": "scmProvider == jj && scmResourceGroup != selected && jj.jjBinaryFound",
           "group": "inline"
         },
         {
           "command": "jj.editResourceGroup",
-          "when": "scmProvider == jj && scmResourceGroup != @",
+          "when": "scmProvider == jj && scmResourceGroup != @ && jj.jjBinaryFound",
           "group": "inline"
         },
         {
           "command": "jj.describe",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && jj.jjBinaryFound",
           "group": "inline"
         }
       ],
       "scm/resourceState/context": [
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && jj.jjBinaryFound",
           "group": "1_modification@1"
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && jj.jjBinaryFound",
           "group": "1_modification@2"
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @",
+          "when": "scmProvider == jj && scmResourceGroup != @ && jj.jjBinaryFound",
           "group": "1_modification@3"
         },
         {
           "command": "jj.copyPath",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && jj.jjBinaryFound",
           "group": "9_copypath"
         },
         {
           "command": "jj.copyRelativePath",
-          "when": "scmProvider == jj",
+          "when": "scmProvider == jj && jj.jjBinaryFound",
           "group": "9_copypath"
         },
         {
           "command": "jj.openFileResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.fileClickAction == 'diff'",
+          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.fileClickAction == 'diff' && jj.jjBinaryFound",
           "group": "inline@1"
         },
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.fileClickAction != 'diff'",
+          "when": "scmProvider == jj && scmResourceGroup == @ && config.jjx.fileClickAction != 'diff' && jj.jjBinaryFound",
           "group": "inline@1"
         },
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'diff'",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'diff' && jj.jjBinaryFound",
           "group": "inline@1"
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'at-revision'",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'at-revision' && jj.jjBinaryFound",
           "group": "inline@2"
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'working-copy'",
+          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'working-copy' && jj.jjBinaryFound",
           "group": "inline@3"
         },
         {
           "command": "jj.restoreResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != selected",
+          "when": "scmProvider == jj && scmResourceGroup != selected && jj.jjBinaryFound",
           "group": "inline@4"
         },
         {
           "command": "jj.squashToParentResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @",
+          "when": "scmProvider == jj && scmResourceGroup == @ && jj.jjBinaryFound",
           "group": "inline@5"
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && jj.jjBinaryFound",
           "group": "inline@5"
         }
       ],
       "scm/resourceFolder/context": [
         {
           "command": "jj.restoreResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != selected",
+          "when": "scmProvider == jj && scmResourceGroup != selected && jj.jjBinaryFound",
           "group": "inline@4"
         },
         {
           "command": "jj.squashToParentResourceState",
-          "when": "scmProvider == jj && scmResourceGroup == @",
+          "when": "scmProvider == jj && scmResourceGroup == @ && jj.jjBinaryFound",
           "group": "inline@5"
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && jj.jjBinaryFound",
           "group": "inline@5"
         }
       ],

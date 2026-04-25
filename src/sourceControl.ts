@@ -66,6 +66,9 @@ export class WorkspaceSourceControlManager {
   }[] = [];
   fileSystemProvider: JJFileSystemProvider;
   private cancellationTokenSource = new vscode.CancellationTokenSource();
+  jjBinaryNotFound = false;
+  private errorSourceControl: vscode.SourceControl | undefined;
+  private errorResourceGroup: vscode.SourceControlResourceGroup | undefined;
 
   private _onDidRepoUpdate = new vscode.EventEmitter<{
     repoSCM: RepositorySourceControlManager;
@@ -85,6 +88,29 @@ export class WorkspaceSourceControlManager {
     );
   }
 
+  private showBinaryNotFoundError() {
+    if (this.errorSourceControl) {
+      return;
+    }
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      return;
+    }
+    const rootUri = workspaceFolders[0].uri;
+    this.errorSourceControl = vscode.scm.createSourceControl("jj", "Jujutsu", rootUri);
+    this.errorSourceControl.inputBox.placeholder = "Waiting for jj binary...";
+    this.errorResourceGroup = this.errorSourceControl.createResourceGroup("noJJBinary", "Error: jj binary not found");
+  }
+
+  private clearBinaryNotFoundError() {
+    if (!this.errorSourceControl) {
+      return;
+    }
+    this.errorSourceControl.dispose();
+    this.errorSourceControl = undefined;
+    this.errorResourceGroup = undefined;
+  }
+
   async refresh(token?: vscode.CancellationToken) {
     const effectiveToken = token ?? this.cancellationTokenSource.token;
 
@@ -96,6 +122,7 @@ export class WorkspaceSourceControlManager {
         repoRoot: string;
       }
     >();
+    let anyBinaryNotFound = false;
     for (const workspaceFolder of vscode.workspace.workspaceFolders || []) {
       if (effectiveToken.isCancellationRequested) {
         return false;
@@ -142,6 +169,9 @@ export class WorkspaceSourceControlManager {
         if (e instanceof Error && e.message.includes("no jj repo in")) {
           logger.debug(`No jj repo in ${workspaceFolder.uri.fsPath}`);
         } else {
+          if (e instanceof Error && (e.message.includes("jj CLI not found") || e.message.includes("jjx.jjPath is not an executable"))) {
+            anyBinaryNotFound = true;
+          }
           logger.error(`Error while initializing jjx in workspace ${workspaceFolder.uri.fsPath}: ${String(e)}`);
         }
         continue;
@@ -220,6 +250,17 @@ export class WorkspaceSourceControlManager {
       updatedRepoSCMs.push(repoSCM);
     }
     this.repoSCMs = updatedRepoSCMs;
+
+    if (updatedRepoSCMs.length > 0) {
+      this.clearBinaryNotFoundError();
+      this.jjBinaryNotFound = false;
+      void vscode.commands.executeCommand("setContext", "jj.jjBinaryFound", true);
+    } else if (anyBinaryNotFound) {
+      this.jjBinaryNotFound = true;
+      this.showBinaryNotFoundError();
+      void vscode.commands.executeCommand("setContext", "jj.jjBinaryFound", false);
+    }
+
     return isAnyRepoChanged;
   }
 

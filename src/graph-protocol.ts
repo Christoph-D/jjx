@@ -105,4 +105,5 @@ export type ExtensionToWebviewMessage =
       showTooltips: boolean;
     }
   | { command: "showStaleState" }
+  | { command: "showJJNotFoundState" }
   | { command: "diffStatsResponse"; changeId: string; stats: DiffStats };
