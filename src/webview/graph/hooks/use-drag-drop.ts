@@ -1,4 +1,13 @@
-import { dragStartChangeId, isDragging, dropTargetId, justFinishedDrag, rebaseMenu, tooltip } from "../signals";
+import {
+  dragStartChangeId,
+  isDragging,
+  dropTargetId,
+  justFinishedDrag,
+  rebaseMenu,
+  tooltip,
+  dragBookmarkName,
+  vscode,
+} from "../signals";
 import { useTooltipTimers } from "./use-tooltip-timers";
 import { rootChangeId } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
@@ -21,6 +30,7 @@ export function useDragDrop(change: ChangeNode) {
             e.preventDefault();
             return;
           }
+          dragBookmarkName.value = null;
           dragStartChangeId.value = change.changeId;
           isDragging.value = true;
           clearAllTimers();
@@ -40,6 +50,7 @@ export function useDragDrop(change: ChangeNode) {
       : () => {
           isDragging.value = false;
           dragStartChangeId.value = null;
+          dragBookmarkName.value = null;
           dropTargetId.value = null;
         },
     onDragOver: (e: DragEvent) => {
@@ -48,10 +59,13 @@ export function useDragDrop(change: ChangeNode) {
     },
     onDragEnter: (e: DragEvent) => {
       e.preventDefault();
-      if (!isDragging.value || !dragStartChangeId.value) {
+      if (!isDragging.value) {
         return;
       }
-      if (change.changeId === dragStartChangeId.value) {
+      if (!dragBookmarkName.value && !dragStartChangeId.value) {
+        return;
+      }
+      if (dragStartChangeId.value && change.changeId === dragStartChangeId.value) {
         return;
       }
       dropTargetId.value = change.changeId;
@@ -66,6 +80,26 @@ export function useDragDrop(change: ChangeNode) {
     },
     onDrop: (e: DragEvent) => {
       e.preventDefault();
+
+      if (dragBookmarkName.value) {
+        clearAllTimers();
+        tooltip.value = null;
+        const bookmarkName = dragBookmarkName.value;
+        isDragging.value = false;
+        dragBookmarkName.value = null;
+        dropTargetId.value = null;
+        justFinishedDrag.value = true;
+        setTimeout(() => {
+          justFinishedDrag.value = false;
+        }, 100);
+        vscode.postMessage({
+          command: "moveBookmark",
+          bookmark: bookmarkName,
+          targetChangeId: change.changeId,
+        });
+        return;
+      }
+
       const sourceId = e.dataTransfer!.getData("text/plain");
       const targetId = change.changeId;
       if (!sourceId || !targetId || sourceId === targetId) {

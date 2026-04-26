@@ -166,6 +166,14 @@ body {
   margin-right: 4px;
 }
 
+.bookmark-pill[draggable="true"] {
+  cursor: grab;
+}
+
+.bookmark-pill[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 .bookmark-pill .bookmark-push-icon:hover {
   background-color: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
@@ -490,6 +498,17 @@ body {
   color: var(--vscode-foreground);
   z-index: 1100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.bookmark-drag-ghost {
+  background: var(--bookmark-pill-bg);
+  color: var(--pill-foreground);
+  border: none;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-family: var(--vscode-font-family);
+  font-size: 0.85em;
+  line-height: normal;
 }
 
 .stale-state {

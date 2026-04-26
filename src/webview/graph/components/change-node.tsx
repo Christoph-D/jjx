@@ -15,11 +15,13 @@ import {
   graphStyle,
   vscode,
   showTooltips,
+  dragBookmarkName,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
 import type { ChangeNode } from "../../../graph-protocol";
 import { abbreviateName } from "../utils";
+import { clearAllTooltipTimers } from "../hooks/use-tooltip-timers";
 
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
   return changeId !== rootChangeId && branchType !== "~";
@@ -209,6 +211,29 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
             key={b.name}
             class={"pill bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
             data-bookmark={b.name}
+            draggable={true}
+            onDragStart={(e) => {
+              e.stopPropagation();
+              dragBookmarkName.value = b.name;
+              isDragging.value = true;
+              clearAllTooltipTimers();
+              tooltip.value = null;
+              e.dataTransfer!.setData("text/plain", "");
+              e.dataTransfer!.effectAllowed = "move";
+
+              const ghost = document.createElement("div");
+              ghost.className = "drag-ghost bookmark-drag-ghost";
+              ghost.textContent = b.name;
+              document.body.appendChild(ghost);
+              e.dataTransfer!.setDragImage(ghost, -15, 0);
+              setTimeout(() => ghost.remove(), 0);
+            }}
+            onDragEnd={(e) => {
+              e.stopPropagation();
+              isDragging.value = false;
+              dragBookmarkName.value = null;
+              dropTargetId.value = null;
+            }}
           >
             {!b.synced && !b.conflict && (
               <i

@@ -15,6 +15,7 @@ export const currentGraph = signal<ChangeIdGraph | null>(null);
 export const selectedNodes = signal<Set<string>>(new Set());
 export const isDragging = signal(false);
 export const dragStartChangeId = signal<string | null>(null);
+export const dragBookmarkName = signal<string | null>(null);
 export const dropTargetId = signal<string | null>(null);
 export const justFinishedDrag = signal(false);
 export const maxPrefixLength = signal(4);
