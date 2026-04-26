@@ -8,10 +8,10 @@ A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version
 - **Watch**: `pnpm run watch`
 - **Type check**: `pnpm run check-types`
 - **Lint**: `pnpm run lint`
-- **Format**: `pnpm run format`
+- **Format** (must run after changes): `pnpm run format`
 - **Quick check** (type check, lint, format, unit tests): `pnpm run check`
 
-Always run `pnpm run check` after adding or changing anything.
+Always run `pnpm run format` and `pnpm run check` after adding or changing anything.
 
 ## Testing
 
