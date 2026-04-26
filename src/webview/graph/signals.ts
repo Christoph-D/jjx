@@ -52,8 +52,23 @@ export interface TooltipState {
   pageY: number;
 }
 
+export interface PushBookmarkMenuState {
+  bookmark: string;
+  pageX: number;
+  pageY: number;
+  remotes: string[];
+}
+
+export interface PendingPushBookmarkMenuState {
+  bookmark: string;
+  pageX: number;
+  pageY: number;
+}
+
 export const contextMenu = signal<ContextMenuState | null>(null);
 export const rebaseMenu = signal<RebaseMenuState | null>(null);
+export const pushBookmarkMenu = signal<PushBookmarkMenuState | null>(null);
+export const pendingPushBookmarkMenu = signal<PendingPushBookmarkMenuState | null>(null);
 export const tooltip = signal<TooltipState | null>(null);
 export const diffStatsCache = signal<Map<string, DiffStats>>(new Map());
 

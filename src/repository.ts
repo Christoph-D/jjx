@@ -677,33 +677,11 @@ export class JJRepository {
   }
 
   async pushBookmark(bookmark: string): Promise<string[]> {
-    const trackedRemotesOutput = (
-      await handleJJCommand(
-        this.spawnJJRead(
-          ["bookmark", "list", bookmark, "-T", 'if(remote != "", if(tracked && !synced, remote ++ "\\n", ""), "")'],
-          { cwd: this.repositoryRoot },
-        ),
-      )
-    )
-      .toString()
-      .trim();
-    const remotes = trackedRemotesOutput
-      .split("\n")
-      .map((r) => r.trim())
-      .filter(Boolean);
+    const remotes = await this.getBookmarkTrackingRemotes(bookmark, true);
     if (remotes.length === 0) {
       return [];
     }
-    const results = await Promise.allSettled(
-      remotes.map((remote) =>
-        handleJJCommand(
-          this.spawnJJ(["git", "push", "--bookmark", bookmark, "--remote", remote], {
-            timeout: TIMEOUTS.GIT_FETCH,
-            cwd: this.repositoryRoot,
-          }),
-        ),
-      ),
-    );
+    const results = await Promise.allSettled(remotes.map((remote) => this.pushBookmarkToRemote(bookmark, remote)));
     const failedRemoteErrors: string[] = [];
     for (const [i, result] of results.entries()) {
       if (result.status === "rejected") {
@@ -720,6 +698,33 @@ export class JJRepository {
       throw new Error(`Failed to push bookmark "${bookmark}":\n${failedRemoteErrors.join("\n")}`);
     }
     return remotes;
+  }
+
+  async getBookmarkTrackingRemotes(bookmark: string, unsyncedOnly = false): Promise<string[]> {
+    const filter = unsyncedOnly ? "tracked && !synced" : "tracked";
+    const trackedRemotesOutput = (
+      await handleJJCommand(
+        this.spawnJJRead(
+          ["bookmark", "list", bookmark, "-T", `if(remote != "", if(${filter}, remote ++ "\\n", ""), "")`],
+          { cwd: this.repositoryRoot },
+        ),
+      )
+    )
+      .toString()
+      .trim();
+    return trackedRemotesOutput
+      .split("\n")
+      .map((r) => r.trim())
+      .filter((r) => r && r !== "git");
+  }
+
+  async pushBookmarkToRemote(bookmark: string, remote: string): Promise<void> {
+    await handleJJCommand(
+      this.spawnJJ(["git", "push", "--bookmark", bookmark, "--remote", remote], {
+        timeout: TIMEOUTS.GIT_FETCH,
+        cwd: this.repositoryRoot,
+      }),
+    );
   }
 
   async deleteTag(tag: string) {

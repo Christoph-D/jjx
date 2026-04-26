@@ -16,6 +16,7 @@ import {
   vscode,
   showTooltips,
   dragBookmarkName,
+  pendingPushBookmarkMenu,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
@@ -242,6 +243,16 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                 onClick={(e) => {
                   e.stopPropagation();
                   vscode.postMessage({ command: "pushBookmark", bookmark: b.name });
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  pendingPushBookmarkMenu.value = {
+                    bookmark: b.name,
+                    pageX: e.pageX,
+                    pageY: e.pageY,
+                  };
+                  vscode.postMessage({ command: "getBookmarkTrackingRemotes", bookmark: b.name });
                 }}
               />
             )}

@@ -19,10 +19,13 @@ import {
   diffStatsCache,
   tooltip,
   showTooltips,
+  pushBookmarkMenu,
+  pendingPushBookmarkMenu,
 } from "./signals";
 import { Graph } from "./components/graph";
 import { ContextMenu } from "./components/context-menu";
 import { RebaseMenu } from "./components/rebase-menu";
+import { PushBookmarkMenu } from "./components/push-bookmark-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
 import { JJNotFoundState } from "./components/jj-not-found-state";
@@ -83,12 +86,26 @@ export function App() {
           }
           break;
         }
+        case "bookmarkTrackingRemotesResponse": {
+          const pending = pendingPushBookmarkMenu.value;
+          if (pending && pending.bookmark === message.bookmark && message.remotes.length > 0) {
+            pushBookmarkMenu.value = {
+              bookmark: pending.bookmark,
+              pageX: pending.pageX,
+              pageY: pending.pageY,
+              remotes: message.remotes,
+            };
+          }
+          pendingPushBookmarkMenu.value = null;
+          break;
+        }
       }
     });
 
     const hideMenus = () => {
       contextMenu.value = null;
       rebaseMenu.value = null;
+      pushBookmarkMenu.value = null;
     };
 
     document.addEventListener("click", hideMenus);
@@ -112,6 +129,7 @@ export function App() {
       {isStale.value ? <StaleState /> : isJJNotFound.value ? <JJNotFoundState /> : <Graph />}
       <ContextMenu />
       <RebaseMenu />
+      <PushBookmarkMenu />
       <Tooltip />
     </ErrorBoundary>
   );
