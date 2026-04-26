@@ -172,5 +172,7 @@ export async function newTestRepo(repoPath: string): Promise<TestRepo> {
   const repo = new TestRepo(repoPath);
   await fs.mkdir(repoPath, { recursive: true });
   await repo.jjCommand(["git", "init"]);
+  await repo.jjCommand(["config", "set", "--repo", "user.name", "Test User"]);
+  await repo.jjCommand(["config", "set", "--repo", "user.email", "test@example.com"]);
   return repo;
 }
