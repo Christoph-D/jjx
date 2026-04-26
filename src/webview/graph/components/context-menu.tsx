@@ -36,7 +36,7 @@ export function ContextMenu() {
             contextMenu.value = null;
           }}
         >
-          Edit This Change
+          Edit
         </div>
       )}
       <div
@@ -59,7 +59,7 @@ export function ContextMenu() {
           contextMenu.value = null;
         }}
       >
-        Describe Change...
+        Describe...
       </div>
       <div class="context-menu-separator"></div>
       <div
