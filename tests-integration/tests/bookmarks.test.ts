@@ -42,59 +42,7 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   expect(await testRepo.getBookmark("test-bookmark")).toBeUndefined();
 });
 
-test("move bookmark forward and backward with confirmation", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.commitFile("a.txt", "content a", "commit 1");
-  await testRepo.commitFile("b.txt", "content b", "commit 2");
-
-  const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(4);
-
-  const commit1Node = nodes.nth(2);
-  await commit1Node.click({ button: "right" });
-
-  const createBookmarkItem = graphFrame.locator('.context-menu-item[data-action="createBookmark"]');
-  await createBookmarkItem.click();
-
-  const input = workbox.locator("input").first();
-  await input.waitFor({ state: "visible" });
-  await input.fill("test-bookmark");
-  await workbox.keyboard.press("Enter");
-
-  const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="test-bookmark"]');
-  await expect(bookmarkPill).toBeVisible();
-
-  let bookmark = await testRepo.getBookmark("test-bookmark");
-  expect(bookmark?.description).toBe("commit 1");
-
-  const commit2Node = nodes.nth(1);
-  await commit2Node.click({ button: "right" });
-
-  const moveBookmarkItem = graphFrame.locator('.context-menu-item[data-action="moveBookmark"]');
-  await moveBookmarkItem.hover();
-
-  const bookmarkSubmenuItem = graphFrame.locator('.context-submenu-item[data-bookmark="test-bookmark"]');
-  await bookmarkSubmenuItem.click();
-
-  await expect(commit2Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
-
-  bookmark = await testRepo.getBookmark("test-bookmark");
-  expect(bookmark?.description).toBe("commit 2");
-
-  await commit1Node.click({ button: "right" });
-  await moveBookmarkItem.hover();
-  await bookmarkSubmenuItem.click();
-
-  const quickPickContinue = workbox.getByRole("option", { name: "Continue" });
-  await quickPickContinue.waitFor({ state: "visible" });
-  await quickPickContinue.click();
-
-  await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
-
-  bookmark = await testRepo.getBookmark("test-bookmark");
-  expect(bookmark?.description).toBe("commit 1");
-});
-
-test("move bookmark via drag and drop", async ({ graphFrame, testRepo }) => {
+test("move bookmark via drag and drop", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "commit 1");
   await testRepo.jjCommand(["bookmark", "create", "test-bookmark", "-r", "@-"]);
   await testRepo.commitFile("b.txt", "content b", "commit 2");
@@ -113,8 +61,20 @@ test("move bookmark via drag and drop", async ({ graphFrame, testRepo }) => {
   await expect(commit2Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
   await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).not.toBeVisible();
 
-  const bookmark = await testRepo.getBookmark("test-bookmark");
+  let bookmark = await testRepo.getBookmark("test-bookmark");
   expect(bookmark?.description).toBe("commit 2");
+
+  await bookmarkPill.dragTo(commit1Node);
+
+  const quickPickContinue = workbox.getByRole("option", { name: "Continue" });
+  await quickPickContinue.waitFor({ state: "visible" });
+  await quickPickContinue.click();
+
+  await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
+  await expect(commit2Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).not.toBeVisible();
+
+  bookmark = await testRepo.getBookmark("test-bookmark");
+  expect(bookmark?.description).toBe("commit 1");
 });
 
 test("conflicted bookmark shows both sides with conflicted class", async ({ graphFrame, testRepo }) => {

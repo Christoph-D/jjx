@@ -23,13 +23,11 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
   const tag = await testRepo.getTag("test-tag");
   expect(tag).toBeDefined();
 
-  await commitNode.click({ button: "right" });
+  await tagPill.click({ button: "right" });
 
-  const deleteTagItem = graphFrame.locator('.context-menu-item[data-action="deleteTag"]');
-  await deleteTagItem.hover();
-
-  const deleteTagSubmenuItem = graphFrame.locator('.context-submenu-item[data-delete-tag="test-tag"]');
-  await deleteTagSubmenuItem.click();
+  const pillContextMenu = graphFrame.locator("#pill-context-menu");
+  await expect(pillContextMenu).toBeVisible();
+  await pillContextMenu.locator(".context-menu-item").click();
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toContainText("test-tag");
