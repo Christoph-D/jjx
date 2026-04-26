@@ -180,7 +180,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         `--user-data-dir=${userDataDir}`,
         testRepo.repoPath,
       ],
-      env: { ...process.env, DISPLAY: xvfbDisplay } as { [key: string]: string },
+      env: { ...process.env, DISPLAY: xvfbDisplay },
     });
 
     const workbox = await electronApp.firstWindow();
