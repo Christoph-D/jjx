@@ -36,24 +36,25 @@ export function Tooltip() {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 
+      const maxAllowedWidth = Math.floor(viewportWidth * 0.35);
+      el.style.maxWidth = maxAllowedWidth + "px";
+
+      const tooltipRect = el.getBoundingClientRect();
+      const offset = 15;
+
       const changeIdEl = document.querySelector(
         `.change-node[data-change-id="${state.change.changeId}"] .change-id-left`,
       );
       const minLeft = changeIdEl ? changeIdEl.getBoundingClientRect().right + CHANGE_ID_RIGHT_PADDING : 10;
-      const maxAllowedWidth = viewportWidth - 100 - minLeft;
 
-      if (maxAllowedWidth > 0) {
-        el.style.maxWidth = maxAllowedWidth + "px";
+      let left;
+      if (state.pageX < viewportWidth * 0.6) {
+        left = viewportWidth - tooltipRect.width - 10;
+      } else {
+        left = minLeft;
       }
 
-      const tooltipRect = el.getBoundingClientRect();
-      const offset = 15;
-      let left = state.pageX + offset;
       let top = state.pageY + offset;
-
-      if (left + tooltipRect.width > viewportWidth - 10) {
-        left = state.pageX - tooltipRect.width - offset;
-      }
 
       if (top + tooltipRect.height > viewportHeight + scrollY - 10) {
         top = state.pageY - tooltipRect.height - offset;
@@ -61,14 +62,6 @@ export function Tooltip() {
 
       if (top < scrollY + 10) {
         top = scrollY + 10;
-      }
-
-      if (left < 10) {
-        left = 10;
-      }
-
-      if (left < minLeft) {
-        left = minLeft;
       }
 
       el.style.left = left + "px";

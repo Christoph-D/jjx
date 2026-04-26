@@ -332,7 +332,7 @@ body {
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   z-index: 1001;
-  max-width: 400px;
+  max-width: none;
   padding: 8px 12px;
   font-size: var(--vscode-font-size);
   color: var(--vscode-editor-foreground);
