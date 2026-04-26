@@ -8,10 +8,10 @@ const TEMP_SCREENSHOT = "/tmp/jjx-screenshot.png";
 const OUTPUT_DIR = path.resolve(__dirname, "..", "..", "images");
 const ZOOM_LEVEL = 1;
 
-async function addSettings(userDataDir: string, settings: Record<string, any>) {
+async function addSettings(userDataDir: string, settings: Record<string, unknown>) {
   const userDir = path.join(userDataDir, "User");
   const settingsPath = path.join(userDir, "settings.json");
-  const s = JSON.parse(await fs.readFile(settingsPath, "utf-8"));
+  const s = JSON.parse(await fs.readFile(settingsPath, "utf-8")) as Record<string, unknown>;
   for (const [key, value] of Object.entries(settings)) {
     s[key] = value;
   }
@@ -19,7 +19,7 @@ async function addSettings(userDataDir: string, settings: Record<string, any>) {
 }
 
 async function initializeSettings(userDataDir: string, zoomLevel: number) {
-  addSettings(userDataDir, {
+  await addSettings(userDataDir, {
     "window.zoomLevel": zoomLevel,
     "workbench.colorTheme": "Dark+",
     "jjx.graphStyle": "compact",
@@ -233,7 +233,7 @@ test("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, 
 
   await workbox.setViewportSize({ width: 1000, height: 600 });
 
-  conflicts.first().click();
+  await conflicts.first().click();
   const mergeEditorLeft = workbox.locator('.monaco-editor[role="code"][data-uri*="left_file.txt"]');
   await expect(mergeEditorLeft).toBeVisible();
 
@@ -245,7 +245,7 @@ test("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, 
   });
 });
 
-test("take screenshot of divergent commits", async ({ userDataDir, scmView, graphFrame, testRepo, workbox }) => {
+test("take screenshot of divergent commits", async ({ userDataDir, graphFrame, testRepo, workbox }) => {
   await workbox.setViewportSize({ width: 1920, height: 1080 });
   await initializeSettings(userDataDir, ZOOM_LEVEL);
 
