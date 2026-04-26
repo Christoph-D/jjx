@@ -392,7 +392,7 @@ test("take screenshot of oplog for readme", async ({ userDataDir, scmView, opLog
   await workbox.mouse.move(sashVCenterX + 300, sashVCenterY);
   await workbox.mouse.up();
 
-  const opLogEntries = opLog.locator(".pane-body").getByRole("treeitem").filter({ hasText: "jj commit -m 'docs" });
+  const opLogEntries = opLog.locator(".pane-body").getByRole("treeitem").filter({ hasText: /jj.* commit -m 'docs/ });
   await expect(opLogEntries).toHaveCount(2);
   await opLogEntries.first().hover();
 

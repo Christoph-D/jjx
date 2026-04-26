@@ -11,7 +11,7 @@ test("undo a specific operation from operation log tree view", async ({ graphFra
   const treeItems = paneBody.locator('[role="treeitem"]');
   await expect(treeItems.first()).toBeVisible();
 
-  const firstItem = treeItems.filter({ hasText: /^jj commit/ }).first();
+  const firstItem = treeItems.filter({ hasText: /^jj .*commit/ }).first();
   await firstItem.hover();
   const revertBtn = firstItem.getByRole("button", { name: "Revert Operation" });
   await revertBtn.click({ force: true });

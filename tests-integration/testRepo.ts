@@ -43,6 +43,9 @@ function getJJPath(): string {
 }
 
 export class TestRepo {
+  static userName: string | null = "Test User";
+  static userEmail: string | null = "test@example.com";
+
   constructor(public readonly repoPath: string) {}
 
   async commit(message: string): Promise<string> {
@@ -135,9 +138,13 @@ export class TestRepo {
   }
 
   async jjCommand(args: string[]): Promise<JJCommandResult> {
+    let config: string[] = [];
+    if (TestRepo.userName && TestRepo.userEmail) {
+      config = ["--config", `user.name=${TestRepo.userName}`, "--config", `user.email=${TestRepo.userEmail}`];
+    }
     const jjPath = getJJPath();
     return new Promise((resolve) => {
-      execFile(jjPath, args, { cwd: this.repoPath, timeout: 10000 }, (error, stdout, stderr) => {
+      execFile(jjPath, config.concat(args), { cwd: this.repoPath, timeout: 10000 }, (error, stdout, stderr) => {
         resolve({
           stdout: stdout?.toString() ?? "",
           stderr: stderr?.toString() ?? "",
@@ -172,7 +179,5 @@ export async function newTestRepo(repoPath: string): Promise<TestRepo> {
   const repo = new TestRepo(repoPath);
   await fs.mkdir(repoPath, { recursive: true });
   await repo.jjCommand(["git", "init"]);
-  await repo.jjCommand(["config", "set", "--repo", "user.name", "Test User"]);
-  await repo.jjCommand(["config", "set", "--repo", "user.email", "test@example.com"]);
   return repo;
 }
