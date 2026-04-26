@@ -1,5 +1,38 @@
 # Change Log
 
+## 1.7.0
+
+### New Features
+
+- **Drag and drop for bookmarks** - Drag bookmark pills onto commits to move them, replacing the old "Move Bookmark" context menu
+- **New quick upload button for bookmarks** - A new button "push to all tracking remotes" shows up next to out of sync bookmarks
+- **New right-click context menu for bookmarks** - Push a bookmark to a chosen remote or delete the bookmark directly from its context menu
+- **New right-click context menu for tags** - Delete a tag directly from its context menu
+- **New error views when jj binary is not found** - Show clear errors in the graph and SCM panel when the jj binary is missing at activation
+- **Auto-update stale workspaces by default** - The `jjx.autoUpdateStaleWorkspace` setting now defaults to true
+- **Position graph tooltip to avoid obstructing the view** - Tooltips now better position themselves to minimize overlap
+
+### Bug Fixes
+
+- Ensure only one context menu is open at a time in graph view
+- Show commit tooltip only when hovering over label or description
+- Re-fetch diff stats for active tooltip after graph refresh to prevent stuck "Loading..." message
+- Shorten context menu labels for Describe and Edit actions
+- Remove move/delete bookmark and delete tag from graph context menu (moved to pill context menus)
+- Match drag ghost change ID formatting and positioning to graph view
+- Hide uninteresting @git refs in tooltip when corresponding local ref exists on same commit
+- Increase default log limit to 500
+- Call "jj op revert" instead of "jj op undo" for forward compatibility
+
+### Internal
+
+- Update dependencies (TypeScript 6.0.3, diff v9, minor/patch updates)
+- Add integration tests for push bookmark and bookmark drag&drop
+- Configure user identity in test repos for reliable test behavior
+- Add "check" script for running type check, lint, format, and unit tests together
+- Preserve stdout/stderr/exit code in structured ProcessError type
+- Make formatter and unit tests less noisy
+
 ## 1.6.3
 
 ### Bug Fixes
