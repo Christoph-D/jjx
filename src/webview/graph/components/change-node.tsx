@@ -32,6 +32,20 @@ function isMenuOpen(): boolean {
   return contextMenu.value !== null || rebaseMenu.value !== null;
 }
 
+function isOverTooltipTarget(e: MouseEvent): boolean {
+  let el = e.target as HTMLElement | null;
+  while (el && el !== e.currentTarget) {
+    if (el.classList.contains("pill")) {
+      return false;
+    }
+    if (el.classList.contains("text-content")) {
+      return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
 interface Props {
   change: ChangeNode;
   index: number;
@@ -101,7 +115,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
     if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
     }
-    if (shouldShowTooltip(change.changeId, change.branchType)) {
+    if (shouldShowTooltip(change.changeId, change.branchType) && isOverTooltipTarget(e)) {
       startHoverTimers(change, e.pageX, e.pageY);
     }
   };
@@ -112,7 +126,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
     if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
     }
-    if (shouldShowTooltip(change.changeId, change.branchType)) {
+    if (shouldShowTooltip(change.changeId, change.branchType) && isOverTooltipTarget(e)) {
       startHoverTimers(change, e.pageX, e.pageY);
     }
   };
