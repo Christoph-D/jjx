@@ -72,6 +72,7 @@ export type WebviewToExtensionMessage =
   | { command: "moveBookmark"; bookmark: string; targetChangeId: string }
   | { command: "createBookmark"; targetChangeId: string }
   | { command: "createTag"; targetChangeId: string }
+  | { command: "pushBookmark"; bookmark: string }
   | { command: "deleteBookmark"; bookmark: string }
   | { command: "deleteTag"; tag: string }
   | { command: "describeChange"; changeId: string }

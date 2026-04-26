@@ -10,7 +10,7 @@ import {
   DIFF_STATS_TEMPLATE,
 } from "./templateBuilder";
 import { ImmutableError, convertJJErrors } from "./errors";
-import { spawnJJ, handleJJCommand, type SpawnOptions, collectProcessOutput } from "./process";
+import { spawnJJ, handleJJCommand, type SpawnOptions, collectProcessOutput, ProcessError } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
 import { filepathToFileset, pathEquals, normalizePath } from "./utils";
 import {
@@ -674,6 +674,52 @@ export class JJRepository {
     return await handleJJCommand(
       this.spawnJJ(["bookmark", "delete", bookmark], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
     );
+  }
+
+  async pushBookmark(bookmark: string): Promise<string[]> {
+    const trackedRemotesOutput = (
+      await handleJJCommand(
+        this.spawnJJRead(
+          ["bookmark", "list", bookmark, "-T", 'if(remote != "", if(tracked && !synced, remote ++ "\\n", ""), "")'],
+          { cwd: this.repositoryRoot },
+        ),
+      )
+    )
+      .toString()
+      .trim();
+    const remotes = trackedRemotesOutput
+      .split("\n")
+      .map((r) => r.trim())
+      .filter(Boolean);
+    if (remotes.length === 0) {
+      return [];
+    }
+    const results = await Promise.allSettled(
+      remotes.map((remote) =>
+        handleJJCommand(
+          this.spawnJJ(["git", "push", "--bookmark", bookmark, "--remote", remote], {
+            timeout: TIMEOUTS.GIT_FETCH,
+            cwd: this.repositoryRoot,
+          }),
+        ),
+      ),
+    );
+    const failedRemoteErrors: string[] = [];
+    for (const [i, result] of results.entries()) {
+      if (result.status === "rejected") {
+        const reason =
+          result.reason instanceof ProcessError
+            ? result.reason.stderr
+            : result.reason instanceof Error
+              ? result.reason.message
+              : String(result.reason);
+        failedRemoteErrors.push(`${remotes[i]}: ${reason}`);
+      }
+    }
+    if (failedRemoteErrors.length > 0) {
+      throw new Error(`Failed to push bookmark "${bookmark}":\n${failedRemoteErrors.join("\n")}`);
+    }
+    return remotes;
   }
 
   async deleteTag(tag: string) {

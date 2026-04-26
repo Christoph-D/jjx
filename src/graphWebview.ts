@@ -175,6 +175,20 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             showErrorMessage("Failed to create tag", error);
           }
           break;
+        case "pushBookmark":
+          try {
+            const pushedRemotes = await repo.pushBookmark(message.bookmark);
+            if (pushedRemotes.length === 0) {
+              vscode.window.showInformationMessage(
+                `Bookmark "${message.bookmark}" has no out-of-sync tracked remotes.`,
+              );
+            } else {
+              await this.refresh();
+            }
+          } catch (error: unknown) {
+            showErrorMessage("Failed to push bookmark", error);
+          }
+          break;
         case "deleteBookmark":
           try {
             const confirm = await vscode.window.showWarningMessage(

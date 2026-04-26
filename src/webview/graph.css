@@ -141,6 +141,8 @@ body {
 
 .bookmark-pill {
   background-color: var(--bookmark-pill-bg);
+  display: inline-flex;
+  align-items: center;
 }
 
 .tag-pill {
@@ -157,6 +159,20 @@ body {
 
 .bookmark-pill.unsynced::after {
   content: "*";
+}
+
+.bookmark-pill .bookmark-push-icon {
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.bookmark-pill .bookmark-push-icon:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.bookmark-pill .bookmark-push-icon:active {
+  opacity: 0.7;
 }
 
 .tag-pill.unsynced::after {

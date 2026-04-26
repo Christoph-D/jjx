@@ -210,6 +210,16 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
             class={"pill bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
             data-bookmark={b.name}
           >
+            {!b.synced && !b.conflict && (
+              <i
+                class="codicon codicon-cloud-upload bookmark-push-icon"
+                title="Push to all tracking remotes"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  vscode.postMessage({ command: "pushBookmark", bookmark: b.name });
+                }}
+              />
+            )}
             {abbreviateName(b.name)}
           </span>
         ))}
