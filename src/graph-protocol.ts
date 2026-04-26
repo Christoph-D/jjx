@@ -2,6 +2,7 @@ export interface LogEntryLocalRef {
   name: string;
   synced: boolean;
   conflict: boolean;
+  showPushButton?: boolean;
 }
 
 export interface LogEntryRemoteRef {

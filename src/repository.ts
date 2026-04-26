@@ -700,6 +700,28 @@ export class JJRepository {
     return remotes;
   }
 
+  async getBookmarksWithUnsyncedNonGitRemotes(): Promise<Set<string>> {
+    const output = (
+      await handleJJCommand(
+        this.spawnJJRead(
+          ["bookmark", "list", "-T", `if(remote != "" && tracked && !synced && remote != "git", name ++ "\\n", "")`],
+          { cwd: this.repositoryRoot },
+        ),
+      )
+    )
+      .toString()
+      .trim();
+    if (!output) {
+      return new Set();
+    }
+    return new Set(
+      output
+        .split("\n")
+        .map((r) => r.trim())
+        .filter((r) => r),
+    );
+  }
+
   async getBookmarkTrackingRemotes(bookmark: string, unsyncedOnly = false): Promise<string[]> {
     const filter = unsyncedOnly ? "tracked && !synced" : "tracked";
     const trackedRemotesOutput = (

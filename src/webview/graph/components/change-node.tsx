@@ -250,7 +250,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               dropTargetId.value = null;
             }}
           >
-            {!b.synced && !b.conflict && (
+            {!b.synced && !b.conflict && b.showPushButton !== false && (
               <i
                 class="codicon codicon-cloud-upload bookmark-push-icon"
                 title="Push to all tracking remotes"

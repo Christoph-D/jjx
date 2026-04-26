@@ -463,6 +463,25 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const entriesWithSynthetics = insertSyntheticNodes(rawEntries, edges, visibleIds, reachableVisibleFrom);
       const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entriesWithSynthetics, graphStyle);
 
+      const unsyncedBookmarks = new Set<string>();
+      for (const change of changes) {
+        for (const b of change.localBookmarks) {
+          if (!b.synced && !b.conflict) {
+            unsyncedBookmarks.add(b.name);
+          }
+        }
+      }
+      if (unsyncedBookmarks.size > 0) {
+        const bookmarksWithPushTargets = await this.repository.getBookmarksWithUnsyncedNonGitRemotes();
+        for (const change of changes) {
+          for (const b of change.localBookmarks) {
+            if (!b.synced && !b.conflict) {
+              b.showPushButton = bookmarksWithPushTargets.has(b.name);
+            }
+          }
+        }
+      }
+
       const changeIdsInGraph = new Set(changes.map((c) => c.changeId));
       this.selectedNodes = new Set(Array.from(this.selectedNodes).filter((id) => changeIdsInGraph.has(id)));
       const changeDoubleClickAction = config.get<string>("changeDoubleClickAction") || "edit";
