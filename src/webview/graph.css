@@ -498,6 +498,15 @@ body {
   color: var(--vscode-foreground);
   z-index: 1100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drag-ghost-description {
+  font-family: var(--vscode-font-family);
+  font-weight: normal;
 }
 
 .bookmark-drag-ghost {

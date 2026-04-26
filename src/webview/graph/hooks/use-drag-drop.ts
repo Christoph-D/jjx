@@ -40,9 +40,35 @@ export function useDragDrop(change: ChangeNode) {
 
           const ghost = document.createElement("div");
           ghost.className = "drag-ghost";
-          ghost.textContent = change.changeId.substring(0, 8);
+          if (change.conflict) {
+            const conflict = document.createElement("span");
+            conflict.className = "conflict-indicator";
+            conflict.textContent = "✗";
+            ghost.appendChild(conflict);
+          }
+          const prefix = document.createElement("span");
+          prefix.className = "change-id-prefix";
+          prefix.textContent = change.changeIdPrefix;
+          ghost.appendChild(prefix);
+          const suffix = document.createElement("span");
+          suffix.className = "change-id-suffix";
+          suffix.textContent = change.changeIdSuffix;
+          ghost.appendChild(suffix);
+          if (change.changeOffset) {
+            const offset = document.createElement("span");
+            offset.className = "change-id-offset";
+            offset.textContent = `/${change.changeOffset}`;
+            ghost.appendChild(offset);
+          }
+          if (change.label) {
+            ghost.appendChild(document.createTextNode(" "));
+            const desc = document.createElement("span");
+            desc.className = "drag-ghost-description";
+            desc.textContent = change.label;
+            ghost.appendChild(desc);
+          }
           document.body.appendChild(ghost);
-          e.dataTransfer!.setDragImage(ghost, 0, 0);
+          e.dataTransfer!.setDragImage(ghost, -15, 0);
           setTimeout(() => ghost.remove(), 0);
         },
     onDragEnd: isRoot
