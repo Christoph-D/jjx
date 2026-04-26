@@ -41,6 +41,7 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 - Squash a change into any other change
 - Duplicate a change onto/after/before any other change
 - Apply the reverse of change (revert) onto/after/before any other change
+- Move bookmarks by dragging them onto a target change
 
 ### 📁 File management
 
@@ -81,6 +82,10 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 ### 🏷️ Bookmark/Tag management
 
 - Create, move, and delete bookmarks
+- Move bookmarks via drag&drop
+- Upload a bookmark to all its tracking remotes with a single click  
+  ![unsynced bookmark](images/unsynced-bookmark.png)
+- Right-click the upload button to upload to specific remotes
 - Set and delete tags
 - Show conflicted bookmarks and tags with `??` suffix
 - Show out-of-sync bookmarks and tags with `*` suffix

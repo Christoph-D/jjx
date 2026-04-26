@@ -1,4 +1,4 @@
-import { test, expect, TestRepo } from "../tests/baseTest";
+import { test, expect, TestRepo, newTestRepo } from "../tests/baseTest";
 import path from "path";
 import fs from "fs/promises";
 import { execSync } from "child_process";
@@ -316,6 +316,47 @@ test("take screenshot of workspace labels", async ({ userDataDir, graphFrame, te
   };
 
   await screenshot(workbox, "workspaces.png", clip);
+});
+
+test("take screenshot of bookmark upload", async ({ userDataDir, graphFrame, testRepo, workbox }) => {
+  await workbox.setViewportSize({ width: 1920, height: 1080 });
+  await workbox.mouse.move(0, 0);
+  await initializeSettings(userDataDir, ZOOM_LEVEL);
+  await testRepo.commitFile("initial.txt", "", "initial commit");
+
+  const remoteRepoPath = path.join(testRepo.repoPath, "origin");
+  await newTestRepo(remoteRepoPath);
+  await testRepo.jjCommand(["git", "remote", "add", "origin", "origin"]);
+  await testRepo.jjCommand(["bookmark", "create", "main", "-r", "@-"]);
+  await testRepo.jjCommand(["bookmark", "track", "main", "--remote=origin"]);
+
+  const unsyncedPill = graphFrame.locator('.bookmark-pill.unsynced[data-bookmark="main"]');
+  await expect(unsyncedPill).toBeVisible();
+  const uploadIcon = unsyncedPill.locator(".bookmark-push-icon");
+  await expect(uploadIcon).toBeVisible();
+  await uploadIcon.hover();
+  await workbox.waitForTimeout(500);
+
+  const graphHeader = workbox.getByRole("button", { name: /JJ Graph.*Section/i }).first();
+  const headerBox = await graphHeader.boundingBox();
+  if (!headerBox) {
+    throw new Error("Graph header not found");
+  }
+
+  const sideBar = workbox.locator(".part.sidebar");
+  const sideBarBox = await sideBar.boundingBox();
+  if (!sideBarBox) {
+    throw new Error("Sidebar not found");
+  }
+
+  const clip = {
+    x: scaleToZoomLevel(headerBox.x),
+    y: scaleToZoomLevel(headerBox.y) + 1,
+    width: scaleToZoomLevel(sideBarBox.x + sideBarBox.width - headerBox.x),
+    height: 100,
+  };
+
+  await screenshot(workbox, "unsynced-bookmark.png", clip);
 });
 
 test("take screenshot of oplog for readme", async ({ userDataDir, scmView, opLog, testRepo, workbox }) => {
