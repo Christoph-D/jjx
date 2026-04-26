@@ -45,27 +45,29 @@ Create a new release for the JJX extension following semantic versioning.
 6. **Get user confirmation:** After writing to CHANGELOG.md, tell the user that you wrote the new release notes to
    CHANGELOG.md. Ask them to review and edit CHANGELOG.md if needed. Do not continue until the user approves.
 
-7. **Update package.json** with the new version in the `version` field.
+7. **pnpm run format** to format the CHANGELOG.md file.
 
-8. **Run pnpm install** to update pnpm-lock.yaml:
+8. **Update package.json** with the new version in the `version` field.
+
+9. **Run pnpm install** to update pnpm-lock.yaml:
 
    ```
    pnpm install
    ```
 
-9. **Commit the version bump:**
+10. **Commit the version bump:**
 
-   ```
-   jj commit -m 'chore: Bump version to $tag'
-   ```
+    ```
+    jj commit -m 'chore: Bump version to $tag'
+    ```
 
-10. **Move the main bookmark to the new change:**
+11. **Move the main bookmark to the new change:**
 
     ```
     jj bookmark move main -t @-
     ```
 
-11. **Create the new tag:**
+12. **Create the new tag:**
 
     ```
     jj tag set -r main $tag

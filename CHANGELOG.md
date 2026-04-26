@@ -4,11 +4,15 @@
 
 ### New Features
 
-- **Drag and drop for bookmarks** - Drag bookmark pills onto commits to move them, replacing the old "Move Bookmark" context menu
-- **New quick upload button for bookmarks** - A new button "push to all tracking remotes" shows up next to out of sync bookmarks
-- **New right-click context menu for bookmarks** - Push a bookmark to a chosen remote or delete the bookmark directly from its context menu
+- **Drag and drop for bookmarks** - Drag bookmark pills onto commits to move them, replacing the old "Move Bookmark"
+  context menu
+- **New quick upload button for bookmarks** - A new button "push to all tracking remotes" shows up next to out of sync
+  bookmarks
+- **New right-click context menu for bookmarks** - Push a bookmark to a chosen remote or delete the bookmark directly
+  from its context menu
 - **New right-click context menu for tags** - Delete a tag directly from its context menu
-- **New error views when jj binary is not found** - Show clear errors in the graph and SCM panel when the jj binary is missing at activation
+- **New error views when jj binary is not found** - Show clear errors in the graph and SCM panel when the jj binary is
+  missing at activation
 - **Auto-update stale workspaces by default** - The `jjx.autoUpdateStaleWorkspace` setting now defaults to true
 - **Position graph tooltip to avoid obstructing the view** - Tooltips now better position themselves to minimize overlap
 
