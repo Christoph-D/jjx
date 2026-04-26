@@ -101,39 +101,49 @@ export function Tooltip() {
         </div>
       )}
       {change.authorTimestamp && <div class="tooltip-timestamp">{change.authorTimestamp}</div>}
-      {(change.localBookmarks.length > 0 ||
-        change.remoteBookmarks.length > 0 ||
-        change.localTags.length > 0 ||
-        change.remoteTags.length > 0) && (
-        <div class="tooltip-pills">
-          {change.localBookmarks.map((b) => (
-            <span
-              key={b.name}
-              class={"tooltip-pill tooltip-bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
-            >
-              {b.name}
-            </span>
-          ))}
-          {change.remoteBookmarks.map((b) => (
-            <span key={b.name + "@" + b.remote} class="tooltip-pill tooltip-bookmark-pill">
-              {b.name}@{b.remote}
-            </span>
-          ))}
-          {change.localTags.map((t) => (
-            <span
-              key={t.name}
-              class={"tooltip-pill tooltip-tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
-            >
-              {t.name}
-            </span>
-          ))}
-          {change.remoteTags.map((t) => (
-            <span key={t.name + "@" + t.remote} class="tooltip-pill tooltip-tag-pill">
-              {t.name}@{t.remote}
-            </span>
-          ))}
-        </div>
-      )}
+      {(() => {
+        const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
+        const localTagNames = new Set(change.localTags.map((t) => t.name));
+        const filteredRemoteBookmarks = change.remoteBookmarks.filter(
+          (b) => !(b.remote === "git" && localBookmarkNames.has(b.name)),
+        );
+        const filteredRemoteTags = change.remoteTags.filter((t) => !(t.remote === "git" && localTagNames.has(t.name)));
+        return change.localBookmarks.length > 0 ||
+          filteredRemoteBookmarks.length > 0 ||
+          change.localTags.length > 0 ||
+          filteredRemoteTags.length > 0 ? (
+          <div class="tooltip-pills">
+            {change.localBookmarks.map((b) => (
+              <span
+                key={b.name}
+                class={
+                  "tooltip-pill tooltip-bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")
+                }
+              >
+                {b.name}
+              </span>
+            ))}
+            {filteredRemoteBookmarks.map((b) => (
+              <span key={b.name + "@" + b.remote} class="tooltip-pill tooltip-bookmark-pill">
+                {b.name}@{b.remote}
+              </span>
+            ))}
+            {change.localTags.map((t) => (
+              <span
+                key={t.name}
+                class={"tooltip-pill tooltip-tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
+              >
+                {t.name}
+              </span>
+            ))}
+            {filteredRemoteTags.map((t) => (
+              <span key={t.name + "@" + t.remote} class="tooltip-pill tooltip-tag-pill">
+                {t.name}@{t.remote}
+              </span>
+            ))}
+          </div>
+        ) : null;
+      })()}
       {stats ? (
         <div class="tooltip-summary">
           {stats.filesChanged} file{stats.filesChanged !== 1 ? "s" : ""} changed,{" "}
