@@ -5,9 +5,7 @@ export function JJNotFoundState() {
         <i class="codicon codicon-error"></i>
       </div>
       <div class="stale-state-message">No jj Binary Found</div>
-      <div class="stale-state-description">
-        The jj binary could not be found on your system.
-      </div>
+      <div class="stale-state-description">The jj binary could not be found on your system.</div>
       <div class="stale-state-description">
         <b>Solution:</b> Install jj in a common location or set the path to the jj binary in the settings.
       </div>

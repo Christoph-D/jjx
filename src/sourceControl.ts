@@ -169,7 +169,10 @@ export class WorkspaceSourceControlManager {
         if (e instanceof Error && e.message.includes("no jj repo in")) {
           logger.debug(`No jj repo in ${workspaceFolder.uri.fsPath}`);
         } else {
-          if (e instanceof Error && (e.message.includes("jj CLI not found") || e.message.includes("jjx.jjPath is not an executable"))) {
+          if (
+            e instanceof Error &&
+            (e.message.includes("jj CLI not found") || e.message.includes("jjx.jjPath is not an executable"))
+          ) {
             anyBinaryNotFound = true;
           }
           logger.error(`Error while initializing jjx in workspace ${workspaceFolder.uri.fsPath}: ${String(e)}`);

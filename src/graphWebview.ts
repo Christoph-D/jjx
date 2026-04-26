@@ -51,9 +51,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
   public async resolveWebviewView(webviewView: vscode.WebviewView): Promise<void> {
     this.panel = webviewView;
-    this.panel.title = this.repository
-      ? `JJ Graph (${path.basename(this.repository.repositoryRoot)})`
-      : "JJ Graph";
+    this.panel.title = this.repository ? `JJ Graph (${path.basename(this.repository.repositoryRoot)})` : "JJ Graph";
 
     webviewView.webview.options = {
       enableScripts: true,
@@ -77,11 +75,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     }
 
     webviewView.webview.onDidReceiveMessage(async (message: Message) => {
-      if (
-        !this.repository &&
-        message.command !== "selectChange" &&
-        message.command !== "reportError"
-      ) {
+      if (!this.repository && message.command !== "selectChange" && message.command !== "reportError") {
         return;
       }
       const repo = this.repository!;
@@ -281,12 +275,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "rebaseOnto":
           try {
-            await repo.rebaseRetryImmutable(
-              message.changeId,
-              message.targetChangeId,
-              "onto",
-              message.withDescendants,
-            );
+            await repo.rebaseRetryImmutable(message.changeId, message.targetChangeId, "onto", message.withDescendants);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to rebase", error);
@@ -294,12 +283,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "rebaseAfter":
           try {
-            await repo.rebaseRetryImmutable(
-              message.changeId,
-              message.targetChangeId,
-              "after",
-              message.withDescendants,
-            );
+            await repo.rebaseRetryImmutable(message.changeId, message.targetChangeId, "after", message.withDescendants);
             await this.refresh();
           } catch (error: unknown) {
             showErrorMessage("Failed to rebase", error);
