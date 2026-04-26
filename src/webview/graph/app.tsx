@@ -40,6 +40,16 @@ export function App() {
       const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(id)));
       selectedNodes.value = preserved;
       diffStatsCache.value = new Map();
+      const activeTooltip = tooltip.value;
+      if (activeTooltip) {
+        const updatedChange = message.changes.find((c) => c.changeId === activeTooltip.change.changeId);
+        if (updatedChange) {
+          tooltip.value = { ...activeTooltip, change: updatedChange };
+          vscode.postMessage({ command: "fetchDiffStats", changeId: updatedChange.changeId });
+        } else {
+          tooltip.value = null;
+        }
+      }
       currentChanges.value = message.changes;
       currentGraph.value = message.laneInfo;
       changeDoubleClickAction.value = message.changeDoubleClickAction;
