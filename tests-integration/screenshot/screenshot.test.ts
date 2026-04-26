@@ -4,8 +4,9 @@ import fs from "fs/promises";
 import { execSync } from "child_process";
 import { Page } from "@playwright/test";
 
-TestRepo.userName = "Christoph Dittmann";
-TestRepo.userEmail = "code@yozora.eu";
+// Use the system jj identity for the screenshots to match the identity seen by the extension under test.
+TestRepo.userName = null;
+TestRepo.userEmail = null;
 
 const TEMP_SCREENSHOT = "/tmp/jjx-screenshot.png";
 const OUTPUT_DIR = path.resolve(__dirname, "..", "..", "images");
@@ -376,9 +377,6 @@ test("take screenshot of bookmark upload", async ({ userDataDir, graphFrame, tes
 });
 
 test("take screenshot of oplog for readme", async ({ userDataDir, scmView, opLog, testRepo, workbox }) => {
-  TestRepo.userName = null;
-  TestRepo.userEmail = null;
-
   await initializeSettings(userDataDir, ZOOM_LEVEL);
   await initializeExampleRepo(testRepo);
 
