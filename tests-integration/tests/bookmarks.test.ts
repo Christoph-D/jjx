@@ -96,6 +96,29 @@ test("move bookmark forward and backward with confirmation", async ({ graphFrame
   expect(bookmark?.description).toBe("commit 1");
 });
 
+test("move bookmark via drag and drop", async ({ graphFrame, testRepo }) => {
+  await testRepo.commitFile("a.txt", "content a", "commit 1");
+  await testRepo.jjCommand(["bookmark", "create", "test-bookmark", "-r", "@-"]);
+  await testRepo.commitFile("b.txt", "content b", "commit 2");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const commit2Node = nodes.nth(1);
+  const commit1Node = nodes.nth(2);
+
+  await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
+
+  const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="test-bookmark"]');
+  await bookmarkPill.dragTo(commit2Node);
+
+  await expect(commit2Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
+  await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).not.toBeVisible();
+
+  const bookmark = await testRepo.getBookmark("test-bookmark");
+  expect(bookmark?.description).toBe("commit 2");
+});
+
 test("conflicted bookmark shows both sides with conflicted class", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content", "commit A");
   await testRepo.jjCommand(["bookmark", "create", "test-bookmark"]);
