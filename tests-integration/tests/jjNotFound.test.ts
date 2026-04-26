@@ -11,10 +11,7 @@ const test = base.extend({
       const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "jjx-test-"));
       const repoPath = path.join(tempDir, "repo");
       const repo = await newTestRepo(repoPath);
-      await repo.writeFile(
-        ".vscode/settings.json",
-        JSON.stringify({ "jjx.jjPath": "/nonexistent/jj" }),
-      );
+      await repo.writeFile(".vscode/settings.json", JSON.stringify({ "jjx.jjPath": "/nonexistent/jj" }));
       await use(repo);
       await fs.promises.rm(tempDir, { recursive: true, force: true });
     },
@@ -22,7 +19,11 @@ const test = base.extend({
   ],
 });
 
-test("shows error views when jj binary is not found", async ({ workbox, scmView }) => {
+test("shows error views when jj binary is not found, then recovers when binary becomes available", async ({
+  workbox,
+  scmView,
+  testRepo,
+}) => {
   const graphHeader = scmView.getByRole("button", { name: /JJ Graph/i });
   const isExpanded = await graphHeader.getAttribute("aria-expanded");
   if (isExpanded === "false") {
@@ -41,14 +42,9 @@ test("shows error views when jj binary is not found", async ({ workbox, scmView 
     throw new Error("Graph frame with not-found state not found");
   }).toPass();
 
-  await expect(graphFrame!.locator("#jj-not-found-state .stale-state-message")).toHaveText(
-    "No jj Binary Found",
-  );
+  await expect(graphFrame!.locator("#jj-not-found-state .stale-state-message")).toHaveText("No jj Binary Found");
   const installLink = graphFrame!.locator("#jj-not-found-state a");
-  await expect(installLink).toHaveAttribute(
-    "href",
-    "https://docs.jj-vcs.dev/latest/install-and-setup/",
-  );
+  await expect(installLink).toHaveAttribute("href", "https://docs.jj-vcs.dev/latest/install-and-setup/");
 
   await expect(scmView.getByRole("treeitem", { name: /jj binary not found/i })).toBeVisible();
 
@@ -56,5 +52,12 @@ test("shows error views when jj binary is not found", async ({ workbox, scmView 
   await opLogHeader.click();
   const opLogPane = scmView.locator(".pane", { hasText: "Operation Log" });
   await expect(opLogPane).toBeVisible();
-  await expect(opLogPane.locator('[role="treeitem"]')).toHaveCount(0);
+  await expect(opLogPane.getByRole("treeitem")).toHaveCount(0);
+
+  await testRepo.deleteFile(".vscode/settings.json");
+  await testRepo.writeFile("test.txt", "hello");
+
+  await expect(graphFrame!.locator("#nodes > div")).toHaveCount(2);
+  await expect(scmView.getByRole("treeitem", { name: /test\.txt/ })).toBeVisible();
+  await expect(opLogPane.getByRole("treeitem").first()).toBeVisible();
 });
