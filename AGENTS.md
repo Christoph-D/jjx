@@ -8,6 +8,10 @@ A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version
 - **Watch**: `pnpm run watch`
 - **Type check**: `pnpm run check-types`
 - **Lint**: `pnpm run lint`
+- **Format**: `pnpm run format`
+- **Quick check** (type check, lint, format, unit tests): `pnpm run check`
+
+Always run `pnpm run check` after adding or changing anything.
 
 ## Testing
 
@@ -17,10 +21,13 @@ A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version
 
 ### Integration Tests
 
-To iterate on an integration test, change the test to `test.only()` and then run `pnpm run playwright-test:only-test`.
+Run tests in a single file:
 
-Do not add custom timeouts to Playwright expectations. The Playwright config already sets `expect.timeout` to 20
-seconds.
+```shell
+pnpm exec playwright test --config=tests-integration/playwright.config.ts tests-integration/tests/mergeConflict.test.ts
+```
+
+Do not add custom timeouts to Playwright expectations. The Playwright config already sets `expect.timeout`.
 
 ## Architecture
 
