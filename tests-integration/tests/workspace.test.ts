@@ -1,30 +1,33 @@
 import path from "path";
 import { test, expect, TestRepo } from "./baseTest";
 
-test("workspace pills and stale workspace status appear in the graph view", async ({ graphFrame, testRepo }) => {
-  await testRepo.writeFile(".vscode/settings.json", '{"jjx.autoUpdateStaleWorkspace": false}');
-  await testRepo.commit("initial commit");
+test.describe("auto-update disabled", () => {
+  test.use({ customSettings: { "jjx.autoUpdateStaleWorkspace": false } });
 
-  const workspace2Path = path.join(testRepo.repoPath, "workspace2");
-  await testRepo.jjCommand(["workspace", "add", workspace2Path]);
+  test("workspace pills and stale workspace status appear in the graph view", async ({ graphFrame, testRepo }) => {
+    await testRepo.commit("initial commit");
 
-  const workspacePills = graphFrame.locator(".pill.workspace-pill");
-  await expect(workspacePills).toHaveCount(2);
-  await expect(workspacePills).toHaveText(["default", "workspace2"]);
+    const workspace2Path = path.join(testRepo.repoPath, "workspace2");
+    await testRepo.jjCommand(["workspace", "add", workspace2Path]);
 
-  const workspace2 = new TestRepo(workspace2Path);
-  await workspace2.writeFile("new-file.txt", "hello from workspace2");
-  const result = await workspace2.jjCommand(["squash"]);
-  if (result.exitCode !== 0) {
-    throw new Error(`Failed to squash in workspace2:\n\n${result.stdout}\n\n${result.stderr}`);
-  }
+    const workspacePills = graphFrame.locator(".pill.workspace-pill");
+    await expect(workspacePills).toHaveCount(2);
+    await expect(workspacePills).toHaveText(["default", "workspace2"]);
 
-  const staleMessage = graphFrame.locator("#stale-state .stale-state-message");
-  await expect(staleMessage).toHaveText("Working Copy Is Stale");
+    const workspace2 = new TestRepo(workspace2Path);
+    await workspace2.writeFile("new-file.txt", "hello from workspace2");
+    const result = await workspace2.jjCommand(["squash"]);
+    if (result.exitCode !== 0) {
+      throw new Error(`Failed to squash in workspace2:\n\n${result.stdout}\n\n${result.stderr}`);
+    }
 
-  const updateButton = graphFrame.locator("#update-stale-button");
-  await updateButton.click();
-  await expect(workspacePills).toHaveText(["default", "workspace2"]);
+    const staleMessage = graphFrame.locator("#stale-state .stale-state-message");
+    await expect(staleMessage).toHaveText("Working Copy Is Stale");
+
+    const updateButton = graphFrame.locator("#update-stale-button");
+    await updateButton.click();
+    await expect(workspacePills).toHaveText(["default", "workspace2"]);
+  });
 });
 
 test("stale workspace auto-updates if enabled", async ({ graphFrame, testRepo }) => {

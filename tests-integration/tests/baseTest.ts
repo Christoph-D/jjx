@@ -22,6 +22,7 @@ type TestFixtures = TestOptions & {
   opLog: Locator;
   testRepo: TestRepo;
   userDataDir: string;
+  customSettings: Record<string, unknown>;
 };
 
 type WorkerFixtures = {
@@ -143,7 +144,13 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       await fs.promises.rm(tempDir, { recursive: true, force: true });
     },
 
-  userDataDir: async ({ cachePath }, use) => {
+  customSettings:
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      await use({});
+    },
+
+  userDataDir: async ({ cachePath, customSettings }, use) => {
     const userDataDir = path.join(cachePath, "user-data");
     const userDir = path.join(userDataDir, "User");
     await fs.promises.mkdir(userDir, { recursive: true });
@@ -157,6 +164,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "jjx.pollIntervalSeconds": 1,
         "window.dialogStyle": "custom",
         "window.autoDetectColorScheme": false,
+        ...customSettings,
       }),
     );
     await use(userDataDir);
