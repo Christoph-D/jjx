@@ -87,6 +87,7 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
   ![unsynced bookmark](images/unsynced-bookmark.png)
 - Right-click the upload button to upload to specific remotes
 - Set and delete tags
+- Right click on a bookmark or tag to delete it
 - Show conflicted bookmarks and tags with `??` suffix
 - Show out-of-sync bookmarks and tags with `*` suffix
 

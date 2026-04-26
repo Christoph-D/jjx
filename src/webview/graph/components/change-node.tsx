@@ -17,6 +17,7 @@ import {
   showTooltips,
   dragBookmarkName,
   pendingPushBookmarkMenu,
+  pillContextMenu,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
@@ -227,6 +228,16 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
             class={"pill bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
             data-bookmark={b.name}
             draggable={true}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              pillContextMenu.value = {
+                type: "bookmark",
+                name: b.name,
+                pageX: e.pageX,
+                pageY: e.pageY,
+              };
+            }}
             onDragStart={(e) => {
               e.stopPropagation();
               dragBookmarkName.value = b.name;
@@ -285,6 +296,16 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
             key={t.name}
             class={"pill tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
             data-tag={t.name}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              pillContextMenu.value = {
+                type: "tag",
+                name: t.name,
+                pageX: e.pageX,
+                pageY: e.pageY,
+              };
+            }}
           >
             {abbreviateName(t.name)}
           </span>

@@ -24,13 +24,11 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   const bookmark = await testRepo.getBookmark("test-bookmark");
   expect(bookmark).toBeDefined();
 
-  await commitNode.click({ button: "right" });
+  await bookmarkPill.click({ button: "right" });
 
-  const deleteBookmarkItem = graphFrame.locator('.context-menu-item[data-action="deleteBookmark"]');
-  await deleteBookmarkItem.hover();
-
-  const deleteBookmarkSubmenuItem = graphFrame.locator('.context-submenu-item[data-delete-bookmark="test-bookmark"]');
-  await deleteBookmarkSubmenuItem.click();
+  const pillContextMenu = graphFrame.locator("#pill-context-menu");
+  await expect(pillContextMenu).toBeVisible();
+  await pillContextMenu.locator(".context-menu-item").click();
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toContainText("test-bookmark");

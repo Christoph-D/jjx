@@ -21,11 +21,13 @@ import {
   showTooltips,
   pushBookmarkMenu,
   pendingPushBookmarkMenu,
+  pillContextMenu,
 } from "./signals";
 import { Graph } from "./components/graph";
 import { ContextMenu } from "./components/context-menu";
 import { RebaseMenu } from "./components/rebase-menu";
 import { PushBookmarkMenu } from "./components/push-bookmark-menu";
+import { PillContextMenu } from "./components/pill-context-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
 import { JJNotFoundState } from "./components/jj-not-found-state";
@@ -106,6 +108,7 @@ export function App() {
       contextMenu.value = null;
       rebaseMenu.value = null;
       pushBookmarkMenu.value = null;
+      pillContextMenu.value = null;
     };
 
     document.addEventListener("click", hideMenus);
@@ -130,6 +133,7 @@ export function App() {
       <ContextMenu />
       <RebaseMenu />
       <PushBookmarkMenu />
+      <PillContextMenu />
       <Tooltip />
     </ErrorBoundary>
   );

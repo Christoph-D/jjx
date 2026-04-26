@@ -83,4 +83,13 @@ export interface PendingGraphUpdate {
   showTooltips: boolean;
 }
 
+export interface PillContextMenuState {
+  type: "bookmark" | "tag";
+  name: string;
+  pageX: number;
+  pageY: number;
+}
+
+export const pillContextMenu = signal<PillContextMenuState | null>(null);
+
 export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);
