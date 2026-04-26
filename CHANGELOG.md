@@ -1,5 +1,15 @@
 # Change Log
 
+## 1.7.1
+
+### New Features
+
+- **Track/untrack bookmarks from context menu** - Right-click a bookmark pill to track or untrack it on specific remotes
+
+### Internal
+
+- Use the system jj identity for generating screenshots to avoid hardcoding the identity
+
 ## 1.7.0
 
 ### New Features
