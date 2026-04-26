@@ -18,6 +18,7 @@ import {
   dragBookmarkName,
   pendingPushBookmarkMenu,
   pillContextMenu,
+  closeAllMenus,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
@@ -101,6 +102,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
     }
     clearHoverTimers();
     tooltip.value = null;
+    closeAllMenus();
     contextMenu.value = {
       change,
       pageX: e.pageX,
@@ -231,6 +233,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              closeAllMenus();
               pillContextMenu.value = {
                 type: "bookmark",
                 name: b.name,
@@ -272,6 +275,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                 onContextMenu={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  closeAllMenus();
                   pendingPushBookmarkMenu.value = {
                     bookmark: b.name,
                     pageX: e.pageX,
@@ -299,6 +303,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              closeAllMenus();
               pillContextMenu.value = {
                 type: "tag",
                 name: t.name,

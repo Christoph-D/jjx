@@ -7,6 +7,7 @@ import {
   tooltip,
   dragBookmarkName,
   vscode,
+  closeAllMenus,
 } from "../signals";
 import { useTooltipTimers } from "./use-tooltip-timers";
 import { rootChangeId } from "../types";
@@ -136,6 +137,7 @@ export function useDragDrop(change: ChangeNode) {
       tooltip.value = null;
 
       justFinishedDrag.value = true;
+      closeAllMenus();
       rebaseMenu.value = {
         sourceId,
         targetId,

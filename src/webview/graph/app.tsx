@@ -12,8 +12,6 @@ import {
   isJJNotFound,
   isDragging,
   selectedNodes,
-  contextMenu,
-  rebaseMenu,
   pendingGraphUpdate,
   vscode,
   diffStatsCache,
@@ -21,7 +19,7 @@ import {
   showTooltips,
   pushBookmarkMenu,
   pendingPushBookmarkMenu,
-  pillContextMenu,
+  closeAllMenus,
 } from "./signals";
 import { Graph } from "./components/graph";
 import { ContextMenu } from "./components/context-menu";
@@ -91,6 +89,7 @@ export function App() {
         case "bookmarkTrackingRemotesResponse": {
           const pending = pendingPushBookmarkMenu.value;
           if (pending && pending.bookmark === message.bookmark && message.remotes.length > 0) {
+            closeAllMenus();
             pushBookmarkMenu.value = {
               bookmark: pending.bookmark,
               pageX: pending.pageX,
@@ -104,15 +103,8 @@ export function App() {
       }
     });
 
-    const hideMenus = () => {
-      contextMenu.value = null;
-      rebaseMenu.value = null;
-      pushBookmarkMenu.value = null;
-      pillContextMenu.value = null;
-    };
-
-    document.addEventListener("click", hideMenus);
-    window.addEventListener("blur", hideMenus);
+    document.addEventListener("click", closeAllMenus);
+    window.addEventListener("blur", closeAllMenus);
 
     let resizeTimeout: ReturnType<typeof setTimeout>;
     window.addEventListener("resize", () => {
