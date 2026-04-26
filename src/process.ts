@@ -12,6 +12,23 @@ export class CancelledError extends Error {
   }
 }
 
+export class ProcessError extends Error {
+  readonly exitCode: number | null;
+  readonly signal: string | null;
+  readonly stdout: string;
+  readonly stderr: string;
+
+  constructor(exitCode: number | null, signal: string | null, stdout: string, stderr: string) {
+    const reason = exitCode !== null ? `exit code ${exitCode}` : `signal ${signal}`;
+    super(`Command failed with ${reason}.\nstdout: ${stdout}\nstderr: ${stderr}`);
+    this.name = "ProcessError";
+    this.exitCode = exitCode;
+    this.signal = signal;
+    this.stdout = stdout;
+    this.stderr = stderr;
+  }
+}
+
 export type SpawnOptions = NodeSpawnOptions & { cwd: string };
 
 export type ProcessOutput = { stdout: Buffer; stderr: Buffer };
@@ -55,17 +72,9 @@ export function collectProcessOutput(
         const stdoutBuf = Buffer.concat(stdout);
         const stderrBuf = Buffer.concat(stderr);
         if (code) {
-          reject(
-            new Error(
-              `Command failed with exit code ${code}.\nstdout: ${stdoutBuf.toString()}\nstderr: ${stderrBuf.toString()}`,
-            ),
-          );
+          reject(new ProcessError(code, null, stdoutBuf.toString(), stderrBuf.toString()));
         } else if (signal) {
-          reject(
-            new Error(
-              `Command failed with signal ${signal}.\nstdout: ${stdoutBuf.toString()}\nstderr: ${stderrBuf.toString()}`,
-            ),
-          );
+          reject(new ProcessError(null, signal, stdoutBuf.toString(), stderrBuf.toString()));
         } else {
           resolve({ stdout: stdoutBuf, stderr: stderrBuf });
         }

@@ -1,3 +1,5 @@
+import type { ProcessError } from "./process";
+
 export class ImmutableError extends Error {
   constructor(message: string) {
     super(message);
@@ -36,13 +38,15 @@ export function parseJJError(error: unknown): Error {
  */
 export function convertJJErrors(e: unknown): never {
   if (e instanceof Error) {
-    if (e.message.includes("is immutable")) {
+    const stderr = (e as ProcessError).stderr;
+    const text = typeof stderr === "string" ? stderr : e.message;
+    if (text.includes("is immutable")) {
       throw new ImmutableError(e.message);
     }
-    if (e.message.includes("Refusing to move bookmark backwards")) {
+    if (text.includes("Refusing to move bookmark backwards")) {
       throw new BookmarkBackwardsError(e.message);
     }
-    if (e.message.includes("working copy is stale")) {
+    if (text.includes("working copy is stale")) {
       throw new StaleWorkingCopyError(e.message);
     }
   }
