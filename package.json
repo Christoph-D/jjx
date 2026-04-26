@@ -714,7 +714,7 @@
         },
         "jjx.autoUpdateStaleWorkspace": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Automatically run 'jj workspace update-stale' when the working copy is stale",
           "scope": "resource"
         }

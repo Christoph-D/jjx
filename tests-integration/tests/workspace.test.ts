@@ -2,6 +2,7 @@ import path from "path";
 import { test, expect, TestRepo } from "./baseTest";
 
 test("workspace pills and stale workspace status appear in the graph view", async ({ graphFrame, testRepo }) => {
+  await testRepo.writeFile(".vscode/settings.json", '{"jjx.autoUpdateStaleWorkspace": false}');
   await testRepo.commit("initial commit");
 
   const workspace2Path = path.join(testRepo.repoPath, "workspace2");
@@ -27,7 +28,6 @@ test("workspace pills and stale workspace status appear in the graph view", asyn
 });
 
 test("stale workspace auto-updates if enabled", async ({ graphFrame, testRepo }) => {
-  await testRepo.writeFile(".vscode/settings.json", '{"jjx.autoUpdateStaleWorkspace": true}');
   await testRepo.commit("initial commit");
 
   const workspace2Path = path.join(testRepo.repoPath, "workspace2");

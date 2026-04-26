@@ -89,8 +89,8 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 
 - Show workspace labels in the graph view  
   ![workspaces](images/workspaces.png)
-- Handle "workspace is stale" errors by prompting the user to click a button "update stale workspace"
-- Optionally auto-update a stale workspace (enable with `jjx.autoUpdateStaleWorkspace`)
+- Automatically update stale workspaces (can be disabled with `jjx.autoUpdateStaleWorkspace`, in which case the user
+  will be prompted to update a stale workspace)
 
 ### 🔄 Operation management
 
@@ -110,7 +110,7 @@ The following settings can be configured in VS Code's settings:
 
 | Setting                             | Default     | Description                                                                                                                                            |
 | ----------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `jjx.autoUpdateStaleWorkspace`      | `false`     | Automatically run `jj workspace update-stale` when the current workspace is stale                                                                      |
+| `jjx.autoUpdateStaleWorkspace`      | `true`      | Automatically run `jj workspace update-stale` when the current workspace is stale                                                                      |
 | `jjx.baseWebURL`                    | `""`        | Base URL for the 'Copy URL' feature (e.g., `https://github.com/user/repo`). Overrides `git_web_url()` when set                                         |
 | `jjx.changeDoubleClickAction`       | `"new"`     | Action when double-clicking a change in the graph view: `"edit"` (jj edit) or `"new"` (jj new)                                                         |
 | `jjx.commandTimeout`                | `null`      | Global timeout in milliseconds for all jj commands. If not set, per-command defaults will be used                                                      |
