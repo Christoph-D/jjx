@@ -883,7 +883,6 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
     "@types/cross-spawn": "^6.0.6",
-    "@types/diff": "^7.0.2",
     "@types/node": "^25.6.0",
     "@types/vscode": "^1.116.0",
     "@types/which": "^3.0.4",
@@ -904,7 +903,7 @@
     "ansi-regex": "^6.2.2",
     "arktype": "^2.2.0",
     "cross-spawn": "^7.0.6",
-    "diff": "^8.0.4",
+    "diff": "^9.0.0",
     "preact": "^10.29.1",
     "which": "^6.0.1"
   },
