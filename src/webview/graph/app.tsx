@@ -17,14 +17,12 @@ import {
   diffStatsCache,
   tooltip,
   showTooltips,
-  pushBookmarkMenu,
-  pendingPushBookmarkMenu,
+  pillContextMenu,
   closeAllMenus,
 } from "./signals";
 import { Graph } from "./components/graph";
 import { ContextMenu } from "./components/context-menu";
 import { RebaseMenu } from "./components/rebase-menu";
-import { PushBookmarkMenu } from "./components/push-bookmark-menu";
 import { PillContextMenu } from "./components/pill-context-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
@@ -87,17 +85,14 @@ export function App() {
           break;
         }
         case "bookmarkTrackingRemotesResponse": {
-          const pending = pendingPushBookmarkMenu.value;
-          if (pending && pending.bookmark === message.bookmark && message.remotes.length > 0) {
-            closeAllMenus();
-            pushBookmarkMenu.value = {
-              bookmark: pending.bookmark,
-              pageX: pending.pageX,
-              pageY: pending.pageY,
-              remotes: message.remotes,
+          const state = pillContextMenu.value;
+          if (state && state.type === "bookmark" && state.name === message.bookmark && state.pendingRemotes) {
+            pillContextMenu.value = {
+              ...state,
+              remotes: message.remotes.length > 0 ? message.remotes : undefined,
+              pendingRemotes: undefined,
             };
           }
-          pendingPushBookmarkMenu.value = null;
           break;
         }
       }
@@ -124,7 +119,6 @@ export function App() {
       {isStale.value ? <StaleState /> : isJJNotFound.value ? <JJNotFoundState /> : <Graph />}
       <ContextMenu />
       <RebaseMenu />
-      <PushBookmarkMenu />
       <PillContextMenu />
       <Tooltip />
     </ErrorBoundary>

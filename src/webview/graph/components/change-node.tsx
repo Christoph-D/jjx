@@ -16,7 +16,6 @@ import {
   vscode,
   showTooltips,
   dragBookmarkName,
-  pendingPushBookmarkMenu,
   pillContextMenu,
   closeAllMenus,
 } from "../signals";
@@ -234,12 +233,17 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               e.preventDefault();
               e.stopPropagation();
               closeAllMenus();
+              const hasPushIcon = !b.synced && !b.conflict && b.showPushButton !== false;
               pillContextMenu.value = {
                 type: "bookmark",
                 name: b.name,
                 pageX: e.pageX,
                 pageY: e.pageY,
+                pendingRemotes: hasPushIcon || undefined,
               };
+              if (hasPushIcon) {
+                vscode.postMessage({ command: "getBookmarkTrackingRemotes", bookmark: b.name });
+              }
             }}
             onDragStart={(e) => {
               e.stopPropagation();
@@ -271,17 +275,6 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                 onClick={(e) => {
                   e.stopPropagation();
                   vscode.postMessage({ command: "pushBookmark", bookmark: b.name });
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  closeAllMenus();
-                  pendingPushBookmarkMenu.value = {
-                    bookmark: b.name,
-                    pageX: e.pageX,
-                    pageY: e.pageY,
-                  };
-                  vscode.postMessage({ command: "getBookmarkTrackingRemotes", bookmark: b.name });
                 }}
               />
             )}

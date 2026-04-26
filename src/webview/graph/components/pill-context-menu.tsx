@@ -5,15 +5,16 @@ import { useMenuPosition } from "./menu-container";
 export function PillContextMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
   const state = pillContextMenu.value;
-  if (!state) {
+  if (!state || state.pendingRemotes) {
     return null;
   }
 
   useMenuPosition(menuRef, state);
 
-  const label = state.type === "bookmark" ? "Delete Bookmark" : "Delete Tag";
-  const command = state.type === "bookmark" ? "deleteBookmark" : "deleteTag";
-  const payload = state.type === "bookmark" ? { bookmark: state.name } : { tag: state.name };
+  const isBookmark = state.type === "bookmark";
+  const deleteLabel = isBookmark ? "Delete Bookmark" : "Delete Tag";
+  const deleteCommand = isBookmark ? "deleteBookmark" : "deleteTag";
+  const deletePayload = isBookmark ? { bookmark: state.name } : { tag: state.name };
 
   return (
     <div
@@ -23,14 +24,29 @@ export function PillContextMenu() {
       style="display: none"
       onClick={(e) => e.stopPropagation()}
     >
+      {isBookmark &&
+        state.remotes &&
+        state.remotes.map((remote) => (
+          <div
+            key={remote}
+            class="context-menu-item"
+            onClick={() => {
+              vscode.postMessage({ command: "pushBookmarkToRemote", bookmark: state.name, remote });
+              pillContextMenu.value = null;
+            }}
+          >
+            Push to {remote}
+          </div>
+        ))}
+      {isBookmark && state.remotes && state.remotes.length > 0 && <div class="context-menu-separator"></div>}
       <div
         class="context-menu-item"
         onClick={() => {
-          vscode.postMessage({ command, ...payload });
+          vscode.postMessage({ command: deleteCommand, ...deletePayload });
           pillContextMenu.value = null;
         }}
       >
-        {label}
+        {deleteLabel}
       </div>
     </div>
   );

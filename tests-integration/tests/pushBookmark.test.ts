@@ -35,9 +35,9 @@ test("push bookmark to all remotes via upload icon, then push to single remote",
   await expect(unsyncedPill).toBeVisible();
   await expect(uploadIcon).toBeVisible();
 
-  await uploadIcon.click({ button: "right" });
+  await bookmarkPill.click({ button: "right" });
 
-  const pushMenu = graphFrame.locator("#push-bookmark-menu");
+  const pushMenu = graphFrame.locator("#pill-context-menu");
   await expect(pushMenu).toBeVisible();
 
   const pushToRemoteA = pushMenu.locator(".context-menu-item").filter({ hasText: "Push to remote-a" });
