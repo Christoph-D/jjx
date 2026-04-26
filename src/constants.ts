@@ -9,3 +9,6 @@ export const TIMEOUTS = {
 } as const;
 
 export const MINIMUM_JJ_VERSION = { major: 0, minor: 38, patch: 0 } as const;
+
+// Also update the default for jjx.logLimit in package.json when changing this value.
+export const DEFAULT_LOG_LIMIT = 500 as const;

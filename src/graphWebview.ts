@@ -9,6 +9,7 @@ import type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage }
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elidedEdges";
 import { logger } from "./logger";
 import { getLogRevset, getElidedVisibleImmutableParents } from "./config";
+import { DEFAULT_LOG_LIMIT } from "./constants";
 
 export type { LaneNode, LaneEdge, ChangeIdGraph } from "./laneAssigner";
 export type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
@@ -415,7 +416,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const config = vscode.workspace.getConfiguration("jjx");
       const graphStyle = config.get<string>("graphStyle") || "full";
 
-      const logLimit = config.get<number>("logLimit") ?? 100;
+      const logLimit = config.get<number>("logLimit") ?? DEFAULT_LOG_LIMIT;
       const logStart = performance.now();
       const rawEntries = await this.repository.log(getLogRevset(), logLimit);
       const logDuration = performance.now() - logStart;

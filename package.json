@@ -695,8 +695,8 @@
         },
         "jjx.logLimit": {
           "type": "number",
-          "default": 100,
-          "description": "Maximum number of commits shown in the graph view.",
+          "default": 500,
+          "description": "Maximum number of commits shown in the graph view. Smaller values improve performance, higher values show more history.",
           "scope": "resource",
           "minimum": 1
         },
