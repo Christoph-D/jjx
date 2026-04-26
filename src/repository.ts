@@ -740,6 +740,54 @@ export class JJRepository {
       .filter((r) => r && r !== "git");
   }
 
+  async getBookmarkTrackingInfo(bookmark: string): Promise<{ trackedRemotes: string[]; untrackedRemotes: string[] }> {
+    const [trackedOutput, remotesOutput] = await Promise.all([
+      handleJJCommand(
+        this.spawnJJRead(
+          [
+            "bookmark",
+            "list",
+            "--all-remotes",
+            bookmark,
+            "-T",
+            `if(remote != "" && tracked && remote != "git", remote ++ "\\n", "")`,
+          ],
+          { cwd: this.repositoryRoot },
+        ),
+      ),
+      handleJJCommand(this.spawnJJRead(["git", "remote", "list"], { cwd: this.repositoryRoot })),
+    ]);
+    const parseLines = (output: string) =>
+      output
+        .toString()
+        .trim()
+        .split("\n")
+        .map((r) => r.trim())
+        .filter((r) => r);
+    const trackedRemotes = parseLines(trackedOutput.toString());
+    const allRemotes = parseLines(remotesOutput.toString()).map((line) => line.split(/\s+/)[0]);
+    const untrackedRemotes = allRemotes.filter((r) => !trackedRemotes.includes(r));
+    return { trackedRemotes, untrackedRemotes };
+  }
+
+  async trackBookmark(bookmark: string, remote: string): Promise<void> {
+    await handleJJCommand(
+      this.spawnJJ(["bookmark", "track", bookmark, `--remote=${remote}`], {
+        timeout: TIMEOUTS.DEFAULT,
+        cwd: this.repositoryRoot,
+      }),
+    );
+  }
+
+  async untrackBookmark(bookmark: string, remote: string): Promise<void> {
+    await handleJJCommand(
+      this.spawnJJ(["bookmark", "untrack", bookmark, `--remote=${remote}`], {
+        timeout: TIMEOUTS.DEFAULT,
+        cwd: this.repositoryRoot,
+      }),
+    );
+  }
+
   async pushBookmarkToRemote(bookmark: string, remote: string): Promise<void> {
     await handleJJCommand(
       this.spawnJJ(["git", "push", "--bookmark", bookmark, "--remote", remote], {

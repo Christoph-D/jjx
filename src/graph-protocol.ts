@@ -76,6 +76,8 @@ export type WebviewToExtensionMessage =
   | { command: "pushBookmark"; bookmark: string }
   | { command: "pushBookmarkToRemote"; bookmark: string; remote: string }
   | { command: "getBookmarkTrackingRemotes"; bookmark: string }
+  | { command: "trackBookmark"; bookmark: string; remote: string }
+  | { command: "untrackBookmark"; bookmark: string; remote: string }
   | { command: "deleteBookmark"; bookmark: string }
   | { command: "deleteTag"; tag: string }
   | { command: "describeChange"; changeId: string }
@@ -111,4 +113,4 @@ export type ExtensionToWebviewMessage =
   | { command: "showStaleState" }
   | { command: "showJJNotFoundState" }
   | { command: "diffStatsResponse"; changeId: string; stats: DiffStats }
-  | { command: "bookmarkTrackingRemotesResponse"; bookmark: string; remotes: string[] };
+  | { command: "bookmarkTrackingRemotesResponse"; bookmark: string; remotes: string[]; untrackedRemotes?: string[] };

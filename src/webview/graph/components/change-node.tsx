@@ -233,17 +233,15 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               e.preventDefault();
               e.stopPropagation();
               closeAllMenus();
-              const hasPushIcon = !b.synced && !b.conflict && b.showPushButton !== false;
               pillContextMenu.value = {
                 type: "bookmark",
                 name: b.name,
                 pageX: e.pageX,
                 pageY: e.pageY,
-                pendingRemotes: hasPushIcon || undefined,
+                synced: b.synced,
+                pendingRemotes: true,
               };
-              if (hasPushIcon) {
-                vscode.postMessage({ command: "getBookmarkTrackingRemotes", bookmark: b.name });
-              }
+              vscode.postMessage({ command: "getBookmarkTrackingRemotes", bookmark: b.name });
             }}
             onDragStart={(e) => {
               e.stopPropagation();

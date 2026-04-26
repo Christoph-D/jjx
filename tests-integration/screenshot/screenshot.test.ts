@@ -370,7 +370,7 @@ test("take screenshot of bookmark upload", async ({ userDataDir, graphFrame, tes
     x: scaleToZoomLevel(headerBox.x),
     y: scaleToZoomLevel(headerBox.y) + 1,
     width: scaleToZoomLevel(sideBarBox.x + sideBarBox.width - headerBox.x),
-    height: 160,
+    height: 220,
   };
 
   await screenshot(workbox, "bookmark-context-menu.png", clip2);

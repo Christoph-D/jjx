@@ -16,6 +16,14 @@ export function PillContextMenu() {
   const deleteCommand = isBookmark ? "deleteBookmark" : "deleteTag";
   const deletePayload = isBookmark ? { bookmark: state.name } : { tag: state.name };
 
+  const showPush = isBookmark && !state.synced && state.remotes && state.remotes.length > 0;
+  const showTrack = isBookmark && state.untrackedRemotes && state.untrackedRemotes.length > 0;
+  const showUntrack = isBookmark && state.remotes && state.remotes.length > 0;
+
+  const needTopDivider = (showPush && (showTrack || showUntrack)) || (!showPush && showTrack && showUntrack);
+  const needMiddleDivider = showTrack && showUntrack;
+  const needBottomDivider = showPush || showTrack || showUntrack;
+
   return (
     <div
       id="pill-context-menu"
@@ -24,11 +32,10 @@ export function PillContextMenu() {
       style="display: none"
       onClick={(e) => e.stopPropagation()}
     >
-      {isBookmark &&
-        state.remotes &&
-        state.remotes.map((remote) => (
+      {showPush &&
+        state.remotes!.map((remote) => (
           <div
-            key={remote}
+            key={`push-${remote}`}
             class="context-menu-item"
             data-action="pushBookmark"
             onClick={() => {
@@ -39,7 +46,37 @@ export function PillContextMenu() {
             Push to {remote}
           </div>
         ))}
-      {isBookmark && state.remotes && state.remotes.length > 0 && <div class="context-menu-separator"></div>}
+      {showPush && needTopDivider && <div class="context-menu-separator"></div>}
+      {showTrack &&
+        state.untrackedRemotes!.map((remote) => (
+          <div
+            key={`track-${remote}`}
+            class="context-menu-item"
+            data-action="trackBookmark"
+            onClick={() => {
+              vscode.postMessage({ command: "trackBookmark", bookmark: state.name, remote });
+              pillContextMenu.value = null;
+            }}
+          >
+            Track on {remote}
+          </div>
+        ))}
+      {showTrack && needMiddleDivider && <div class="context-menu-separator"></div>}
+      {showUntrack &&
+        state.remotes!.map((remote) => (
+          <div
+            key={`untrack-${remote}`}
+            class="context-menu-item"
+            data-action="untrackBookmark"
+            onClick={() => {
+              vscode.postMessage({ command: "untrackBookmark", bookmark: state.name, remote });
+              pillContextMenu.value = null;
+            }}
+          >
+            Untrack from {remote}
+          </div>
+        ))}
+      {needBottomDivider && <div class="context-menu-separator"></div>}
       <div
         class="context-menu-item"
         data-action="deleteRef"
