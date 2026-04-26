@@ -7,12 +7,15 @@ test("push bookmark to all remotes via upload icon, then push to single remote",
   const remoteARepo = await newTestRepo(remoteAPath);
   const remoteBRepo = await newTestRepo(remoteBPath);
 
-  await testRepo.commitFile("test.txt", "content", "initial commit");
   await testRepo.jjCommand(["git", "remote", "add", "remote-a", "remote-a"]);
   await testRepo.jjCommand(["git", "remote", "add", "remote-b", "remote-b"]);
-  await testRepo.jjCommand(["bookmark", "create", "my-bookmark", "-r", "@-"]);
+  await testRepo.jjCommand(["bookmark", "create", "my-bookmark"]);
   await testRepo.jjCommand(["bookmark", "track", "my-bookmark", "--remote=remote-a"]);
   await testRepo.jjCommand(["bookmark", "track", "my-bookmark", "--remote=remote-b"]);
+  await testRepo.commitFile("test.txt", "content", "initial commit");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(3);
 
   const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="my-bookmark"]');
   await expect(bookmarkPill).toBeVisible();
