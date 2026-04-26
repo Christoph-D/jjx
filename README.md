@@ -85,11 +85,10 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 - Move bookmarks via drag&drop
 - Upload a bookmark to all its tracking remotes with a single click  
   ![unsynced bookmark](images/unsynced-bookmark.png)
-- Right-click the upload button to upload to specific remotes
+- Right-click to upload a bookmark to specific remotes or to delete a bookmark/tag  
+  ![bookmark context menu](images/bookmark-context-menu.png)
 - Set and delete tags
-- Right click on a bookmark or tag to delete it
 - Show conflicted bookmarks and tags with `??` suffix
-- Show out-of-sync bookmarks and tags with `*` suffix
 
 ### 💼 Multi-Workspace support
 

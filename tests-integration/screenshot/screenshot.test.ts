@@ -4,6 +4,9 @@ import fs from "fs/promises";
 import { execSync } from "child_process";
 import { Page } from "@playwright/test";
 
+TestRepo.userName = "Christoph Dittmann";
+TestRepo.userEmail = "code@yozora.eu";
+
 const TEMP_SCREENSHOT = "/tmp/jjx-screenshot.png";
 const OUTPUT_DIR = path.resolve(__dirname, "..", "..", "images");
 const ZOOM_LEVEL = 1;
@@ -142,7 +145,7 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
     x: clip.x,
     y: clip.y,
     width: 320,
-    height: 520,
+    height: 400,
   });
 
   // Make the jj graph horizontally larger
@@ -357,9 +360,25 @@ test("take screenshot of bookmark upload", async ({ userDataDir, graphFrame, tes
   };
 
   await screenshot(workbox, "unsynced-bookmark.png", clip);
+
+  await unsyncedPill.click({ button: "right", position: { x: 35, y: 15 } });
+  const deleteBookmarkEntry = graphFrame.locator('.context-menu-item[data-action="deleteRef"]');
+  await expect(deleteBookmarkEntry).toBeVisible();
+
+  const clip2 = {
+    x: scaleToZoomLevel(headerBox.x),
+    y: scaleToZoomLevel(headerBox.y) + 1,
+    width: scaleToZoomLevel(sideBarBox.x + sideBarBox.width - headerBox.x),
+    height: 160,
+  };
+
+  await screenshot(workbox, "bookmark-context-menu.png", clip2);
 });
 
 test("take screenshot of oplog for readme", async ({ userDataDir, scmView, opLog, testRepo, workbox }) => {
+  TestRepo.userName = null;
+  TestRepo.userEmail = null;
+
   await initializeSettings(userDataDir, ZOOM_LEVEL);
   await initializeExampleRepo(testRepo);
 
@@ -392,7 +411,10 @@ test("take screenshot of oplog for readme", async ({ userDataDir, scmView, opLog
   await workbox.mouse.move(sashVCenterX + 300, sashVCenterY);
   await workbox.mouse.up();
 
-  const opLogEntries = opLog.locator(".pane-body").getByRole("treeitem").filter({ hasText: /jj.* commit -m 'docs/ });
+  const opLogEntries = opLog
+    .locator(".pane-body")
+    .getByRole("treeitem")
+    .filter({ hasText: /jj.* commit -m 'docs/ });
   await expect(opLogEntries).toHaveCount(2);
   await opLogEntries.first().hover();
 

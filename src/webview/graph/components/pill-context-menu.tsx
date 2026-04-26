@@ -30,6 +30,7 @@ export function PillContextMenu() {
           <div
             key={remote}
             class="context-menu-item"
+            data-action="pushBookmark"
             onClick={() => {
               vscode.postMessage({ command: "pushBookmarkToRemote", bookmark: state.name, remote });
               pillContextMenu.value = null;
@@ -41,6 +42,7 @@ export function PillContextMenu() {
       {isBookmark && state.remotes && state.remotes.length > 0 && <div class="context-menu-separator"></div>}
       <div
         class="context-menu-item"
+        data-action="deleteRef"
         onClick={() => {
           vscode.postMessage({ command: deleteCommand, ...deletePayload });
           pillContextMenu.value = null;
