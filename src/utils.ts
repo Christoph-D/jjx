@@ -6,8 +6,6 @@ export function showErrorMessage(message: string, error: unknown): void {
   window.showErrorMessage(errorMessage ? `${message}: ${errorMessage}` : message);
 }
 
-export { parseRenamePaths } from "./parseRenamePaths";
-
 export function filepathToFileset(filepath: string): string {
   const escaped = filepath.replaceAll(/\\/g, "\\\\").replaceAll(/"/g, '\\"');
   return `file:"${escaped}"`;
@@ -16,20 +14,11 @@ export function filepathToFileset(filepath: string): string {
 export const isMacintosh = process.platform === "darwin";
 export const isWindows = process.platform === "win32";
 
-export function dispose<T extends Disposable>(disposables: T[]): T[] {
-  disposables.forEach((d) => void d.dispose());
-  return [];
-}
-
 export function toDisposable(dispose: () => void): Disposable {
   return { dispose };
 }
 
 export const EmptyDisposable = toDisposable(() => {});
-
-export function combinedDisposable(disposables: Disposable[]): Disposable {
-  return toDisposable(() => dispose(disposables));
-}
 
 export function filterEvent<T>(event: Event<T>, filter: (e: T) => boolean): Event<T> {
   return (
@@ -41,7 +30,8 @@ export function filterEvent<T>(event: Event<T>, filter: (e: T) => boolean): Even
 
 export function anyEvent<T>(...events: Event<T>[]): Event<T> {
   return (listener: (e: T) => unknown, thisArgs?: unknown, disposables?: Disposable[]) => {
-    const result = combinedDisposable(events.map((event) => event((i) => listener.call(thisArgs, i))));
+    const subscriptions = events.map((event) => event((i) => listener.call(thisArgs, i)));
+    const result: Disposable = { dispose: () => subscriptions.forEach((d) => void d.dispose()) };
 
     disposables?.push(result);
 
@@ -49,23 +39,13 @@ export function anyEvent<T>(...events: Event<T>[]): Event<T> {
   };
 }
 
-export function onceEvent<T>(event: Event<T>): Event<T> {
-  return (listener: (e: T) => unknown, thisArgs?: unknown, disposables?: Disposable[]) => {
-    const result = event(
-      (e) => {
-        result.dispose();
-        return listener.call(thisArgs, e);
-      },
-      null,
-      disposables,
-    );
-
-    return result;
-  };
-}
-
 export function eventToPromise<T>(event: Event<T>): Promise<T> {
-  return new Promise<T>((c) => onceEvent(event)(c));
+  return new Promise<T>((c) => {
+    const d = event((e) => {
+      d.dispose();
+      c(e);
+    });
+  });
 }
 
 export function normalizePath(path: string): string {
