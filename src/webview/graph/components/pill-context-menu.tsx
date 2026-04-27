@@ -17,12 +17,13 @@ export function PillContextMenu() {
   const deletePayload = isBookmark ? { bookmark: state.name } : { tag: state.name };
 
   const showPush = isBookmark && !state.synced && state.remotes && state.remotes.length > 0;
+  const showTagPush = !isBookmark && state.remotes && state.remotes.length > 0;
   const showTrack = isBookmark && state.untrackedRemotes && state.untrackedRemotes.length > 0;
   const showUntrack = isBookmark && state.remotes && state.remotes.length > 0;
 
   const needTopDivider = (showPush && (showTrack || showUntrack)) || (!showPush && showTrack && showUntrack);
   const needMiddleDivider = showTrack && showUntrack;
-  const needBottomDivider = showPush || showTrack || showUntrack;
+  const needBottomDivider = showPush || showTrack || showUntrack || showTagPush;
 
   return (
     <div
@@ -32,6 +33,20 @@ export function PillContextMenu() {
       style="display: none"
       onClick={(e) => e.stopPropagation()}
     >
+      {showTagPush &&
+        state.remotes!.map((remote) => (
+          <div
+            key={`push-${remote}`}
+            class="context-menu-item"
+            data-action="pushTag"
+            onClick={() => {
+              vscode.postMessage({ command: "pushTagToRemote", tag: state.name, remote });
+              pillContextMenu.value = null;
+            }}
+          >
+            Push to {remote}
+          </div>
+        ))}
       {showPush &&
         state.remotes!.map((remote) => (
           <div

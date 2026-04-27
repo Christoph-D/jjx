@@ -300,7 +300,9 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                 name: t.name,
                 pageX: e.pageX,
                 pageY: e.pageY,
+                pendingRemotes: true,
               };
+              vscode.postMessage({ command: "getTagPushRemotes", tag: t.name });
             }}
           >
             {abbreviateName(t.name)}

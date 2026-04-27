@@ -9,6 +9,7 @@ import {
   OPERATION_TEMPLATE,
   DIFF_STATS_TEMPLATE,
 } from "./templateBuilder";
+import spawn from "cross-spawn";
 import { ImmutableError, convertJJErrors } from "./errors";
 import { spawnJJ, handleJJCommand, type SpawnOptions, collectProcessOutput, ProcessError } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
@@ -66,12 +67,22 @@ export class JJRepository {
   statusCache: RepositoryStatus | undefined;
   gitFetchPromise: Promise<void> | undefined;
   private autoUpdateStaleAttempted = false;
+  private _gitDirPromise: Promise<string> | undefined;
 
   constructor(
     public repositoryRoot: string,
     private jjPath: string,
     private jjConfigArgs: string[],
   ) {}
+
+  async getGitDir(): Promise<string> {
+    if (!this._gitDirPromise) {
+      this._gitDirPromise = handleJJCommand(this.spawnJJRead(["git", "root"], { cwd: this.repositoryRoot })).then(
+        (buf) => buf.toString().trim(),
+      );
+    }
+    return this._gitDirPromise;
+  }
 
   private parseFileStatuses(diffFiles: DiffFileEntry[], conflictedPaths: string[] | undefined): ParsedFileStatuses {
     const fileStatuses: FileStatus[] = [];
@@ -800,6 +811,27 @@ export class JJRepository {
   async deleteTag(tag: string) {
     return await handleJJCommand(
       this.spawnJJ(["tag", "delete", tag], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
+    );
+  }
+
+  async getRemotes(): Promise<string[]> {
+    const output = await handleJJCommand(this.spawnJJRead(["git", "remote", "list"], { cwd: this.repositoryRoot }));
+    return output
+      .toString()
+      .trim()
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((r) => r)
+      .map((line) => line.split(/\s+/)[0]);
+  }
+
+  async pushTagToRemote(tag: string, remote: string): Promise<void> {
+    const gitDir = await this.getGitDir();
+    await collectProcessOutput(
+      spawn("git", ["push", remote, tag], {
+        cwd: this.repositoryRoot,
+        env: { ...process.env, GIT_DIR: gitDir },
+      }),
     );
   }
 

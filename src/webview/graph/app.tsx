@@ -107,6 +107,17 @@ export function App() {
           }
           break;
         }
+        case "tagPushRemotesResponse": {
+          const state = pillContextMenu.value;
+          if (state && state.type === "tag" && state.name === message.tag && state.pendingRemotes) {
+            pillContextMenu.value = {
+              ...state,
+              remotes: message.pushRemotes.length > 0 ? message.pushRemotes : undefined,
+              pendingRemotes: undefined,
+            };
+          }
+          break;
+        }
       }
     });
 

@@ -28,6 +28,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   public panel?: vscode.WebviewView;
   public repository: JJRepository | undefined;
   public selectedNodes: Set<string> = new Set();
+  private currentChanges: ChangeNode[] = [];
   private elideOverride: boolean | null = null;
 
   private _onDidChangeSelection = new vscode.EventEmitter<string[]>();
@@ -264,6 +265,40 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             showErrorMessage("Failed to delete tag", error);
           }
           break;
+        case "getTagPushRemotes":
+          try {
+            const allRemotes = await repo.getRemotes();
+            const tagRemotes = new Set<string>();
+            for (const change of this.currentChanges) {
+              for (const rt of change.remoteTags) {
+                if (rt.name === message.tag) {
+                  tagRemotes.add(rt.remote);
+                }
+              }
+            }
+            const pushRemotes = allRemotes.filter((r) => !tagRemotes.has(r));
+            this.panel?.webview.postMessage({
+              command: "tagPushRemotesResponse",
+              tag: message.tag,
+              pushRemotes,
+            });
+          } catch (error: unknown) {
+            showErrorMessage("Failed to get tag push remotes", error);
+            this.panel?.webview.postMessage({
+              command: "tagPushRemotesResponse",
+              tag: message.tag,
+              pushRemotes: [],
+            });
+          }
+          break;
+        case "pushTagToRemote":
+          try {
+            await repo.pushTagToRemote(message.tag, message.remote);
+            await this.refresh();
+          } catch (error: unknown) {
+            showErrorMessage("Failed to push tag", error);
+          }
+          break;
         case "describeChange":
           try {
             await repo.describeRetryImmutable(message.changeId);
@@ -485,6 +520,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       });
       const entriesWithSynthetics = insertSyntheticNodes(rawEntries, edges, visibleIds, reachableVisibleFrom);
       const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entriesWithSynthetics, graphStyle);
+      this.currentChanges = changes;
 
       const unsyncedBookmarks = new Set<string>();
       for (const change of changes) {
