@@ -82,7 +82,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
     }
 
     if (events.length > 0) {
-      this.mtime = new Date().getTime();
+      this.mtime = Date.now();
       this._onDidChangeFile.fire(events);
     }
 
@@ -90,7 +90,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
   }
 
   private cleanup(): void {
-    const now = new Date().getTime();
+    const now = Date.now();
     const cache = new Map<string, CacheRow>();
 
     for (const row of this.cache.values()) {
@@ -142,38 +142,35 @@ export class JJFileSystemProvider implements FileSystemProvider {
       throw FileSystemError.FileNotFound();
     }
 
-    const timestamp = new Date().getTime();
-    const cacheValue: CacheRow = { uri, timestamp };
-
-    this.cache.set(uri.toString(), cacheValue);
+    this.cache.set(uri.toString(), { uri, timestamp: Date.now() });
 
     if ("diffOriginalRev" in params) {
       const renamedFrom = "renamedFrom" in params ? params.renamedFrom : undefined;
       const originalContent = await repository.getDiffOriginal(params.diffOriginalRev, uri.fsPath, renamedFrom);
-      if (!originalContent) {
-        try {
-          const data = await repository.readFile(params.diffOriginalRev, uri.fsPath);
-          return data;
-        } catch (e) {
-          if (e instanceof Error && e.message.includes("No such path")) {
-            throw FileSystemError.FileNotFound();
-          }
-          throw e;
-        }
+      if (originalContent) {
+        return originalContent;
       }
-      return originalContent;
-    } else if ("rev" in params) {
-      try {
-        const data = await repository.readFile(params.rev, uri.fsPath);
-        return data;
-      } catch (e) {
-        if (e instanceof Error && e.message.includes("No such path")) {
-          throw FileSystemError.FileNotFound();
-        }
-        throw e;
-      }
+      return this.readFileOrNotFound(repository, params.diffOriginalRev, uri.fsPath);
+    }
+    if ("rev" in params) {
+      return this.readFileOrNotFound(repository, params.rev, uri.fsPath);
     }
     throw new Error("Unknown URI params");
+  }
+
+  private async readFileOrNotFound(
+    repository: ReturnType<WorkspaceSourceControlManager["getRepositoryFromUri"]>,
+    rev: string,
+    fsPath: string,
+  ): Promise<Uint8Array> {
+    try {
+      return await repository!.readFile(rev, fsPath);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("No such path")) {
+        throw FileSystemError.FileNotFound();
+      }
+      throw e;
+    }
   }
 
   writeFile(): void {
