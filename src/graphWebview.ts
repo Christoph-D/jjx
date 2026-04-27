@@ -113,11 +113,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           break;
         case "newChildChange":
-          try {
-            await repo.new(undefined, [message.changeId]);
-          } catch (error: unknown) {
-            showErrorMessage("Failed to create new child change", error);
-          }
+          await this.withRefresh("create new child change", () => repo.new(undefined, [message.changeId]));
           break;
         case "selectChange":
           this.selectedNodes = new Set(message.selectedNodes);
@@ -146,36 +142,28 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             }
           }
           break;
-        case "createBookmark":
-          try {
-            const bookmarkName = await vscode.window.showInputBox({
-              prompt: "Enter Bookmark Name",
-              placeHolder: "bookmark-name",
-            });
-            if (bookmarkName === undefined || bookmarkName === "") {
-              return;
-            }
-            await repo.createBookmark(bookmarkName, message.targetChangeId);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to create bookmark", error);
+        case "createBookmark": {
+          const bookmarkName = await vscode.window.showInputBox({
+            prompt: "Enter Bookmark Name",
+            placeHolder: "bookmark-name",
+          });
+          if (bookmarkName === undefined || bookmarkName === "") {
+            break;
           }
+          await this.withRefresh("create bookmark", () => repo.createBookmark(bookmarkName, message.targetChangeId));
           break;
-        case "createTag":
-          try {
-            const tagName = await vscode.window.showInputBox({
-              prompt: "Enter Tag Name",
-              placeHolder: "v1.0.0",
-            });
-            if (tagName === undefined || tagName === "") {
-              return;
-            }
-            await repo.createTag(tagName, message.targetChangeId);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to create tag", error);
+        }
+        case "createTag": {
+          const tagName = await vscode.window.showInputBox({
+            prompt: "Enter Tag Name",
+            placeHolder: "v1.0.0",
+          });
+          if (tagName === undefined || tagName === "") {
+            break;
           }
+          await this.withRefresh("create tag", () => repo.createTag(tagName, message.targetChangeId));
           break;
+        }
         case "pushBookmark":
           try {
             const pushedRemotes = await repo.pushBookmark(message.bookmark);
@@ -210,60 +198,29 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           break;
         case "pushBookmarkToRemote":
-          try {
-            await repo.pushBookmarkToRemote(message.bookmark, message.remote);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to push bookmark", error);
-          }
+          await this.withRefresh("push bookmark", () => repo.pushBookmarkToRemote(message.bookmark, message.remote));
           break;
         case "trackBookmark":
-          try {
-            await repo.trackBookmark(message.bookmark, message.remote);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to track bookmark", error);
-          }
+          await this.withRefresh("track bookmark", () => repo.trackBookmark(message.bookmark, message.remote));
           break;
         case "untrackBookmark":
-          try {
-            await repo.untrackBookmark(message.bookmark, message.remote);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to untrack bookmark", error);
-          }
+          await this.withRefresh("untrack bookmark", () => repo.untrackBookmark(message.bookmark, message.remote));
           break;
         case "deleteBookmark":
-          try {
-            const confirm = await vscode.window.showWarningMessage(
-              `Are you sure you want to delete the bookmark "${message.bookmark}"?`,
-              { modal: true },
-              "Delete",
-            );
-            if (confirm !== "Delete") {
-              return;
-            }
-            await repo.deleteBookmark(message.bookmark);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to delete bookmark", error);
-          }
+          await this.confirmAndExecute(
+            `Are you sure you want to delete the bookmark "${message.bookmark}"?`,
+            "Delete",
+            "delete bookmark",
+            () => repo.deleteBookmark(message.bookmark),
+          );
           break;
         case "deleteTag":
-          try {
-            const confirm = await vscode.window.showWarningMessage(
-              `Are you sure you want to delete the tag "${message.tag}"?`,
-              { modal: true },
-              "Delete",
-            );
-            if (confirm !== "Delete") {
-              return;
-            }
-            await repo.deleteTag(message.tag);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to delete tag", error);
-          }
+          await this.confirmAndExecute(
+            `Are you sure you want to delete the tag "${message.tag}"?`,
+            "Delete",
+            "delete tag",
+            () => repo.deleteTag(message.tag),
+          );
           break;
         case "getTagPushRemotes":
           try {
@@ -292,67 +249,38 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           break;
         case "pushTagToRemote":
-          try {
-            await repo.pushTagToRemote(message.tag, message.remote);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to push tag", error);
-          }
+          await this.withRefresh("push tag", () => repo.pushTagToRemote(message.tag, message.remote));
           break;
         case "describeChange":
-          try {
-            await repo.describeRetryImmutable(message.changeId);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to describe change", error);
-          }
+          await this.withRefresh("describe change", () => repo.describeRetryImmutable(message.changeId));
           break;
         case "absorbChange":
-          try {
+          await this.withRefresh("absorb change", async () => {
             const absorbResult = await repo.absorb(message.changeId);
             if (absorbResult.stderr.toString().includes("Nothing changed.")) {
               vscode.window.showInformationMessage("Absorb: Nothing changed.");
             }
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to absorb change", error);
-          }
+          });
           break;
         case "abandonChange":
-          try {
-            const confirm = await vscode.window.showWarningMessage(
-              "Are you sure you want to abandon this change?",
-              { modal: true },
-              "Abandon",
-            );
-            if (confirm !== "Abandon") {
-              return;
-            }
-            await repo.abandonRetryImmutable([message.changeId]);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to abandon change", error);
-          }
+          await this.confirmAndExecute(
+            "Are you sure you want to abandon this change?",
+            "Abandon",
+            "abandon change",
+            () => repo.abandonRetryImmutable([message.changeId]),
+          );
           break;
         case "abandonChanges":
-          try {
-            const count = message.changeIds.length;
-            const confirm = await vscode.window.showWarningMessage(
-              `Are you sure you want to abandon ${count} changes?`,
-              { modal: true },
-              "Abandon",
-            );
-            if (confirm !== "Abandon") {
-              return;
-            }
-            await repo.abandonRetryImmutable(
-              message.changeIds,
-              "Some of the selected changes are immutable, are you sure?",
-            );
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to abandon changes", error);
-          }
+          await this.confirmAndExecute(
+            `Are you sure you want to abandon ${message.changeIds.length} changes?`,
+            "Abandon",
+            "abandon changes",
+            () =>
+              repo.abandonRetryImmutable(
+                message.changeIds,
+                "Some of the selected changes are immutable, are you sure?",
+              ),
+          );
           break;
         case "copyUrl":
           try {
@@ -367,74 +295,35 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           break;
         case "rebaseOnto":
-          try {
-            await repo.rebaseRetryImmutable(message.changeId, message.targetChangeId, "onto", message.withDescendants);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to rebase", error);
-          }
-          break;
         case "rebaseAfter":
-          try {
-            await repo.rebaseRetryImmutable(message.changeId, message.targetChangeId, "after", message.withDescendants);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to rebase", error);
-          }
+        case "rebaseBefore": {
+          const mode = message.command.replace("rebase", "").toLowerCase() as "onto" | "after" | "before";
+          await this.withRefresh("rebase", () =>
+            repo.rebaseRetryImmutable(message.changeId, message.targetChangeId, mode, message.withDescendants),
+          );
           break;
-        case "rebaseBefore":
-          try {
-            await repo.rebaseRetryImmutable(
-              message.changeId,
-              message.targetChangeId,
-              "before",
-              message.withDescendants,
-            );
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to rebase", error);
-          }
-          break;
+        }
         case "squashInto":
-          try {
-            await repo.squashRetryImmutable({
-              fromRev: message.changeId,
-              toRev: message.targetChangeId,
-            });
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to squash", error);
-          }
+          await this.withRefresh("squash", () =>
+            repo.squashRetryImmutable({ fromRev: message.changeId, toRev: message.targetChangeId }),
+          );
           break;
         case "duplicateOnto":
         case "duplicateAfter":
-        case "duplicateBefore":
-          try {
-            const mode = message.command.replace("duplicate", "").toLowerCase() as "onto" | "after" | "before";
-            await repo.duplicate(message.changeId, message.targetChangeId, mode);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to duplicate", error);
-          }
+        case "duplicateBefore": {
+          const mode = message.command.replace("duplicate", "").toLowerCase() as "onto" | "after" | "before";
+          await this.withRefresh("duplicate", () => repo.duplicate(message.changeId, message.targetChangeId, mode));
           break;
+        }
         case "revertOnto":
         case "revertAfter":
-        case "revertBefore":
-          try {
-            const mode = message.command.replace("revert", "").toLowerCase() as "onto" | "after" | "before";
-            await repo.revert(message.changeId, message.targetChangeId, mode);
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to revert", error);
-          }
+        case "revertBefore": {
+          const mode = message.command.replace("revert", "").toLowerCase() as "onto" | "after" | "before";
+          await this.withRefresh("revert", () => repo.revert(message.changeId, message.targetChangeId, mode));
           break;
+        }
         case "updateStale":
-          try {
-            await repo.updateStale();
-            await this.refresh();
-          } catch (error: unknown) {
-            showErrorMessage("Failed to update stale working copy", error);
-          }
+          await this.withRefresh("update stale working copy", () => repo.updateStale());
           break;
         case "fetchDiffStats":
           try {
@@ -468,6 +357,28 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     if (prevRoot !== repo.repositoryRoot) {
       await this.refresh();
     }
+  }
+
+  private async withRefresh(errorLabel: string, fn: () => Promise<unknown>): Promise<void> {
+    try {
+      await fn();
+      await this.refresh();
+    } catch (error: unknown) {
+      showErrorMessage(`Failed to ${errorLabel}`, error);
+    }
+  }
+
+  private async confirmAndExecute(
+    prompt: string,
+    confirmLabel: string,
+    errorLabel: string,
+    fn: () => Promise<unknown>,
+  ): Promise<void> {
+    const confirm = await vscode.window.showWarningMessage(prompt, { modal: true }, confirmLabel);
+    if (confirm !== confirmLabel) {
+      return;
+    }
+    await this.withRefresh(errorLabel, fn);
   }
 
   public async enableElideImmutableCommits(): Promise<void> {

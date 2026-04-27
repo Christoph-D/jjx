@@ -77,9 +77,7 @@ export class JJRepository {
 
   async getGitDir(): Promise<string> {
     if (!this._gitDirPromise) {
-      this._gitDirPromise = handleJJCommand(this.spawnJJRead(["git", "root"], { cwd: this.repositoryRoot })).then(
-        (buf) => buf.toString().trim(),
-      );
+      this._gitDirPromise = this.jjCommandRead(["git", "root"]).then((buf) => buf.toString().trim());
     }
     return this._gitDirPromise;
   }
@@ -168,22 +166,34 @@ export class JJRepository {
     return this.spawnJJ(["--ignore-working-copy", ...args], options);
   }
 
+  private jjCommand(args: string[], options?: { token?: vscode.CancellationToken; timeout?: number }) {
+    return handleJJCommand(this.spawnJJ(args, { timeout: options?.timeout, cwd: this.repositoryRoot }), options?.token);
+  }
+
+  private jjCommandRead(args: string[], options?: { token?: vscode.CancellationToken; timeout?: number }) {
+    return handleJJCommand(
+      this.spawnJJRead(args, { timeout: options?.timeout, cwd: this.repositoryRoot }),
+      options?.token,
+    );
+  }
+
+  private splitLines(output: string | Buffer): string[] {
+    return output
+      .toString()
+      .trim()
+      .split("\n")
+      .map((r) => r.trim())
+      .filter(Boolean);
+  }
+
   /**
    * Note: this command may itself snapshot the working copy and add an operation to the log, in which case it will
    * return the new operation id.
    */
   async getLatestOperationId(ignoreWorkingCopy: boolean = true, token?: vscode.CancellationToken) {
-    const spawn = ignoreWorkingCopy ? this.spawnJJRead.bind(this) : this.spawnJJ.bind(this);
-    return (
-      await handleJJCommand(
-        spawn(["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"], {
-          cwd: this.repositoryRoot,
-        }),
-        token,
-      )
-    )
-      .toString()
-      .trim();
+    const args = ["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"];
+    const buf = ignoreWorkingCopy ? await this.jjCommandRead(args, { token }) : await this.jjCommand(args, { token });
+    return buf.toString().trim();
   }
 
   async getStatus(useCache = false, token?: vscode.CancellationToken): Promise<RepositoryStatus> {
@@ -192,13 +202,7 @@ export class JJRepository {
     }
 
     const output = (
-      await handleJJCommand(
-        this.spawnJJRead(["log", "-r", "@", "-T", STATUS_TEMPLATE, "--no-graph"], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
-        token,
-      )
+      await this.jjCommandRead(["log", "-r", "@", "-T", STATUS_TEMPLATE, "--no-graph"], { token })
     ).toString();
 
     const entry = JSON.parse(output.trim()) as {
@@ -265,18 +269,7 @@ export class JJRepository {
   }
 
   async fileList(token?: vscode.CancellationToken) {
-    return (
-      await handleJJCommand(
-        this.spawnJJRead(["file", "list"], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
-        token,
-      )
-    )
-      .toString()
-      .trim()
-      .split("\n");
+    return (await this.jjCommandRead(["file", "list"], { token })).toString().trim().split("\n");
   }
 
   async show(rev: string, token?: vscode.CancellationToken) {
@@ -292,12 +285,9 @@ export class JJRepository {
 
   async showAll(revsets: string[], token?: vscode.CancellationToken) {
     const output = (
-      await handleJJCommand(
-        this.spawnJJRead(["log", "-T", SHOW_TEMPLATE, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
-        token,
+      await this.jjCommandRead(
+        ["log", "-T", SHOW_TEMPLATE, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])],
+        { token },
       )
     ).toString();
 
@@ -355,12 +345,7 @@ export class JJRepository {
   }
 
   readFile(rev: string, filepath: string) {
-    return handleJJCommand(
-      this.spawnJJRead(["file", "show", "--revision", rev, filepathToFileset(filepath)], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommandRead(["file", "show", "--revision", rev, filepathToFileset(filepath)]);
   }
 
   async describeRetryImmutable(rev: string, message?: string) {
@@ -373,43 +358,26 @@ export class JJRepository {
 
   private async describe(rev: string, message?: string, ignoreImmutable = false) {
     return (
-      await handleJJCommand(
-        this.spawnJJ(
-          ["describe", ...(message ? ["-m", message] : []), rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
-          {
-            timeout: message ? TIMEOUTS.DEFAULT : 0,
-            cwd: this.repositoryRoot,
-          },
-        ),
+      await this.jjCommand(
+        ["describe", ...(message ? ["-m", message] : []), rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
+        { timeout: message ? TIMEOUTS.DEFAULT : 0 },
       )
     ).toString();
   }
 
   async new(message?: string, revs?: string[]) {
-    return await handleJJCommand(
-      this.spawnJJ(["new", ...(message !== undefined ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["new", ...(message !== undefined ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])]);
   }
 
   async commit(message?: string, editor?: boolean) {
-    return await handleJJCommand(
-      this.spawnJJ(["commit", ...(message !== undefined ? ["-m", message] : []), ...(editor ? ["--editor"] : [])], {
-        timeout: editor ? 0 : message !== undefined ? TIMEOUTS.DEFAULT : 0,
-        cwd: this.repositoryRoot,
-      }),
+    return this.jjCommand(
+      ["commit", ...(message !== undefined ? ["-m", message] : []), ...(editor ? ["--editor"] : [])],
+      { timeout: editor ? 0 : message !== undefined ? TIMEOUTS.DEFAULT : 0 },
     );
   }
 
   async describeOpenEditor() {
-    return await handleJJCommand(
-      this.spawnJJ(["describe"], {
-        timeout: 0,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["describe"], { timeout: 0 });
   }
 
   async squashRetryImmutable({
@@ -457,23 +425,18 @@ export class JJRepository {
     ignoreImmutable?: boolean;
   }) {
     return (
-      await handleJJCommand(
-        this.spawnJJ(
-          [
-            "squash",
-            "--from",
-            fromRev,
-            "--into",
-            toRev,
-            ...(message ? ["-m", message] : []),
-            ...(filepaths ? filepaths.map((filepath) => filepathToFileset(filepath)) : []),
-            ...(ignoreImmutable ? ["--ignore-immutable"] : []),
-          ],
-          {
-            timeout: message ? TIMEOUTS.DEFAULT : 0,
-            cwd: this.repositoryRoot,
-          },
-        ),
+      await this.jjCommand(
+        [
+          "squash",
+          "--from",
+          fromRev,
+          "--into",
+          toRev,
+          ...(message ? ["-m", message] : []),
+          ...(filepaths ? filepaths.map((filepath) => filepathToFileset(filepath)) : []),
+          ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+        ],
+        { timeout: message ? TIMEOUTS.DEFAULT : 0 },
       )
     ).toString();
   }
@@ -594,12 +557,7 @@ export class JJRepository {
 
   async log(rev: string, limit: number = 100): Promise<LogEntry[]> {
     const output = (
-      await handleJJCommand(
-        this.spawnJJRead(["log", "-r", rev, "-n", limit.toString(), "-T", LOG_TEMPLATE], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
-      )
+      await this.jjCommandRead(["log", "-r", rev, "-n", limit.toString(), "-T", LOG_TEMPLATE])
     ).toString();
 
     if (!output.trim()) {
@@ -619,12 +577,7 @@ export class JJRepository {
 
   async getDiffStats(changeId: string): Promise<{ filesChanged: number; linesAdded: number; linesRemoved: number }> {
     const output = (
-      await handleJJCommand(
-        this.spawnJJRead(["log", "-r", changeId, "-n", "1", "--no-graph", "-T", DIFF_STATS_TEMPLATE], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
-      )
+      await this.jjCommandRead(["log", "-r", changeId, "-n", "1", "--no-graph", "-T", DIFF_STATS_TEMPLATE])
     ).toString();
 
     const entry = JSON.parse(output.trim()) as {
@@ -649,42 +602,30 @@ export class JJRepository {
   }
 
   private async edit(rev: string, ignoreImmutable = false) {
-    return await handleJJCommand(
-      this.spawnJJ(["edit", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["edit", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])]);
   }
 
   async moveBookmark(bookmark: string, targetRev: string, allowBackwards = false) {
-    return await handleJJCommand(
-      this.spawnJJ(["bookmark", "move", bookmark, "-t", targetRev, ...(allowBackwards ? ["--allow-backwards"] : [])], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand([
+      "bookmark",
+      "move",
+      bookmark,
+      "-t",
+      targetRev,
+      ...(allowBackwards ? ["--allow-backwards"] : []),
+    ]);
   }
 
   async createBookmark(bookmark: string, targetRev: string) {
-    return await handleJJCommand(
-      this.spawnJJ(["bookmark", "create", bookmark, "-r", targetRev], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["bookmark", "create", bookmark, "-r", targetRev]);
   }
 
   async createTag(tag: string, targetRev: string) {
-    return await handleJJCommand(
-      this.spawnJJ(["tag", "set", tag, "-r", targetRev], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
-    );
+    return this.jjCommand(["tag", "set", tag, "-r", targetRev]);
   }
 
   async deleteBookmark(bookmark: string) {
-    return await handleJJCommand(
-      this.spawnJJ(["bookmark", "delete", bookmark], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
-    );
+    return this.jjCommand(["bookmark", "delete", bookmark]);
   }
 
   async pushBookmark(bookmark: string): Promise<string[]> {
@@ -713,116 +654,76 @@ export class JJRepository {
 
   async getBookmarksWithUnsyncedNonGitRemotes(): Promise<Set<string>> {
     const output = (
-      await handleJJCommand(
-        this.spawnJJRead(
-          ["bookmark", "list", "-T", `if(remote != "" && tracked && !synced && remote != "git", name ++ "\\n", "")`],
-          { cwd: this.repositoryRoot },
-        ),
-      )
+      await this.jjCommandRead([
+        "bookmark",
+        "list",
+        "-T",
+        `if(remote != "" && tracked && !synced && remote != "git", name ++ "\\n", "")`,
+      ])
     )
       .toString()
       .trim();
     if (!output) {
       return new Set();
     }
-    return new Set(
-      output
-        .split("\n")
-        .map((r) => r.trim())
-        .filter((r) => r),
-    );
+    return new Set(this.splitLines(output));
   }
 
   async getBookmarkTrackingRemotes(bookmark: string, unsyncedOnly = false): Promise<string[]> {
     const filter = unsyncedOnly ? "tracked && !synced" : "tracked";
-    const trackedRemotesOutput = (
-      await handleJJCommand(
-        this.spawnJJRead(
-          ["bookmark", "list", bookmark, "-T", `if(remote != "", if(${filter}, remote ++ "\\n", ""), "")`],
-          { cwd: this.repositoryRoot },
-        ),
-      )
+    const output = (
+      await this.jjCommandRead([
+        "bookmark",
+        "list",
+        bookmark,
+        "-T",
+        `if(remote != "", if(${filter}, remote ++ "\\n", ""), "")`,
+      ])
     )
       .toString()
       .trim();
-    return trackedRemotesOutput
-      .split("\n")
-      .map((r) => r.trim())
-      .filter((r) => r && r !== "git");
+    return this.splitLines(output).filter((r) => r !== "git");
   }
 
   async getBookmarkTrackingInfo(bookmark: string): Promise<{ trackedRemotes: string[]; untrackedRemotes: string[] }> {
     const [trackedOutput, remotesOutput] = await Promise.all([
-      handleJJCommand(
-        this.spawnJJRead(
-          [
-            "bookmark",
-            "list",
-            "--all-remotes",
-            bookmark,
-            "-T",
-            `if(remote != "" && tracked && remote != "git", remote ++ "\\n", "")`,
-          ],
-          { cwd: this.repositoryRoot },
-        ),
-      ),
-      handleJJCommand(this.spawnJJRead(["git", "remote", "list"], { cwd: this.repositoryRoot })),
+      this.jjCommandRead([
+        "bookmark",
+        "list",
+        "--all-remotes",
+        bookmark,
+        "-T",
+        `if(remote != "" && tracked && remote != "git", remote ++ "\\n", "")`,
+      ]),
+      this.jjCommandRead(["git", "remote", "list"]),
     ]);
-    const parseLines = (output: string) =>
-      output
-        .toString()
-        .trim()
-        .split("\n")
-        .map((r) => r.trim())
-        .filter((r) => r);
-    const trackedRemotes = parseLines(trackedOutput.toString());
-    const allRemotes = parseLines(remotesOutput.toString()).map((line) => line.split(/\s+/)[0]);
+    const trackedRemotes = this.splitLines(trackedOutput);
+    const allRemotes = this.splitLines(remotesOutput).map((line) => line.split(/\s+/)[0]);
     const untrackedRemotes = allRemotes.filter((r) => !trackedRemotes.includes(r));
     return { trackedRemotes, untrackedRemotes };
   }
 
   async trackBookmark(bookmark: string, remote: string): Promise<void> {
-    await handleJJCommand(
-      this.spawnJJ(["bookmark", "track", bookmark, `--remote=${remote}`], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    await this.jjCommand(["bookmark", "track", bookmark, `--remote=${remote}`]);
   }
 
   async untrackBookmark(bookmark: string, remote: string): Promise<void> {
-    await handleJJCommand(
-      this.spawnJJ(["bookmark", "untrack", bookmark, `--remote=${remote}`], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    await this.jjCommand(["bookmark", "untrack", bookmark, `--remote=${remote}`]);
   }
 
   async pushBookmarkToRemote(bookmark: string, remote: string): Promise<void> {
-    await handleJJCommand(
-      this.spawnJJ(["git", "push", "--bookmark", bookmark, "--remote", remote], {
-        timeout: TIMEOUTS.GIT_FETCH,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    await this.jjCommand(["git", "push", "--bookmark", bookmark, "--remote", remote], {
+      timeout: TIMEOUTS.GIT_FETCH,
+    });
   }
 
   async deleteTag(tag: string) {
-    return await handleJJCommand(
-      this.spawnJJ(["tag", "delete", tag], { timeout: TIMEOUTS.DEFAULT, cwd: this.repositoryRoot }),
-    );
+    return this.jjCommand(["tag", "delete", tag]);
   }
 
   async getRemotes(): Promise<string[]> {
-    const output = await handleJJCommand(this.spawnJJRead(["git", "remote", "list"], { cwd: this.repositoryRoot }));
-    return output
-      .toString()
-      .trim()
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((r) => r)
-      .map((line) => line.split(/\s+/)[0]);
+    const output = await this.jjCommandRead(["git", "remote", "list"]);
+    return this.splitLines(output).map((line) => line.split(/\s+/)[0]);
   }
 
   async pushTagToRemote(tag: string, remote: string): Promise<void> {
@@ -857,14 +758,7 @@ export class JJRepository {
       const baseWebURL = config.get<string>("baseWebURL") ?? "";
 
       if (baseWebURL) {
-        const commitId = (
-          await handleJJCommand(
-            this.spawnJJRead(["show", "-r", changeId, "--no-patch", "-T", "commit_id"], {
-              timeout: TIMEOUTS.DEFAULT,
-              cwd: this.repositoryRoot,
-            }),
-          )
-        )
+        const commitId = (await this.jjCommandRead(["show", "-r", changeId, "--no-patch", "-T", "commit_id"]))
           .toString()
           .trim();
 
@@ -873,12 +767,14 @@ export class JJRepository {
       }
 
       const output = (
-        await handleJJCommand(
-          this.spawnJJRead(["show", "-r", changeId, "--no-patch", "-T", 'git_web_url() ++ "/commit/" ++ commit_id'], {
-            timeout: TIMEOUTS.DEFAULT,
-            cwd: this.repositoryRoot,
-          }),
-        )
+        await this.jjCommandRead([
+          "show",
+          "-r",
+          changeId,
+          "--no-patch",
+          "-T",
+          'git_web_url() ++ "/commit/" ++ commit_id',
+        ])
       )
         .toString()
         .trim();
@@ -891,12 +787,7 @@ export class JJRepository {
 
   private async abandon(revs: string[], ignoreImmutable = false) {
     const revset = revs.join("|");
-    return await handleJJCommand(
-      this.spawnJJ(["abandon", "-r", revset, ...(ignoreImmutable ? ["--ignore-immutable"] : [])], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["abandon", "-r", revset, ...(ignoreImmutable ? ["--ignore-immutable"] : [])]);
   }
 
   private async rebase(
@@ -908,15 +799,14 @@ export class JJRepository {
   ) {
     const sourceFlag = withDescendants ? "-s" : "-r";
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
-    return await handleJJCommand(
-      this.spawnJJ(
-        ["rebase", sourceFlag, source, flag, destination, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
-        {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        },
-      ),
-    );
+    return this.jjCommand([
+      "rebase",
+      sourceFlag,
+      source,
+      flag,
+      destination,
+      ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+    ]);
   }
 
   async rebaseRetryImmutable(
@@ -935,22 +825,12 @@ export class JJRepository {
 
   async duplicate(source: string, destination: string, mode: "onto" | "after" | "before") {
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
-    return await handleJJCommand(
-      this.spawnJJ(["duplicate", "-r", source, flag, destination], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["duplicate", "-r", source, flag, destination]);
   }
 
   async revert(source: string, destination: string, mode: "onto" | "after" | "before") {
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
-    return await handleJJCommand(
-      this.spawnJJ(["revert", "-r", source, flag, destination], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["revert", "-r", source, flag, destination]);
   }
 
   async restoreRetryImmutable(rev?: string, filepaths?: string[]) {
@@ -962,33 +842,20 @@ export class JJRepository {
   }
 
   private async restore(rev?: string, filepaths?: string[], ignoreImmutable = false) {
-    return await handleJJCommand(
-      this.spawnJJ(
-        [
-          "restore",
-          "--changes-in",
-          rev ? rev : "@",
-          ...(filepaths ? filepaths.map((filepath) => filepathToFileset(filepath)) : []),
-          ...(ignoreImmutable ? ["--ignore-immutable"] : []),
-        ],
-        {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        },
-      ),
-    );
+    return this.jjCommand([
+      "restore",
+      "--changes-in",
+      rev ? rev : "@",
+      ...(filepaths ? filepaths.map((filepath) => filepathToFileset(filepath)) : []),
+      ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+    ]);
   }
 
   gitFetch(): Promise<void> {
     if (!this.gitFetchPromise) {
       this.gitFetchPromise = (async () => {
         try {
-          await handleJJCommand(
-            this.spawnJJ(["git", "fetch"], {
-              timeout: TIMEOUTS.GIT_FETCH,
-              cwd: this.repositoryRoot,
-            }),
-          );
+          await this.jjCommand(["git", "fetch"], { timeout: TIMEOUTS.GIT_FETCH });
         } finally {
           this.gitFetchPromise = undefined;
         }
@@ -998,13 +865,7 @@ export class JJRepository {
   }
 
   async updateStale(token?: vscode.CancellationToken): Promise<void> {
-    await handleJJCommand(
-      this.spawnJJ(["workspace", "update-stale"], {
-        timeout: TIMEOUTS.UPDATE_STALE,
-        cwd: this.repositoryRoot,
-      }),
-      token,
-    );
+    await this.jjCommand(["workspace", "update-stale"], { token, timeout: TIMEOUTS.UPDATE_STALE });
   }
 
   async tryAutoUpdateStale(token?: vscode.CancellationToken): Promise<boolean> {
@@ -1032,21 +893,7 @@ export class JJRepository {
 
   async annotate(filepath: string, rev: string): Promise<string[]> {
     const output = (
-      await handleJJCommand(
-        this.spawnJJRead(
-          [
-            "file",
-            "annotate",
-            "-r",
-            rev,
-            filepath, // `jj file annotate` takes a path, not a fileset
-          ],
-          {
-            timeout: TIMEOUTS.ANNOTATE,
-            cwd: this.repositoryRoot,
-          },
-        ),
-      )
+      await this.jjCommandRead(["file", "annotate", "-r", rev, filepath], { timeout: TIMEOUTS.ANNOTATE })
     ).toString();
     if (output === "") {
       return [];
@@ -1058,15 +905,16 @@ export class JJRepository {
 
   async operationLog(): Promise<Operation[]> {
     const output = (
-      await handleJJCommand(
-        this.spawnJJRead(
-          ["operation", "log", "--limit", "10", "--no-graph", "--at-operation=@", "-T", OPERATION_TEMPLATE],
-          {
-            timeout: TIMEOUTS.DEFAULT,
-            cwd: this.repositoryRoot,
-          },
-        ),
-      )
+      await this.jjCommandRead([
+        "operation",
+        "log",
+        "--limit",
+        "10",
+        "--no-graph",
+        "--at-operation=@",
+        "-T",
+        OPERATION_TEMPLATE,
+      ])
     ).toString();
 
     const ret: Operation[] = [];
@@ -1081,43 +929,19 @@ export class JJRepository {
   }
 
   async operationRevert(id: string) {
-    return (
-      await handleJJCommand(
-        this.spawnJJ(["operation", "revert", id], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
-      )
-    ).toString();
+    return (await this.jjCommand(["operation", "revert", id])).toString();
   }
 
   async operationRestore(id: string) {
-    return (
-      await handleJJCommand(
-        this.spawnJJ(["operation", "restore", id], {
-          timeout: TIMEOUTS.DEFAULT,
-          cwd: this.repositoryRoot,
-        }),
-      )
-    ).toString();
+    return (await this.jjCommand(["operation", "restore", id])).toString();
   }
 
   async undo() {
-    return await handleJJCommand(
-      this.spawnJJ(["undo"], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["undo"]);
   }
 
   async redo() {
-    return await handleJJCommand(
-      this.spawnJJ(["redo"], {
-        timeout: TIMEOUTS.DEFAULT,
-        cwd: this.repositoryRoot,
-      }),
-    );
+    return this.jjCommand(["redo"]);
   }
 
   /**

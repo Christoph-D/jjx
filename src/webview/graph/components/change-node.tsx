@@ -34,17 +34,8 @@ function isMenuOpen(): boolean {
 }
 
 function isOverTooltipTarget(e: MouseEvent): boolean {
-  let el = e.target as HTMLElement | null;
-  while (el && el !== e.currentTarget) {
-    if (el.classList.contains("pill")) {
-      return false;
-    }
-    if (el.classList.contains("text-content")) {
-      return true;
-    }
-    el = el.parentElement;
-  }
-  return false;
+  const target = e.target as HTMLElement;
+  return !target.closest?.(".pill") && !!target.closest?.(".text-content");
 }
 
 interface Props {
@@ -110,9 +101,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
     };
   };
 
-  const handleMouseEnter = (e: MouseEvent) => {
-    highlightProps.onMouseEnter();
-    document.querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)?.classList.add("hovered");
+  const tryStartTooltip = (e: MouseEvent) => {
     clearHideTimer();
     if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
@@ -122,15 +111,15 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
     }
   };
 
+  const handleMouseEnter = (e: MouseEvent) => {
+    highlightProps.onMouseEnter();
+    document.querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)?.classList.add("hovered");
+    tryStartTooltip(e);
+  };
+
   const handleMouseMove = (e: MouseEvent) => {
     clearHoverTimers();
-    clearHideTimer();
-    if (isDragging.value || isMenuOpen() || !showTooltips.value) {
-      return;
-    }
-    if (shouldShowTooltip(change.changeId, change.branchType) && isOverTooltipTarget(e)) {
-      startHoverTimers(change, e.pageX, e.pageY);
-    }
+    tryStartTooltip(e);
   };
 
   const handleMouseLeave = () => {
