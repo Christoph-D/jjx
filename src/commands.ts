@@ -74,6 +74,14 @@ function getSharedResourceGroup(resourceStates: vscode.SourceControlResourceStat
   return resourceGroup;
 }
 
+function getRequiredRepoFromGroup(state: ExtensionState, resourceGroup: vscode.SourceControlResourceGroup) {
+  const repository = state.workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
+  if (!repository) {
+    throw new Error("Repository not found");
+  }
+  return repository;
+}
+
 async function selectParentChange(repository: JJRepository): Promise<{ changeId: string } | undefined> {
   const status = await repository.getStatus(true);
 
@@ -349,13 +357,10 @@ export function registerInitCommands(state: ExtensionState): void {
     context,
     "jj.openFileResourceState",
     async (resourceState: vscode.SourceControlResourceState) => {
-      const opts: vscode.TextDocumentShowOptions = {
+      await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(resourceState.resourceUri.fsPath), {
         preserveFocus: false,
         preview: false,
         viewColumn: vscode.ViewColumn.Active,
-      };
-      await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(resourceState.resourceUri.fsPath), {
-        ...opts,
       });
     },
     { errorPrefix: "Failed to open file" },
@@ -439,10 +444,7 @@ export function registerInitCommands(state: ExtensionState): void {
     "jj.restoreResourceState",
     async (...resourceStates: vscode.SourceControlResourceState[]) => {
       const resourceGroup = getSharedResourceGroup(resourceStates, state);
-      const repository = state.workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
+      const repository = getRequiredRepoFromGroup(state, resourceGroup);
 
       const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
       if (!scm) {
@@ -511,10 +513,7 @@ export function registerInitCommands(state: ExtensionState): void {
     "jj.squashToParentResourceState",
     async (...resourceStates: vscode.SourceControlResourceState[]) => {
       const resourceGroup = getSharedResourceGroup(resourceStates, state);
-      const repository = state.workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
+      const repository = getRequiredRepoFromGroup(state, resourceGroup);
 
       const destinationParentChange = await selectParentChange(repository);
       if (!destinationParentChange) {
@@ -539,10 +538,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (scm?.selectedCommitResourceGroup && scm.selectedCommitResourceGroup === resourceGroup) {
         return;
       }
-      const repository = state.workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
+      const repository = getRequiredRepoFromGroup(state, resourceGroup);
       const status = await repository.getStatus(true);
 
       const parentChange = status.parentChanges.find((change) => change.changeId === resourceGroup.id);
@@ -564,10 +560,7 @@ export function registerInitCommands(state: ExtensionState): void {
     "jj.describe",
     async (resourceGroup: vscode.SourceControlResourceGroup) => {
       const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
-      const repository = scm?.repository;
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
+      const repository = getRequiredRepoFromGroup(state, resourceGroup);
 
       const selectedCommitChangeId = state.workspaceSCM.getSelectedCommitChangeId(resourceGroup);
       await repository.describeRetryImmutable(selectedCommitChangeId ?? resourceGroup.id);
@@ -582,10 +575,7 @@ export function registerInitCommands(state: ExtensionState): void {
     context,
     "jj.squashToParentResourceGroup",
     async (resourceGroup: vscode.SourceControlResourceGroup) => {
-      const repository = state.workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
+      const repository = getRequiredRepoFromGroup(state, resourceGroup);
 
       const destinationParentChange = await selectParentChange(repository);
       if (!destinationParentChange) {
@@ -608,10 +598,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (scm?.selectedCommitResourceGroup && scm.selectedCommitResourceGroup === resourceGroup) {
         return;
       }
-      const repository = state.workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
+      const repository = getRequiredRepoFromGroup(state, resourceGroup);
       const status = await repository.getStatus(true);
 
       const parentChange = status.parentChanges.find((change) => change.changeId === resourceGroup.id);
@@ -635,10 +622,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (scm?.selectedCommitResourceGroup && scm.selectedCommitResourceGroup === resourceGroup) {
         return;
       }
-      const repository = state.workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
+      const repository = getRequiredRepoFromGroup(state, resourceGroup);
       const confirm = await vscode.window.showWarningMessage(
         "Are you sure you want to discard changes in this change?",
         { modal: true },
@@ -656,10 +640,7 @@ export function registerInitCommands(state: ExtensionState): void {
     context,
     "jj.editResourceGroup",
     async (resourceGroup: vscode.SourceControlResourceGroup) => {
-      const repository = state.workspaceSCM.getRepositoryFromResourceGroup(resourceGroup);
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
+      const repository = getRequiredRepoFromGroup(state, resourceGroup);
       await repository.editRetryImmutable(resourceGroup.id);
     },
     { errorPrefix: "Failed to switch to change" },
@@ -699,83 +680,58 @@ export function registerInitCommands(state: ExtensionState): void {
     { errorPrefix: "Failed to create change" },
   );
 
-  registerCommand(
-    context,
-    "jj.selectGraphWebviewRepo",
-    async () => {
-      await selectRepositoryQuickPick(state);
-    },
-    { errorPrefix: "Failed to select repository" },
-  );
+  for (const command of ["jj.selectGraphWebviewRepo", "jj.selectOperationLogRepo"]) {
+    registerCommand(
+      context,
+      command,
+      async () => {
+        await selectRepositoryQuickPick(state);
+      },
+      { errorPrefix: "Failed to select repository" },
+    );
+  }
 
   registerCommand(context, "jj.refreshOperationLog", async () => {
     await state.operationLogManager!.refresh();
   });
 
-  registerCommand(context, "jj.undo", async () => {
-    const repository = state.getSelectedRepo();
-    if (!repository) {
-      return;
-    }
-    await repository.undo();
-    await state.operationLogManager!.refresh();
-    await state.graphWebview?.refresh();
-  });
-
-  registerCommand(context, "jj.redo", async () => {
-    const repository = state.getSelectedRepo();
-    if (!repository) {
-      return;
-    }
-    await repository.redo();
-    await state.operationLogManager!.refresh();
-    await state.graphWebview?.refresh();
-  });
-
-  registerCommand(
-    context,
-    "jj.selectOperationLogRepo",
-    async () => {
-      await selectRepositoryQuickPick(state);
-    },
-    { errorPrefix: "Failed to select repository" },
-  );
-
-  registerCommand(
-    context,
-    "jj.operationRevert",
-    async (item: unknown) => {
-      if (!(item instanceof OperationTreeItem)) {
-        throw new Error("OperationTreeItem expected");
-      }
-      const repository = state.workspaceSCM.getRepositoryFromUri(vscode.Uri.file(item.repositoryRoot));
+  for (const [command, method] of [
+    ["jj.undo", "undo"],
+    ["jj.redo", "redo"],
+  ] as const) {
+    registerCommand(context, command, async () => {
+      const repository = state.getSelectedRepo();
       if (!repository) {
-        throw new Error("Repository not found");
+        return;
       }
-      await repository.operationRevert(item.operation.id);
+      await repository[method]();
       await state.operationLogManager!.refresh();
       await state.graphWebview?.refresh();
-    },
-    { errorPrefix: "Failed to revert operation" },
-  );
+    });
+  }
 
-  registerCommand(
-    context,
-    "jj.operationRestore",
-    async (item: unknown) => {
-      if (!(item instanceof OperationTreeItem)) {
-        throw new Error("OperationTreeItem expected");
-      }
-      const repository = state.workspaceSCM.getRepositoryFromUri(vscode.Uri.file(item.repositoryRoot));
-      if (!repository) {
-        throw new Error("Repository not found");
-      }
-      await repository.operationRestore(item.operation.id);
-      await state.operationLogManager!.refresh();
-      await state.graphWebview?.refresh();
-    },
-    { errorPrefix: "Failed to restore operation" },
-  );
+  for (const [command, action, errorPrefix] of [
+    ["jj.operationRevert", "operationRevert", "Failed to revert operation"],
+    ["jj.operationRestore", "operationRestore", "Failed to restore operation"],
+  ] as const) {
+    registerCommand(
+      context,
+      command,
+      async (item: unknown) => {
+        if (!(item instanceof OperationTreeItem)) {
+          throw new Error("OperationTreeItem expected");
+        }
+        const repository = state.workspaceSCM.getRepositoryFromUri(vscode.Uri.file(item.repositoryRoot));
+        if (!repository) {
+          throw new Error("Repository not found");
+        }
+        await repository[action](item.operation.id);
+        await state.operationLogManager!.refresh();
+        await state.graphWebview?.refresh();
+      },
+      { errorPrefix },
+    );
+  }
 
   registerCommand(context, "jj.openParentChange", async (uri: vscode.Uri) => {
     await navigateToRelativeChange(uri, "{}-", state);
