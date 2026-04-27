@@ -52,7 +52,7 @@ async function checkJJVersion(jjFilepath: string): Promise<void> {
 }
 
 export class WorkspaceSourceControlManager {
-  repoInfos: Map<
+  private repoInfos: Map<
     string,
     {
       jjPath: Awaited<ReturnType<typeof getJJPath>>;
@@ -267,26 +267,26 @@ export class WorkspaceSourceControlManager {
     return isAnyRepoChanged;
   }
 
-  getRepositoryFromUri(uri: vscode.Uri) {
-    return this.repoSCMs.find((repo) => {
-      return !path.relative(repo.repositoryRoot, uri.fsPath).startsWith("..");
-    })?.repository;
-  }
-
-  getRepositoryFromResourceGroup(resourceGroup: vscode.SourceControlResourceGroup) {
-    return this.repoSCMs.find((repo) => {
-      return resourceGroup === repo.workingCopyResourceGroup || repo.parentResourceGroups.includes(resourceGroup);
-    })?.repository;
+  getRepositorySourceControlManagerFromSourceControl(sourceControl: vscode.SourceControl) {
+    return this.repoSCMs.find((repo) => repo.sourceControl === sourceControl);
   }
 
   getRepositoryFromSourceControl(sourceControl: vscode.SourceControl) {
-    return this.repoSCMs.find((repo) => repo.sourceControl === sourceControl)?.repository;
+    return this.getRepositorySourceControlManagerFromSourceControl(sourceControl)?.repository;
+  }
+
+  getByRoot(root: string) {
+    return this.repoSCMs.find((repo) => repo.repositoryRoot === root);
   }
 
   getRepositorySourceControlManagerFromUri(uri: vscode.Uri) {
     return this.repoSCMs.find((repo) => {
       return !path.relative(repo.repositoryRoot, uri.fsPath).startsWith("..");
     });
+  }
+
+  getRepositoryFromUri(uri: vscode.Uri) {
+    return this.getRepositorySourceControlManagerFromUri(uri)?.repository;
   }
 
   getRepositorySourceControlManagerFromResourceGroup(resourceGroup: vscode.SourceControlResourceGroup) {
@@ -296,6 +296,10 @@ export class WorkspaceSourceControlManager {
         repo.parentResourceGroups.includes(resourceGroup) ||
         repo.selectedCommitResourceGroup === resourceGroup,
     );
+  }
+
+  getRepositoryFromResourceGroup(resourceGroup: vscode.SourceControlResourceGroup) {
+    return this.getRepositorySourceControlManagerFromResourceGroup(resourceGroup)?.repository;
   }
 
   getSelectedCommitChangeId(resourceGroup: vscode.SourceControlResourceGroup): string | undefined {

@@ -14,6 +14,7 @@ import {
 } from "vscode";
 import { getParams } from "./uri";
 import type { WorkspaceSourceControlManager } from "./sourceControl";
+import type { JJRepository } from "./repository";
 import { createThrottledAsyncFn, eventToPromise, filterEvent, isDescendant, pathEquals } from "./utils";
 
 interface CacheRow {
@@ -158,13 +159,9 @@ export class JJFileSystemProvider implements FileSystemProvider {
     throw new Error("Unknown URI params");
   }
 
-  private async readFileOrNotFound(
-    repository: ReturnType<WorkspaceSourceControlManager["getRepositoryFromUri"]>,
-    rev: string,
-    fsPath: string,
-  ): Promise<Uint8Array> {
+  private async readFileOrNotFound(repository: JJRepository, rev: string, fsPath: string): Promise<Uint8Array> {
     try {
-      return await repository!.readFile(rev, fsPath);
+      return await repository.readFile(rev, fsPath);
     } catch (e) {
       if (e instanceof Error && e.message.includes("No such path")) {
         throw FileSystemError.FileNotFound();

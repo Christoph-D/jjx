@@ -110,7 +110,7 @@ async function selectRepositoryQuickPick(state: ExtensionState): Promise<void> {
     placeHolder: "Select a Repository",
   });
 
-  const selectedRepo = state.workspaceSCM.repoSCMs.find((repo) => repo.repositoryRoot === selectedRepoName);
+  const selectedRepo = selectedRepoName ? state.workspaceSCM.getByRoot(selectedRepoName) : undefined;
 
   if (selectedRepo) {
     state.setSelectedRepo(selectedRepo.repository);
@@ -413,12 +413,6 @@ export function registerInitCommands(state: ExtensionState): void {
 
       const rev = params.diffOriginalRev;
 
-      const scm = state.workspaceSCM.getRepositorySourceControlManagerFromUri(originalUri);
-
-      if (!scm) {
-        throw new Error("Source Control Manager not found with given URI.");
-      }
-
       const repo = state.workspaceSCM.getRepositoryFromUri(originalUri);
       if (!repo) {
         throw new Error("Repository could not be found with given URI.");
@@ -535,7 +529,7 @@ export function registerInitCommands(state: ExtensionState): void {
     async (...resourceStates: vscode.SourceControlResourceState[]) => {
       const resourceGroup = getSharedResourceGroup(resourceStates, state);
       const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
-      if (scm?.selectedCommitResourceGroup && scm.selectedCommitResourceGroup === resourceGroup) {
+      if (scm?.selectedCommitResourceGroup === resourceGroup) {
         return;
       }
       const repository = getRequiredRepoFromGroup(state, resourceGroup);
@@ -595,7 +589,7 @@ export function registerInitCommands(state: ExtensionState): void {
     "jj.squashToWorkingCopyResourceGroup",
     async (resourceGroup: vscode.SourceControlResourceGroup) => {
       const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
-      if (scm?.selectedCommitResourceGroup && scm.selectedCommitResourceGroup === resourceGroup) {
+      if (scm?.selectedCommitResourceGroup === resourceGroup) {
         return;
       }
       const repository = getRequiredRepoFromGroup(state, resourceGroup);
@@ -619,7 +613,7 @@ export function registerInitCommands(state: ExtensionState): void {
     "jj.restoreResourceGroup",
     async (resourceGroup: vscode.SourceControlResourceGroup) => {
       const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
-      if (scm?.selectedCommitResourceGroup && scm.selectedCommitResourceGroup === resourceGroup) {
+      if (scm?.selectedCommitResourceGroup === resourceGroup) {
         return;
       }
       const repository = getRequiredRepoFromGroup(state, resourceGroup);

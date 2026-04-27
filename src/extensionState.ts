@@ -37,10 +37,7 @@ export function createExtensionState(
   function getSelectedRepo(): JJRepository | undefined {
     const selectedRepo = context.workspaceState.get<string>("selectedRepository");
     if (selectedRepo) {
-      return (
-        workspaceSCM.repoSCMs.find((repo) => repo.repositoryRoot === selectedRepo)?.repository ||
-        workspaceSCM.repoSCMs[0]?.repository
-      );
+      return workspaceSCM.getByRoot(selectedRepo)?.repository || workspaceSCM.repoSCMs[0]?.repository;
     }
     return workspaceSCM.repoSCMs[0]?.repository;
   }

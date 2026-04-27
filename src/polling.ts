@@ -29,7 +29,7 @@ export function initInfrastructure(state: ExtensionState) {
       if (!repoRoot) {
         return;
       }
-      const repoSCM = state.workspaceSCM.repoSCMs.find((r) => r.repositoryRoot === repoRoot);
+      const repoSCM = state.workspaceSCM.getByRoot(repoRoot);
       if (repoSCM) {
         const changeId = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
         await repoSCM.setSelectedCommit(changeId);
