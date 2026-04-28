@@ -12,9 +12,9 @@ const colorOfType = (type: FileStatusType) => {
     case "D":
       return new ThemeColor("jjDecoration.deletedResourceForeground");
     case "R":
-      return new ThemeColor("jjDecoration.modifiedResourceForeground");
-    case "C":
       return new ThemeColor("jjDecoration.renamedResourceForeground");
+    case "C":
+      return new ThemeColor("jjDecoration.addedResourceForeground");
     case "X":
       return new ThemeColor("jjDecoration.conflictingResourceForeground");
   }
