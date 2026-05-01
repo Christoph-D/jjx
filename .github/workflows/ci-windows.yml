@@ -50,17 +50,6 @@ jobs:
       - name: Add jj to PATH
         run: echo "C:\jj" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-      - name: Cache Playwright browsers
-        id: cache-playwright
-        uses: actions/cache@v5
-        with:
-          path: .vscode-test
-          key: playwright-${{ runner.os }}-${{ hashFiles('tests-integration/vscode-version.json') }}
-
-      - name: Install Playwright browsers
-        if: steps.cache-playwright.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install
-
       - name: Playwright tests
         run: pnpm run playwright-test
 
