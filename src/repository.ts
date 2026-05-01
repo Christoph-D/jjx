@@ -20,7 +20,7 @@ import {
   ProcessError,
 } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
-import { filepathToFileset, pathEquals, normalizePath } from "./utils";
+import { escapeTomlString, filepathToFileset, pathEquals, normalizePath } from "./utils";
 import {
   getDiffToolPath,
   expectDiffToolRequest,
@@ -519,7 +519,7 @@ export class JJRepository {
         "--interactive",
         "--tool=jjx-vscode-squash",
         "--config",
-        `merge-tools.jjx-vscode-squash.program="${squashToolSh}"`,
+        `merge-tools.jjx-vscode-squash.program="${escapeTomlString(squashToolSh)}"`,
         "--use-destination-message",
         ...(ignoreImmutable ? ["--ignore-immutable"] : []),
       ],
@@ -1024,7 +1024,7 @@ export class JJRepository {
         "--summary",
         "--tool=jjx-vscode-diff",
         "--config",
-        `merge-tools.jjx-vscode-diff.program="${diffToolSh}"`,
+        `merge-tools.jjx-vscode-diff.program="${escapeTomlString(diffToolSh)}"`,
         "-r",
         rev,
         "--",

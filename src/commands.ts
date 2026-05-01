@@ -14,7 +14,7 @@ import {
   type LineChange,
 } from "./diffUtils";
 import { match } from "arktype";
-import { getActiveTextEditorDiff, pathEquals, showErrorMessage } from "./utils";
+import { escapeTomlString, getActiveTextEditorDiff, pathEquals, showErrorMessage } from "./utils";
 import { getMergeEditorPath } from "./jjEditor";
 import { handleJJCommand } from "./process";
 
@@ -318,7 +318,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
       throw new Error("Merge editor not initialized");
     }
     const relativePath = path.relative(repo.repositoryRoot, uri.fsPath);
-    const mergeToolConfig = `merge-tools.jjx-vscode-merge.program="${mergeEditorScriptPath}"`;
+    const mergeToolConfig = `merge-tools.jjx-vscode-merge.program="${escapeTomlString(mergeEditorScriptPath)}"`;
     const args = ["resolve", "--tool=jjx-vscode-merge", "--config", mergeToolConfig];
     if (changeId) {
       args.push("-r", changeId);

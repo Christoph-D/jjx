@@ -6,6 +6,17 @@ export function showErrorMessage(message: string, error: unknown): void {
   window.showErrorMessage(errorMessage ? `${message}: ${errorMessage}` : message);
 }
 
+export function escapeTomlString(value: string): string {
+  return value
+    .replaceAll("\\", "\\\\")
+    .replaceAll('"', '\\"')
+    .replaceAll("\n", "\\n")
+    .replaceAll("\r", "\\r")
+    .replaceAll("\t", "\\t")
+    .replaceAll("\b", "\\b")
+    .replaceAll("\f", "\\f");
+}
+
 export function filepathToFileset(filepath: string): string {
   const escaped = filepath.replaceAll(/\\/g, "\\\\").replaceAll(/"/g, '\\"');
   return `file:"${escaped}"`;
