@@ -8,7 +8,7 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
   if (change.branchType === "~") {
     return (
       <g>
-        <rect x="-8" y="-6" width="16" height="10" class="bg-match circle-bg" />
+        <rect x="-8" y="-6" width="16" height="10" class="circle-bg" />
         <rect x="-8" y="-6" width="16" height="10" class="elided-bg bg-match" />
         <text x="0" y="0" class="elided-symbol">
           ~
@@ -22,7 +22,7 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
     const d = `M 0 ${-size} L ${size} 0 L 0 ${size} L ${-size} 0 Z`;
     return (
       <g>
-        <path d={d} class="bg-match circle-bg no-stroke" />
+        <path d={d} class="circle-bg no-stroke" />
         <path d={d} class="diamond-path" />
       </g>
     );
@@ -31,7 +31,7 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
   if (change.currentWorkingCopy) {
     return (
       <g>
-        <circle cx="0" cy="0" r="10" class="no-stroke bg-match circle-bg" />
+        <circle cx="0" cy="0" r="10" class="no-stroke circle-bg" />
         <circle cx="0" cy="0" r="10" class="no-stroke bg-match" />
         <text x="0" y="0" class="working-copy">
           @
@@ -44,7 +44,7 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
   const r = CIRCLE_RADIUS;
   return (
     <g>
-      <circle cx="0" cy="0" r={r} class={"bg-match circle-bg" + (isOpen ? " thin-stroke" : "")} />
+      <circle cx="0" cy="0" r={r} class={"circle-bg" + (isOpen ? " thin-stroke" : "")} />
       <circle cx="0" cy="0" r={r} class={isOpen ? "bg-match thin-stroke" : ""} />
     </g>
   );

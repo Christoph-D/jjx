@@ -217,6 +217,7 @@ body {
 }
 
 .node-circle .circle-bg {
+  fill: var(--vscode-sideBar-background);
   opacity: 1 !important;
   transition: none;
   stroke: var(--vscode-sideBar-background);
@@ -228,14 +229,6 @@ body {
 
 .node-circle .thin-stroke {
   stroke-width: 1.5;
-}
-
-.node-circle.selected .circle-bg {
-  stroke: var(--vscode-list-activeSelectionBackground);
-}
-
-.node-circle.hovered .circle-bg {
-  stroke: var(--vscode-list-hoverBackground);
 }
 
 .node-circle.dimmed .diamond-path {
