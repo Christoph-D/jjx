@@ -84,6 +84,8 @@ export const pillContextMenu = signal<PillContextMenuState | null>(null);
 
 export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);
 
+export const pushingBookmarks = signal<Set<string>>(new Set());
+
 export function closeAllMenus() {
   contextMenu.value = null;
   rebaseMenu.value = null;

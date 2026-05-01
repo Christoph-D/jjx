@@ -176,6 +176,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             }
           } catch (error: unknown) {
             showErrorMessage("Failed to push bookmark", error);
+          } finally {
+            this.panel?.webview.postMessage({ command: "pushBookmarkDone", bookmark: message.bookmark });
           }
           break;
         case "getBookmarkTrackingRemotes":

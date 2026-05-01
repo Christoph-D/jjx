@@ -13,6 +13,7 @@ import {
   isDragging,
   selectedNodes,
   pendingGraphUpdate,
+  pushingBookmarks,
   vscode,
   diffStatsCache,
   tooltip,
@@ -118,6 +119,12 @@ export function App() {
               pendingRemotes: undefined,
             };
           }
+          break;
+        }
+        case "pushBookmarkDone": {
+          const newSet = new Set(pushingBookmarks.value);
+          newSet.delete(message.bookmark);
+          pushingBookmarks.value = newSet;
           break;
         }
       }

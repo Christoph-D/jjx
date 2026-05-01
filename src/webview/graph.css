@@ -184,6 +184,15 @@ body {
   opacity: 0.7;
 }
 
+.bookmark-pill .bookmark-pushing-icon {
+  cursor: default;
+}
+
+.bookmark-pill .bookmark-pushing-icon:hover {
+  background-color: transparent;
+  border-radius: 0;
+}
+
 .bookmark-pill.conflicted::after,
 .tag-pill.conflicted::after {
   content: "??";

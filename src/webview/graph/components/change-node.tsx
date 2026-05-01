@@ -18,6 +18,7 @@ import {
   dragBookmarkName,
   pillContextMenu,
   closeAllMenus,
+  pushingBookmarks,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
@@ -255,16 +256,27 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               dropTargetId.value = null;
             }}
           >
-            {!b.synced && !b.conflict && b.showPushButton !== false && (
-              <i
-                class="codicon codicon-cloud-upload bookmark-push-icon"
-                title="Push to all tracking remotes"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  vscode.postMessage({ command: "pushBookmark", bookmark: b.name });
-                }}
-              />
-            )}
+            {!b.synced &&
+              !b.conflict &&
+              b.showPushButton !== false &&
+              (pushingBookmarks.value.has(b.name) ? (
+                <i
+                  class="codicon codicon-sync codicon-modifier-spin bookmark-push-icon bookmark-pushing-icon"
+                  title="Pushing..."
+                />
+              ) : (
+                <i
+                  class="codicon codicon-cloud-upload bookmark-push-icon"
+                  title="Push to all tracking remotes"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newSet = new Set(pushingBookmarks.value);
+                    newSet.add(b.name);
+                    pushingBookmarks.value = newSet;
+                    vscode.postMessage({ command: "pushBookmark", bookmark: b.name });
+                  }}
+                />
+              ))}
             {abbreviateName(b.name)}
           </span>
         ))}
