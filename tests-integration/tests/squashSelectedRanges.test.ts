@@ -5,6 +5,7 @@ test("squash selected line ranges into parent change", async ({ graphFrame, test
   await testRepo.writeFile("a.txt", "line1\nMODIFIED\nline3\nADDED\n");
 
   await expect(graphFrame.locator("#nodes > div")).toHaveCount(3);
+  await expect(graphFrame.locator("#nodes > div").first()).not.toHaveText(/\(empty\)/);
 
   // Open a.txt in a regular editor via Quick Open
   await workbox.keyboard.press("Control+p");
@@ -28,12 +29,20 @@ test("squash selected line ranges into parent change", async ({ graphFrame, test
   await workbox.keyboard.press("Shift+End");
 
   // Trigger "Squash Selected Changes..." via command palette
-  await workbox.keyboard.press("Control+Shift+p");
-  await workbox.keyboard.type("Squash Selected Changes");
-  await workbox.keyboard.press("Enter");
+  await workbox.keyboard.press("Control+Shift+P");
+  const quickInput = workbox.locator(".quick-input-widget input").first();
+  await expect(quickInput).toBeVisible();
+  await quickInput.fill(">Squash Selected Changes");
+  const quickPick = workbox.locator(".quick-input-widget");
+  await expect(quickPick).toBeVisible();
+  const squashItem = quickPick
+    .locator(".monaco-list-row")
+    .filter({ hasText: /Jujutsu: Squash Selected Changes/ })
+    .first();
+  await expect(squashItem).toBeVisible();
+  await squashItem.click();
 
   // Select parent from the destination quick pick
-  const quickPick = workbox.locator(".quick-input-widget");
   await expect(quickPick).toBeVisible();
   const parentItem = quickPick
     .locator(".monaco-list-row")
