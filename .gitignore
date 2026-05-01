@@ -12,4 +12,5 @@ src/**/*.js.map
 test-results/
 tests-integration/.vscode-path
 .pnpm-store/
+.tmp/
 package-lock.json
