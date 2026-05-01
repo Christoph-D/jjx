@@ -9,7 +9,7 @@ import { JJEditor, JJMergeEditor, JJDiffTool, JJSquashTool } from "./jjEditor";
 import { killAllProcesses } from "./process";
 import { createExtensionState } from "./extensionState";
 import { registerPreInitCommands, registerInitCommands } from "./commands";
-import { registerAnnotations, registerStatusBar } from "./annotations";
+import { registerAnnotations } from "./annotations";
 import { createPolling, initInfrastructure } from "./polling";
 import { registerColocatedCheck } from "./colocatedCheck";
 
@@ -56,7 +56,6 @@ export async function activate(context: vscode.ExtensionContext) {
   state.onInit(() => {
     registerInitCommands(state);
     registerAnnotations(state);
-    registerStatusBar(state);
   });
 
   initInfrastructure(state);

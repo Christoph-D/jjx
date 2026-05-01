@@ -68,7 +68,7 @@ test("push bookmark to all remotes via upload icon, then push to single remote",
 
   await expect(unsyncedPill).toBeVisible();
 
-  await expect(async() => {
+  await expect(async () => {
     await assertMenuItemNotVisible("Push to remote-a");
   }).toPass();
 

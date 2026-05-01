@@ -151,7 +151,8 @@
       {
         "command": "jj.gitFetch",
         "title": "Fetch from Remote",
-        "category": "Jujutsu"
+        "category": "Jujutsu",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "jj.refreshOperationLog",
@@ -311,6 +312,11 @@
           "command": "jj.selectOperationLogRepo",
           "when": "view == jjOperationLog",
           "group": "navigation@4"
+        },
+        {
+          "command": "jj.gitFetch",
+          "when": "view == jjGraphWebview",
+          "group": "navigation@0"
         },
         {
           "command": "jj.undo",

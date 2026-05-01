@@ -689,6 +689,19 @@ export function registerInitCommands(state: ExtensionState): void {
     await state.operationLogManager!.refresh();
   });
 
+  registerCommand(
+    context,
+    "jj.gitFetch",
+    async () => {
+      const repository = state.getSelectedRepo();
+      if (!repository) {
+        return;
+      }
+      await repository.gitFetch();
+    },
+    { errorPrefix: "Failed to fetch from remote" },
+  );
+
   for (const [command, method] of [
     ["jj.undo", "undo"],
     ["jj.redo", "redo"],
