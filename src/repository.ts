@@ -8,6 +8,7 @@ import {
   LOG_TEMPLATE,
   OPERATION_TEMPLATE,
   DIFF_STATS_TEMPLATE,
+  BOOKMARK_TRACKING_INFO_TEMPLATE,
 } from "./templateBuilder";
 import spawn from "cross-spawn";
 import { ImmutableError, convertJJErrors } from "./errors";
@@ -690,27 +691,15 @@ export class JJRepository {
   async getBookmarkTrackingInfo(
     bookmark: string,
   ): Promise<{ trackedRemotes: string[]; unsyncedTrackedRemotes: string[]; untrackedRemotes: string[] }> {
-    const [trackedOutput, unsyncedOutput, remotesOutput] = await Promise.all([
-      this.jjCommandRead([
-        "bookmark",
-        "list",
-        "--all-remotes",
-        bookmark,
-        "-T",
-        `if(remote != "" && tracked && remote != "git", remote ++ "\\n", "")`,
-      ]),
-      this.jjCommandRead([
-        "bookmark",
-        "list",
-        "--all-remotes",
-        bookmark,
-        "-T",
-        `if(remote != "" && tracked && !synced && remote != "git", remote ++ "\\n", "")`,
-      ]),
+    const [trackingOutput, remotesOutput] = await Promise.all([
+      this.jjCommandRead(["bookmark", "list", "--all-remotes", bookmark, "-T", BOOKMARK_TRACKING_INFO_TEMPLATE]),
       this.jjCommandRead(["git", "remote", "list"]),
     ]);
-    const trackedRemotes = this.splitLines(trackedOutput);
-    const unsyncedTrackedRemotes = this.splitLines(unsyncedOutput);
+    const trackingEntries = this.splitLines(trackingOutput)
+      .map((line) => JSON.parse(line) as { remote: string; tracked: boolean; synced: boolean })
+      .filter((e) => e.remote !== "" && e.remote !== "git" && e.tracked);
+    const trackedRemotes = trackingEntries.map((e) => e.remote);
+    const unsyncedTrackedRemotes = trackingEntries.filter((e) => !e.synced).map((e) => e.remote);
     const allRemotes = this.splitLines(remotesOutput).map((line) => line.split(/\s+/)[0]);
     const untrackedRemotes = allRemotes.filter((r) => !trackedRemotes.includes(r));
     return { trackedRemotes, unsyncedTrackedRemotes, untrackedRemotes };

@@ -330,8 +330,15 @@ const DIFF_STATS_FIELDS: TemplateFields = {
   },
 };
 
+const BOOKMARK_TRACKING_INFO_FIELDS: TemplateFields = {
+  remote: { type: "string", expr: "remote" },
+  synced: { type: "boolean", expr: "synced" },
+  tracked: { type: "boolean", expr: "tracked" },
+};
+
 export const SHOW_TEMPLATE = generateTemplate(SHOW_ENTRY_FIELDS);
 export const STATUS_TEMPLATE = generateTemplate(STATUS_ENTRY_FIELDS);
 export const LOG_TEMPLATE = generateTemplate(LOG_ENTRY_FIELDS);
 export const OPERATION_TEMPLATE = generateTemplate(OPERATION_ENTRY_FIELDS);
 export const DIFF_STATS_TEMPLATE = generateTemplate(DIFF_STATS_FIELDS);
+export const BOOKMARK_TRACKING_INFO_TEMPLATE = generateTemplate(BOOKMARK_TRACKING_INFO_FIELDS);
