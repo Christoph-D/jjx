@@ -12,9 +12,11 @@ test("undo a specific operation from operation log tree view", async ({ graphFra
   await expect(treeItems.first()).toBeVisible();
 
   const firstItem = treeItems.filter({ hasText: /^jj .*commit/ }).first();
+  await firstItem.scrollIntoViewIfNeeded();
   await firstItem.hover();
   const revertBtn = firstItem.getByRole("button", { name: "Revert Operation" });
-  await revertBtn.click({ force: true });
+  await expect(revertBtn).toBeVisible();
+  await revertBtn.click();
 
   await expect(nodes).toHaveCount(3);
 
@@ -38,9 +40,11 @@ test("restore repo to a specific operation from operation log tree view", async 
   await expect(treeItems.first()).toBeVisible();
 
   const targetItem = treeItems.filter({ hasText: /commit A/ }).first();
+  await targetItem.scrollIntoViewIfNeeded();
   await targetItem.hover();
   const restoreBtn = targetItem.getByRole("button", { name: "Restore Repo to the State at This Operation" });
-  await restoreBtn.click({ force: true });
+  await expect(restoreBtn).toBeVisible();
+  await restoreBtn.click();
 
   await expect(async () => {
     const logEntries = await testRepo.log();
