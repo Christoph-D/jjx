@@ -15,7 +15,7 @@ async function assertMenuItemNotVisible(graphFrame: Frame, bookmarkPill: Locator
   await bookmarkPill.click({ button: "right" });
   const pushMenu = graphFrame.locator("#pill-context-menu");
   const item = pushMenu.locator(".context-menu-item").filter({ hasText: text });
-  await expect(item).not.toBeVisible();
+  await expect(item).not.toBeVisible({ timeout: 2_000 });
   await graphFrame.locator("body").click();
   await expect(pushMenu).not.toBeVisible();
 }

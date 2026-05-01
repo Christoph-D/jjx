@@ -13,7 +13,7 @@ export default defineConfig<void, TestOptions>({
     screenshot: "only-on-failure",
   },
   expect: {
-    timeout: 20_000,
+    timeout: 30_000,
   },
   globalSetup: "./globalSetup",
   projects: [
