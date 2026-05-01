@@ -2,13 +2,13 @@ import { test, expect, newTestRepo } from "./baseTest";
 import path from "path";
 
 test("push bookmark to all remotes via upload icon, then push to single remote", async ({ graphFrame, testRepo }) => {
-  const remoteAPath = path.join(testRepo.repoPath, "remote-a");
-  const remoteBPath = path.join(testRepo.repoPath, "remote-b");
+  const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
+  const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
   const remoteARepo = await newTestRepo(remoteAPath);
   const remoteBRepo = await newTestRepo(remoteBPath);
 
-  await testRepo.jjCommand(["git", "remote", "add", "remote-a", "remote-a"]);
-  await testRepo.jjCommand(["git", "remote", "add", "remote-b", "remote-b"]);
+  await testRepo.jjCommand(["git", "remote", "add", "remote-a", remoteAPath]);
+  await testRepo.jjCommand(["git", "remote", "add", "remote-b", remoteBPath]);
   await testRepo.jjCommand(["bookmark", "create", "my-bookmark"]);
   //await testRepo.jjCommand(["bookmark", "track", "my-bookmark", "--remote=remote-a"]);
   //await testRepo.jjCommand(["bookmark", "track", "my-bookmark", "--remote=remote-b"]);
