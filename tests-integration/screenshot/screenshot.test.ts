@@ -44,6 +44,7 @@ async function screenshot(
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
   const outputPath = path.join(OUTPUT_DIR, filename);
   execSync(`convert "${TEMP_SCREENSHOT}" -strip -define png:compression-level=9 "${outputPath}"`);
+  execSync(`pngcrush -q -ow "${outputPath}"`);
 }
 
 async function screenshotClipAfter(
@@ -60,6 +61,7 @@ async function screenshotClipAfter(
   execSync(
     `convert "${fullScreenshotPath}" -crop ${width}x${height}+${x}+${y} +repage -strip -define png:compression-level=9 "${outputPath}"`,
   );
+  execSync(`pngcrush -q -ow "${outputPath}"`);
 }
 
 async function initializeExampleRepo(testRepo: TestRepo) {

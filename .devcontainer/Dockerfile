@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/playwright:v1.56.0-noble
 
-RUN apt-get update && apt-get -y install git curl bash imagemagick inotify-tools ripgrep less tzdata xvfb
+RUN apt-get update && apt-get -y install git curl bash imagemagick inotify-tools ripgrep less tzdata xvfb pngcrush
 RUN ln -sf /usr/share/zoneinfo/hostlocaltime /etc/localtime
 
 USER ubuntu
