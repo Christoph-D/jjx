@@ -11,15 +11,6 @@ async function clickMenuItem(graphFrame: Frame, bookmarkPill: Locator, text: str
   await expect(pushMenu).not.toBeVisible();
 }
 
-async function assertMenuItemNotVisible(graphFrame: Frame, bookmarkPill: Locator, text: string) {
-  await bookmarkPill.click({ button: "right" });
-  const pushMenu = graphFrame.locator("#pill-context-menu");
-  const item = pushMenu.locator(".context-menu-item").filter({ hasText: text });
-  await expect(item).not.toBeVisible({ timeout: 2_000 });
-  await graphFrame.locator("body").click();
-  await expect(pushMenu).not.toBeVisible();
-}
-
 async function setupRemotesWithTrackedBookmark(testRepo: TestRepo, graphFrame: Frame) {
   const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
   const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
@@ -87,7 +78,15 @@ test("push bookmark to single remote via context menu", async ({ graphFrame, tes
   await expect(unsyncedPill).toBeVisible();
 
   await expect(async () => {
-    await assertMenuItemNotVisible(graphFrame, bookmarkPill, "Push to remote-a");
+    await bookmarkPill.click({ button: "right" });
+    const pushMenu = graphFrame.locator("#pill-context-menu");
+    await expect(pushMenu).toBeVisible();
+    const pushToB = pushMenu.locator(".context-menu-item").filter({ hasText: "Push to remote-b" });
+    await expect(pushToB).toBeVisible();
+    const pushToA = pushMenu.locator(".context-menu-item").filter({ hasText: "Push to remote-a" });
+    await expect(pushToA).not.toBeVisible({ timeout: 2_000 });
+    await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
+    await expect(pushMenu).not.toBeVisible();
   }).toPass();
 
   await clickMenuItem(graphFrame, bookmarkPill, "Push to remote-b");
