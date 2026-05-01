@@ -155,6 +155,12 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "jj.gitFetch.syncing",
+        "title": "Fetching from Default Remote...",
+        "category": "Jujutsu",
+        "icon": "$(sync~spin)"
+      },
+      {
         "command": "jj.refreshOperationLog",
         "title": "Refresh Operation Log",
         "category": "Jujutsu",
@@ -334,7 +340,12 @@
         },
         {
           "command": "jj.gitFetch",
-          "when": "view == jjGraphWebview",
+          "when": "view == jjGraphWebview && !jj.fetching",
+          "group": "navigation@0"
+        },
+        {
+          "command": "jj.gitFetch.syncing",
+          "when": "view == jjGraphWebview && jj.fetching",
           "group": "navigation@0"
         },
         {

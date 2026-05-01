@@ -689,6 +689,8 @@ export function registerInitCommands(state: ExtensionState): void {
     await state.operationLogManager!.refresh();
   });
 
+  context.subscriptions.push(vscode.commands.registerCommand("jj.gitFetch.syncing", () => {}));
+
   registerCommand(
     context,
     "jj.gitFetch",
@@ -697,10 +699,15 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repository) {
         return;
       }
-      const result = await repository.gitFetch();
-      const output = result.stderr.toString();
-      if (output.includes("Nothing changed.")) {
-        vscode.window.showInformationMessage("Fetch: Nothing changed.");
+      await vscode.commands.executeCommand("setContext", "jj.fetching", true);
+      try {
+        const result = await repository.gitFetch();
+        const output = result.stderr.toString();
+        if (output.includes("Nothing changed.")) {
+          vscode.window.showInformationMessage("Fetch: Nothing changed.");
+        }
+      } finally {
+        await vscode.commands.executeCommand("setContext", "jj.fetching", false);
       }
     },
     { errorPrefix: "Failed to fetch from remote" },
