@@ -1,0 +1,73 @@
+name: CI (Windows)
+
+# Windows tests are flaky, so this workflow is only run manually.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+        with:
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm run check-types
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Unit tests
+        run: pnpm run unit-test
+
+      - name: Cache jj
+        id: cache-jj
+        uses: actions/cache@v5
+        with:
+          path: C:\jj\jj.exe
+          key: jj-v0.38.0-${{ runner.os }}-x86_64
+
+      - name: Install jj
+        if: steps.cache-jj.outputs.cache-hit != 'true'
+        run: |
+          Invoke-WebRequest -Uri https://github.com/jj-vcs/jj/releases/download/v0.38.0/jj-v0.38.0-x86_64-pc-windows-msvc.zip -OutFile jj.zip
+          $hash = (Get-FileHash -Path jj.zip -Algorithm SHA256).Hash
+          if ($hash -ne '13032f82286a0b224f9ce6f1e466a2323bee3af2efba423e35b4146975445e14') { throw "SHA256 mismatch" }
+          Expand-Archive -Path jj.zip -DestinationPath C:\jj
+
+      - name: Add jj to PATH
+        run: echo "C:\jj" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v5
+        with:
+          path: .vscode-test
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests-integration/vscode-version.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install
+
+      - name: Playwright tests
+        run: pnpm run playwright-test
+
+      - name: Upload Playwright artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-artifacts-windows
+          path: playwright-report/
+          retention-days: 30
