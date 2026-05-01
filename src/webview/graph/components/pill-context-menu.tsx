@@ -16,7 +16,7 @@ export function PillContextMenu() {
   const deleteCommand = isBookmark ? "deleteBookmark" : "deleteTag";
   const deletePayload = isBookmark ? { bookmark: state.name } : { tag: state.name };
 
-  const showPush = isBookmark && !state.synced && state.remotes && state.remotes.length > 0;
+  const showPush = isBookmark && state.unsyncedRemotes && state.unsyncedRemotes.length > 0;
   const showTagPush = !isBookmark && state.remotes && state.remotes.length > 0;
   const showTrack = isBookmark && state.untrackedRemotes && state.untrackedRemotes.length > 0;
   const showUntrack = isBookmark && state.remotes && state.remotes.length > 0;
@@ -48,7 +48,7 @@ export function PillContextMenu() {
           </div>
         ))}
       {showPush &&
-        state.remotes!.map((remote) => (
+        state.unsyncedRemotes!.map((remote) => (
           <div
             key={`push-${remote}`}
             class="context-menu-item"

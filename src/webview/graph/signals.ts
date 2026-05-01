@@ -75,6 +75,7 @@ export interface PillContextMenuState {
   pageY: number;
   synced?: boolean;
   remotes?: string[];
+  unsyncedRemotes?: string[];
   untrackedRemotes?: string[];
   pendingRemotes?: boolean;
 }

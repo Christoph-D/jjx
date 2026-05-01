@@ -685,8 +685,10 @@ export class JJRepository {
     return this.splitLines(output).filter((r) => r !== "git");
   }
 
-  async getBookmarkTrackingInfo(bookmark: string): Promise<{ trackedRemotes: string[]; untrackedRemotes: string[] }> {
-    const [trackedOutput, remotesOutput] = await Promise.all([
+  async getBookmarkTrackingInfo(
+    bookmark: string,
+  ): Promise<{ trackedRemotes: string[]; unsyncedTrackedRemotes: string[]; untrackedRemotes: string[] }> {
+    const [trackedOutput, unsyncedOutput, remotesOutput] = await Promise.all([
       this.jjCommandRead([
         "bookmark",
         "list",
@@ -695,12 +697,21 @@ export class JJRepository {
         "-T",
         `if(remote != "" && tracked && remote != "git", remote ++ "\\n", "")`,
       ]),
+      this.jjCommandRead([
+        "bookmark",
+        "list",
+        "--all-remotes",
+        bookmark,
+        "-T",
+        `if(remote != "" && tracked && !synced && remote != "git", remote ++ "\\n", "")`,
+      ]),
       this.jjCommandRead(["git", "remote", "list"]),
     ]);
     const trackedRemotes = this.splitLines(trackedOutput);
+    const unsyncedTrackedRemotes = this.splitLines(unsyncedOutput);
     const allRemotes = this.splitLines(remotesOutput).map((line) => line.split(/\s+/)[0]);
     const untrackedRemotes = allRemotes.filter((r) => !trackedRemotes.includes(r));
-    return { trackedRemotes, untrackedRemotes };
+    return { trackedRemotes, unsyncedTrackedRemotes, untrackedRemotes };
   }
 
   async trackBookmark(bookmark: string, remote: string): Promise<void> {

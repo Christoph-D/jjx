@@ -115,5 +115,11 @@ export type ExtensionToWebviewMessage =
   | { command: "showStaleState" }
   | { command: "showJJNotFoundState" }
   | { command: "diffStatsResponse"; changeId: string; stats: DiffStats }
-  | { command: "bookmarkTrackingRemotesResponse"; bookmark: string; remotes: string[]; untrackedRemotes?: string[] }
+  | {
+      command: "bookmarkTrackingRemotesResponse";
+      bookmark: string;
+      remotes: string[];
+      unsyncedRemotes?: string[];
+      untrackedRemotes?: string[];
+    }
   | { command: "tagPushRemotesResponse"; tag: string; pushRemotes: string[] };

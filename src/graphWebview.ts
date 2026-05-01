@@ -185,6 +185,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               command: "bookmarkTrackingRemotesResponse",
               bookmark: message.bookmark,
               remotes: info.trackedRemotes,
+              unsyncedRemotes: info.unsyncedTrackedRemotes,
               untrackedRemotes: info.untrackedRemotes,
             });
           } catch (error: unknown) {
@@ -193,6 +194,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               command: "bookmarkTrackingRemotesResponse",
               bookmark: message.bookmark,
               remotes: [],
+              unsyncedRemotes: [],
               untrackedRemotes: [],
             });
           }

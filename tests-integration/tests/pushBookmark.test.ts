@@ -24,6 +24,15 @@ test("push bookmark to all remotes via upload icon, then push to single remote",
     await item.click();
     await expect(pushMenu).not.toBeVisible();
   };
+
+  const assertMenuItemNotVisible = async (text: string) => {
+    await bookmarkPill.click({ button: "right" });
+    const pushMenu = graphFrame.locator("#pill-context-menu");
+    const item = pushMenu.locator(".context-menu-item").filter({ hasText: text });
+    await expect(item).not.toBeVisible();
+    await graphFrame.locator("body").click();
+    await expect(pushMenu).not.toBeVisible();
+  };
   await clickMenuItem("Track on remote-a");
   await clickMenuItem("Track on remote-b");
 
@@ -58,6 +67,10 @@ test("push bookmark to all remotes via upload icon, then push to single remote",
   expect(showResultB.exitCode).not.toBe(0);
 
   await expect(unsyncedPill).toBeVisible();
+
+  await expect(async() => {
+    await assertMenuItemNotVisible("Push to remote-a");
+  }).toPass();
 
   await clickMenuItem("Push to remote-b");
   await expect(unsyncedPill).not.toBeVisible();
