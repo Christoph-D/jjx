@@ -14,8 +14,8 @@ import {
   type LineChange,
 } from "./diffUtils";
 import { match } from "arktype";
-import { escapeTomlString, getActiveTextEditorDiff, pathEquals, showErrorMessage } from "./utils";
-import { getMergeEditorPath } from "./jjEditor";
+import { getActiveTextEditorDiff, pathEquals, showErrorMessage } from "./utils";
+import { getMergeEditorConfigs } from "./jjEditor";
 import { handleJJCommand } from "./process";
 
 function registerCommand<T extends unknown[]>(
@@ -313,13 +313,12 @@ export function registerPreInitCommands(state: ExtensionState): void {
     if (!repo) {
       throw new Error("Repository not found");
     }
-    const mergeEditorScriptPath = getMergeEditorPath();
-    if (!mergeEditorScriptPath) {
+    const configs = getMergeEditorConfigs();
+    if (!configs.length) {
       throw new Error("Merge editor not initialized");
     }
     const relativePath = path.relative(repo.repositoryRoot, uri.fsPath);
-    const mergeToolConfig = `merge-tools.jjx-vscode-merge.program="${escapeTomlString(mergeEditorScriptPath)}"`;
-    const args = ["resolve", "--tool=jjx-vscode-merge", "--config", mergeToolConfig];
+    const args = ["resolve", "--tool=jjx-vscode-merge", ...configs.flatMap((c) => ["--config", c])];
     if (changeId) {
       args.push("-r", changeId);
     }

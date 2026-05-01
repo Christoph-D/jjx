@@ -33,14 +33,6 @@ function copyAssets() {
   fs.copyFileSync("src/webview/graph.html", "dist/webview/graph.html");
   fs.copyFileSync("src/webview/graph.css", "dist/webview/graph.css");
   copyFile("src/config.toml", "dist/config.toml");
-  copyFile("src/jj-editor.sh", "dist/jj-editor.sh");
-  copyFile("src/jj-merge-editor.sh", "dist/jj-merge-editor.sh");
-  copyFile("src/jj-diff-tool.sh", "dist/jj-diff-tool.sh");
-  copyFile("src/jj-squash-tool.sh", "dist/jj-squash-tool.sh");
-  fs.chmodSync("dist/jj-editor.sh", 0o755);
-  fs.chmodSync("dist/jj-merge-editor.sh", 0o755);
-  fs.chmodSync("dist/jj-diff-tool.sh", 0o755);
-  fs.chmodSync("dist/jj-squash-tool.sh", 0o755);
 
   copyDir("node_modules/@vscode/codicons/dist", "dist/codicons");
 }

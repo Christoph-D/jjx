@@ -20,11 +20,11 @@ import {
   ProcessError,
 } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
-import { escapeTomlString, filepathToFileset, pathEquals, normalizePath } from "./utils";
+import { filepathToFileset, pathEquals, normalizePath } from "./utils";
 import {
-  getDiffToolPath,
+  getDiffToolConfigs,
   expectDiffToolRequest,
-  getSquashToolPath,
+  getSquashToolConfigs,
   expectSquashToolRequest,
   completeSquashToolRequest,
 } from "./jjEditor";
@@ -501,8 +501,8 @@ export class JJRepository {
     content: string;
     ignoreImmutable?: boolean;
   }): Promise<void> {
-    const squashToolSh = getSquashToolPath();
-    if (!squashToolSh) {
+    const squashConfigs = getSquashToolConfigs();
+    if (!squashConfigs.length) {
       throw new Error("Squash tool not initialized. Ensure useVSCodeAsJJEditor is enabled.");
     }
 
@@ -518,8 +518,7 @@ export class JJRepository {
         toRev,
         "--interactive",
         "--tool=jjx-vscode-squash",
-        "--config",
-        `merge-tools.jjx-vscode-squash.program="${escapeTomlString(squashToolSh)}"`,
+        ...squashConfigs.flatMap((c) => ["--config", c]),
         "--use-destination-message",
         ...(ignoreImmutable ? ["--ignore-immutable"] : []),
       ],
@@ -1006,8 +1005,8 @@ export class JJRepository {
    * @returns undefined if the file was not modified in `rev`
    */
   async getDiffOriginal(rev: string, filepath: string, renamedFrom?: string): Promise<Buffer | undefined> {
-    const diffToolSh = getDiffToolPath();
-    if (!diffToolSh) {
+    const diffConfigs = getDiffToolConfigs();
+    if (!diffConfigs.length) {
       throw new Error("Diff tool not initialized.");
     }
 
@@ -1023,8 +1022,7 @@ export class JJRepository {
         "diff",
         "--summary",
         "--tool=jjx-vscode-diff",
-        "--config",
-        `merge-tools.jjx-vscode-diff.program="${escapeTomlString(diffToolSh)}"`,
+        ...diffConfigs.flatMap((c) => ["--config", c]),
         "-r",
         rev,
         "--",

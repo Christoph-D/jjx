@@ -4,7 +4,6 @@ paginate = "never"
 color = "never"
 
 [merge-tools.jjx-vscode-merge]
-merge-args = ["$left", "$base", "$right", "$output"]
 merge-tool-edits-conflict-markers = true
 
 [template-aliases]

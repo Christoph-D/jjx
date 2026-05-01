@@ -1,7 +1,7 @@
 import * as path from "path";
 import { commands, TabInputText, Uri, window, workspace } from "vscode";
 import { IIPCHandler, IPCServer } from "./ipc/ipcServer";
-import { EmptyDisposable } from "./utils";
+import { EmptyDisposable, escapeTomlString } from "./utils";
 
 interface JJEditorRequest {
   descriptionPath?: string;
@@ -19,24 +19,37 @@ interface MergeEditorTabInput {
 }
 
 let editorEnv: Record<string, string> = {};
-let mergeEditorPath = "";
-let diffToolPath = "";
-let squashToolPath = "";
+let mergeEditorConfigs: string[] = [];
+let diffToolConfigs: string[] = [];
+let squashToolConfigs: string[] = [];
+
+function escapeShlexDoubleQuoted(s: string): string {
+  return s.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+}
 
 export function getJjEditorEnv(): Record<string, string> {
   return editorEnv;
 }
 
-export function getMergeEditorPath(): string {
-  return mergeEditorPath;
+export function getMergeEditorConfigs(): string[] {
+  return mergeEditorConfigs;
 }
 
-export function getDiffToolPath(): string {
-  return diffToolPath;
+export function getDiffToolConfigs(): string[] {
+  return diffToolConfigs;
 }
 
-export function getSquashToolPath(): string {
-  return squashToolPath;
+export function getSquashToolConfigs(): string[] {
+  return squashToolConfigs;
+}
+
+function tomlProgramConfig(toolName: string): string {
+  return `merge-tools.${toolName}.program="${escapeTomlString(process.execPath)}"`;
+}
+
+function tomlArgsConfig(toolName: string, argsField: string, mainJsPath: string, args: string[]): string {
+  const allArgs = [`"${escapeTomlString(mainJsPath)}"`, ...args.map((a) => `"${a}"`)];
+  return `merge-tools.${toolName}.${argsField}=[${allArgs.join(", ")}]`;
 }
 
 interface DiffToolRequest {
@@ -94,9 +107,8 @@ export class JJEditor implements IIPCHandler {
     this.disposable = ipc.registerHandler("jj-editor", this);
 
     editorEnv = {
-      JJ_EDITOR: `"${path.join(extensionDir, "jj-editor.sh")}"`,
-      VSCODE_JJ_EDITOR_NODE: process.execPath,
-      VSCODE_JJ_EDITOR_MAIN: path.join(extensionDir, "jj-editor-main.js"),
+      JJ_EDITOR: `"${escapeShlexDoubleQuoted(process.execPath)}" "${escapeShlexDoubleQuoted(path.join(extensionDir, "jj-editor-main.js"))}"`,
+      ELECTRON_RUN_AS_NODE: "1",
       VSCODE_JJ_IPC_HANDLE: ipc.ipcHandlePath,
     };
   }
@@ -131,13 +143,12 @@ export class JJMergeEditor implements IIPCHandler {
   constructor(ipc: IPCServer, extensionDir: string) {
     this.disposable = ipc.registerHandler("jj-merge-editor", this);
 
-    mergeEditorPath = path.join(extensionDir, "jj-merge-editor.sh");
-
-    editorEnv = {
-      ...editorEnv,
-      VSCODE_JJ_MERGE_NODE: process.execPath,
-      VSCODE_JJ_MERGE_MAIN: path.join(extensionDir, "jj-merge-editor-main.js"),
-    };
+    const mainJsPath = path.join(extensionDir, "jj-merge-editor-main.js");
+    const toolName = "jjx-vscode-merge";
+    mergeEditorConfigs = [
+      tomlProgramConfig(toolName),
+      tomlArgsConfig(toolName, "merge-args", mainJsPath, ["$left", "$base", "$right", "$output"]),
+    ];
   }
 
   async handle(request: MergeEditorRequest): Promise<boolean> {
@@ -178,13 +189,12 @@ export class JJDiffTool implements IIPCHandler {
   constructor(ipc: IPCServer, extensionDir: string) {
     this.disposable = ipc.registerHandler("jj-diff-tool", this);
 
-    diffToolPath = path.join(extensionDir, "jj-diff-tool.sh");
-
-    editorEnv = {
-      ...editorEnv,
-      VSCODE_JJ_DIFF_NODE: process.execPath,
-      VSCODE_JJ_DIFF_MAIN: path.join(extensionDir, "jj-diff-tool-main.js"),
-    };
+    const mainJsPath = path.join(extensionDir, "jj-diff-tool-main.js");
+    const toolName = "jjx-vscode-diff";
+    diffToolConfigs = [
+      tomlProgramConfig(toolName),
+      tomlArgsConfig(toolName, "diff-args", mainJsPath, ["$left", "$right"]),
+    ];
   }
 
   handle(request: DiffToolRequest): Promise<boolean> {
@@ -208,13 +218,12 @@ export class JJSquashTool implements IIPCHandler {
   constructor(ipc: IPCServer, extensionDir: string) {
     this.disposable = ipc.registerHandler("jj-squash-tool", this);
 
-    squashToolPath = path.join(extensionDir, "jj-squash-tool.sh");
-
-    editorEnv = {
-      ...editorEnv,
-      VSCODE_JJ_SQUASH_NODE: process.execPath,
-      VSCODE_JJ_SQUASH_MAIN: path.join(extensionDir, "jj-squash-tool-main.js"),
-    };
+    const mainJsPath = path.join(extensionDir, "jj-squash-tool-main.js");
+    const toolName = "jjx-vscode-squash";
+    squashToolConfigs = [
+      tomlProgramConfig(toolName),
+      tomlArgsConfig(toolName, "edit-args", mainJsPath, ["$left", "$right"]),
+    ];
   }
 
   handle(request: SquashToolRequest): Promise<boolean> {
