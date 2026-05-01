@@ -24,6 +24,7 @@ test("fetch from selected remote, default remote, and all remotes", async ({
     const contextView = workbox.locator(".context-view");
     await expect(contextView).toBeVisible();
     const item = workbox.getByRole("menuitem", { name: new RegExp(`^${text.replace(/\./g, "\\.")}$`) }).first();
+    await expect(item).toBeVisible();
     await item.hover();
     // We can't use click() because VS Code inserts a deliberate 100ms delay before
     // registering click handlers on the submenu items.
