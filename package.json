@@ -103,7 +103,7 @@
       },
       {
         "command": "jj.newWithEditor",
-        "title": "Create New Change With Editor",
+        "title": "Create New Change with Editor",
         "category": "Jujutsu"
       },
       {
@@ -255,13 +255,13 @@
       },
       {
         "command": "jj.gitFetchAllRemotes",
-        "title": "Fetch From All Remotes",
+        "title": "Fetch from All Remotes",
         "category": "Jujutsu",
         "icon": "$(cloud-download)"
       },
       {
         "command": "jj.gitFetchFromRemote",
-        "title": "Fetch From Selected Remote...",
+        "title": "Fetch from Selected Remote...",
         "category": "Jujutsu",
         "icon": "$(repo-fetch)"
       }
