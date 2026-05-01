@@ -150,7 +150,7 @@
       },
       {
         "command": "jj.gitFetch",
-        "title": "Fetch from Remote",
+        "title": "Fetch from Default Remote",
         "category": "Jujutsu",
         "icon": "$(cloud-download)"
       },
@@ -252,6 +252,25 @@
         "command": "jj.copyRelativePath",
         "title": "Copy Relative Path",
         "category": "Jujutsu"
+      },
+      {
+        "command": "jj.gitFetchAllRemotes",
+        "title": "Fetch From All Remotes",
+        "category": "Jujutsu",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "jj.gitFetchFromRemote",
+        "title": "Fetch From Selected Remote...",
+        "category": "Jujutsu",
+        "icon": "$(repo-fetch)"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "jj.graphFetchSubmenu",
+        "label": "Fetch...",
+        "icon": "$(ellipsis)"
       }
     ],
     "menus": {
@@ -352,6 +371,23 @@
           "command": "jj.selectGraphWebviewRepo",
           "when": "view == jjGraphWebview",
           "group": "navigation@6"
+        },
+        {
+          "submenu": "jj.graphFetchSubmenu",
+          "when": "view == jjGraphWebview",
+          "group": "navigation@7"
+        }
+      ],
+      "jj.graphFetchSubmenu": [
+        {
+          "command": "jj.gitFetchAllRemotes",
+          "when": "view == jjGraphWebview",
+          "group": "1_fetch@1"
+        },
+        {
+          "command": "jj.gitFetchFromRemote",
+          "when": "view == jjGraphWebview",
+          "group": "1_fetch@2"
         }
       ],
       "view/item/context": [

@@ -101,6 +101,18 @@ export class TestRepo {
     return this.commit(message);
   }
 
+  async hasRemoteBookmark(name: string, remote: string): Promise<boolean> {
+    const result = await this.jjCommand([
+      "bookmark",
+      "list",
+      "--remote",
+      remote,
+      "-T",
+      'self.name() ++ if(self.remote(), "@" ++ self.remote(), "") ++ "\\n"',
+    ]);
+    return result.stdout.includes(`${name}@${remote}`);
+  }
+
   async getBookmark(name: string): Promise<BookmarkInfo | undefined> {
     const result = await this.jjCommand(["bookmark", "list", "-T", BOOKMARK_TEMPLATE]);
     const bookmarks: BookmarkInfo[] = result.stdout

@@ -706,6 +706,51 @@ export function registerInitCommands(state: ExtensionState): void {
     { errorPrefix: "Failed to fetch from remote" },
   );
 
+  registerCommand(
+    context,
+    "jj.gitFetchAllRemotes",
+    async () => {
+      const repository = state.getSelectedRepo();
+      if (!repository) {
+        return;
+      }
+      const result = await repository.gitFetchAllRemotes();
+      const output = result.stderr.toString();
+      if (output.includes("Nothing changed.")) {
+        vscode.window.showInformationMessage("Fetch: Nothing changed.");
+      }
+    },
+    { errorPrefix: "Failed to fetch from all remotes" },
+  );
+
+  registerCommand(
+    context,
+    "jj.gitFetchFromRemote",
+    async () => {
+      const repository = state.getSelectedRepo();
+      if (!repository) {
+        return;
+      }
+      const remotes = await repository.getRemotes();
+      if (remotes.length === 0) {
+        vscode.window.showWarningMessage("No remotes configured.");
+        return;
+      }
+      const remote = await vscode.window.showQuickPick(remotes, {
+        placeHolder: "Select a Remote to Fetch From",
+      });
+      if (!remote) {
+        return;
+      }
+      const result = await repository.gitFetchFromRemote(remote);
+      const output = result.stderr.toString();
+      if (output.includes("Nothing changed.")) {
+        vscode.window.showInformationMessage("Fetch: Nothing changed.");
+      }
+    },
+    { errorPrefix: "Failed to fetch from remote" },
+  );
+
   for (const [command, method] of [
     ["jj.undo", "undo"],
     ["jj.redo", "redo"],

@@ -884,6 +884,48 @@ export class JJRepository {
     return this.gitFetchPromise;
   }
 
+  private gitFetchAllRemotesPromise: Promise<ProcessOutput> | undefined;
+
+  gitFetchAllRemotes(): Promise<ProcessOutput> {
+    if (!this.gitFetchAllRemotesPromise) {
+      this.gitFetchAllRemotesPromise = (async () => {
+        try {
+          return await collectProcessOutput(
+            this.spawnJJ(["git", "fetch", "--all-remotes"], {
+              timeout: TIMEOUTS.GIT_FETCH,
+              cwd: this.repositoryRoot,
+            }),
+          );
+        } finally {
+          this.gitFetchAllRemotesPromise = undefined;
+        }
+      })();
+    }
+    return this.gitFetchAllRemotesPromise;
+  }
+
+  private gitFetchFromRemotePromises = new Map<string, Promise<ProcessOutput>>();
+
+  gitFetchFromRemote(remote: string): Promise<ProcessOutput> {
+    let promise = this.gitFetchFromRemotePromises.get(remote);
+    if (!promise) {
+      promise = (async () => {
+        try {
+          return await collectProcessOutput(
+            this.spawnJJ(["git", "fetch", "--remote", remote], {
+              timeout: TIMEOUTS.GIT_FETCH,
+              cwd: this.repositoryRoot,
+            }),
+          );
+        } finally {
+          this.gitFetchFromRemotePromises.delete(remote);
+        }
+      })();
+      this.gitFetchFromRemotePromises.set(remote, promise);
+    }
+    return promise;
+  }
+
   async updateStale(token?: vscode.CancellationToken): Promise<void> {
     await this.jjCommand(["workspace", "update-stale"], { token, timeout: TIMEOUTS.UPDATE_STALE });
   }
