@@ -678,6 +678,7 @@ export class JJRepository {
       await this.jjCommandRead([
         "bookmark",
         "list",
+        "--all-remotes",
         bookmark,
         "-T",
         `if(remote != "", if(${filter}, remote ++ "\\n", ""), "")`,
