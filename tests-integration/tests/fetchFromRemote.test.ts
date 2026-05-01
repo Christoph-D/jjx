@@ -20,17 +20,24 @@ test("fetch from selected remote, default remote, and all remotes", async ({
   const graphPaneHeader = scmView.locator(".pane-header", { hasText: "JJ Graph" }).first();
 
   const clickSubmenuItem = async (text: string) => {
-    await graphPaneHeader.getByRole("button", { name: /Fetch\.\.\./ }).click();
-    const contextView = workbox.locator(".context-view");
-    await expect(contextView).toBeVisible();
-    const item = workbox.getByRole("menuitem", { name: new RegExp(`^${text.replace(/\./g, "\\.")}$`) }).first();
-    await expect(item).toBeVisible();
-    await item.hover();
-    // We can't use click() because VS Code inserts a deliberate 100ms delay before
-    // registering click handlers on the submenu items.
-    // There is no change in the DOM to wait for, so we have to use the keyboard to bypass
-    // the click handler.
-    await workbox.keyboard.press("Enter");
+    await expect(async () => {
+      await graphPaneHeader.getByRole("button", { name: /Fetch\.\.\./ }).click();
+      const contextView = workbox.locator(".context-view");
+      await expect(contextView).toBeVisible({ timeout: 3000 });
+      const item = workbox
+        .getByRole("menuitem", {
+          name: new RegExp(`^${text.replace(/\./g, "\\.")}$`),
+        })
+        .first();
+      await expect(item).toBeVisible({ timeout: 3000 });
+      // We can't use click() because VS Code inserts a deliberate 100ms delay before
+      // registering click handlers on the submenu items.
+      // There is no change in the DOM to wait for, so we have to use the keyboard to bypass
+      // the click handler. Retrying the full interaction handles the case where polling or
+      // file watchers cause the context menu to re-render and detach menu items.
+      await item.hover({ timeout: 3000 });
+      await workbox.keyboard.press("Enter");
+    }).toPass();
   };
 
   const selectQuickPickOption = async (label: string) => {
