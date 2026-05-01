@@ -640,17 +640,13 @@ export class JJRepository {
     if (remotes.length === 0) {
       return [];
     }
-    const results = await Promise.allSettled(remotes.map((remote) => this.pushBookmarkToRemote(bookmark, remote)));
     const failedRemoteErrors: string[] = [];
-    for (const [i, result] of results.entries()) {
-      if (result.status === "rejected") {
-        const reason =
-          result.reason instanceof ProcessError
-            ? result.reason.stderr
-            : result.reason instanceof Error
-              ? result.reason.message
-              : String(result.reason);
-        failedRemoteErrors.push(`${remotes[i]}: ${reason}`);
+    for (const remote of remotes) {
+      try {
+        await this.pushBookmarkToRemote(bookmark, remote);
+      } catch (e) {
+        const reason = e instanceof ProcessError ? e.stderr : e instanceof Error ? e.message : String(e);
+        failedRemoteErrors.push(`${remote}: ${reason}`);
       }
     }
     if (failedRemoteErrors.length > 0) {
