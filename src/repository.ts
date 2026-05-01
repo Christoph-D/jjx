@@ -2,6 +2,7 @@ import path from "path";
 import * as crypto from "crypto";
 import * as vscode from "vscode";
 import fs from "fs/promises";
+import realFs from "fs";
 import {
   SHOW_TEMPLATE,
   STATUS_TEMPLATE,
@@ -502,6 +503,12 @@ export class JJRepository {
     content: string;
     ignoreImmutable?: boolean;
   }): Promise<void> {
+    try {
+      filepath = realFs.realpathSync.native(filepath);
+    } catch {
+      // Fall back to original path if realpath fails
+    }
+
     const squashConfigs = getSquashToolConfigs();
     if (!squashConfigs.length) {
       throw new Error("Squash tool not initialized. Ensure useVSCodeAsJJEditor is enabled.");
@@ -995,6 +1002,12 @@ export class JJRepository {
    * @returns undefined if the file was not modified in `rev`
    */
   async getDiffOriginal(rev: string, filepath: string, renamedFrom?: string): Promise<Buffer | undefined> {
+    try {
+      filepath = realFs.realpathSync.native(filepath);
+    } catch {
+      // Fall back to original path if realpath fails
+    }
+
     const diffConfigs = getDiffToolConfigs();
     if (!diffConfigs.length) {
       throw new Error("Diff tool not initialized.");

@@ -150,7 +150,7 @@ export class WorkspaceSourceControlManager {
           .toString()
           .trim();
         try {
-          repoRoot = fs.realpathSync(repoRoot);
+          repoRoot = fs.realpathSync.native(repoRoot);
         } catch {
           // Fall back to original path if realpath fails
         }
@@ -287,7 +287,7 @@ export class WorkspaceSourceControlManager {
   getRepositorySourceControlManagerFromUri(uri: vscode.Uri) {
     let fsPath = uri.fsPath;
     try {
-      fsPath = fs.realpathSync(fsPath);
+      fsPath = fs.realpathSync.native(fsPath);
     } catch {
       // File may not exist on disk (e.g., jj:// URI)
     }
@@ -466,7 +466,13 @@ export class RepositorySourceControlManager {
     const repoChangedWatchEvent = filterEvent(
       anyEvent(repoWatcher.onDidCreate, repoWatcher.onDidChange, repoWatcher.onDidDelete),
       (uri) => {
-        const relativePath = path.relative(this.repositoryRoot, uri.fsPath);
+        let realFsPath = uri.fsPath;
+        try {
+          realFsPath = fs.realpathSync.native(realFsPath);
+        } catch {
+          // File may have been deleted
+        }
+        const relativePath = path.relative(this.repositoryRoot, realFsPath);
         const segments = relativePath.split(path.sep);
         return !segments.includes(".jj") && !segments.includes(".git");
       },
