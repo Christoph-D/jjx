@@ -697,7 +697,11 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repository) {
         return;
       }
-      await repository.gitFetch();
+      const result = await repository.gitFetch();
+      const output = result.stderr.toString();
+      if (output.includes("Nothing changed.")) {
+        vscode.window.showInformationMessage("Fetch: Nothing changed.");
+      }
     },
     { errorPrefix: "Failed to fetch from remote" },
   );

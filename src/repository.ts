@@ -11,7 +11,14 @@ import {
 } from "./templateBuilder";
 import spawn from "cross-spawn";
 import { ImmutableError, convertJJErrors } from "./errors";
-import { spawnJJ, handleJJCommand, type SpawnOptions, collectProcessOutput, ProcessError } from "./process";
+import {
+  spawnJJ,
+  handleJJCommand,
+  type SpawnOptions,
+  collectProcessOutput,
+  type ProcessOutput,
+  ProcessError,
+} from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
 import { filepathToFileset, pathEquals, normalizePath } from "./utils";
 import {
@@ -65,7 +72,7 @@ type ParsedFileStatuses = {
 
 export class JJRepository {
   statusCache: RepositoryStatus | undefined;
-  gitFetchPromise: Promise<void> | undefined;
+  gitFetchPromise: Promise<ProcessOutput> | undefined;
   private autoUpdateStaleAttempted = false;
   private _gitDirPromise: Promise<string> | undefined;
 
@@ -862,11 +869,13 @@ export class JJRepository {
     ]);
   }
 
-  gitFetch(): Promise<void> {
+  gitFetch(): Promise<ProcessOutput> {
     if (!this.gitFetchPromise) {
       this.gitFetchPromise = (async () => {
         try {
-          await this.jjCommand(["git", "fetch"], { timeout: TIMEOUTS.GIT_FETCH });
+          return await collectProcessOutput(
+            this.spawnJJ(["git", "fetch"], { timeout: TIMEOUTS.GIT_FETCH, cwd: this.repositoryRoot }),
+          );
         } finally {
           this.gitFetchPromise = undefined;
         }
