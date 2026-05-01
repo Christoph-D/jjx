@@ -7,7 +7,20 @@ system—featuring an interactive commit graph, drag-and-drop rebasing, conflict
 
 Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 
-## 🚀 Features
+## 🚀 Key features
+
+- Interactive commit graph with elided commits like the `jj` CLI
+- Efficient: Defaults to showing up to 500 commits, can be configured to show more
+- Drag-and-drop for rebase, squash, move bookmarks/tags, and more
+- Context menus for change/bookmark/tag operations
+- Flexible configuration supports squash and edit workflows and more
+- Conflict resolution via the native VS Code merge editor
+- Bookmark and tag management with remote sync
+- Multi-workspace support with automatic stale workspace updates
+- Operation log with undo/redo
+- Handles divergent commits, conflicted bookmarks, and more
+
+## 📖 Full Feature List
 
 ### 🔗 Graph view
 
