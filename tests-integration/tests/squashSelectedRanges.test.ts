@@ -4,7 +4,7 @@ test("squash selected line ranges into parent change", async ({ graphFrame, test
   await testRepo.commitFile("a.txt", "line1\nline2\nline3\n", "A");
   await testRepo.writeFile("a.txt", "line1\nMODIFIED\nline3\nADDED\n");
 
-  await expect(graphFrame.locator("#nodes > div")).toHaveCount(2);
+  await expect(graphFrame.locator("#nodes > div")).toHaveCount(3);
 
   // Open a.txt in a regular editor via Quick Open
   await workbox.keyboard.press("Control+p");
