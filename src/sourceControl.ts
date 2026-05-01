@@ -280,8 +280,15 @@ export class WorkspaceSourceControlManager {
   }
 
   getRepositorySourceControlManagerFromUri(uri: vscode.Uri) {
+    let fsPath = uri.fsPath;
+    try {
+      fsPath = fs.realpathSync(fsPath);
+    } catch {
+      // File may not exist on disk (e.g., jj:// URI)
+    }
+    const realFsPath = fsPath;
     return this.repoSCMs.find((repo) => {
-      return !path.relative(repo.repositoryRoot, uri.fsPath).startsWith("..");
+      return !path.relative(repo.repositoryRoot, realFsPath).startsWith("..");
     });
   }
 
