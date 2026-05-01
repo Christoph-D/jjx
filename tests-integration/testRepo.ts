@@ -42,6 +42,10 @@ function getJJPath(): string {
   return process.env.JJ_PATH || "jj";
 }
 
+function isTransientLockError(stderr: string): boolean {
+  return /lock/i.test(stderr) || /Access is denied/i.test(stderr);
+}
+
 export class TestRepo {
   static userName: string | null = "Test User";
   static userEmail: string | null = "test@example.com";
@@ -155,15 +159,23 @@ export class TestRepo {
       config = ["--config", `user.name=${TestRepo.userName}`, "--config", `user.email=${TestRepo.userEmail}`];
     }
     const jjPath = getJJPath();
-    return new Promise((resolve) => {
-      execFile(jjPath, config.concat(args), { cwd: this.repoPath, timeout: 10000 }, (error, stdout, stderr) => {
-        resolve({
-          stdout: stdout?.toString() ?? "",
-          stderr: stderr?.toString() ?? "",
-          exitCode: error ? (typeof error.code === "number" ? error.code : 1) : 0,
+    const fullArgs = config.concat(args);
+    const maxAttempts = 3;
+    for (let attempt = 0; ; attempt++) {
+      const result = await new Promise<JJCommandResult>((resolve) => {
+        execFile(jjPath, fullArgs, { cwd: this.repoPath, timeout: 10000 }, (error, stdout, stderr) => {
+          resolve({
+            stdout: stdout?.toString() ?? "",
+            stderr: stderr?.toString() ?? "",
+            exitCode: error ? (typeof error.code === "number" ? error.code : 1) : 0,
+          });
         });
       });
-    });
+      if (result.exitCode === 0 || attempt >= maxAttempts - 1 || !isTransientLockError(result.stderr)) {
+        return result;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
   }
 }
 
