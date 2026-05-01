@@ -138,7 +138,7 @@ export class WorkspaceSourceControlManager {
         }
         const jjConfigArgs = getConfigArgs(extensionDir);
 
-        const repoRoot = (
+        let repoRoot = (
           await collectProcessOutput(
             spawnJJ(jjPath.filepath, ["--ignore-working-copy", "root"], {
               timeout: TIMEOUTS.DEFAULT,
@@ -149,6 +149,11 @@ export class WorkspaceSourceControlManager {
         ).stdout
           .toString()
           .trim();
+        try {
+          repoRoot = fs.realpathSync(repoRoot);
+        } catch {
+          // Fall back to original path if realpath fails
+        }
         if (effectiveToken.isCancellationRequested) {
           return false;
         }
