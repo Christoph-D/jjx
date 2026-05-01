@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import { resolveRev, toJJUri } from "./uri";
 import type { JJDecorationProvider } from "./decorationProvider";
 import { logger } from "./logger";
-import { anyEvent, filterEvent, isDescendant } from "./utils";
+import { anyEvent, filterEvent } from "./utils";
 import { JJFileSystemProvider } from "./fileSystemProvider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -453,7 +453,11 @@ export class RepositorySourceControlManager {
 
     const repoChangedWatchEvent = filterEvent(
       anyEvent(repoWatcher.onDidCreate, repoWatcher.onDidChange, repoWatcher.onDidDelete),
-      (uri) => !isDescendant(path.join(this.repositoryRoot, ".jj"), uri.fsPath),
+      (uri) => {
+        const relativePath = path.relative(this.repositoryRoot, uri.fsPath);
+        const segments = relativePath.split(path.sep);
+        return !segments.includes(".jj") && !segments.includes(".git");
+      },
     );
     repoChangedWatchEvent(() => this.handleRepoWatcherEvent(), undefined, this.subscriptions);
   }
