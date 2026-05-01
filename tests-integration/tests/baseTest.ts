@@ -158,6 +158,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       path.join(userDir, "settings.json"),
       JSON.stringify({
         "git.enabled": false,
+        "chat.disableAIFeatures": true,
         "diffEditor.renderSideBySide": true,
         "diffEditor.renderSideBySideInlineBreakpoint": 50,
         "jjx.showTooltips": false, // tooltips interfere with mouse positioning
