@@ -11,7 +11,7 @@ function readDirRecursive(dir: string, base: string = dir): Record<string, strin
   const files: Record<string, string> = {};
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
-    const relativePath = path.relative(base, fullPath);
+    const relativePath = path.relative(base, fullPath).replace(/\\/g, "/");
     if (entry.isDirectory()) {
       Object.assign(files, readDirRecursive(fullPath, base));
     } else {

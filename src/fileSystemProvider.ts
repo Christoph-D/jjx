@@ -163,7 +163,13 @@ export class JJFileSystemProvider implements FileSystemProvider {
     try {
       return await repository.readFile(rev, fsPath);
     } catch (e) {
-      if (e instanceof Error && e.message.includes("No such path")) {
+      const text =
+        e instanceof Error && "stderr" in e && typeof (e as { stderr: unknown }).stderr === "string"
+          ? (e as { stderr: string }).stderr
+          : e instanceof Error
+            ? e.message
+            : String(e);
+      if (text.includes("No such path") || text.includes("No such file or directory")) {
         throw FileSystemError.FileNotFound();
       }
       throw e;
