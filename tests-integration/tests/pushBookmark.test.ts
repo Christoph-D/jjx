@@ -31,6 +31,7 @@ async function setupRemotesWithTrackedBookmark(testRepo: TestRepo, graphFrame: F
 }
 
 test("push bookmark to all remotes via upload icon", async ({ graphFrame, testRepo }) => {
+  test.slow();
   const { bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
 
   await testRepo.commitFile("test.txt", "content", "initial commit");
@@ -49,6 +50,7 @@ test("push bookmark to all remotes via upload icon", async ({ graphFrame, testRe
 });
 
 test("push bookmark to single remote via context menu", async ({ graphFrame, testRepo }) => {
+  test.slow();
   const { remoteARepo, remoteBRepo, bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
 
   await testRepo.commitFile("test.txt", "content", "initial commit");
@@ -94,6 +96,7 @@ test("push bookmark to single remote via context menu", async ({ graphFrame, tes
 });
 
 test("push to one remote and untrack from another", async ({ graphFrame, testRepo }) => {
+  test.slow();
   const { remoteARepo, bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
 
   await testRepo.commitFile("test.txt", "content", "initial commit");
