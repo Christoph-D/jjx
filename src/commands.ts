@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import path from "path";
+import fs from "fs";
 import { provideOriginalResource } from "./sourceControl";
 import type { JJRepository } from "./repository";
 import type { ExtensionState } from "./extensionState";
@@ -317,7 +318,13 @@ export function registerPreInitCommands(state: ExtensionState): void {
     if (!configs.length) {
       throw new Error("Merge editor not initialized");
     }
-    const relativePath = path.relative(repo.repositoryRoot, uri.fsPath);
+    let fsPath = uri.fsPath;
+    try {
+      fsPath = fs.realpathSync.native(fsPath);
+    } catch {
+      // Fall back to original path if realpath fails
+    }
+    const relativePath = path.relative(repo.repositoryRoot, fsPath);
     const args = ["resolve", "--tool=jjx-vscode-merge", ...configs.flatMap((c) => ["--config", c])];
     if (changeId) {
       args.push("-r", changeId);
@@ -516,7 +523,13 @@ export function registerInitCommands(state: ExtensionState): void {
       await repository.squashRetryImmutable({
         fromRev: "@",
         toRev: destinationParentChange.changeId,
-        filepaths: resourceStates.map((rs) => rs.resourceUri.fsPath),
+        filepaths: resourceStates.map((rs) => {
+          try {
+            return fs.realpathSync.native(rs.resourceUri.fsPath);
+          } catch {
+            return rs.resourceUri.fsPath;
+          }
+        }),
       });
     },
     { errorPrefix: "Failed to squash" },
@@ -542,7 +555,13 @@ export function registerInitCommands(state: ExtensionState): void {
       await repository.squashRetryImmutable({
         fromRev: resourceGroup.id,
         toRev: "@",
-        filepaths: resourceStates.map((rs) => rs.resourceUri.fsPath),
+        filepaths: resourceStates.map((rs) => {
+          try {
+            return fs.realpathSync.native(rs.resourceUri.fsPath);
+          } catch {
+            return rs.resourceUri.fsPath;
+          }
+        }),
       });
     },
     { errorPrefix: "Failed to squash" },

@@ -378,6 +378,11 @@ export class JJRepository {
   }
 
   readFile(rev: string, filepath: string) {
+    try {
+      filepath = realFs.realpathSync.native(filepath);
+    } catch {
+      // Fall back to original path if realpath fails
+    }
     return this.jjCommandRead(["file", "show", "--revision", rev, filepathToFileset(filepath)]);
   }
 
@@ -980,8 +985,14 @@ export class JJRepository {
   }
 
   async annotate(filepath: string, rev: string): Promise<string[]> {
+    try {
+      filepath = realFs.realpathSync.native(filepath);
+    } catch {
+      // Fall back to original path if realpath fails
+    }
+    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
     const output = (
-      await this.jjCommandRead(["file", "annotate", "-r", rev, filepath], { timeout: TIMEOUTS.ANNOTATE })
+      await this.jjCommandRead(["file", "annotate", "-r", rev, relativePath], { timeout: TIMEOUTS.ANNOTATE })
     ).toString();
     if (output === "") {
       return [];
