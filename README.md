@@ -7,6 +7,12 @@ system—featuring an interactive commit graph, drag-and-drop rebasing, conflict
 
 Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 
+## Supported systems
+
+- **Linux** - Fully supported
+- **Windows** - Should mostly work
+- **macOS and other systems** - Untested, experimental
+
 ## 🚀 Key features
 
 - Interactive commit graph with elided commits like the `jj` CLI
