@@ -1,5 +1,32 @@
 # Change Log
 
+## 1.8.0
+
+### New Features
+
+- **Fetch from graph view** - Fetch from the default remote, from all remotes, or a chosen remote directly from the
+  graph view quick actions
+- **Move fetch button to graph view** - The fetch button has moved from the status bar to the graph view quick actions
+- **Push tags to remotes** - Right-click a tag pill to push it to a specific remote
+- **Windows support** - Editing change descriptions, diffing, merging now works on Windows
+- **Recover description if `jj` fails** - If `jj` fails after editing a change description, the description will be
+  reopened to not lose work
+
+### Bug Fixes
+
+- Activate the extension on `*` instead of `workspaceContains` to fix unreliable activation in devcontainers
+- Only show Push to Remote for unsynced remotes in bookmark context menu
+- Use correct decoration colors for renamed and copied files
+- Exclude `.jj` and `.git` directories at any depth from repo watcher to avoid unnecessary refreshes
+- Keep circle background mask opaque to prevent highlighted graph lines showing through on hover on Windows
+
+### Internal
+
+- Add integration tests for fetching from remotes and pushing tags to remotes
+- Add Windows CI workflow
+- Various refactoring: simplify graph.css, consolidate repository lookup, deduplicate command registrations, extract
+  shared error handling, and inline single-use helpers
+
 ## 1.7.1
 
 ### New Features
