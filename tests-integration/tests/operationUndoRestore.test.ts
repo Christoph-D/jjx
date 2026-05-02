@@ -18,9 +18,8 @@ test("undo a specific operation from operation log tree view", async ({ graphFra
   await expect(revertBtn).toBeVisible();
   await revertBtn.click();
 
-  await expect(nodes).toHaveCount(3);
-
   await expect(async () => {
+    await expect(nodes).toHaveCount(3);
     const logEntries = await testRepo.log();
     expect(logEntries.find((e) => e.description.trim() === "B")).toBeUndefined();
     expect(logEntries.find((e) => e.description.trim() === "A")).toBeDefined();
