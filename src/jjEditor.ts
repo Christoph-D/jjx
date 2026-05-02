@@ -1,10 +1,12 @@
 import * as path from "path";
 import { commands, TabInputText, Uri, window, workspace } from "vscode";
+import { parseJJError } from "./errors";
 import { IIPCHandler, IPCServer } from "./ipc/ipcServer";
 import { EmptyDisposable, escapeTomlString } from "./utils";
 
 interface JJEditorRequest {
   descriptionPath?: string;
+  sessionId?: string;
 }
 
 interface MergeEditorRequest {
@@ -100,6 +102,23 @@ export function completeSquashToolRequest(requestId: string, success: boolean): 
   }
 }
 
+const editorSessions = new Map<string, string>();
+
+export function consumeEditorSession(sessionId: string): string | undefined {
+  const content = editorSessions.get(sessionId);
+  editorSessions.delete(sessionId);
+  return content;
+}
+
+export async function openRecoveredEditor(content: string, error: unknown): Promise<void> {
+  const prefixedContent = `** Recovered description **\n\njj operation failed. Your change description has been recovered. Please save it before closing this editor to avoid losing it:\n\n${content}`;
+  const doc = await workspace.openTextDocument({ content: prefixedContent, language: "jj-commit" });
+  await window.showTextDocument(doc, { preview: false });
+
+  const parsedError = parseJJError(error);
+  window.showErrorMessage(`jj command failed: ${parsedError.message}. Your message has been recovered.`);
+}
+
 export class JJEditor implements IIPCHandler {
   private disposable = EmptyDisposable;
 
@@ -113,7 +132,7 @@ export class JJEditor implements IIPCHandler {
     };
   }
 
-  async handle({ descriptionPath }: JJEditorRequest): Promise<boolean> {
+  async handle({ descriptionPath, sessionId }: JJEditorRequest): Promise<boolean> {
     if (descriptionPath) {
       const uri = Uri.file(descriptionPath);
       const doc = await workspace.openTextDocument(uri);
@@ -123,6 +142,9 @@ export class JJEditor implements IIPCHandler {
         const onDidClose = window.tabGroups.onDidChangeTabs((tabs) => {
           if (tabs.closed.some((t) => t.input instanceof TabInputText && t.input.uri.toString() === uri.toString())) {
             onDidClose.dispose();
+            if (sessionId) {
+              editorSessions.set(sessionId, doc.getText());
+            }
             return c(true);
           }
         });

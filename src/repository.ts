@@ -29,6 +29,8 @@ import {
   getSquashToolConfigs,
   expectSquashToolRequest,
   completeSquashToolRequest,
+  consumeEditorSession,
+  openRecoveredEditor,
 } from "./jjEditor";
 import { TIMEOUTS } from "./constants";
 import type {
@@ -162,6 +164,22 @@ export class JJRepository {
     }
   }
 
+  private async withEditorRecovery<T>(operation: (sessionId: string) => Promise<T>): Promise<T | undefined> {
+    const sessionId = crypto.randomUUID();
+    try {
+      const result = await operation(sessionId);
+      consumeEditorSession(sessionId);
+      return result;
+    } catch (e) {
+      const content = consumeEditorSession(sessionId);
+      if (content) {
+        await openRecoveredEditor(content, e);
+        return undefined;
+      }
+      throw e;
+    }
+  }
+
   spawnJJ(args: string[], options: SpawnOptions) {
     const separatorIndex = args.indexOf("--");
     const finalArgs =
@@ -175,8 +193,14 @@ export class JJRepository {
     return this.spawnJJ(["--ignore-working-copy", ...args], options);
   }
 
-  private jjCommand(args: string[], options?: { token?: vscode.CancellationToken; timeout?: number }) {
-    return handleJJCommand(this.spawnJJ(args, { timeout: options?.timeout, cwd: this.repositoryRoot }), options?.token);
+  private jjCommand(
+    args: string[],
+    options?: { token?: vscode.CancellationToken; timeout?: number; env?: Record<string, string> },
+  ) {
+    return handleJJCommand(
+      this.spawnJJ(args, { timeout: options?.timeout, cwd: this.repositoryRoot, env: options?.env }),
+      options?.token,
+    );
   }
 
   private jjCommandRead(args: string[], options?: { token?: vscode.CancellationToken; timeout?: number }) {
@@ -358,35 +382,45 @@ export class JJRepository {
   }
 
   async describeRetryImmutable(rev: string, message?: string) {
-    return this.retryWithImmutable(
-      rev,
-      () => this.describe(rev, message),
-      () => this.describe(rev, message, true),
+    return this.withEditorRecovery((sessionId) =>
+      this.retryWithImmutable(
+        rev,
+        () => this.describe(rev, message, false, sessionId),
+        () => this.describe(rev, message, true, sessionId),
+      ),
     );
   }
 
-  private async describe(rev: string, message?: string, ignoreImmutable = false) {
+  private async describe(rev: string, message?: string, ignoreImmutable = false, sessionId?: string) {
     return (
       await this.jjCommand(
         ["describe", ...(message ? ["-m", message] : []), rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
-        { timeout: message ? TIMEOUTS.DEFAULT : 0 },
+        { timeout: message ? TIMEOUTS.DEFAULT : 0, env: sessionId ? { VSCODE_JJ_SESSION_ID: sessionId } : undefined },
       )
     ).toString();
   }
 
   async new(message?: string, revs?: string[]) {
-    return this.jjCommand(["new", ...(message !== undefined ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])]);
+    return this.withEditorRecovery((sessionId) =>
+      this.jjCommand(["new", ...(message !== undefined ? ["-m", message] : []), ...(revs ? ["-r", ...revs] : [])], {
+        env: { VSCODE_JJ_SESSION_ID: sessionId },
+      }),
+    );
   }
 
   async commit(message?: string, editor?: boolean) {
-    return this.jjCommand(
-      ["commit", ...(message !== undefined ? ["-m", message] : []), ...(editor ? ["--editor"] : [])],
-      { timeout: editor ? 0 : message !== undefined ? TIMEOUTS.DEFAULT : 0 },
+    return this.withEditorRecovery((sessionId) =>
+      this.jjCommand(["commit", ...(message !== undefined ? ["-m", message] : []), ...(editor ? ["--editor"] : [])], {
+        timeout: editor ? 0 : message !== undefined ? TIMEOUTS.DEFAULT : 0,
+        env: { VSCODE_JJ_SESSION_ID: sessionId },
+      }),
     );
   }
 
   async describeOpenEditor() {
-    return this.jjCommand(["describe"], { timeout: 0 });
+    return this.withEditorRecovery((sessionId) =>
+      this.jjCommand(["describe"], { timeout: 0, env: { VSCODE_JJ_SESSION_ID: sessionId } }),
+    );
   }
 
   async squashRetryImmutable({
