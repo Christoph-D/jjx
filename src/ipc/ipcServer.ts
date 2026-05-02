@@ -81,7 +81,7 @@ export class IPCServer implements IIPCServer, Disposable {
 
   registerHandler(name: string, handler: IIPCHandler): Disposable {
     this.handlers.set(`/${name}`, handler);
-    return toDisposable(() => this.handlers.delete(name));
+    return toDisposable(() => this.handlers.delete(`/${name}`));
   }
 
   private onRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
