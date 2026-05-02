@@ -163,6 +163,13 @@ If you encounter any problems, please [report them on GitHub](https://github.com
 If you see annotations like "M, M" next to files, this is caused by VS Code's built-in Git extension running alongside
 JJX. To disable Git, disable `git.enabled` in your VS Code settings.
 
+### Performance issues
+
+If you experience performance issues, try these steps:
+
+- Disable `jjx.enableAnnotations`, blame annotations are expensive to compute for large repos
+- Lower `jjx.logLimit` to show fewer commits in the graph
+
 ## 📝 License
 
 This project is licensed under the [AGPL-3.0 License](LICENSE). Code from the original project
