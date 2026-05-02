@@ -383,7 +383,8 @@ export class JJRepository {
     } catch {
       // Fall back to original path if realpath fails
     }
-    return this.jjCommandRead(["file", "show", "--revision", rev, filepathToFileset(filepath)]);
+    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    return this.jjCommandRead(["file", "show", "--revision", rev, filepathToFileset(relativePath)]);
   }
 
   async describeRetryImmutable(rev: string, message?: string) {
@@ -481,7 +482,11 @@ export class JJRepository {
           "--into",
           toRev,
           ...(message ? ["-m", message] : []),
-          ...(filepaths ? filepaths.map((filepath) => filepathToFileset(filepath)) : []),
+          ...(filepaths
+            ? filepaths.map((filepath) =>
+                filepathToFileset(path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/")),
+              )
+            : []),
           ...(ignoreImmutable ? ["--ignore-immutable"] : []),
         ],
         { timeout: message ? TIMEOUTS.DEFAULT : 0 },
@@ -895,7 +900,11 @@ export class JJRepository {
       "restore",
       "--changes-in",
       rev ? rev : "@",
-      ...(filepaths ? filepaths.map((filepath) => filepathToFileset(filepath)) : []),
+      ...(filepaths
+        ? filepaths.map((filepath) =>
+            filepathToFileset(path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/")),
+          )
+        : []),
       ...(ignoreImmutable ? ["--ignore-immutable"] : []),
     ]);
   }
