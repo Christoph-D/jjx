@@ -148,7 +148,7 @@ The following settings can be configured in VS Code's settings:
 | `jjx.fileClickAction`               | `"diff"`    | Action when clicking a file: `"diff"` (compare to parent), `"at-revision"` (open at clicked revision), or `"working-copy"` (open in working copy)      |
 | `jjx.graphStyle`                    | `"compact"` | Display style for commits: `"full"` shows all details, `"compact"` shows single line                                                                   |
 | `jjx.jjPath`                        | `""`        | Path to the jj executable. If not set, your PATH and common locations will be searched                                                                 |
-| `jjx.logLimit`                      | `100`       | Maximum number of commits shown in the graph view                                                                                                      |
+| `jjx.logLimit`                      | `500`       | Maximum number of commits shown in the graph view                                                                                                      |
 | `jjx.pollIntervalSeconds`           | `30`        | Interval in seconds between repository polls. Set to 0 to disable                                                                                      |
 | `jjx.showTooltips`                  | `true`      | Show tooltips when hovering over commits in the graph view                                                                                             |
 
