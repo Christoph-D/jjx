@@ -924,7 +924,7 @@
     "format": "prettier --write . | { grep -v '(unchanged)$'; true; }",
     "format:check": "prettier --check --log-level warn .",
     "check": "npm-run-all check-types lint format:check unit-test",
-    "unit-test": "node --import tsx --test --test-reporter ./src/unit-test/reporter.mjs src/unit-test/templateBuilder.test.ts src/unit-test/assignLanes.test.ts src/unit-test/elidedEdges.test.ts src/unit-test/parseRenamePaths.test.ts",
+    "unit-test": "node --import tsx --test --test-reporter ./src/unit-test/reporter.mjs src/unit-test/templateBuilder.test.ts src/unit-test/assignLanes.test.ts src/unit-test/elidedEdges.test.ts src/unit-test/parseRenamePaths.test.ts src/unit-test/relativeTime.test.ts",
     "test": "npm-run-all unit-test playwright-test",
     "playwright-test": "pnpm run build && pnpm exec playwright test --config=tests-integration/playwright.config.ts",
     "playwright-test:only-test": "pnpm exec playwright test --config=tests-integration/playwright.config.ts",

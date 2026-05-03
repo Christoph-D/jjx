@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import type { ChangeWithDetails } from "./types";
 import { resolveRev } from "./uri";
 import type { ExtensionState } from "./extensionState";
+import { relativeTime } from "./relativeTime";
 
 export function registerAnnotations(state: ExtensionState): void {
   const context = state.context;
@@ -59,7 +60,7 @@ export function registerAnnotations(state: ExtensionState): void {
             continue; // Could be possible if `annotateInfo` is mismatched with `changes` due to a race
           }
           const desc = change.description ? change.description.split("\n")[0] : "(no description)";
-          const contextText = `${change.author.name} at ${change.authoredDate} • ${desc}`;
+          const contextText = `${change.author.name}, ${relativeTime(change.authoredDate)} • ${desc}`;
           decorations.push({
             renderOptions: {
               after: {

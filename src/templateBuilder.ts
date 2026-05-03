@@ -121,7 +121,7 @@ const SHOW_ENTRY_FIELDS: TemplateFields = {
   },
   authored_date: {
     type: "string",
-    expr: 'author.timestamp().local().format("%F %H:%M:%S")',
+    expr: 'author.timestamp().utc().format("%FT%H:%M:%SZ")',
   },
   description: { type: "string", expr: "description" },
   empty: { type: "boolean", expr: "self.empty()" },
