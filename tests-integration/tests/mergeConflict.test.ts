@@ -1,4 +1,4 @@
-import { test, expect, waitForSCMView } from "./baseTest";
+import { test, expect, waitForSCMView, mod } from "./baseTest";
 
 test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, workbox }) => {
   const baseChange = await testRepo.commitFile("test.txt", "A", "Base commit");
@@ -34,12 +34,12 @@ test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, wo
 
   const resultEditor = workbox.locator('.monaco-editor[role="code"][data-uri*="output_test.txt"]');
   await resultEditor.click();
-  await workbox.keyboard.press("Control+a");
+  await workbox.keyboard.press(`${mod}+a`);
   await workbox.keyboard.type("Merged");
 
-  await workbox.keyboard.press("Control+s");
+  await workbox.keyboard.press(`${mod}+s`);
   await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
-  await workbox.keyboard.press("Control+w");
+  await workbox.keyboard.press(`${mod}+w`);
 
   await expect(mergeEditor).toBeHidden();
 

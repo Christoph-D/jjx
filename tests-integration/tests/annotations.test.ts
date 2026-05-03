@@ -1,8 +1,8 @@
-import { test, expect } from "./baseTest";
+import { test, expect, mod } from "./baseTest";
 import type { Locator } from "@playwright/test";
 
 async function openFile(workbox: import("@playwright/test").Page, fileName: string): Promise<Locator> {
-  await workbox.keyboard.press("Control+p");
+  await workbox.keyboard.press(`${mod}+p`);
   const quickOpen = workbox.locator(".quick-input-widget");
   await expect(quickOpen).toBeVisible();
   await workbox.keyboard.type(fileName);
@@ -35,11 +35,7 @@ async function hasAnnotation(locator: Locator, text: string): Promise<boolean> {
   }, text);
 }
 
-test("blame annotations appear in the editor", async ({
-  graphFrame,
-  testRepo,
-  workbox,
-}) => {
+test("blame annotations appear in the editor", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "line 1\nline 2 (original)\n", "First commit");
   await testRepo.writeFile("a.txt", "line 1\nline 2 (modified)\n");
   await testRepo.commit("Second commit");

@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, mod } from "./baseTest";
 
 test("recover editor content when describe command fails after change is abandoned", async ({
   graphFrame,
@@ -23,12 +23,12 @@ test("recover editor content when describe command fails after change is abandon
   // Abandon the commit while the editor is open
   await testRepo.jjCommand(["abandon", "-r", changeId]);
 
-  await workbox.keyboard.press("Control+a");
+  await workbox.keyboard.press(`${mod}+a`);
   await workbox.keyboard.type("Recovered description content");
-  await workbox.keyboard.press("Control+s");
+  await workbox.keyboard.press(`${mod}+s`);
   await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
 
-  await workbox.keyboard.press("Control+w");
+  await workbox.keyboard.press(`${mod}+w`);
   await expect(editor).toBeHidden();
 
   const recoveredEditor = workbox.locator('.monaco-editor[role="code"][data-uri*="untitled"]');

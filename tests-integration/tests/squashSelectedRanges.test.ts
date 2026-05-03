@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, mod } from "./baseTest";
 
 test("squash selected line ranges into parent change", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "line1\nline2\nline3\n", "A");
@@ -8,7 +8,7 @@ test("squash selected line ranges into parent change", async ({ graphFrame, test
   await expect(graphFrame.locator("#nodes > div").first()).not.toHaveText(/\(empty\)/);
 
   // Open a.txt in a regular editor via Quick Open
-  await workbox.keyboard.press("Control+p");
+  await workbox.keyboard.press(`${mod}+p`);
   const quickOpen = workbox.locator(".quick-input-widget");
   await expect(quickOpen).toBeVisible();
   await workbox.keyboard.type("a.txt");
@@ -29,7 +29,7 @@ test("squash selected line ranges into parent change", async ({ graphFrame, test
   await workbox.keyboard.press("Shift+End");
 
   // Trigger "Squash Selected Changes..." via command palette
-  await workbox.keyboard.press("Control+Shift+P");
+  await workbox.keyboard.press(`${mod}+Shift+P`);
   const quickInput = workbox.locator(".quick-input-widget input").first();
   await expect(quickInput).toBeVisible();
   await quickInput.fill(">Squash Selected Changes");

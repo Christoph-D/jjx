@@ -1,4 +1,4 @@
-import { test, expect, handleEditor } from "./baseTest";
+import { test, expect, handleEditor, mod } from "./baseTest";
 import { getParents } from "../testRepo";
 
 test("create new child change from context menu", async ({ graphFrame, testRepo }) => {
@@ -68,7 +68,7 @@ test("create new change via command palette", async ({ graphFrame, testRepo, wor
   await scmEditor.click();
   await workbox.keyboard.type("C");
 
-  await workbox.keyboard.press("Control+Shift+P");
+  await workbox.keyboard.press(`${mod}+Shift+P`);
   const quickInput = workbox.locator(".quick-input-widget input").first();
   await expect(quickInput).toBeVisible();
   await quickInput.fill(">Create New Change");
@@ -93,7 +93,7 @@ test("commit change via SCM input box", async ({ graphFrame, testRepo, workbox }
   const scmEditor = workbox.locator(".scm-view .scm-editor").first();
   await scmEditor.click();
   await workbox.keyboard.type("C");
-  await workbox.keyboard.press("Control+Enter");
+  await workbox.keyboard.press(`${mod}+Enter`);
 
   await expect(nodes).toHaveCount(5);
 
@@ -104,7 +104,7 @@ test("commit change via SCM input box", async ({ graphFrame, testRepo, workbox }
   }).toPass();
 
   // Commit without a commit message should succeed without opening an editor.
-  await workbox.keyboard.press("Control+Enter");
+  await workbox.keyboard.press(`${mod}+Enter`);
   await expect(nodes).toHaveCount(6);
 
   await expect(async () => {
@@ -130,7 +130,7 @@ test.describe("commitAction = new", () => {
     const scmEditor = workbox.locator(".scm-view .scm-editor").first();
     await scmEditor.click();
     await workbox.keyboard.type("C");
-    await workbox.keyboard.press("Control+Enter");
+    await workbox.keyboard.press(`${mod}+Enter`);
 
     await expect(nodes).toHaveCount(5);
 
@@ -141,7 +141,7 @@ test.describe("commitAction = new", () => {
     }).toPass();
 
     // Commit without a commit message should succeed without opening an editor.
-    await workbox.keyboard.press("Control+Enter");
+    await workbox.keyboard.press(`${mod}+Enter`);
     await expect(nodes).toHaveCount(6);
 
     await expect(async () => {
@@ -164,7 +164,7 @@ test.describe("commitAction = new", () => {
     const scmEditor = workbox.locator(".scm-view .scm-editor").first();
     await scmEditor.click();
     await workbox.keyboard.type("some message");
-    await workbox.keyboard.press("Shift+Control+Enter");
+    await workbox.keyboard.press(`Shift+${mod}+Enter`);
     await handleEditor(workbox, "some message", "edited message");
 
     await expect(nodes).toHaveCount(5);
@@ -176,7 +176,7 @@ test.describe("commitAction = new", () => {
     }).toPass();
 
     await scmEditor.click();
-    await workbox.keyboard.press("Shift+Control+Enter");
+    await workbox.keyboard.press(`Shift+${mod}+Enter`);
     await handleEditor(workbox, "", "another edited message");
     await expect(nodes).toHaveCount(6);
 

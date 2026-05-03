@@ -10,6 +10,8 @@ import { TestRepo, newTestRepo } from "../testRepo";
 
 export { TestRepo, newTestRepo };
 
+export const mod = process.platform === "darwin" ? "Meta" : "Control";
+
 export type TestOptions = {
   vscodeVersion: string;
 };
@@ -249,11 +251,11 @@ export async function handleEditor(workbox: Page, expectedContent: string, newCo
   if (expectedContent !== "") {
     await pwExpect(editor.getByText(expectedContent)).toBeVisible();
   }
-  await workbox.keyboard.press("Control+a");
+  await workbox.keyboard.press(`${mod}+a`);
   await workbox.keyboard.type(newContent);
-  await workbox.keyboard.press("Control+s");
+  await workbox.keyboard.press(`${mod}+s`);
   await pwExpect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
-  await workbox.keyboard.press("Control+w");
+  await workbox.keyboard.press(`${mod}+w`);
   await pwExpect(editor).toBeHidden();
 }
 
@@ -317,7 +319,7 @@ export async function waitForSCMView(
 // Closes the chat window and increases the size of the jj graph
 async function increaseJJVisibleSize(workbox: Page) {
   // Hide auxiliary side bar (chat window)
-  await workbox.keyboard.press("Control+Alt+b");
+  await workbox.keyboard.press(`${mod}+Alt+b`);
 
   // Make the jj graph larger
   const sash = workbox.locator(".monaco-sash.horizontal.maximum").first();

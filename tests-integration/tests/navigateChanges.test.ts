@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect, mod } from "./baseTest";
 
 test("navigate between parent and child changes via editor title bar buttons", async ({
   graphFrame,
@@ -12,7 +12,7 @@ test("navigate between parent and child changes via editor title bar buttons", a
 
   await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
 
-  await workbox.keyboard.press("Control+P");
+  await workbox.keyboard.press(`${mod}+P`);
   const quickOpen = workbox.locator(".quick-input-widget");
   await expect(quickOpen).toBeVisible();
   await workbox.keyboard.type("test.txt");
