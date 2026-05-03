@@ -1,4 +1,4 @@
-import { test, expect, newTestRepo } from "./baseTest";
+import { test, expect, newTestRepo, runCommand } from "./baseTest";
 import path from "path";
 
 test("fetch from selected remote, default remote, and all remotes", async ({
@@ -54,7 +54,11 @@ test("fetch from selected remote, default remote, and all remotes", async ({
   await remoteBRepo.commitFile("remote-b.txt", "remote-b content", "remote-b commit 1");
   await remoteBRepo.jjCommand(["bookmark", "create", "bookmark-remote-b-1"]);
 
-  await clickSubmenuItem("Fetch from Selected Remote...");
+  if (process.platform === "darwin") {
+    await runCommand(workbox, "Fetch from Selected Remote");
+  } else {
+    await clickSubmenuItem("Fetch from Selected Remote...");
+  }
   await selectQuickPickOption("origin");
 
   await expect(async () => {
@@ -82,7 +86,11 @@ test("fetch from selected remote, default remote, and all remotes", async ({
   await remoteBRepo.commitFile("remote-b2.txt", "remote-b content 2", "remote-b commit 2");
   await remoteBRepo.jjCommand(["bookmark", "create", "bookmark-remote-b-2"]);
 
-  await clickSubmenuItem("Fetch from All Remotes");
+  if (process.platform === "darwin") {
+    await runCommand(workbox, "Fetch from All Remotes");
+  } else {
+    await clickSubmenuItem("Fetch from All Remotes");
+  }
 
   await expect(async () => {
     expect(await testRepo.hasRemoteBookmark("bookmark-origin-3", "origin")).toBe(true);
