@@ -11,7 +11,7 @@ Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 
 - **Linux** - Fully supported
 - **Windows** - Should mostly work
-- **macOS and other systems** - Untested, experimental
+- **macOS and other systems** - Should mostly work
 
 ## 🚀 Key features
 
