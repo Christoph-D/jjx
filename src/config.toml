@@ -2,6 +2,7 @@
 log-word-wrap = false
 paginate = "never"
 color = "never"
+conflict-marker-style = "diff"
 
 [merge-tools.jjx-vscode-merge]
 merge-tool-edits-conflict-markers = true
