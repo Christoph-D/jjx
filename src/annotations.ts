@@ -137,6 +137,20 @@ export function registerAnnotations(state: ExtensionState): void {
       }
     }),
   );
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (e.affectsConfiguration("jjx.enableAnnotations")) {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+          lastUniqueChangeIds = "";
+          cachedChanges.clear();
+          await updateAnnotateInfo(editor.document.uri);
+          activeLines = editor.selections.map((selection) => selection.active.line);
+          await setDecorations(editor, activeLines);
+        }
+      }
+    }),
+  );
   if (vscode.window.activeTextEditor) {
     void handleDidChangeActiveTextEditor(vscode.window.activeTextEditor);
   }
