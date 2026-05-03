@@ -150,6 +150,25 @@ export function registerAnnotations(state: ExtensionState): void {
       }
     }),
   );
+  context.subscriptions.push(
+    state.workspaceSCM.onDidRepoUpdate(async ({ repoSCM }) => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+      const repo = state.workspaceSCM.getRepositoryFromUri(editor.document.uri);
+      if (!repo || repo.repositoryRoot !== repoSCM.repositoryRoot) {
+        return;
+      }
+      annotateInfo = undefined;
+      lastUniqueChangeIds = "";
+      cachedChanges.clear();
+      await updateAnnotateInfo(editor.document.uri);
+      activeLines = editor.selections.map((selection) => selection.active.line);
+      await setDecorations(editor, activeLines);
+    }),
+  );
+
   if (vscode.window.activeTextEditor) {
     void handleDidChangeActiveTextEditor(vscode.window.activeTextEditor);
   }
