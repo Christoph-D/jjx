@@ -44,7 +44,7 @@ export function registerAnnotations(state: ExtensionState): void {
         lastUniqueChangeIds = uniqueChangeIdsKey;
         const showResults = await repository.showAll(uniqueChangeIds);
         cachedChanges = new Map<string, ChangeWithDetails>(
-          showResults.map((result) => [result.change.changeId.substring(0, 8), result.change]),
+          showResults.map((result) => [result.change.changeId, result.change]),
         );
       }
       if (annotateInfo && annotateInfo.uri === editor.document.uri && activeEditorUri === editor.document.uri) {
@@ -58,15 +58,14 @@ export function registerAnnotations(state: ExtensionState): void {
           if (!change) {
             continue; // Could be possible if `annotateInfo` is mismatched with `changes` due to a race
           }
+          const desc = change.description ? change.description.split("\n")[0] : "(no description)";
+          const contextText = `${change.author.name} at ${change.authoredDate} • ${desc}`;
           decorations.push({
             renderOptions: {
               after: {
                 backgroundColor: "#00000000",
                 color: "#99999959",
-                contentText: ` ${change.author.name} at ${change.authoredDate} • ${change.description || "(no description)"} • ${change.changeId.substring(
-                  0,
-                  8,
-                )} `,
+                contentText: contextText,
                 textDecoration: "none;",
               },
             },

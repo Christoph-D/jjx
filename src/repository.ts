@@ -1001,14 +1001,15 @@ export class JJRepository {
     }
     const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
     const output = (
-      await this.jjCommandRead(["file", "annotate", "-r", rev, relativePath], { timeout: TIMEOUTS.ANNOTATE })
+      await this.jjCommandRead(
+        ["file", "annotate", "-r", rev, "-T", 'self.commit().change_id() ++ "\\n"', relativePath],
+        { timeout: TIMEOUTS.ANNOTATE },
+      )
     ).toString();
     if (output === "") {
       return [];
     }
-    const lines = output.trim().split("\n");
-    const changeIdsByLine = lines.map((line) => line.split(" ")[0]);
-    return changeIdsByLine;
+    return output.trim().split("\n");
   }
 
   async operationLog(): Promise<Operation[]> {
