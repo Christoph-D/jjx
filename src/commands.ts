@@ -847,7 +847,7 @@ export function registerInitCommands(state: ExtensionState): void {
               label: `$(arrow-up) Child: ${entry.change_id_short}`,
               description: entry.description || "(no description)",
               alwaysShow: true,
-              changeId: entry.change_id_short,
+              changeId: entry.change_id,
             })),
           );
         } catch (_) {
