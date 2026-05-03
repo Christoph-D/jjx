@@ -189,7 +189,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "--skip-welcome",
         "--skip-release-notes",
         "--disable-workspace-trust",
-        ...(process.platform === "win32" ? ["--window-size=1920,1080"] : []),
+        ...(process.platform === "win32" || process.platform === "darwin" ? ["--window-size=1920,1080"] : []),
         `--extensionDevelopmentPath=${extensionPath}`,
         `--extensions-dir=${path.join(cachePath, "extensions")}`,
         `--user-data-dir=${userDataDir}`,
@@ -199,7 +199,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     });
 
     const workbox = await electronApp.firstWindow();
-    if (process.platform === "win32") {
+    if (process.platform === "win32" || process.platform === "darwin") {
       await workbox.setViewportSize({ width: 1920, height: 1080 });
     }
     await use(workbox);
