@@ -332,6 +332,17 @@ export async function waitForSCMView(
   return scmView;
 }
 
+export async function clickPillMenuItem(graphFrame: Frame, pill: Locator, text: string) {
+  await expect(async () => {
+    await pill.click({ button: "right" });
+    const menu = graphFrame.locator("#pill-context-menu");
+    const item = menu.locator(".context-menu-item").filter({ hasText: text });
+    await expect(item).toBeVisible();
+    await item.click();
+    await expect(menu).not.toBeVisible();
+  }).toPass();
+}
+
 // Closes the chat window and increases the size of the jj graph
 async function increaseJJVisibleSize(workbox: Page) {
   // Hide auxiliary side bar (chat window)
