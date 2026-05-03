@@ -12,6 +12,9 @@ export { TestRepo, newTestRepo };
 
 export const mod = process.platform === "darwin" ? "Meta" : "Control";
 
+export const cursorTop = process.platform === "darwin" ? "Meta+ArrowUp" : "Control+Home";
+export const cursorBottom = process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End";
+
 export type TestOptions = {
   vscodeVersion: string;
 };

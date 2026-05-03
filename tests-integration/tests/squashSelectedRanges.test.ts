@@ -1,4 +1,4 @@
-import { test, expect, mod } from "./baseTest";
+import { test, expect, mod, cursorTop } from "./baseTest";
 
 test("squash selected line ranges into parent change", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "line1\nline2\nline3\n", "A");
@@ -21,7 +21,7 @@ test("squash selected line ranges into parent change", async ({ graphFrame, test
   await editor.click();
 
   // Navigate to line 4 ("ADDED") and select it
-  await workbox.keyboard.press("Control+Home");
+  await workbox.keyboard.press(cursorTop);
   await workbox.keyboard.press("ArrowDown");
   await workbox.keyboard.press("ArrowDown");
   await workbox.keyboard.press("ArrowDown");

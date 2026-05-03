@@ -1,4 +1,4 @@
-import { test, expect, mod } from "./baseTest";
+import { test, expect, mod, cursorTop } from "./baseTest";
 import type { Locator } from "@playwright/test";
 
 async function openFile(workbox: import("@playwright/test").Page, fileName: string): Promise<Locator> {
@@ -45,14 +45,14 @@ test("blame annotations appear in the editor", async ({ graphFrame, testRepo, wo
   const editor = await openFile(workbox, "a.txt");
   await editor.click();
 
-  await workbox.keyboard.press("Control+Home");
+  await workbox.keyboard.press(cursorTop);
   await workbox.keyboard.press("ArrowDown");
 
   await expect(async () => {
     expect(await hasAnnotation(editor, "Second commit")).toBe(true);
   }).toPass();
 
-  await workbox.keyboard.press("Control+Home");
+  await workbox.keyboard.press(cursorTop);
 
   await expect(async () => {
     expect(await hasAnnotation(editor, "First commit")).toBe(true);
