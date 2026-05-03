@@ -1,3 +1,4 @@
+import fs from "fs/promises";
 import * as path from "path";
 import { commands, TabInputText, Uri, window, workspace } from "vscode";
 import { parseJJError } from "./errors";
@@ -52,6 +53,39 @@ function tomlProgramConfig(toolName: string): string {
 function tomlArgsConfig(toolName: string, argsField: string, mainJsPath: string, args: string[]): string {
   const allArgs = [`"${escapeTomlString(mainJsPath)}"`, ...args.map((a) => `"${a}"`)];
   return `merge-tools.${toolName}.${argsField}=[${allArgs.join(", ")}]`;
+}
+
+interface ConflictSideLabels {
+  changeIdShort: string;
+  commitIdShort: string;
+  description: string;
+}
+
+const conflictToRe = /^\\{7}\s+to:\s+(\S+)\s+(\S+)\s+"(.*)"/;
+const conflictAddRe = /^\+{7}\s+(\S+)\s+(\S+)\s+"(.*)"/;
+
+function parseConflictLabels(content: string): { left?: ConflictSideLabels; right?: ConflictSideLabels } {
+  const result: { left?: ConflictSideLabels; right?: ConflictSideLabels } = {};
+  for (const line of content.split("\n")) {
+    if (!result.left) {
+      const m = line.match(conflictToRe);
+      if (m) {
+        result.left = { changeIdShort: m[1], commitIdShort: m[2], description: m[3] };
+        continue;
+      }
+    }
+    if (!result.right) {
+      const m = line.match(conflictAddRe);
+      if (m) {
+        result.right = { changeIdShort: m[1], commitIdShort: m[2], description: m[3] };
+        continue;
+      }
+    }
+    if (result.left && result.right) {
+      break;
+    }
+  }
+  return result;
 }
 
 interface DiffToolRequest {
@@ -179,10 +213,44 @@ export class JJMergeEditor implements IIPCHandler {
     const rightUri = Uri.file(request.right);
     const outputUri = Uri.file(request.output);
 
+    let input1: { uri: Uri; title: string; description?: string; detail?: string } = {
+      uri: leftUri,
+      title: "Left",
+    };
+    let input2: { uri: Uri; title: string; description?: string; detail?: string } = {
+      uri: rightUri,
+      title: "Right",
+    };
+
+    try {
+      const outputContent = await fs.readFile(request.output, "utf-8");
+      const labels = parseConflictLabels(outputContent);
+      if (labels.left) {
+        const desc = labels.left.description.split("\n")[0] || "(no description)";
+        input1 = {
+          uri: leftUri,
+          title: labels.left.changeIdShort,
+          description: desc,
+          detail: `commit ${labels.left.commitIdShort}`,
+        };
+      }
+      if (labels.right) {
+        const desc = labels.right.description.split("\n")[0] || "(no description)";
+        input2 = {
+          uri: rightUri,
+          title: labels.right.changeIdShort,
+          description: desc,
+          detail: `commit ${labels.right.commitIdShort}`,
+        };
+      }
+    } catch {
+      // Fall back to default titles
+    }
+
     await commands.executeCommand("_open.mergeEditor", {
       base: baseUri,
-      input1: { uri: leftUri, title: "Left" },
-      input2: { uri: rightUri, title: "Right" },
+      input1,
+      input2,
       output: outputUri,
     });
 
