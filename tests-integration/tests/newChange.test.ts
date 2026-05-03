@@ -1,4 +1,4 @@
-import { test, expect, handleEditor, mod } from "./baseTest";
+import { test, expect, handleEditor, mod, runCommand } from "./baseTest";
 import { getParents } from "../testRepo";
 
 test("create new child change from context menu", async ({ graphFrame, testRepo }) => {
@@ -68,11 +68,7 @@ test("create new change via command palette", async ({ graphFrame, testRepo, wor
   await scmEditor.click();
   await workbox.keyboard.type("C");
 
-  await workbox.keyboard.press(`${mod}+Shift+P`);
-  const quickInput = workbox.locator(".quick-input-widget input").first();
-  await expect(quickInput).toBeVisible();
-  await quickInput.fill(">Create New Change");
-  await workbox.keyboard.press("Enter");
+  await runCommand(workbox, "Create New Change");
 
   await expect(nodes).toHaveCount(5);
 

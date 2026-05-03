@@ -1,4 +1,4 @@
-import { test, expect, mod, cursorTop } from "./baseTest";
+import { test, expect, mod, cursorTop, runCommand } from "./baseTest";
 
 test("squash selected line ranges into parent change", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "line1\nline2\nline3\n", "A");
@@ -29,20 +29,9 @@ test("squash selected line ranges into parent change", async ({ graphFrame, test
   await workbox.keyboard.press("Shift+End");
 
   // Trigger "Squash Selected Changes..." via command palette
-  await workbox.keyboard.press(`${mod}+Shift+P`);
-  const quickInput = workbox.locator(".quick-input-widget input").first();
-  await expect(quickInput).toBeVisible();
-  await quickInput.fill(">Squash Selected Changes");
-  const quickPick = workbox.locator(".quick-input-widget");
-  await expect(quickPick).toBeVisible();
-  const squashItem = quickPick
-    .locator(".monaco-list-row")
-    .filter({ hasText: /Jujutsu: Squash Selected Changes/ })
-    .first();
-  await expect(squashItem).toBeVisible();
-  await squashItem.click();
+  await runCommand(workbox, "Squash Selected Changes");
 
-  // Select parent from the destination quick pick
+  const quickPick = workbox.locator(".quick-input-widget");
   await expect(quickPick).toBeVisible();
   const parentItem = quickPick
     .locator(".monaco-list-row")

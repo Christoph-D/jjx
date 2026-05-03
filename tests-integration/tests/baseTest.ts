@@ -247,6 +247,19 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
 });
 
+export async function runCommand(workbox: Page, commandName: string) {
+  await workbox.keyboard.press(`${mod}+Shift+P`);
+  const quickInput = workbox.locator(".quick-input-widget input").first();
+  await expect(quickInput).toBeVisible();
+  await quickInput.fill(`>${commandName}`);
+  const item = workbox
+    .locator(".quick-input-widget .monaco-list-row")
+    .filter({ hasText: new RegExp(commandName) })
+    .first();
+  await expect(item).toBeVisible();
+  await item.click();
+}
+
 export async function handleEditor(workbox: Page, expectedContent: string, newContent: string) {
   const editor = workbox.locator('.monaco-editor[role="code"][data-uri*=".jj"]');
   await pwExpect(editor).toBeVisible();

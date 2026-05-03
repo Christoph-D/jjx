@@ -1,4 +1,4 @@
-import { test, expect, mod } from "./baseTest";
+import { test, expect, runCommand } from "./baseTest";
 
 test("undo and redo a commit", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
@@ -6,9 +6,7 @@ test("undo and redo a commit", async ({ graphFrame, testRepo, workbox }) => {
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(3);
 
-  await workbox.keyboard.press(`${mod}+Shift+P`);
-  await workbox.keyboard.type("Jujutsu: Undo");
-  await workbox.keyboard.press("Enter");
+  await runCommand(workbox, "Jujutsu: Undo");
 
   await expect(nodes).toHaveCount(2);
 
@@ -18,9 +16,7 @@ test("undo and redo a commit", async ({ graphFrame, testRepo, workbox }) => {
     expect(commitA).toBeUndefined();
   }).toPass();
 
-  await workbox.keyboard.press(`${mod}+Shift+P`);
-  await workbox.keyboard.type("Jujutsu: Redo");
-  await workbox.keyboard.press("Enter");
+  await runCommand(workbox, "Jujutsu: Redo");
 
   await expect(nodes).toHaveCount(3);
 
