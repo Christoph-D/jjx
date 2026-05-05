@@ -1,5 +1,22 @@
 # Change Log
 
+## 1.8.1
+
+### Bug Fixes
+
+- Show nicer labels in the merge editor instead of "left", "right"
+- Show relative time in file annotations
+- Invalidate annotation cache when working copy changes
+- React to `jjx.enableAnnotations` setting changes immediately
+- Set `conflict-marker-style = "diff"` explicitly to prevent misbehavior when user overrides the setting
+- Prevent stale annotation decorations from overwriting current ones after cursor moves
+
+### Internal
+
+- Add macOS CI runner
+- Add integration tests for blame annotations feature
+- Use long change IDs internally in a few more places
+
 ## 1.8.0
 
 ### New Features
