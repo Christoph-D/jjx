@@ -37,6 +37,7 @@ export function registerAnnotations(state: ExtensionState): void {
 
     if (annotateInfo && annotateInfo.uri === editor.document.uri && activeEditorUri === editor.document.uri) {
       const safeLines = lines.filter((line) => line !== annotateInfo!.changeIdsByLine.length);
+      const linesKey = lines.join(",");
       const uniqueChangeIds = [
         ...new Set(safeLines.map((line) => annotateInfo!.changeIdsByLine[line]).filter(Boolean)),
       ];
@@ -72,6 +73,12 @@ export function registerAnnotations(state: ExtensionState): void {
             },
             range: editor.document.validateRange(new vscode.Range(line, 2 ** 30 - 1, line, 2 ** 30 - 1)),
           });
+        }
+        // Bail out if a newer selection event updated activeLines while we were
+        // awaiting showAll. Without this guard, a stale call can replace the
+        // correct decorations with ones computed for an old cursor position.
+        if (activeLines.join(",") !== linesKey) {
+          return;
         }
         editor.setDecorations(annotationDecoration, decorations);
       }
