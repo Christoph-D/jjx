@@ -13,9 +13,13 @@ function main(argv: string[]): void {
   }
 
   const [left, base, right, output] = argv.slice(-4);
+  const realPath = process.env.JJX_MERGE_REAL_PATH;
+  if (!realPath) {
+    fatal(new Error("JJX_MERGE_REAL_PATH environment variable not set"));
+  }
 
   ipcClient
-    .call({ left, base, right, output })
+    .call({ left, base, right, output, realPath })
     .then((result) => {
       setTimeout(() => process.exit(result === true ? 0 : 1), 0);
     })

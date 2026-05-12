@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import * as os from "os";
 import * as path from "path";
 import { commands, TabInputText, Uri, window, workspace } from "vscode";
 import { parseJJError } from "./errors";
@@ -15,6 +16,7 @@ interface MergeEditorRequest {
   base: string;
   right: string;
   output: string;
+  realPath: string;
 }
 
 interface MergeEditorTabInput {
@@ -208,17 +210,32 @@ export class JJMergeEditor implements IIPCHandler {
   }
 
   async handle(request: MergeEditorRequest): Promise<boolean> {
-    const leftUri = Uri.file(request.left);
-    const baseUri = Uri.file(request.base);
-    const rightUri = Uri.file(request.right);
-    const outputUri = Uri.file(request.output);
+    const outputUri = Uri.file(request.realPath);
+
+    const leftBasename = path.basename(request.left);
+    const baseBasename = path.basename(request.base);
+    const rightBasename = path.basename(request.right);
+
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "jjx-merge-"));
+    const leftCopy = path.join(tempDir, leftBasename.startsWith("left_") ? leftBasename : `left_${leftBasename}`);
+    const baseCopy = path.join(tempDir, baseBasename.startsWith("base_") ? baseBasename : `base_${baseBasename}`);
+    const rightCopy = path.join(tempDir, rightBasename.startsWith("right_") ? rightBasename : `right_${rightBasename}`);
+    await Promise.all([
+      fs.copyFile(request.left, leftCopy),
+      fs.copyFile(request.base, baseCopy),
+      fs.copyFile(request.right, rightCopy),
+    ]);
+
+    const leftCopyUri = Uri.file(leftCopy);
+    const baseCopyUri = Uri.file(baseCopy);
+    const rightCopyUri = Uri.file(rightCopy);
 
     let input1: { uri: Uri; title: string; description?: string; detail?: string } = {
-      uri: leftUri,
+      uri: leftCopyUri,
       title: "Left",
     };
     let input2: { uri: Uri; title: string; description?: string; detail?: string } = {
-      uri: rightUri,
+      uri: rightCopyUri,
       title: "Right",
     };
 
@@ -228,7 +245,7 @@ export class JJMergeEditor implements IIPCHandler {
       if (labels.left) {
         const desc = labels.left.description.split("\n")[0] || "(no description)";
         input1 = {
-          uri: leftUri,
+          uri: leftCopyUri,
           title: labels.left.changeIdShort,
           description: desc,
           detail: `commit ${labels.left.commitIdShort}`,
@@ -237,7 +254,7 @@ export class JJMergeEditor implements IIPCHandler {
       if (labels.right) {
         const desc = labels.right.description.split("\n")[0] || "(no description)";
         input2 = {
-          uri: rightUri,
+          uri: rightCopyUri,
           title: labels.right.changeIdShort,
           description: desc,
           detail: `commit ${labels.right.commitIdShort}`,
@@ -248,24 +265,25 @@ export class JJMergeEditor implements IIPCHandler {
     }
 
     await commands.executeCommand("_open.mergeEditor", {
-      base: baseUri,
+      base: baseCopyUri,
       input1,
       input2,
       output: outputUri,
     });
 
-    return new Promise((c) => {
-      const onDidClose = window.tabGroups.onDidChangeTabs((tabs) => {
-        for (const t of tabs.closed) {
-          const input = t.input as MergeEditorTabInput | undefined;
-          const resultUri = input?.result?.toString();
-          if (resultUri === outputUri.toString()) {
-            onDidClose.dispose();
-            return c(true);
-          }
+    const onDidClose = window.tabGroups.onDidChangeTabs((tabs) => {
+      for (const t of tabs.closed) {
+        const input = t.input as MergeEditorTabInput | undefined;
+        const resultUri = input?.result?.toString();
+        if (resultUri === outputUri.toString()) {
+          onDidClose.dispose();
+          fs.rm(tempDir, { recursive: true }).catch(() => {});
+          return;
         }
-      });
+      }
     });
+
+    return true;
   }
 
   dispose(): void {

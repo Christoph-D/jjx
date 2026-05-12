@@ -330,11 +330,25 @@ export function registerPreInitCommands(state: ExtensionState): void {
       args.push("-r", changeId);
     }
     args.push("--", relativePath);
-    await handleJJCommand(
-      repo.spawnJJ(args, {
-        cwd: repo.repositoryRoot,
-      }),
-    );
+    try {
+      await handleJJCommand(
+        repo.spawnJJ(args, {
+          cwd: repo.repositoryRoot,
+          env: { JJX_MERGE_REAL_PATH: fsPath },
+        }),
+      );
+    } catch (e) {
+      const stderr = e instanceof Error ? ((e as { stderr?: string }).stderr ?? e.message) : String(e);
+      if (typeof stderr === "string" && stderr.includes("unchanged")) {
+        // This error is expected behavior due to the way we implement the merge editor.
+        // The merge tool only copies out the files and exits immediately.
+        // jj is expected to always return an error like this:
+        //   Error: Failed to resolve conflicts
+        //   Caused by: The output file is either unchanged or empty after the editor quit (run with --debug to see the exact invocation).
+        return;
+      }
+      throw e;
+    }
   });
 }
 
