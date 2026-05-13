@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.8.2
+
+### Bug Fixes
+
+- Handle concurrent conflict resolutions by making the merge tool subprocess exit immediately to prevent divergent
+  commits
+
 ## 1.8.1
 
 ### Bug Fixes
