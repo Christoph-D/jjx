@@ -36,7 +36,7 @@ function isMenuOpen(): boolean {
 
 function isOverTooltipTarget(e: MouseEvent): boolean {
   const target = e.target as HTMLElement;
-  return !target.closest?.(".pill") && !!target.closest?.(".text-content");
+  return !!target.closest?.(".text-content");
 }
 
 interface Props {
