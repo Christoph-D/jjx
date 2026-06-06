@@ -3,15 +3,7 @@
 ![logo](images/logo-small.png)
 
 **Jujutsu X** provides a native VS Code experience for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version control
-system—featuring an interactive commit graph, drag-and-drop rebasing, conflict resolution, and more.
-
-Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
-
-## Supported systems
-
-- **Linux** - Fully supported
-- **Windows** - Should mostly work
-- **macOS and other systems** - Should mostly work
+system.
 
 ## 🚀 Key features
 
@@ -169,6 +161,10 @@ If you experience performance issues, try these steps:
 
 - Disable `jjx.enableAnnotations`, blame annotations are expensive to compute for large repos
 - Lower `jjx.logLimit` to show fewer commits in the graph
+
+## 🙏 Acknowledgements
+
+Jujutsu X is based on [Jujutsu Kaizen](https://github.com/keanemind/jjk).
 
 ## 📝 License
 
