@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.8.3
+
+### Bug Fixes
+
+- Allow double-click on non-empty working copy in new mode
+- Show commit detail tooltip when hovering over a pill
+- Dim circles in graph view when hovering a commit
+- Update status cache on graph refresh to ensure consistency
+
 ## 1.8.2
 
 ### Bug Fixes
