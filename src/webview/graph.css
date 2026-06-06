@@ -85,7 +85,10 @@ body {
 }
 
 /* Dimming and highlighting effects */
-.node-circle.dimmed circle,
+.node-circle.dimmed circle {
+  opacity: var(--dimmed-opacity);
+}
+
 .node-circle.highlighted circle {
   opacity: 1;
 }
