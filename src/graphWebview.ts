@@ -474,6 +474,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         showTooltips: config.get<boolean>("showTooltips") ?? true,
       };
       this.panel.webview.postMessage(msg);
+      try {
+        await this.repository.getStatus(false);
+      } catch {
+        // best effort — don't let cache update failure affect the graph
+      }
     } catch (error) {
       if (error instanceof StaleWorkingCopyError) {
         const didAutoUpdate = await this.repository.tryAutoUpdateStale();
