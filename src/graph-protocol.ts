@@ -32,6 +32,7 @@ export interface ChangeNode {
   fullDescription: string;
   mine: boolean;
   conflict: boolean;
+  isEmpty: boolean;
   elided?: number;
 }
 

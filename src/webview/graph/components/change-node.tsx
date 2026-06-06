@@ -81,7 +81,9 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
 
   const handleDoubleClick = () => {
     if (change.currentWorkingCopy) {
-      return;
+      if (changeDoubleClickAction.value !== "new" || change.isEmpty) {
+        return;
+      }
     }
     vscode.postMessage({ command: "editChange", changeId: change.changeId });
   };

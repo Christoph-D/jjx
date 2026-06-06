@@ -602,6 +602,7 @@ export function parseJJLogJson(
         fullDescription: "",
         mine: false,
         conflict: false,
+        isEmpty: true,
       };
     }
 
@@ -662,6 +663,7 @@ export function parseJJLogJson(
       fullDescription: entry.description,
       mine: entry.mine,
       conflict: entry.conflict,
+      isEmpty: entry.empty,
     };
   });
 
