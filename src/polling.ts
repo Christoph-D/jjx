@@ -9,7 +9,12 @@ export function initInfrastructure(state: ExtensionState) {
   const context = state.context;
   const initialSelectedRepo = state.getSelectedRepo();
 
-  const graphWebview = new JJGraphWebview(context.extensionUri, initialSelectedRepo, context);
+  const graphWebview = new JJGraphWebview(
+    context.extensionUri,
+    initialSelectedRepo,
+    context,
+    state.workspaceSCM.jjBinaryNotFound,
+  );
   context.subscriptions.push(graphWebview);
 
   state.onDidSetSelectedRepository(

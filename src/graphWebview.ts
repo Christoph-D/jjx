@@ -38,6 +38,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     private readonly extensionUri: vscode.Uri,
     repo: JJRepository | undefined,
     private readonly context: vscode.ExtensionContext,
+    private readonly jjBinaryNotFound: boolean,
   ) {
     this.repository = repo;
 
@@ -72,7 +73,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     });
 
     if (!this.repository) {
-      const msg: ExtensionToWebviewMessage = { command: "showJJNotFoundState" };
+      const msg: ExtensionToWebviewMessage = this.jjBinaryNotFound
+        ? { command: "showJJNotFoundState" }
+        : { command: "showNoRepoFoundState" };
       webviewView.webview.postMessage(msg);
     }
 

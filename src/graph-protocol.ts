@@ -115,6 +115,7 @@ export type ExtensionToWebviewMessage =
     }
   | { command: "showStaleState" }
   | { command: "showJJNotFoundState" }
+  | { command: "showNoRepoFoundState" }
   | { command: "diffStatsResponse"; changeId: string; stats: DiffStats }
   | {
       command: "bookmarkTrackingRemotesResponse";

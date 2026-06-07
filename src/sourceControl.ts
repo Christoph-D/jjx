@@ -67,6 +67,7 @@ export class WorkspaceSourceControlManager {
   fileSystemProvider: JJFileSystemProvider;
   private cancellationTokenSource = new vscode.CancellationTokenSource();
   jjBinaryNotFound = false;
+  noRepoFound = false;
   private errorSourceControl: vscode.SourceControl | undefined;
   private errorResourceGroup: vscode.SourceControlResourceGroup | undefined;
 
@@ -88,7 +89,7 @@ export class WorkspaceSourceControlManager {
     );
   }
 
-  private showBinaryNotFoundError() {
+  private showErrorState(placeholder: string, label: string) {
     if (this.errorSourceControl) {
       return;
     }
@@ -98,11 +99,11 @@ export class WorkspaceSourceControlManager {
     }
     const rootUri = workspaceFolders[0].uri;
     this.errorSourceControl = vscode.scm.createSourceControl("jj", "Jujutsu", rootUri);
-    this.errorSourceControl.inputBox.placeholder = "Waiting for jj binary...";
-    this.errorResourceGroup = this.errorSourceControl.createResourceGroup("noJJBinary", "Error: jj binary not found");
+    this.errorSourceControl.inputBox.placeholder = placeholder;
+    this.errorResourceGroup = this.errorSourceControl.createResourceGroup("error", label);
   }
 
-  private clearBinaryNotFoundError() {
+  private clearErrorState() {
     if (!this.errorSourceControl) {
       return;
     }
@@ -260,13 +261,20 @@ export class WorkspaceSourceControlManager {
     this.repoSCMs = updatedRepoSCMs;
 
     if (updatedRepoSCMs.length > 0) {
-      this.clearBinaryNotFoundError();
+      this.clearErrorState();
       this.jjBinaryNotFound = false;
+      this.noRepoFound = false;
       void vscode.commands.executeCommand("setContext", "jj.jjBinaryFound", true);
     } else if (anyBinaryNotFound) {
       this.jjBinaryNotFound = true;
-      this.showBinaryNotFoundError();
+      this.noRepoFound = false;
+      this.showErrorState("Waiting for jj binary...", "Error: jj binary not found");
       void vscode.commands.executeCommand("setContext", "jj.jjBinaryFound", false);
+    } else {
+      this.jjBinaryNotFound = false;
+      this.noRepoFound = true;
+      this.showErrorState("No Repository Found", "No jj repository found");
+      void vscode.commands.executeCommand("setContext", "jj.jjBinaryFound", true);
     }
 
     return isAnyRepoChanged;
