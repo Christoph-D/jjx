@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.8.4
+
+### Bug Fixes
+
+- Show 'No jj Repository Found' when binary exists but no repo is present
+
 ## 1.8.3
 
 ### Bug Fixes
