@@ -9,11 +9,7 @@ export function JJNotFoundState() {
       <div class="stale-state-description">
         <b>Solution:</b> Install jj in a common location or set the path to the jj binary in the settings.
       </div>
-      <a
-        href="https://docs.jj-vcs.dev/latest/install-and-setup/"
-        class="update-stale-button"
-        style="text-decoration: none"
-      >
+      <a href="https://docs.jj-vcs.dev/latest/install-and-setup/" class="action-button" style="text-decoration: none">
         <i class="codicon codicon-link-external"></i>
         How to Install jj
       </a>

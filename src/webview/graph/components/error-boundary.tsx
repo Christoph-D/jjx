@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </div>
           <div class="stale-state-message">Something Went Wrong</div>
           <div class="stale-state-description">An unexpected error occurred in the graph view.</div>
-          <button class="update-stale-button" onClick={() => this.setState({ error: null })}>
+          <button class="action-button" onClick={() => this.setState({ error: null })}>
             <i class="codicon codicon-refresh"></i>
             Try Again
           </button>

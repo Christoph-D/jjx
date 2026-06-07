@@ -10,7 +10,7 @@ export function StaleState() {
       <div class="stale-state-description">The working copy state is outdated and needs to be refreshed.</div>
       <button
         id="update-stale-button"
-        class="update-stale-button"
+        class="action-button"
         onClick={() => vscode.postMessage({ command: "updateStale" })}
       >
         <i class="codicon codicon-sync"></i>

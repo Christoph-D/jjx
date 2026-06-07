@@ -524,7 +524,7 @@ body {
   max-width: 300px;
 }
 
-.update-stale-button {
+.action-button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -537,11 +537,11 @@ body {
   cursor: pointer;
 }
 
-.update-stale-button:hover {
+.action-button:hover {
   background-color: var(--vscode-button-hoverBackground);
 }
 
-.update-stale-button .codicon {
+.action-button .codicon {
   font-size: 1.1em;
 }
 
