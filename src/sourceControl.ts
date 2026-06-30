@@ -656,24 +656,25 @@ export class RepositorySourceControlManager {
     this.sourceControl.count = this.status.fileStatuses.length;
 
     const showParentChangeId = this.status.parentChanges.length > 1;
-    const updatedGroups: vscode.SourceControlResourceGroup[] = [];
-    for (const group of this.parentResourceGroups) {
-      const parentChange = this.status.parentChanges.find((change) => change.changeId === group.id);
-      if (!parentChange) {
+    const desiredParentIds = this.status.parentChanges.map((change) => change.changeId);
+    const currentParentIds = this.parentResourceGroups.map((group) => group.id);
+    const parentOrderMatches =
+      currentParentIds.length === desiredParentIds.length &&
+      currentParentIds.every((id, index) => id === desiredParentIds[index]);
+    if (!parentOrderMatches) {
+      // VS Code displays source control resource groups in creation order, and there is no
+      // API to reorder them. Recreate the parent groups whenever jj's reported parent order
+      // (or set of parents) changes so the change view matches jj's native ordering.
+      for (const group of this.parentResourceGroups) {
         group.dispose();
-      } else {
-        group.label = RepositorySourceControlManager.getLabel("Parent Commit", parentChange, showParentChangeId);
-        updatedGroups.push(group);
       }
+      this.parentResourceGroups = [];
     }
-    this.parentResourceGroups = updatedGroups;
 
     let newParentCreated = false;
     for (const parentChange of this.status.parentChanges) {
-      let parentChangeResourceGroup!: vscode.SourceControlResourceGroup;
-
-      const parentGroup = this.parentResourceGroups.find((group) => group.id === parentChange.changeId);
-      if (!parentGroup) {
+      let parentChangeResourceGroup = this.parentResourceGroups.find((group) => group.id === parentChange.changeId);
+      if (!parentChangeResourceGroup) {
         parentChangeResourceGroup = this.sourceControl.createResourceGroup(
           parentChange.changeId,
           RepositorySourceControlManager.getLabel("Parent Commit", parentChange, showParentChangeId),
@@ -681,7 +682,11 @@ export class RepositorySourceControlManager {
         this.parentResourceGroups.push(parentChangeResourceGroup);
         newParentCreated = true;
       } else {
-        parentChangeResourceGroup = parentGroup;
+        parentChangeResourceGroup.label = RepositorySourceControlManager.getLabel(
+          "Parent Commit",
+          parentChange,
+          showParentChangeId,
+        );
       }
 
       const showResult = this.parentShowResults.get(parentChange.changeId);
