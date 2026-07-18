@@ -5,6 +5,7 @@ import { logger } from "./logger";
 import { getCommandTimeout } from "./config";
 import { convertJJErrors } from "./errors";
 import { getJjEditorEnv } from "./jjEditor";
+import { buildSpawnEnv } from "./spawnEnv";
 
 export class CancelledError extends Error {
   constructor() {
@@ -98,7 +99,7 @@ export function spawnJJ(jjPath: string, args: string[], options: SpawnOptions) {
   const finalOptions = {
     ...options,
     timeout: getCommandTimeout(options.cwd, options.timeout),
-    env: { ...process.env, ...jjEditorEnv, ...options.env },
+    env: { ...buildSpawnEnv(), ...jjEditorEnv, ...options.env },
   };
 
   logger.trace(`spawn: ${JSON.stringify([jjPath, ...args])} ${JSON.stringify({ spawnOptions: finalOptions })}`);

@@ -524,7 +524,7 @@ export class JJRepository {
       {
         timeout: TIMEOUTS.SQUASH_TOOL,
         cwd: this.repositoryRoot,
-        env: { ...process.env, VSCODE_JJ_SQUASH_REQUEST_ID: requestId },
+        env: { VSCODE_JJ_SQUASH_REQUEST_ID: requestId },
       },
     );
 
@@ -1056,7 +1056,7 @@ export class JJRepository {
       {
         timeout: 10_000,
         cwd: this.repositoryRoot,
-        env: { ...process.env, VSCODE_JJ_DIFF_REQUEST_ID: requestId },
+        env: { VSCODE_JJ_DIFF_REQUEST_ID: requestId },
       },
     );
 
