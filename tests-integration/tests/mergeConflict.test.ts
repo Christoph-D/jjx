@@ -23,6 +23,8 @@ test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, wo
 
   const scmView = await waitForSCMView(workbox, ["file1.txt", "file2.txt"], ["file1.txt", "file2.txt"]);
 
+  await expect(scmView.getByRole("treeitem", { name: /Working Copy \(conflict\)/ })).toBeVisible();
+
   const file1Item = scmView.getByRole("treeitem", { name: /file1\.txt/ });
   await file1Item.first().click();
 
