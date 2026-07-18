@@ -1,5 +1,25 @@
 # Change Log
 
+## 1.8.5
+
+### New Features
+
+- **Show changed files in graph** - Optionally show each commit's changed files inline in the graph (like `jj log -s`),
+  with one-click diff opening (⚠️ experimental, enable with `jjx.showChangedFiles`)
+
+### Bug Fixes
+
+- Preserve jj's parent ordering in the change view
+- Fix Windows path handling, which should fix some diff issues on Windows
+
+### Internal
+
+- Update jj to 0.43 in CI and devcontainer
+- Move pnpm config from `package.json` to `pnpm-workspace.yaml`
+- Make unit tests run on Windows
+- Update dependencies
+- Add `DEBUGGING.md`
+
 ## 1.8.4
 
 ### Bug Fixes
