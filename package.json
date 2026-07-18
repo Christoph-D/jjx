@@ -920,7 +920,7 @@
   "packageManager": "pnpm@10.33.3",
   "scripts": {
     "build": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
-    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
+    "build-dev": "pnpm run check-types && pnpm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",

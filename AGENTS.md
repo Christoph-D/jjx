@@ -4,7 +4,8 @@ A VS Code extension for the [Jujutsu (jj)](https://github.com/jj-vcs/jj) version
 
 ## Development
 
-- **Build**: `pnpm run build`
+- **Build** (release, minified): `pnpm run build`
+- **Build** (dev, unminified): `pnpm run build-dev`
 - **Watch**: `pnpm run watch`
 - **Type check**: `pnpm run check-types`
 - **Lint**: `pnpm run lint`
