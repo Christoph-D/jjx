@@ -55,6 +55,7 @@ test("shows diff when clicking modified files", async ({ graphFrame, testRepo, w
   await expect(movedFile).toHaveCount(1);
   await movedFile.click();
   await validateDiff("Line 3", "Line 3 changed");
+  await expect(workbox.getByRole("tab", { name: /moved\.txt => moved2\.txt/ })).toBeVisible();
 
   // Deleted files
   const deletedFirstItems = scmView.getByRole("treeitem", { name: /deleted-first\.txt/ });

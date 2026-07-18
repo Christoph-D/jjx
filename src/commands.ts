@@ -439,7 +439,7 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       const { fileStatuses } = await repo.show(rev);
-      const fileStatus = fileStatuses.find((file) => pathEquals(file.path, originalUri.path));
+      const fileStatus = fileStatuses.find((file) => pathEquals(file.path, originalUri.fsPath));
 
       const diffTitleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
       await vscode.commands.executeCommand(
