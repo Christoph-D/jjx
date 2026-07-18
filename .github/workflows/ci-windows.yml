@@ -37,14 +37,14 @@ jobs:
         uses: actions/cache@v5
         with:
           path: C:\jj\jj.exe
-          key: jj-v0.38.0-${{ runner.os }}-x86_64
+          key: jj-v0.43.0-${{ runner.os }}-x86_64
 
       - name: Install jj
         if: steps.cache-jj.outputs.cache-hit != 'true'
         run: |
-          Invoke-WebRequest -Uri https://github.com/jj-vcs/jj/releases/download/v0.38.0/jj-v0.38.0-x86_64-pc-windows-msvc.zip -OutFile jj.zip
+          Invoke-WebRequest -Uri https://github.com/jj-vcs/jj/releases/download/v0.43.0/jj-v0.43.0-x86_64-pc-windows-msvc.zip -OutFile jj.zip
           $hash = (Get-FileHash -Path jj.zip -Algorithm SHA256).Hash
-          if ($hash -ne '13032f82286a0b224f9ce6f1e466a2323bee3af2efba423e35b4146975445e14') { throw "SHA256 mismatch" }
+          if ($hash -ne '582f63e55310eaa397782fcb528c3feff5b943a4e2db70666d105972a381f80e') { throw "SHA256 mismatch" }
           Expand-Archive -Path jj.zip -DestinationPath C:\jj
 
       - name: Add jj to PATH
