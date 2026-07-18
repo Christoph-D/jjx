@@ -23,7 +23,7 @@ import {
 } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
 import { logger } from "./logger";
-import { filepathToFileset, pathEquals, normalizePath } from "./utils";
+import { filepathToFileset, isWindows, pathEquals, normalizePath } from "./utils";
 import {
   getDiffToolConfigs,
   expectDiffToolRequest,
@@ -1125,7 +1125,7 @@ export class JJRepository {
       }
 
       const type = summaryLine.charAt(0);
-      const file = summaryLine.slice(2).trim();
+      const file = isWindows ? summaryLine.slice(2).trim().replace(/\\/g, "/") : summaryLine.slice(2).trim();
 
       if (type === "M" || type === "D") {
         const normalizedSummaryPath = path.join(this.repositoryRoot, file).replace(/\\/g, "/");
