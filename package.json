@@ -959,12 +959,5 @@
     "diff": "^9.0.0",
     "preact": "^10.29.7",
     "which": "^7.0.0"
-  },
-  "pnpm": {
-    "allowBuilds": {
-      "esbuild": true,
-      "@vscode/vsce-sign": false,
-      "keytar": false
-    }
   }
 }
