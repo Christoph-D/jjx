@@ -934,31 +934,31 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.61.1",
     "@types/cross-spawn": "^6.0.6",
-    "@types/node": "^25.6.0",
+    "@types/node": "^26.1.1",
     "@types/vscode": "^1.110.0",
     "@types/which": "^3.0.4",
-    "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.9.1",
-    "esbuild": "^0.28.0",
-    "eslint": "^10.2.1",
-    "globals": "^17.5.0",
-    "npm-run-all2": "^8.0.4",
-    "prettier": "^3.8.3",
-    "tsx": "^4.21.0",
+    "@vscode/test-electron": "^3.0.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.1",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
+    "npm-run-all2": "^9.0.2",
+    "prettier": "^3.9.5",
+    "tsx": "^4.23.1",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.0"
+    "typescript-eslint": "^8.64.0"
   },
   "dependencies": {
-    "@preact/signals": "^2.9.0",
+    "@preact/signals": "^2.9.4",
     "@vscode/codicons": "^0.0.45",
     "ansi-regex": "^6.2.2",
-    "arktype": "^2.2.0",
+    "arktype": "^2.2.3",
     "cross-spawn": "^7.0.6",
     "diff": "^9.0.0",
-    "preact": "^10.29.1",
-    "which": "^6.0.1"
+    "preact": "^10.29.7",
+    "which": "^7.0.0"
   },
   "pnpm": {
     "allowBuilds": {

@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.56.0-noble
+FROM mcr.microsoft.com/playwright:v1.61.0-noble
 
 RUN apt-get update && apt-get -y install git curl bash imagemagick inotify-tools ripgrep less tzdata xvfb pngcrush
 RUN ln -sf /usr/share/zoneinfo/hostlocaltime /etc/localtime
