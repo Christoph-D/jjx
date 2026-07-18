@@ -3,7 +3,6 @@ import { currentChanges, currentGraph, changeIdHorizontalOffset } from "../signa
 import { EDGE_EXTENSION } from "../types";
 import type { ChangeIdGraph } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
-import changeNodeStyles from "./change-node.module.css";
 import styles from "./connection-lines.module.css";
 
 interface PathData {
@@ -86,7 +85,7 @@ export function ConnectionLines() {
       return;
     }
 
-    const nodes = document.querySelectorAll(`.${changeNodeStyles.changeNode}`);
+    const nodes = document.querySelectorAll(`#nodes > [data-change-id]`);
     const svg = document.getElementById("connections");
     if (!svg) {
       paths.value = [];

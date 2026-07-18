@@ -2,7 +2,6 @@ import { useEffect, useRef, useCallback } from "preact/hooks";
 import { tooltip, diffStatsCache } from "../signals";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import { CHANGE_ID_RIGHT_PADDING } from "../types";
-import changeNodeStyles from "./change-node.module.css";
 import styles from "./tooltip.module.css";
 
 export function Tooltip() {
@@ -45,7 +44,7 @@ export function Tooltip() {
       const offset = 15;
 
       const changeIdEl = document.querySelector(
-        `.${changeNodeStyles.changeNode}[data-change-id="${state.change.changeId}"] .${changeNodeStyles.changeIdLeft}`,
+        `#nodes > [data-change-id="${state.change.changeId}"] [data-role="change-id"]`,
       );
       const minLeft = changeIdEl ? changeIdEl.getBoundingClientRect().right + CHANGE_ID_RIGHT_PADDING : 10;
 

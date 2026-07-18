@@ -3,7 +3,6 @@ import { currentChanges, currentGraph, changeIdHorizontalOffset, selectedNodes }
 import { CIRCLE_RADIUS } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
-import changeNodeStyles from "./change-node.module.css";
 import styles from "./node-circle.module.css";
 
 function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; colorIndex: number }) {
@@ -76,7 +75,7 @@ export function NodeCircles() {
     }
     const svgRect = svg.getBoundingClientRect();
 
-    const domNodes = document.querySelectorAll(`.${changeNodeStyles.changeNode}`);
+    const domNodes = document.querySelectorAll(`#nodes > [data-change-id]`);
     const newPositions: NodePosition[] = [];
     domNodes.forEach((node, i) => {
       const nodeData = graph.nodes[i];

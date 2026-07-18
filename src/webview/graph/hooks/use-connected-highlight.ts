@@ -19,7 +19,7 @@ function buildCache(): GraphElementCache {
   const childrenOf = new Map<string, string[]>();
   const allNodes: HTMLElement[] = [];
 
-  const nodes = Array.from(document.querySelectorAll(`.${changeNodeStyles.changeNode}`));
+  const nodes = Array.from(document.querySelectorAll(`#nodes > [data-change-id]`));
   for (const node of nodes) {
     const el = node as HTMLElement;
     const changeId = el.dataset.changeId!;
@@ -38,16 +38,14 @@ function buildCache(): GraphElementCache {
 
   const nodeCircleByChangeId = new Map<string, HTMLElement>();
   const allCircles: HTMLElement[] = [];
-  const circles = Array.from(document.querySelectorAll(`#node-circles .${nodeCircleStyles.nodeCircle}`));
+  const circles = Array.from(document.querySelectorAll(`#node-circles > [data-change-id]`));
   for (const circle of circles) {
     const el = circle as HTMLElement;
     nodeCircleByChangeId.set(el.dataset.changeId!, el);
     allCircles.push(el);
   }
 
-  const connectionLines = Array.from(
-    document.querySelectorAll(`.${connectionLineStyles.connectionLine}`),
-  ) as HTMLElement[];
+  const connectionLines = Array.from(document.querySelectorAll(`#connection-lines path`)) as HTMLElement[];
 
   return { nodeByChangeId, childrenOf, nodeCircleByChangeId, connectionLines, allNodes, allCircles };
 }

@@ -133,7 +133,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
   const handleMouseEnter = (e: MouseEvent) => {
     highlightProps.onMouseEnter();
     document
-      .querySelector(`#node-circles .${nodeCircleStyles.nodeCircle}[data-change-id="${change.changeId}"]`)
+      .querySelector(`#node-circles > [data-change-id="${change.changeId}"]`)
       ?.classList.add(nodeCircleStyles.hovered);
     tryStartTooltip(e);
   };
@@ -146,7 +146,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
   const handleMouseLeave = () => {
     highlightProps.onMouseLeave();
     document
-      .querySelector(`#node-circles .${nodeCircleStyles.nodeCircle}[data-change-id="${change.changeId}"]`)
+      .querySelector(`#node-circles > [data-change-id="${change.changeId}"]`)
       ?.classList.remove(nodeCircleStyles.hovered);
     clearHoverTimers();
     clearHideTimer();
@@ -172,7 +172,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
       onMouseLeave={handleMouseLeave}
       {...dragProps}
     >
-      <div class={styles.changeIdLeft} ref={changeIdRef}>
+      <div class={styles.changeIdLeft} data-role="change-id" ref={changeIdRef}>
         {change.conflict && <span class={styles.conflictIndicator}>✗</span>}
         <span class={styles.changeIdPrefix}>{change.changeIdPrefix}</span>
         <span class={styles.changeIdSuffix}>{change.changeIdSuffix}</span>
