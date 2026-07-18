@@ -7,6 +7,7 @@ import {
   offsetWidth,
   changeIdHorizontalOffset,
   scrollY,
+  showChangedFiles,
 } from "../signals";
 import { ChangeNodeRow } from "./change-node";
 import { NodeCircles } from "./node-circle";
@@ -31,11 +32,14 @@ export function Graph() {
   const changes = currentChanges.value;
   const graph = currentGraph.value;
   const style = graphStyle.value;
+  const showingFiles = showChangedFiles.value;
+
+  const rootClass = (style === "compact" ? "compact" : "") + (showingFiles ? " showing-files" : "");
 
   return (
     <div
       id="graph"
-      class={style === "compact" ? "compact" : ""}
+      class={rootClass}
       style={{
         "--change-id-ch-width": `${maxPrefixLength.value}ch`,
         "--change-id-offset-width": `${offsetWidth.value}ch`,

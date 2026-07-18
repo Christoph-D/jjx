@@ -306,6 +306,36 @@ const LOG_ENTRY_FIELDS: TemplateFields = {
   },
 };
 
+const DIFF_FILES_FIELD: TemplateFields = {
+  diff_files: {
+    type: "array",
+    expr: "self.diff().files()",
+    loopVar: "entry",
+    contents: {
+      status_char: { type: "string", expr: "entry.status_char()" },
+      source_path: { type: "string", expr: "entry.source().path().display()" },
+      target_path: { type: "string", expr: "entry.target().path().display()" },
+      is_conflict: { type: "boolean", expr: "entry.target().conflict()" },
+    },
+  },
+  conflicted_files: {
+    type: "string_array",
+    expr: "self.conflicted_files()",
+    loopVar: "f",
+    value: "f.path().display()",
+  },
+};
+
+/**
+ * Builds the `jj log` JSON template. When `includeFiles` is true, the template
+ * additionally includes per-file change data (`diff_files` and
+ * `conflicted_files`), mirroring `SHOW_ENTRY_FIELDS`.
+ */
+export function buildLogTemplate(opts?: { includeFiles?: boolean }): string {
+  const fields: TemplateFields = opts?.includeFiles ? { ...LOG_ENTRY_FIELDS, ...DIFF_FILES_FIELD } : LOG_ENTRY_FIELDS;
+  return generateTemplate(fields);
+}
+
 const OPERATION_ENTRY_FIELDS: TemplateFields = {
   id: { type: "string", expr: "self.id()" },
   description: { type: "string", expr: "self.description()" },
@@ -338,7 +368,7 @@ const BOOKMARK_TRACKING_INFO_FIELDS: TemplateFields = {
 
 export const SHOW_TEMPLATE = generateTemplate(SHOW_ENTRY_FIELDS);
 export const STATUS_TEMPLATE = generateTemplate(STATUS_ENTRY_FIELDS);
-export const LOG_TEMPLATE = generateTemplate(LOG_ENTRY_FIELDS);
+export const LOG_TEMPLATE = buildLogTemplate();
 export const OPERATION_TEMPLATE = generateTemplate(OPERATION_ENTRY_FIELDS);
 export const DIFF_STATS_TEMPLATE = generateTemplate(DIFF_STATS_FIELDS);
 export const BOOKMARK_TRACKING_INFO_TEMPLATE = generateTemplate(BOOKMARK_TRACKING_INFO_FIELDS);

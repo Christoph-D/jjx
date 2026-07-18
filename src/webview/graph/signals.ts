@@ -26,6 +26,7 @@ export const isNoRepoFound = signal(false);
 export const graphStyle = signal("full");
 export const changeDoubleClickAction = signal("new");
 export const showTooltips = signal(true);
+export const showChangedFiles = signal(false);
 export const scrollY = signal(0);
 export const offsetWidth = signal(0);
 export const tooltipTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
@@ -67,6 +68,7 @@ export interface PendingGraphUpdate {
   offsetWidth: number;
   preserveScroll: boolean;
   showTooltips: boolean;
+  showChangedFiles: boolean;
 }
 
 export interface PillContextMenuState {

@@ -42,6 +42,13 @@ export interface ParentRef {
   change_offset: string;
 }
 
+export interface DiffFileEntry {
+  status_char: string;
+  source_path: string;
+  target_path: string;
+  is_conflict: boolean;
+}
+
 export interface LogEntry {
   change_id: string;
   change_id_short: string;
@@ -73,6 +80,9 @@ export interface LogEntry {
   local_tags: LogEntryLocalRef[];
   remote_tags: LogEntryRemoteRef[];
   working_copies: string[];
+  diff_files?: DiffFileEntry[];
+  conflicted_files?: string[];
+  fileStatuses?: FileStatus[];
 }
 
 export type RepositoryStatus = {

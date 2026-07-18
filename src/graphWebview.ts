@@ -10,6 +10,7 @@ import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elidedE
 import { logger } from "./logger";
 import { getLogRevset, getElidedVisibleImmutableParents } from "./config";
 import { DEFAULT_LOG_LIMIT } from "./constants";
+import { toJJUri } from "./uri";
 
 export type { LaneNode, LaneEdge, ChangeIdGraph } from "./laneAssigner";
 export type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
@@ -345,6 +346,40 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             // Silently ignore - tooltip simply won't show diff stats
           }
           break;
+        case "openFileDiff": {
+          const { changeId, path: relPath, status, renamedFrom } = message;
+          const absPath = path.join(repo.repositoryRoot, relPath);
+          const fileUri = vscode.Uri.file(absPath);
+
+          let beforeParams: Parameters<typeof toJJUri>[1];
+          let afterParams: Parameters<typeof toJJUri>[1];
+          if (status === "A") {
+            beforeParams = { deleted: true };
+            afterParams = { rev: changeId };
+          } else if (status === "D") {
+            beforeParams = { diffOriginalRev: changeId };
+            afterParams = { deleted: true };
+          } else if (status === "R" || status === "C") {
+            beforeParams = renamedFrom ? { diffOriginalRev: changeId, renamedFrom } : { diffOriginalRev: changeId };
+            afterParams = { rev: changeId };
+          } else {
+            beforeParams = { diffOriginalRev: changeId };
+            afterParams = { rev: changeId };
+          }
+          const beforeUri = toJJUri(fileUri, beforeParams);
+          const afterUri = toJJUri(fileUri, afterParams);
+          const diffTitleSuffix = changeId === "@" ? "(Working Copy)" : `(${changeId.substring(0, 8)})`;
+          const title =
+            status === "R" || status === "C"
+              ? `${path.basename(renamedFrom ?? "")} → ${path.basename(relPath)} ${diffTitleSuffix}`
+              : `${relPath} ${diffTitleSuffix}`;
+          try {
+            await vscode.commands.executeCommand("vscode.diff", beforeUri, afterUri, title);
+          } catch (error: unknown) {
+            showErrorMessage("Failed to open diff", error);
+          }
+          break;
+        }
         case "reportError":
           logger.error(`Webview error: ${message.message}${message.stack ? `\n${message.stack}` : ""}`);
           break;
@@ -427,8 +462,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const graphStyle = config.get<string>("graphStyle") || "full";
 
       const logLimit = config.get<number>("logLimit") ?? DEFAULT_LOG_LIMIT;
+      const showChangedFiles = config.get<boolean>("showChangedFiles") ?? false;
       const logStart = performance.now();
-      const rawEntries = await this.repository.log(getLogRevset(), logLimit);
+      const rawEntries = await this.repository.log(getLogRevset(), logLimit, {
+        includeFiles: showChangedFiles,
+      });
       const logDuration = performance.now() - logStart;
       logger.info(`jj log took ${logDuration.toFixed(1)}ms`);
       const elideImmutableCommits = this.getEffectiveEliding();
@@ -437,7 +475,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         elidedVisibleImmutableParents: getElidedVisibleImmutableParents(this.repository.repositoryRoot),
       });
       const entriesWithSynthetics = insertSyntheticNodes(rawEntries, edges, visibleIds, reachableVisibleFrom);
-      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(entriesWithSynthetics, graphStyle);
+      const { changes, maxPrefixLength, offsetWidth } = parseJJLogJson(
+        entriesWithSynthetics,
+        graphStyle,
+        this.repository.repositoryRoot,
+      );
       this.currentChanges = changes;
 
       const unsyncedBookmarks = new Set<string>();
@@ -475,6 +517,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         offsetWidth,
         preserveScroll: true,
         showTooltips: config.get<boolean>("showTooltips") ?? true,
+        showChangedFiles,
       };
       this.panel.webview.postMessage(msg);
       try {
@@ -550,6 +593,7 @@ function description(entry: LogEntry) {
 export function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
+  repositoryRoot?: string,
 ): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
   const nonSyntheticEntries = entries.filter((e) => !getUniqueEntryId(e).startsWith("~"));
 
@@ -649,6 +693,16 @@ export function parseJJLogJson(
       p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
     );
 
+    const changedFiles =
+      repositoryRoot !== undefined && entry.fileStatuses
+        ? entry.fileStatuses.map((f) => ({
+            type: f.type,
+            path: path.relative(repositoryRoot, f.path).replace(/\\/g, "/"),
+            ...(f.renamedFrom ? { renamedFrom: f.renamedFrom.replace(/\\/g, "/") } : {}),
+            conflict: f.type === "X",
+          }))
+        : undefined;
+
     return {
       changeId: uniqueChangeId,
       changeIdPrefix: changeIdShortest,
@@ -672,6 +726,7 @@ export function parseJJLogJson(
       mine: entry.mine,
       conflict: entry.conflict,
       isEmpty: entry.empty,
+      ...(changedFiles ? { changedFiles } : {}),
     };
   });
 

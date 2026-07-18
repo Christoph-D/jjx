@@ -7,6 +7,7 @@ import {
   SHOW_TEMPLATE,
   STATUS_TEMPLATE,
   LOG_TEMPLATE,
+  buildLogTemplate,
   OPERATION_TEMPLATE,
   DIFF_STATS_TEMPLATE,
   BOOKMARK_TRACKING_INFO_TEMPLATE,
@@ -22,8 +23,9 @@ import {
   ProcessError,
 } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
+import { parseFileStatuses, type ParsedFileStatuses } from "./parseFileStatuses";
 import { logger } from "./logger";
-import { filepathToFileset, isWindows, pathEquals, normalizePath } from "./utils";
+import { filepathToFileset, isWindows, pathEquals } from "./utils";
 import {
   getDiffToolConfigs,
   expectDiffToolRequest,
@@ -46,6 +48,7 @@ import type {
   LogEntryRemoteRef,
   ParentRef,
   Operation,
+  DiffFileEntry,
 } from "./types";
 
 export type {
@@ -60,19 +63,7 @@ export type {
   LogEntryRemoteRef,
   ParentRef,
   Operation,
-};
-
-type DiffFileEntry = {
-  status_char: string;
-  source_path: string;
-  target_path: string;
-  is_conflict: boolean;
-};
-
-type ParsedFileStatuses = {
-  fileStatuses: FileStatus[];
-  fileStatusesByPath: Map<string, FileStatus>;
-  conflictedFiles: Set<string>;
+  DiffFileEntry,
 };
 
 export class JJRepository {
@@ -95,52 +86,7 @@ export class JJRepository {
   }
 
   private parseFileStatuses(diffFiles: DiffFileEntry[], conflictedPaths: string[] | undefined): ParsedFileStatuses {
-    const fileStatuses: FileStatus[] = [];
-    const fileStatusesByPath = new Map<string, FileStatus>();
-
-    for (const diffFile of diffFiles) {
-      const statusChar = diffFile.status_char as FileStatusType;
-      const targetPath = path.normalize(diffFile.target_path).replace(/\\/g, "/");
-      const sourcePath = path.normalize(diffFile.source_path).replace(/\\/g, "/");
-      const fullPath = path.join(this.repositoryRoot, targetPath);
-
-      let fileStatus: FileStatus;
-      if (statusChar === "R" || statusChar === "C") {
-        fileStatus = {
-          type: statusChar,
-          file: path.basename(targetPath),
-          path: fullPath,
-          renamedFrom: sourcePath,
-        };
-      } else {
-        fileStatus = {
-          type: statusChar,
-          file: path.basename(targetPath),
-          path: fullPath,
-        };
-      }
-      fileStatuses.push(fileStatus);
-      fileStatusesByPath.set(normalizePath(fullPath), fileStatus);
-    }
-
-    const conflictedFiles = new Set<string>();
-    for (const conflictedPath of conflictedPaths || []) {
-      const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
-      const fullPath = path.join(this.repositoryRoot, normalizedPath);
-      conflictedFiles.add(fullPath);
-
-      const normalizedFullPath = normalizePath(fullPath);
-      if (!fileStatusesByPath.has(normalizedFullPath)) {
-        fileStatuses.push({
-          type: "X",
-          file: path.basename(normalizedPath),
-          path: fullPath,
-        });
-        fileStatusesByPath.set(normalizedFullPath, fileStatuses[fileStatuses.length - 1]);
-      }
-    }
-
-    return { fileStatuses, fileStatusesByPath, conflictedFiles };
+    return parseFileStatuses(diffFiles, conflictedPaths, this.repositoryRoot);
   }
 
   private async retryWithImmutable<T>(
@@ -614,10 +560,9 @@ export class JJRepository {
     await jjExit;
   }
 
-  async log(rev: string, limit: number = 100): Promise<LogEntry[]> {
-    const output = (
-      await this.jjCommandRead(["log", "-r", rev, "-n", limit.toString(), "-T", LOG_TEMPLATE])
-    ).toString();
+  async log(rev: string, limit: number = 100, opts?: { includeFiles?: boolean }): Promise<LogEntry[]> {
+    const template = opts?.includeFiles ? buildLogTemplate({ includeFiles: true }) : LOG_TEMPLATE;
+    const output = (await this.jjCommandRead(["log", "-r", rev, "-n", limit.toString(), "-T", template])).toString();
 
     if (!output.trim()) {
       return [];
@@ -631,6 +576,17 @@ export class JJRepository {
       }
       entries.push(JSON.parse(line.slice(jsonStart)) as LogEntry);
     }
+
+    if (opts?.includeFiles) {
+      for (const entry of entries) {
+        entry.fileStatuses = parseFileStatuses(
+          entry.diff_files ?? [],
+          entry.conflicted_files ?? [],
+          this.repositoryRoot,
+        ).fileStatuses;
+      }
+    }
+
     return entries;
   }
 

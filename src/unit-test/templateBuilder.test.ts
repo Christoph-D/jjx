@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { generateTemplate, TemplateFields, LOG_TEMPLATE } from "../templateBuilder";
+import { generateTemplate, TemplateFields, LOG_TEMPLATE, buildLogTemplate } from "../templateBuilder";
 
 describe("TemplateBuilder Test Suite", () => {
   it("generateTemplate with string field", () => {
@@ -157,5 +157,32 @@ describe("TemplateBuilder Test Suite", () => {
     assert.ok(LOG_TEMPLATE.endsWith(`"}\\n"`));
     assert.ok(LOG_TEMPLATE.includes(`change_id`));
     assert.ok(LOG_TEMPLATE.includes(`description`));
+  });
+
+  it("buildLogTemplate() (no args) excludes diff_files and conflicted_files", () => {
+    const result = buildLogTemplate();
+    assert.ok(!result.includes("diff_files"));
+    assert.ok(!result.includes("conflicted_files"));
+    assert.ok(result.includes("change_id"));
+  });
+
+  it("buildLogTemplate() matches LOG_TEMPLATE const", () => {
+    assert.strictEqual(buildLogTemplate(), LOG_TEMPLATE);
+  });
+
+  it("buildLogTemplate({ includeFiles: true }) includes diff_files fragment", () => {
+    const result = buildLogTemplate({ includeFiles: true });
+    assert.ok(result.includes("diff_files"));
+    assert.ok(result.includes("entry.status_char()"));
+    assert.ok(result.includes("entry.source().path().display()"));
+    assert.ok(result.includes("entry.target().path().display()"));
+    assert.ok(result.includes("entry.target().conflict()"));
+  });
+
+  it("buildLogTemplate({ includeFiles: true }) includes conflicted_files fragment", () => {
+    const result = buildLogTemplate({ includeFiles: true });
+    assert.ok(result.includes("conflicted_files"));
+    assert.ok(result.includes("self.conflicted_files()"));
+    assert.ok(result.includes("f.path().display()"));
   });
 });

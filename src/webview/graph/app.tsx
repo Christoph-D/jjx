@@ -19,6 +19,7 @@ import {
   diffStatsCache,
   tooltip,
   showTooltips,
+  showChangedFiles,
   pillContextMenu,
   closeAllMenus,
 } from "./signals";
@@ -59,6 +60,7 @@ export function App() {
       changeDoubleClickAction.value = message.changeDoubleClickAction;
       graphStyle.value = message.graphStyle;
       showTooltips.value = message.showTooltips;
+      showChangedFiles.value = message.showChangedFiles;
       maxPrefixLength.value = message.maxPrefixLength;
       offsetWidth.value = message.offsetWidth;
       scrollY.value = message.preserveScroll ? window.scrollY : 0;

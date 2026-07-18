@@ -451,7 +451,8 @@ body {
   color: var(--vscode-errorForeground, #f48771);
 }
 
-.change-node.working-copy .text-content {
+.change-node.working-copy .text-content > div:first-child,
+.change-node.working-copy .text-content .description {
   font-weight: bold;
 }
 
@@ -558,6 +559,91 @@ body {
 
 .change-node.elided-node .text-content {
   height: 20px;
+}
+
+/* Show changed files mode */
+.showing-files .change-node:not(.elided-node) .text-content {
+  height: auto;
+  min-height: 42px;
+  overflow: visible;
+}
+
+.compact.showing-files .change-node:not(.elided-node) .text-content {
+  height: auto;
+  min-height: 20px;
+  overflow: visible;
+}
+
+.changed-files {
+  margin-top: 4px;
+  padding-left: 14px;
+  font-size: 0.85em;
+  line-height: 1.4;
+  user-select: none;
+  font-weight: normal;
+}
+
+.changed-file {
+  display: flex;
+  align-items: baseline;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.changed-file:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.change-node.selected .changed-file:hover {
+  background: transparent;
+}
+
+.changed-file:hover .changed-file-path {
+  text-decoration: underline;
+}
+
+.changed-file-status {
+  display: inline-block;
+  width: 1.2em;
+  font-weight: bold;
+  text-align: center;
+  margin-right: 6px;
+}
+
+.changed-file-a,
+.changed-file-c {
+  color: var(--vscode-jjDecoration-addedResourceForeground, var(--vscode-gitDecoration-addedResourceForeground));
+}
+
+.changed-file-m {
+  color: var(--vscode-jjDecoration-modifiedResourceForeground, var(--vscode-gitDecoration-modifiedResourceForeground));
+}
+
+.changed-file-d {
+  color: var(--vscode-jjDecoration-deletedResourceForeground, var(--vscode-gitDecoration-deletedResourceForeground));
+}
+
+.changed-file-r {
+  color: var(--vscode-jjDecoration-renamedResourceForeground, var(--vscode-gitDecoration-renamedResourceForeground));
+}
+
+.changed-file-x {
+  color: var(
+    --vscode-jjDecoration-conflictingResourceForeground,
+    var(--vscode-gitDecoration-conflictingResourceForeground)
+  );
+}
+
+.changed-file-path {
+  color: var(--vscode-foreground);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .node-circle .elided-symbol {

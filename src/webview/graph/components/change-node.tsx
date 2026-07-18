@@ -15,6 +15,7 @@ import {
   graphStyle,
   vscode,
   showTooltips,
+  showChangedFiles,
   dragBookmarkName,
   pillContextMenu,
   closeAllMenus,
@@ -324,6 +325,36 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
         )}
       </div>
       {style !== "compact" && <div class="description">{change.description}</div>}
+      {showChangedFiles.value && !change.elided && change.changedFiles && change.changedFiles.length > 0 && (
+        <ChangedFileList change={change} />
+      )}
+    </div>
+  );
+});
+
+const ChangedFileList = memo(function ChangedFileList({ change }: { change: ChangeNode }) {
+  return (
+    <div class="changed-files">
+      {change.changedFiles!.map((f) => (
+        <div
+          key={f.path}
+          title="Open diff"
+          class={`changed-file changed-file-${f.type.toLowerCase()}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            vscode.postMessage({
+              command: "openFileDiff",
+              changeId: change.changeId,
+              path: f.path,
+              status: f.type,
+              ...(f.renamedFrom ? { renamedFrom: f.renamedFrom } : {}),
+            });
+          }}
+        >
+          <span class="changed-file-status">{f.type}</span>
+          <span class="changed-file-path">{f.path}</span>
+        </div>
+      ))}
     </div>
   );
 });

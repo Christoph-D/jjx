@@ -1,3 +1,5 @@
+import type { FileStatusType } from "./types";
+
 export interface LogEntryLocalRef {
   name: string;
   synced: boolean;
@@ -8,6 +10,13 @@ export interface LogEntryLocalRef {
 export interface LogEntryRemoteRef {
   name: string;
   remote: string;
+}
+
+export interface ChangedFile {
+  type: FileStatusType;
+  path: string;
+  renamedFrom?: string;
+  conflict: boolean;
 }
 
 export interface ChangeNode {
@@ -34,6 +43,7 @@ export interface ChangeNode {
   conflict: boolean;
   isEmpty: boolean;
   elided?: number;
+  changedFiles?: ChangedFile[];
 }
 
 export interface LaneNode {
@@ -98,6 +108,13 @@ export type WebviewToExtensionMessage =
   | { command: "revertAfter"; changeId: string; targetChangeId: string }
   | { command: "revertBefore"; changeId: string; targetChangeId: string }
   | { command: "copyUrl"; changeId: string }
+  | {
+      command: "openFileDiff";
+      changeId: string;
+      path: string;
+      status: FileStatusType;
+      renamedFrom?: string;
+    }
   | { command: "updateStale" }
   | { command: "reportError"; message: string; stack?: string };
 
@@ -112,6 +129,7 @@ export type ExtensionToWebviewMessage =
       offsetWidth: number;
       preserveScroll: boolean;
       showTooltips: boolean;
+      showChangedFiles: boolean;
     }
   | { command: "showStaleState" }
   | { command: "showJJNotFoundState" }

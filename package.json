@@ -770,6 +770,12 @@
           "default": true,
           "description": "Automatically run 'jj workspace update-stale' when the working copy is stale",
           "scope": "resource"
+        },
+        "jjx.showChangedFiles": {
+          "type": "boolean",
+          "default": false,
+          "description": "⚠️ Experimental: Show changed files for each commit in the graph (similar to `jj log -s`). Clicking a file opens a diff at that revision.",
+          "scope": "resource"
         }
       }
     },

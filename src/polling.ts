@@ -170,7 +170,8 @@ export function createPolling(
         e.affectsConfiguration("jjx.logLimit") ||
         e.affectsConfiguration("jjx.elideImmutableCommits") ||
         e.affectsConfiguration("jjx.elidedVisibleImmutableParents") ||
-        e.affectsConfiguration("jjx.showTooltips")
+        e.affectsConfiguration("jjx.showTooltips") ||
+        e.affectsConfiguration("jjx.showChangedFiles")
       ) {
         if (state.graphWebview) {
           if (e.affectsConfiguration("jjx.elideImmutableCommits")) {

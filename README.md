@@ -32,6 +32,8 @@ system.
 - Select a change to see its affected files and diffs
 - Create merge changes with shift-select and then pressing the "+" button
 - Drag & drop changes onto other changes
+- Optionally show each commit's changed files inline in the graph (like `jj log -s`), with one-click diff opening (⚠️
+  experimental, enable with `jjx.showChangedFiles`)
 
 ### 🖱️ Context menu
 
@@ -142,6 +144,7 @@ The following settings can be configured in VS Code's settings:
 | `jjx.jjPath`                        | `""`        | Path to the jj executable. If not set, your PATH and common locations will be searched                                                                 |
 | `jjx.logLimit`                      | `500`       | Maximum number of commits shown in the graph view                                                                                                      |
 | `jjx.pollIntervalSeconds`           | `30`        | Interval in seconds between repository polls. Set to 0 to disable                                                                                      |
+| `jjx.showChangedFiles`              | `false`     | ⚠️ Experimental: Show changed files for each commit in the graph (similar to `jj log -s`). Clicking a file opens a diff at that revision               |
 | `jjx.showTooltips`                  | `true`      | Show tooltips when hovering over commits in the graph view                                                                                             |
 
 ## 🐛 Known issues
