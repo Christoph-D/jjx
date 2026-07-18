@@ -4,6 +4,7 @@ test("shows diff when clicking modified files", async ({ graphFrame, testRepo, w
   await testRepo.writeFile("deleted-first.txt", "Deleted first");
   await testRepo.writeFile("deleted-second.txt", "Deleted second");
   await testRepo.writeFile("moved.txt", "Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n");
+  await testRepo.writeFile("subdir/nested.txt", "Original content\nLine 2\n");
   await testRepo.commitFile("test.txt", "A", "Initial commit");
 
   await testRepo.writeFile("added-first.txt", "Added first");
@@ -15,10 +16,11 @@ test("shows diff when clicking modified files", async ({ graphFrame, testRepo, w
   await testRepo.writeFile("added-second.txt", "Added second");
   await testRepo.deleteFile("deleted-second.txt");
   await testRepo.writeFile("test.txt", "C");
+  await testRepo.writeFile("subdir/nested.txt", "Modified content\nLine 2\n");
 
   await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
 
-  const scmView = await waitForSCMView(workbox, ["test.txt"], ["test.txt"]);
+  const scmView = await waitForSCMView(workbox, ["test.txt", "nested.txt"], ["test.txt"]);
 
   const testFiles = scmView.getByRole("treeitem", { name: /test\.txt/ });
   await expect(testFiles).toHaveCount(2);
@@ -75,4 +77,10 @@ test("shows diff when clicking modified files", async ({ graphFrame, testRepo, w
   await expect(addedSecondItems).toHaveCount(1);
   await addedSecondItems.first().click();
   await validateDiff("", "Added second");
+
+  // Test path separators with a file in a subdirectory
+  const nestedFile = scmView.getByRole("treeitem", { name: /nested\.txt/ });
+  await expect(nestedFile).toHaveCount(1);
+  await nestedFile.first().click();
+  await validateDiff("Original content", "Modified content");
 });
