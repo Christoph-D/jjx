@@ -1,4 +1,12 @@
-import { test as base, type Page, type Frame, _electron, expect as pwExpect, Locator } from "@playwright/test";
+import {
+  test as base,
+  type Page,
+  type Frame,
+  type TestInfo,
+  _electron,
+  expect as pwExpect,
+  Locator,
+} from "@playwright/test";
 import { getVscodePath } from "../globalSetup";
 import { expect } from "@playwright/test";
 export { expect };
@@ -176,7 +184,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(userDataDir);
   },
 
-  workbox: async ({ cachePath, vscodePath, testRepo, userDataDir, xvfbDisplay }, use) => {
+  workbox: async ({ cachePath, vscodePath, testRepo, userDataDir, xvfbDisplay }, use, testInfo) => {
     const extensionPath = path.resolve(__dirname, "..", "..");
 
     const electronApp = await _electron.launch({
@@ -190,6 +198,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "--skip-release-notes",
         "--disable-workspace-trust",
         ...(process.platform === "win32" || process.platform === "darwin" ? ["--window-size=1920,1080"] : []),
+        "--log=trace",
         `--extensionDevelopmentPath=${extensionPath}`,
         `--extensions-dir=${path.join(cachePath, "extensions")}`,
         `--user-data-dir=${userDataDir}`,
@@ -204,6 +213,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     }
     await use(workbox);
     await electronApp.close();
+
+    if (testInfo.status !== "passed") {
+      await dumpExtensionLogs(userDataDir, testInfo);
+    }
   },
 
   scmView: async ({ workbox }, use) => {
@@ -359,4 +372,101 @@ async function increaseJJVisibleSize(workbox: Page) {
     await workbox.mouse.move(sashCenterX, sashCenterY - 300);
     await workbox.mouse.up();
   }
+}
+
+async function readLogFile(filePath: string): Promise<string | null> {
+  try {
+    return await fs.promises.readFile(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+// Finds the newest subdirectory of `dir`, returns absolute path or null.
+async function newestSubdir(dir: string): Promise<string | null> {
+  let entries: string[];
+  try {
+    entries = await fs.promises.readdir(dir);
+  } catch {
+    return null;
+  }
+  let newest: { name: string; mtime: number } | null = null;
+  for (const name of entries) {
+    const full = path.join(dir, name);
+    try {
+      const stat = await fs.promises.stat(full);
+      if (stat.isDirectory() && (!newest || stat.mtimeMs > newest.mtime)) {
+        newest = { name, mtime: stat.mtimeMs };
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return newest ? path.join(dir, newest.name) : null;
+}
+
+// Recursively collects all .log files under `root`.
+async function collectLogFiles(root: string): Promise<string[]> {
+  const stack = [root];
+  const results: string[] = [];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    let entries: fs.Dirent[];
+    try {
+      entries = await fs.promises.readdir(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+      } else if (entry.isFile() && entry.name.endsWith(".log")) {
+        results.push(full);
+      }
+    }
+  }
+  return results;
+}
+
+// Returns true if a log file (by path relative to the session dir) is the
+// "Jujutsu X" extension's output channel log.
+function isJujutsuXChannelLog(relPath: string): boolean {
+  const normalized = relPath.split(path.sep).join("/");
+  return /jjx\.jjx\//.test(normalized) || /Jujutsu X/i.test(normalized);
+}
+
+// Reads VS Code's on-disk "Jujutsu X" output channel log and surfaces it after a
+// failing test. VS Code writes the channel to
+// `<userDataDir>/logs/<session>/window*/exthost/jjx.jjx/Jujutsu X.log`. VS Code
+// is launched with `--log=trace`, so logger.trace()/debug() lines are captured.
+async function dumpExtensionLogs(userDataDir: string, testInfo: TestInfo): Promise<void> {
+  const logsRoot = path.join(userDataDir, "logs");
+  const sessionDir = await newestSubdir(logsRoot);
+  if (!sessionDir) {
+    return;
+  }
+
+  const channelLogs = (await collectLogFiles(sessionDir))
+    .filter((f) => isJujutsuXChannelLog(path.relative(sessionDir, f)))
+    .sort();
+  if (channelLogs.length === 0) {
+    return;
+  }
+
+  const sections: string[] = [];
+  sections.push(
+    `\n========== Jujutsu X output channel logs (test: ${testInfo.title}, status: ${testInfo.status}) ==========`,
+  );
+
+  for (const file of channelLogs) {
+    const content = await readLogFile(file);
+    if (content && content.trim().length > 0) {
+      sections.push(`----- ${path.relative(sessionDir, file)} -----\n${content.trimEnd()}`);
+    }
+  }
+
+  const combined = sections.join("\n\n");
+  console.log(combined);
+  await testInfo.attach("jjx-output-channel", { body: combined, contentType: "text/plain" });
 }
