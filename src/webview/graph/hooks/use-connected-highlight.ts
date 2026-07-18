@@ -1,30 +1,23 @@
 import { isDragging } from "../signals";
-import changeNodeStyles from "../components/change-node.module.css";
 import nodeCircleStyles from "../components/node-circle.module.css";
 import connectionLineStyles from "../components/connection-lines.module.css";
 
 interface GraphElementCache {
-  nodeByChangeId: Map<string, HTMLElement>;
   childrenOf: Map<string, string[]>;
   nodeCircleByChangeId: Map<string, HTMLElement>;
   connectionLines: HTMLElement[];
-  allNodes: HTMLElement[];
   allCircles: HTMLElement[];
 }
 
 let cache: GraphElementCache | null = null;
 
 function buildCache(): GraphElementCache {
-  const nodeByChangeId = new Map<string, HTMLElement>();
   const childrenOf = new Map<string, string[]>();
-  const allNodes: HTMLElement[] = [];
 
   const nodes = Array.from(document.querySelectorAll(`#nodes > [data-change-id]`));
   for (const node of nodes) {
     const el = node as HTMLElement;
     const changeId = el.dataset.changeId!;
-    nodeByChangeId.set(changeId, el);
-    allNodes.push(el);
     const parentIds: string[] = JSON.parse(el.dataset.parentIds || "[]") as string[];
     for (const parentId of parentIds) {
       let children = childrenOf.get(parentId);
@@ -47,7 +40,7 @@ function buildCache(): GraphElementCache {
 
   const connectionLines = Array.from(document.querySelectorAll(`#connection-lines path`)) as HTMLElement[];
 
-  return { nodeByChangeId, childrenOf, nodeCircleByChangeId, connectionLines, allNodes, allCircles };
+  return { childrenOf, nodeCircleByChangeId, connectionLines, allCircles };
 }
 
 export function invalidateHighlightCache() {
@@ -72,41 +65,16 @@ function highlightConnectedNodes(nodeId: string, parentIds: string[], highlight:
   if (!cache) {
     cache = buildCache();
   }
-  const { nodeByChangeId, childrenOf, nodeCircleByChangeId, connectionLines, allNodes, allCircles } = cache;
+  const { childrenOf, nodeCircleByChangeId, connectionLines, allCircles } = cache;
 
   if (highlight) {
     const childIds = childrenOf.get(nodeId) ?? [];
 
-    for (const node of allNodes) {
-      node.classList.add(changeNodeStyles.dimmed);
-    }
     for (const circle of allCircles) {
       circle.classList.add(nodeCircleStyles.dimmed);
     }
     for (const line of connectionLines) {
       line.classList.add(connectionLineStyles.dimmed);
-    }
-
-    const selfNode = nodeByChangeId.get(nodeId);
-    if (selfNode) {
-      selfNode.classList.remove(changeNodeStyles.dimmed);
-      selfNode.classList.add(changeNodeStyles.highlighted);
-    }
-
-    for (const parentId of parentIds) {
-      const parentNode = nodeByChangeId.get(parentId);
-      if (parentNode) {
-        parentNode.classList.remove(changeNodeStyles.dimmed);
-        parentNode.classList.add(changeNodeStyles.highlighted);
-      }
-    }
-
-    for (const childId of childIds) {
-      const childNode = nodeByChangeId.get(childId);
-      if (childNode) {
-        childNode.classList.remove(changeNodeStyles.dimmed);
-        childNode.classList.add(changeNodeStyles.highlighted);
-      }
     }
 
     const connectedIds = new Set([nodeId, ...parentIds, ...childIds]);
@@ -121,18 +89,14 @@ function highlightConnectedNodes(nodeId: string, parentIds: string[], highlight:
       const toId = line.dataset.toId!;
       if ((fromId === nodeId && connectedIds.has(toId)) || (toId === nodeId && connectedIds.has(fromId))) {
         line.classList.remove(connectionLineStyles.dimmed);
-        line.classList.add(connectionLineStyles.highlighted);
       }
     }
   } else {
-    for (const node of allNodes) {
-      node.classList.remove(changeNodeStyles.dimmed, changeNodeStyles.highlighted);
-    }
     for (const circle of allCircles) {
       circle.classList.remove(nodeCircleStyles.dimmed);
     }
     for (const line of connectionLines) {
-      line.classList.remove(connectionLineStyles.highlighted, connectionLineStyles.dimmed);
+      line.classList.remove(connectionLineStyles.dimmed);
     }
   }
 }

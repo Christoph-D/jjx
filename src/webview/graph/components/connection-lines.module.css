@@ -8,6 +8,3 @@
 .connectionLine.dimmed {
   opacity: var(--dimmed-opacity);
 }
-
-.highlighted {
-}
