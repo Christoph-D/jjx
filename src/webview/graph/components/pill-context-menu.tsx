@@ -1,6 +1,7 @@
 import { useRef } from "preact/hooks";
 import { pillContextMenu, vscode } from "../signals";
 import { useMenuPosition } from "./menu-container";
+import styles from "./context-menu.module.css";
 
 export function PillContextMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -28,7 +29,7 @@ export function PillContextMenu() {
   return (
     <div
       id="pill-context-menu"
-      class="context-menu"
+      class={styles.contextMenu}
       ref={menuRef}
       style="display: none"
       onClick={(e) => e.stopPropagation()}
@@ -37,7 +38,7 @@ export function PillContextMenu() {
         state.remotes!.map((remote) => (
           <div
             key={`push-${remote}`}
-            class="context-menu-item"
+            class={styles.contextMenuItem}
             data-action="pushTag"
             onClick={() => {
               vscode.postMessage({ command: "pushTagToRemote", tag: state.name, remote });
@@ -51,7 +52,7 @@ export function PillContextMenu() {
         state.unsyncedRemotes!.map((remote) => (
           <div
             key={`push-${remote}`}
-            class="context-menu-item"
+            class={styles.contextMenuItem}
             data-action="pushBookmark"
             onClick={() => {
               vscode.postMessage({ command: "pushBookmarkToRemote", bookmark: state.name, remote });
@@ -61,12 +62,12 @@ export function PillContextMenu() {
             Push to {remote}
           </div>
         ))}
-      {showPush && needTopDivider && <div class="context-menu-separator"></div>}
+      {showPush && needTopDivider && <div class={styles.contextMenuSeparator}></div>}
       {showTrack &&
         state.untrackedRemotes!.map((remote) => (
           <div
             key={`track-${remote}`}
-            class="context-menu-item"
+            class={styles.contextMenuItem}
             data-action="trackBookmark"
             onClick={() => {
               vscode.postMessage({ command: "trackBookmark", bookmark: state.name, remote });
@@ -76,12 +77,12 @@ export function PillContextMenu() {
             Track on {remote}
           </div>
         ))}
-      {showTrack && needMiddleDivider && <div class="context-menu-separator"></div>}
+      {showTrack && needMiddleDivider && <div class={styles.contextMenuSeparator}></div>}
       {showUntrack &&
         state.remotes!.map((remote) => (
           <div
             key={`untrack-${remote}`}
-            class="context-menu-item"
+            class={styles.contextMenuItem}
             data-action="untrackBookmark"
             onClick={() => {
               vscode.postMessage({ command: "untrackBookmark", bookmark: state.name, remote });
@@ -91,9 +92,9 @@ export function PillContextMenu() {
             Untrack from {remote}
           </div>
         ))}
-      {needBottomDivider && <div class="context-menu-separator"></div>}
+      {needBottomDivider && <div class={styles.contextMenuSeparator}></div>}
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="deleteRef"
         onClick={() => {
           vscode.postMessage({ command: deleteCommand, ...deletePayload });

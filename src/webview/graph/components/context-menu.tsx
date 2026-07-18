@@ -1,6 +1,7 @@
 import { useRef } from "preact/hooks";
 import { contextMenu, selectedNodes, vscode } from "../signals";
 import { useMenuPosition } from "./menu-container";
+import styles from "./context-menu.module.css";
 
 export function ContextMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -17,7 +18,7 @@ export function ContextMenu() {
   return (
     <div
       id="context-menu"
-      class="context-menu"
+      class={styles.contextMenu}
       ref={menuRef}
       style="display: none"
       onClick={(e) => e.stopPropagation()}
@@ -26,7 +27,7 @@ export function ContextMenu() {
     >
       {!change.currentWorkingCopy && (
         <div
-          class="context-menu-item"
+          class={styles.contextMenuItem}
           data-action="edit"
           title={
             state.changeDoubleClickAction === "new" ? "Create and Edit a New Empty Change on Top" : "Edit This Change"
@@ -40,7 +41,7 @@ export function ContextMenu() {
         </div>
       )}
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="newChild"
         title="Create a New Child Change"
         onClick={() => {
@@ -50,9 +51,9 @@ export function ContextMenu() {
       >
         New Child
       </div>
-      <div class="context-menu-separator"></div>
+      <div class={styles.contextMenuSeparator}></div>
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="describe"
         onClick={() => {
           vscode.postMessage({ command: "describeChange", changeId: change.changeId });
@@ -61,9 +62,9 @@ export function ContextMenu() {
       >
         Describe...
       </div>
-      <div class="context-menu-separator"></div>
+      <div class={styles.contextMenuSeparator}></div>
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="createBookmark"
         onClick={() => {
           vscode.postMessage({ command: "createBookmark", targetChangeId: change.changeId });
@@ -73,7 +74,7 @@ export function ContextMenu() {
         Create Bookmark...
       </div>
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="createTag"
         onClick={() => {
           vscode.postMessage({ command: "createTag", targetChangeId: change.changeId });
@@ -82,9 +83,9 @@ export function ContextMenu() {
       >
         Create Tag...
       </div>
-      <div class="context-menu-separator"></div>
+      <div class={styles.contextMenuSeparator}></div>
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="copyUrl"
         onClick={() => {
           vscode.postMessage({ command: "copyUrl", changeId: change.changeId });
@@ -94,7 +95,7 @@ export function ContextMenu() {
         Copy URL
       </div>
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="copyId"
         onClick={() => {
           navigator.clipboard.writeText(change.changeId);
@@ -103,9 +104,9 @@ export function ContextMenu() {
       >
         Copy Change ID
       </div>
-      <div class="context-menu-separator"></div>
+      <div class={styles.contextMenuSeparator}></div>
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="absorb"
         onClick={() => {
           vscode.postMessage({ command: "absorbChange", changeId: change.changeId });
@@ -115,7 +116,7 @@ export function ContextMenu() {
         Absorb Into Parents
       </div>
       <div
-        class="context-menu-item"
+        class={styles.contextMenuItem}
         data-action="abandon"
         onClick={() => {
           vscode.postMessage({ command: "abandonChange", changeId: change.changeId, immutable: isImmutable });
@@ -126,7 +127,7 @@ export function ContextMenu() {
       </div>
       {selectedNodes.value.size > 1 && selectedNodes.value.has(change.changeId) && (
         <div
-          class="context-menu-item"
+          class={styles.contextMenuItem}
           data-action="abandonSelected"
           onClick={() => {
             vscode.postMessage({ command: "abandonChanges", changeIds: Array.from(selectedNodes.value) });

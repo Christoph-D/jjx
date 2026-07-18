@@ -1,4 +1,7 @@
 import { isDragging } from "../signals";
+import changeNodeStyles from "../components/change-node.module.css";
+import nodeCircleStyles from "../components/node-circle.module.css";
+import connectionLineStyles from "../components/connection-lines.module.css";
 
 interface GraphElementCache {
   nodeByChangeId: Map<string, HTMLElement>;
@@ -16,7 +19,7 @@ function buildCache(): GraphElementCache {
   const childrenOf = new Map<string, string[]>();
   const allNodes: HTMLElement[] = [];
 
-  const nodes = Array.from(document.querySelectorAll(".change-node"));
+  const nodes = Array.from(document.querySelectorAll(`.${changeNodeStyles.changeNode}`));
   for (const node of nodes) {
     const el = node as HTMLElement;
     const changeId = el.dataset.changeId!;
@@ -35,14 +38,16 @@ function buildCache(): GraphElementCache {
 
   const nodeCircleByChangeId = new Map<string, HTMLElement>();
   const allCircles: HTMLElement[] = [];
-  const circles = Array.from(document.querySelectorAll("#node-circles .node-circle"));
+  const circles = Array.from(document.querySelectorAll(`#node-circles .${nodeCircleStyles.nodeCircle}`));
   for (const circle of circles) {
     const el = circle as HTMLElement;
     nodeCircleByChangeId.set(el.dataset.changeId!, el);
     allCircles.push(el);
   }
 
-  const connectionLines = Array.from(document.querySelectorAll(".connection-line")) as HTMLElement[];
+  const connectionLines = Array.from(
+    document.querySelectorAll(`.${connectionLineStyles.connectionLine}`),
+  ) as HTMLElement[];
 
   return { nodeByChangeId, childrenOf, nodeCircleByChangeId, connectionLines, allNodes, allCircles };
 }
@@ -75,41 +80,41 @@ function highlightConnectedNodes(nodeId: string, parentIds: string[], highlight:
     const childIds = childrenOf.get(nodeId) ?? [];
 
     for (const node of allNodes) {
-      node.classList.add("dimmed");
+      node.classList.add(changeNodeStyles.dimmed);
     }
     for (const circle of allCircles) {
-      circle.classList.add("dimmed");
+      circle.classList.add(nodeCircleStyles.dimmed);
     }
     for (const line of connectionLines) {
-      line.classList.add("dimmed");
+      line.classList.add(connectionLineStyles.dimmed);
     }
 
     const selfNode = nodeByChangeId.get(nodeId);
     if (selfNode) {
-      selfNode.classList.remove("dimmed");
-      selfNode.classList.add("highlighted");
+      selfNode.classList.remove(changeNodeStyles.dimmed);
+      selfNode.classList.add(changeNodeStyles.highlighted);
     }
 
     for (const parentId of parentIds) {
       const parentNode = nodeByChangeId.get(parentId);
       if (parentNode) {
-        parentNode.classList.remove("dimmed");
-        parentNode.classList.add("highlighted");
+        parentNode.classList.remove(changeNodeStyles.dimmed);
+        parentNode.classList.add(changeNodeStyles.highlighted);
       }
     }
 
     for (const childId of childIds) {
       const childNode = nodeByChangeId.get(childId);
       if (childNode) {
-        childNode.classList.remove("dimmed");
-        childNode.classList.add("highlighted");
+        childNode.classList.remove(changeNodeStyles.dimmed);
+        childNode.classList.add(changeNodeStyles.highlighted);
       }
     }
 
     const connectedIds = new Set([nodeId, ...parentIds, ...childIds]);
     for (const [changeId, circle] of nodeCircleByChangeId) {
       if (connectedIds.has(changeId)) {
-        circle.classList.remove("dimmed");
+        circle.classList.remove(nodeCircleStyles.dimmed);
       }
     }
 
@@ -117,19 +122,19 @@ function highlightConnectedNodes(nodeId: string, parentIds: string[], highlight:
       const fromId = line.dataset.fromId!;
       const toId = line.dataset.toId!;
       if ((fromId === nodeId && connectedIds.has(toId)) || (toId === nodeId && connectedIds.has(fromId))) {
-        line.classList.remove("dimmed");
-        line.classList.add("highlighted");
+        line.classList.remove(connectionLineStyles.dimmed);
+        line.classList.add(connectionLineStyles.highlighted);
       }
     }
   } else {
     for (const node of allNodes) {
-      node.classList.remove("dimmed", "highlighted");
+      node.classList.remove(changeNodeStyles.dimmed, changeNodeStyles.highlighted);
     }
     for (const circle of allCircles) {
-      circle.classList.remove("dimmed");
+      circle.classList.remove(nodeCircleStyles.dimmed);
     }
     for (const line of connectionLines) {
-      line.classList.remove("highlighted", "dimmed");
+      line.classList.remove(connectionLineStyles.highlighted, connectionLineStyles.dimmed);
     }
   }
 }

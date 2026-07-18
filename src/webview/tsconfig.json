@@ -9,7 +9,9 @@
     "skipLibCheck": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "preact"
+    "jsxImportSource": "preact",
+    "rootDirs": ["./graph", "./graph/.generated"],
+    "plugins": [{ "name": "typescript-plugin-css-modules" }]
   },
   "include": ["graph/**/*", "../graph-protocol.ts"],
   "exclude": ["node_modules", "dist"]

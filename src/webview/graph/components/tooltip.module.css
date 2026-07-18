@@ -1,0 +1,92 @@
+.tooltip {
+  display: none;
+  position: absolute;
+  background-color: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+  max-width: none;
+  padding: 8px 12px;
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-editor-foreground);
+  pointer-events: auto;
+}
+
+.tooltipHeader {
+  margin-bottom: 4px;
+}
+
+.tooltipAuthor {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.tooltipEmail {
+  opacity: 0.7;
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+.tooltipTimestamp {
+  font-size: 0.9em;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.tooltipPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-bottom: 6px;
+}
+
+.tooltipPill {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  color: var(--pill-foreground);
+  white-space: nowrap;
+}
+
+.tooltipBookmarkPill {
+  background-color: var(--bookmark-pill-bg);
+}
+
+.tooltipTagPill {
+  background-color: var(--tag-pill-bg);
+}
+
+.tooltipBookmarkPill.unsynced::after,
+.tooltipTagPill.unsynced::after {
+  content: "*";
+}
+
+.tooltipBookmarkPill.conflicted::after,
+.tooltipTagPill.conflicted::after {
+  content: "??";
+}
+
+.tooltipSummary {
+  font-size: 0.9em;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+
+.tooltipAdded {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #89d185);
+}
+
+.tooltipRemoved {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+}
+
+.tooltipDescription {
+  font-size: 0.9em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}

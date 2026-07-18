@@ -10,7 +10,8 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "bundler",
-    "skipLibCheck": true /* Needed to avoid error in lru-cache v10 https://github.com/isaacs/node-lru-cache/issues/354 */
+    "skipLibCheck": true /* Needed to avoid error in lru-cache v10 https://github.com/isaacs/node-lru-cache/issues/354 */,
+    "plugins": [{ "name": "typescript-plugin-css-modules" }]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "src/webview/graph"]

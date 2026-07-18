@@ -8,7 +8,8 @@
             "dependsOn": [
                 "pnpm: watch:tsc",
                 "pnpm: watch:tsc:webview",
-                "pnpm: watch:esbuild"
+                "pnpm: watch:esbuild",
+                "pnpm: watch:css-types"
             ],
             "presentation": {
                 "reveal": "never"
@@ -54,6 +55,16 @@
                 "reveal": "never"
             }
         },
-
+        {
+            "type": "npm",
+            "script": "watch:css-types",
+            "group": "build",
+            "isBackground": true,
+            "label": "pnpm: watch:css-types",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        },
 	]
 }

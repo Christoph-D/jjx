@@ -925,7 +925,9 @@
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "watch:tsc:webview": "tsc --noEmit --watch --project src/webview/tsconfig.json",
-    "check-types": "tsc --noEmit && tsc --noEmit --project src/webview/tsconfig.json && tsc --noEmit --project tests-integration/tsconfig.json",
+    "watch:css-types": "tcm -w -s -p '**/*.module.css' -o src/webview/graph/.generated src/webview/graph",
+    "gen-css-types": "tcm -s -p '**/*.module.css' -o src/webview/graph/.generated src/webview/graph",
+    "check-types": "pnpm run gen-css-types && tsc --noEmit && tsc --noEmit --project src/webview/tsconfig.json && tsc --noEmit --project tests-integration/tsconfig.json",
     "lint": "eslint esbuild.js src tests-integration/*.ts tests-integration/tests",
     "format": "prettier --write . | { grep -v '(unchanged)$'; true; }",
     "format:check": "prettier --check --log-level warn .",
@@ -953,8 +955,10 @@
     "npm-run-all2": "^9.0.2",
     "prettier": "^3.9.5",
     "tsx": "^4.23.1",
+    "typed-css-modules": "^0.9.1",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.64.0"
+    "typescript-eslint": "^8.64.0",
+    "typescript-plugin-css-modules": "^5.2.0"
   },
   "dependencies": {
     "@preact/signals": "^2.9.4",

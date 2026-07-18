@@ -1,0 +1,75 @@
+.nodeCircle {
+  min-width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.nodeCircle circle {
+  fill: var(--lane-color, var(--vscode-charts-blue));
+  stroke: var(--lane-color, var(--vscode-charts-blue));
+  transition: opacity 0.2s ease-in-out;
+}
+
+.nodeCircle .diamondPath {
+  fill: var(--lane-color, var(--vscode-charts-blue));
+  transition: opacity 0.2s ease-in-out;
+}
+
+.nodeCircle .workingCopy {
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 120%;
+  fill: currentColor;
+}
+
+.nodeCircle .bgMatch {
+  fill: var(--vscode-sideBar-background);
+}
+
+.nodeCircle.selected .bgMatch {
+  fill: var(--vscode-list-activeSelectionBackground);
+}
+
+.nodeCircle.hovered .bgMatch {
+  fill: var(--vscode-list-hoverBackground);
+}
+
+.nodeCircle .circleBg {
+  fill: var(--vscode-sideBar-background);
+  opacity: 1 !important;
+  transition: none;
+  stroke: var(--vscode-sideBar-background);
+}
+
+.nodeCircle .noStroke {
+  stroke-width: 0;
+}
+
+.nodeCircle .thinStroke {
+  stroke-width: 1.5;
+}
+
+.nodeCircle .elidedSymbol {
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 150%;
+  font-weight: bold;
+  fill: var(--lane-color, var(--vscode-charts-blue));
+  transition: opacity 0.2s ease-in-out;
+}
+
+.nodeCircle.dimmed circle {
+  opacity: var(--dimmed-opacity);
+}
+
+.nodeCircle.highlighted circle {
+  opacity: 1;
+}
+
+.nodeCircle.dimmed .diamondPath {
+  opacity: var(--dimmed-opacity);
+}
+
+.nodeCircle.dimmed .elidedSymbol {
+  opacity: var(--dimmed-opacity);
+}

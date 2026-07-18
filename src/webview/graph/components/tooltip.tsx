@@ -2,6 +2,8 @@ import { useEffect, useRef, useCallback } from "preact/hooks";
 import { tooltip, diffStatsCache } from "../signals";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import { CHANGE_ID_RIGHT_PADDING } from "../types";
+import changeNodeStyles from "./change-node.module.css";
+import styles from "./tooltip.module.css";
 
 export function Tooltip() {
   const ref = useRef<HTMLDivElement>(null);
@@ -43,7 +45,7 @@ export function Tooltip() {
       const offset = 15;
 
       const changeIdEl = document.querySelector(
-        `.change-node[data-change-id="${state.change.changeId}"] .change-id-left`,
+        `.${changeNodeStyles.changeNode}[data-change-id="${state.change.changeId}"] .${changeNodeStyles.changeIdLeft}`,
       );
       const minLeft = changeIdEl ? changeIdEl.getBoundingClientRect().right + CHANGE_ID_RIGHT_PADDING : 10;
 
@@ -73,7 +75,7 @@ export function Tooltip() {
     return (
       <div
         id="tooltip"
-        class="tooltip"
+        class={styles.tooltip}
         ref={ref}
         style="display: none"
         onMouseEnter={handleMouseEnter}
@@ -88,19 +90,19 @@ export function Tooltip() {
   return (
     <div
       id="tooltip"
-      class="tooltip"
+      class={styles.tooltip}
       ref={ref}
       style="display: none"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {(change.authorName || change.authorEmail || change.authorTimestamp) && (
-        <div class="tooltip-header">
-          {change.authorName && <div class="tooltip-author">{change.authorName}</div>}
-          {change.authorEmail && <div class="tooltip-email">{change.authorEmail}</div>}
+        <div class={styles.tooltipHeader}>
+          {change.authorName && <div class={styles.tooltipAuthor}>{change.authorName}</div>}
+          {change.authorEmail && <div class={styles.tooltipEmail}>{change.authorEmail}</div>}
         </div>
       )}
-      {change.authorTimestamp && <div class="tooltip-timestamp">{change.authorTimestamp}</div>}
+      {change.authorTimestamp && <div class={styles.tooltipTimestamp}>{change.authorTimestamp}</div>}
       {(() => {
         const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
         const localTagNames = new Set(change.localTags.map((t) => t.name));
@@ -112,32 +114,32 @@ export function Tooltip() {
           filteredRemoteBookmarks.length > 0 ||
           change.localTags.length > 0 ||
           filteredRemoteTags.length > 0 ? (
-          <div class="tooltip-pills">
+          <div class={styles.tooltipPills}>
             {change.localBookmarks.map((b) => (
               <span
                 key={b.name}
                 class={
-                  "tooltip-pill tooltip-bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")
+                  styles.tooltipBookmarkPill + " " + (b.conflict ? styles.conflicted : b.synced ? "" : styles.unsynced)
                 }
               >
                 {b.name}
               </span>
             ))}
             {filteredRemoteBookmarks.map((b) => (
-              <span key={b.name + "@" + b.remote} class="tooltip-pill tooltip-bookmark-pill">
+              <span key={b.name + "@" + b.remote} class={styles.tooltipBookmarkPill}>
                 {b.name}@{b.remote}
               </span>
             ))}
             {change.localTags.map((t) => (
               <span
                 key={t.name}
-                class={"tooltip-pill tooltip-tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
+                class={styles.tooltipTagPill + " " + (t.conflict ? styles.conflicted : t.synced ? "" : styles.unsynced)}
               >
                 {t.name}
               </span>
             ))}
             {filteredRemoteTags.map((t) => (
-              <span key={t.name + "@" + t.remote} class="tooltip-pill tooltip-tag-pill">
+              <span key={t.name + "@" + t.remote} class={styles.tooltipTagPill}>
                 {t.name}@{t.remote}
               </span>
             ))}
@@ -145,15 +147,15 @@ export function Tooltip() {
         ) : null;
       })()}
       {stats ? (
-        <div class="tooltip-summary">
+        <div class={styles.tooltipSummary}>
           {stats.filesChanged} file{stats.filesChanged !== 1 ? "s" : ""} changed,{" "}
-          <span class="tooltip-added">+{stats.linesAdded}</span>{" "}
-          <span class="tooltip-removed">-{stats.linesRemoved}</span>
+          <span class={styles.tooltipAdded}>+{stats.linesAdded}</span>{" "}
+          <span class={styles.tooltipRemoved}>-{stats.linesRemoved}</span>
         </div>
       ) : (
-        <div class="tooltip-summary">Loading...</div>
+        <div class={styles.tooltipSummary}>Loading...</div>
       )}
-      {change.fullDescription && <div class="tooltip-description">{change.fullDescription}</div>}
+      {change.fullDescription && <div class={styles.tooltipDescription}>{change.fullDescription}</div>}
     </div>
   );
 }

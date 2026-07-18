@@ -31,7 +31,6 @@ function copyFile(src, dest) {
 
 function copyAssets() {
   fs.copyFileSync("src/webview/graph.html", "dist/webview/graph.html");
-  fs.copyFileSync("src/webview/graph.css", "dist/webview/graph.css");
   copyFile("src/config.toml", "dist/config.toml");
 
   copyDir("node_modules/@vscode/codicons/dist", "dist/codicons");
@@ -85,6 +84,7 @@ async function main() {
       platform: "browser",
       jsx: "automatic",
       jsxImportSource: "preact",
+      loader: { ".module.css": "local-css" },
     }),
   ]);
 

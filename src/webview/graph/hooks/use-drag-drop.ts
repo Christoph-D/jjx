@@ -12,6 +12,8 @@ import {
 import { useTooltipTimers } from "./use-tooltip-timers";
 import { rootChangeId } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
+import changeNodeStyles from "../components/change-node.module.css";
+import dragGhostStyles from "../components/drag-ghost.module.css";
 
 export function useDragDrop(change: ChangeNode) {
   const isElided = change.branchType === "~";
@@ -40,31 +42,31 @@ export function useDragDrop(change: ChangeNode) {
           e.dataTransfer!.effectAllowed = "move";
 
           const ghost = document.createElement("div");
-          ghost.className = "drag-ghost";
+          ghost.className = dragGhostStyles.dragGhost;
           if (change.conflict) {
             const conflict = document.createElement("span");
-            conflict.className = "conflict-indicator";
+            conflict.className = changeNodeStyles.conflictIndicator;
             conflict.textContent = "✗";
             ghost.appendChild(conflict);
           }
           const prefix = document.createElement("span");
-          prefix.className = "change-id-prefix";
+          prefix.className = changeNodeStyles.changeIdPrefix;
           prefix.textContent = change.changeIdPrefix;
           ghost.appendChild(prefix);
           const suffix = document.createElement("span");
-          suffix.className = "change-id-suffix";
+          suffix.className = changeNodeStyles.changeIdSuffix;
           suffix.textContent = change.changeIdSuffix;
           ghost.appendChild(suffix);
           if (change.changeOffset) {
             const offset = document.createElement("span");
-            offset.className = "change-id-offset";
+            offset.className = changeNodeStyles.changeIdOffset;
             offset.textContent = `/${change.changeOffset}`;
             ghost.appendChild(offset);
           }
           if (change.label) {
             ghost.appendChild(document.createTextNode(" "));
             const desc = document.createElement("span");
-            desc.className = "drag-ghost-description";
+            desc.className = dragGhostStyles.dragGhostDescription;
             desc.textContent = change.label;
             ghost.appendChild(desc);
           }

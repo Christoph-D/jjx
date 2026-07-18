@@ -3,14 +3,16 @@ import { currentChanges, currentGraph, changeIdHorizontalOffset, selectedNodes }
 import { CIRCLE_RADIUS } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
+import changeNodeStyles from "./change-node.module.css";
+import styles from "./node-circle.module.css";
 
 function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; colorIndex: number }) {
   if (change.branchType === "~") {
     return (
       <g>
-        <rect x="-8" y="-6" width="16" height="10" class="circle-bg" />
-        <rect x="-8" y="-6" width="16" height="10" class="elided-bg bg-match" />
-        <text x="0" y="0" class="elided-symbol">
+        <rect x="-8" y="-6" width="16" height="10" class={styles.circleBg} />
+        <rect x="-8" y="-6" width="16" height="10" class={styles.bgMatch} />
+        <text x="0" y="0" class={styles.elidedSymbol}>
           ~
         </text>
       </g>
@@ -22,8 +24,8 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
     const d = `M 0 ${-size} L ${size} 0 L 0 ${size} L ${-size} 0 Z`;
     return (
       <g>
-        <path d={d} class="circle-bg no-stroke" />
-        <path d={d} class="diamond-path" />
+        <path d={d} class={`${styles.circleBg} ${styles.noStroke}`} />
+        <path d={d} class={styles.diamondPath} />
       </g>
     );
   }
@@ -31,9 +33,9 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
   if (change.currentWorkingCopy) {
     return (
       <g>
-        <circle cx="0" cy="0" r="10" class="no-stroke circle-bg" />
-        <circle cx="0" cy="0" r="10" class="no-stroke bg-match" />
-        <text x="0" y="0" class="working-copy">
+        <circle cx="0" cy="0" r="10" class={`${styles.noStroke} ${styles.circleBg}`} />
+        <circle cx="0" cy="0" r="10" class={`${styles.noStroke} ${styles.bgMatch}`} />
+        <text x="0" y="0" class={styles.workingCopy}>
           @
         </text>
       </g>
@@ -44,8 +46,8 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
   const r = CIRCLE_RADIUS;
   return (
     <g>
-      <circle cx="0" cy="0" r={r} class={"circle-bg" + (isOpen ? " thin-stroke" : "")} />
-      <circle cx="0" cy="0" r={r} class={isOpen ? "bg-match thin-stroke" : ""} />
+      <circle cx="0" cy="0" r={r} class={styles.circleBg + (isOpen ? " " + styles.thinStroke : "")} />
+      <circle cx="0" cy="0" r={r} class={isOpen ? `${styles.bgMatch} ${styles.thinStroke}` : ""} />
     </g>
   );
 }
@@ -74,7 +76,7 @@ export function NodeCircles() {
     }
     const svgRect = svg.getBoundingClientRect();
 
-    const domNodes = document.querySelectorAll(".change-node");
+    const domNodes = document.querySelectorAll(`.${changeNodeStyles.changeNode}`);
     const newPositions: NodePosition[] = [];
     domNodes.forEach((node, i) => {
       const nodeData = graph.nodes[i];
@@ -97,7 +99,7 @@ export function NodeCircles() {
         return (
           <g
             key={change.changeId}
-            class={"node-circle" + (selectedNodes.value.has(change.changeId) ? " selected" : "")}
+            class={styles.nodeCircle + (selectedNodes.value.has(change.changeId) ? " " + styles.selected : "")}
             data-change-id={change.changeId}
             data-node-lane={nodeData?.lane ?? 0}
             style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}

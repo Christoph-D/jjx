@@ -1,0 +1,13 @@
+.connectionLine {
+  stroke: var(--vscode-charts-blue);
+  stroke-width: 2;
+  fill: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.connectionLine.dimmed {
+  opacity: var(--dimmed-opacity);
+}
+
+.highlighted {
+}

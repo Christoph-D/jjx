@@ -1,0 +1,196 @@
+.changeNode {
+  position: relative;
+  z-index: 0;
+  padding: 4px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.changeNode:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.changeNode.selected {
+  background-color: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.changeNode.dropTarget {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.changeIdLeft {
+  position: absolute;
+  width: calc(var(--change-id-ch-width, 4ch) + var(--change-id-offset-width, 0ch));
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.textContent {
+  display: flex;
+  flex-direction: column;
+  height: 42px;
+  justify-content: center;
+  overflow: hidden;
+  margin-left: calc(
+    var(--change-id-ch-width, 4ch) + var(--change-id-offset-width, 0ch) + var(--change-id-right-padding) +
+      var(--graph-width) + 4px
+  );
+}
+
+.textContent > div:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.description {
+  line-height: 1.2;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.authorSubdued {
+  opacity: 0.5;
+  margin-left: 4px;
+}
+
+.conflictIndicator {
+  color: var(--vscode-errorForeground, #f48771);
+  font-weight: bold;
+  margin-right: 2px;
+}
+
+.changeIdPrefix {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-weight: bold;
+}
+
+.changeIdSuffix {
+  font-family: var(--vscode-editor-font-family, monospace);
+  opacity: 0.5;
+}
+
+.changeIdOffset {
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--vscode-errorForeground, #f48771);
+}
+
+.changeNode.workingCopy .textContent > div:first-child,
+.changeNode.workingCopy .textContent .description {
+  font-weight: bold;
+}
+
+.changeNode.elidedNode {
+  cursor: default;
+}
+
+.changeNode.elidedNode .textContent {
+  height: 20px;
+}
+
+.changeNode.compactMode {
+  padding: 0;
+}
+
+.changeNode.compactMode .textContent {
+  height: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.changeNode.compactMode .description {
+  display: none;
+}
+
+.changeNode.showingFilesMode:not(.elidedNode) .textContent {
+  height: auto;
+  min-height: 42px;
+  overflow: visible;
+}
+
+.changeNode.compactMode.showingFilesMode:not(.elidedNode) .textContent {
+  height: auto;
+  min-height: 20px;
+  overflow: visible;
+}
+
+.changedFiles {
+  margin-top: 4px;
+  padding-left: 14px;
+  font-size: 0.85em;
+  line-height: 1.4;
+  user-select: none;
+  font-weight: normal;
+}
+
+.changedFile {
+  display: flex;
+  align-items: baseline;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.changedFile:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.changeNode.selected .changedFile:hover {
+  background: transparent;
+}
+
+.changedFile:hover .changedFilePath {
+  text-decoration: underline;
+}
+
+.changedFileStatus {
+  display: inline-block;
+  width: 1.2em;
+  font-weight: bold;
+  text-align: center;
+  margin-right: 6px;
+}
+
+.changedFileA,
+.changedFileC {
+  color: var(--vscode-jjDecoration-addedResourceForeground, var(--vscode-gitDecoration-addedResourceForeground));
+}
+
+.changedFileM {
+  color: var(--vscode-jjDecoration-modifiedResourceForeground, var(--vscode-gitDecoration-modifiedResourceForeground));
+}
+
+.changedFileD {
+  color: var(--vscode-jjDecoration-deletedResourceForeground, var(--vscode-gitDecoration-deletedResourceForeground));
+}
+
+.changedFileR {
+  color: var(--vscode-jjDecoration-renamedResourceForeground, var(--vscode-gitDecoration-renamedResourceForeground));
+}
+
+.changedFileX {
+  color: var(
+    --vscode-jjDecoration-conflictingResourceForeground,
+    var(--vscode-gitDecoration-conflictingResourceForeground)
+  );
+}
+
+.changedFilePath {
+  color: var(--vscode-foreground);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.dimmed {
+}
+
+.highlighted {
+}

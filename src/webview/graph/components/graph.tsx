@@ -33,13 +33,11 @@ export function Graph() {
   const graph = currentGraph.value;
   const style = graphStyle.value;
   const showingFiles = showChangedFiles.value;
-
-  const rootClass = (style === "compact" ? "compact" : "") + (showingFiles ? " showing-files" : "");
+  const compact = style === "compact";
 
   return (
     <div
       id="graph"
-      class={rootClass}
       style={{
         "--change-id-ch-width": `${maxPrefixLength.value}ch`,
         "--change-id-offset-width": `${offsetWidth.value}ch`,
@@ -60,6 +58,8 @@ export function Graph() {
               index={index}
               nodeData={nodeData ?? null}
               changeIdRef={index === 0 ? firstChangeIdRef : undefined}
+              compact={compact}
+              showingFiles={showingFiles}
             />
           );
         })}

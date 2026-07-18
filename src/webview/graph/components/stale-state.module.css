@@ -1,0 +1,49 @@
+.staleState {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.staleStateIcon {
+  font-size: 48px;
+  color: var(--vscode-charts-yellow);
+  margin-bottom: 16px;
+}
+
+.staleStateMessage {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  margin-bottom: 8px;
+}
+
+.staleStateDescription {
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 20px;
+  max-width: 300px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: var(--vscode-font-size);
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.actionButton .codicon {
+  font-size: 1.1em;
+}

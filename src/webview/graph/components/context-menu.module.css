@@ -1,0 +1,89 @@
+.contextMenu,
+.contextSubmenu {
+  display: none;
+  position: absolute;
+  background-color: var(--vscode-menu-background);
+  border: 1px solid var(--vscode-menu-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 4px 0;
+}
+
+.contextMenu {
+  z-index: 1000;
+  min-width: 120px;
+}
+
+.contextMenuItem,
+.contextSubmenuItem {
+  padding: 6px 20px;
+  cursor: pointer;
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-menu-foreground);
+}
+
+.contextMenuItem:hover,
+.contextSubmenuItem:hover {
+  background-color: var(--vscode-menu-selectionBackground);
+  color: var(--vscode-menu-selectionForeground);
+}
+
+.hasSubmenu {
+  position: relative;
+}
+
+.hasSubmenu::after {
+  content: "▶";
+  position: absolute;
+  right: 8px;
+  font-size: 0.7em;
+}
+
+.contextSubmenu {
+  left: 100%;
+  top: 0;
+  min-width: 100px;
+  z-index: 10;
+}
+
+.hasSubmenu:hover > .contextSubmenu,
+.hasSubmenu:has(.contextSubmenu:hover) > .contextSubmenu,
+.hasSubmenu.submenuActive > .contextSubmenu {
+  display: block;
+}
+
+.contextSubmenu.left {
+  left: auto;
+  right: 100%;
+}
+
+.contextSubmenu.above {
+  left: 20px;
+  top: auto;
+  bottom: 100%;
+}
+
+.contextSubmenu.below {
+  left: 20px;
+  top: 100%;
+}
+
+.contextSubmenu.bottomAligned {
+  top: auto;
+  bottom: 0;
+}
+
+.contextSubmenuItem {
+  white-space: nowrap;
+}
+
+.hasSubmenu.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.contextMenuSeparator {
+  height: 1px;
+  background-color: var(--vscode-menu-separatorBackground);
+  margin: 4px 8px;
+}

@@ -3,6 +3,10 @@ import { memo } from "preact/compat";
 import { useDragDrop } from "../hooks/use-drag-drop";
 import { useConnectedHighlight } from "../hooks/use-connected-highlight";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
+import dragGhostStyles from "./drag-ghost.module.css";
+import nodeCircleStyles from "./node-circle.module.css";
+import pillStyles from "./pill.module.css";
+import styles from "./change-node.module.css";
 import {
   selectedNodes,
   changeDoubleClickAction,
@@ -27,6 +31,15 @@ import type { ChangeNode } from "../../../graph-protocol";
 import { abbreviateName } from "../utils";
 import { clearAllTooltipTimers } from "../hooks/use-tooltip-timers";
 
+const changedFileTypeClasses: Record<string, string> = {
+  a: styles.changedFileA,
+  c: styles.changedFileC,
+  m: styles.changedFileM,
+  d: styles.changedFileD,
+  r: styles.changedFileR,
+  x: styles.changedFileX,
+};
+
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
   return changeId !== rootChangeId && branchType !== "~";
 }
@@ -37,7 +50,7 @@ function isMenuOpen(): boolean {
 
 function isOverTooltipTarget(e: MouseEvent): boolean {
   const target = e.target as HTMLElement;
-  return !!target.closest?.(".text-content");
+  return !!target.closest?.(`.${styles.textContent}`);
 }
 
 interface Props {
@@ -45,9 +58,11 @@ interface Props {
   index: number;
   nodeData: LaneNode | null;
   changeIdRef?: RefObject<HTMLDivElement>;
+  compact: boolean;
+  showingFiles: boolean;
 }
 
-export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: Props) {
+export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, compact, showingFiles }: Props) {
   const dragProps = useDragDrop(change);
   const highlightProps = useConnectedHighlight(change.changeId, change.parentChangeIds);
   const { startHoverTimers, clearHoverTimers, clearHideTimer, scheduleHideTooltip } = useTooltipTimers();
@@ -117,7 +132,9 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
 
   const handleMouseEnter = (e: MouseEvent) => {
     highlightProps.onMouseEnter();
-    document.querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)?.classList.add("hovered");
+    document
+      .querySelector(`#node-circles .${nodeCircleStyles.nodeCircle}[data-change-id="${change.changeId}"]`)
+      ?.classList.add(nodeCircleStyles.hovered);
     tryStartTooltip(e);
   };
 
@@ -129,18 +146,21 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
   const handleMouseLeave = () => {
     highlightProps.onMouseLeave();
     document
-      .querySelector(`#node-circles .node-circle[data-change-id="${change.changeId}"]`)
-      ?.classList.remove("hovered");
+      .querySelector(`#node-circles .${nodeCircleStyles.nodeCircle}[data-change-id="${change.changeId}"]`)
+      ?.classList.remove(nodeCircleStyles.hovered);
     clearHoverTimers();
     clearHideTimer();
     scheduleHideTooltip();
   };
+
+  const modeClasses = (compact ? " " + styles.compactMode : "") + (showingFiles ? " " + styles.showingFilesMode : "");
 
   return (
     <ChangeNodeClass
       changeId={change.changeId}
       currentWorkingCopy={change.currentWorkingCopy}
       isElided={isElided}
+      modeClasses={modeClasses}
       data-change-id={change.changeId}
       data-parent-ids={JSON.stringify(change.parentChangeIds ?? [])}
       data-branch-type={change.branchType ?? ""}
@@ -152,11 +172,11 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef }: 
       onMouseLeave={handleMouseLeave}
       {...dragProps}
     >
-      <div class="change-id-left" ref={changeIdRef}>
-        {change.conflict && <span class="conflict-indicator">✗</span>}
-        <span class="change-id-prefix">{change.changeIdPrefix}</span>
-        <span class="change-id-suffix">{change.changeIdSuffix}</span>
-        {change.changeOffset && <span class="change-id-offset">/{change.changeOffset}</span>}
+      <div class={styles.changeIdLeft} ref={changeIdRef}>
+        {change.conflict && <span class={styles.conflictIndicator}>✗</span>}
+        <span class={styles.changeIdPrefix}>{change.changeIdPrefix}</span>
+        <span class={styles.changeIdSuffix}>{change.changeIdSuffix}</span>
+        {change.changeOffset && <span class={styles.changeIdOffset}>/{change.changeOffset}</span>}
       </div>
       <MemoizedChangeNodeTextContent change={change} graphW={graphW} />
     </ChangeNodeClass>
@@ -167,22 +187,25 @@ function ChangeNodeClass({
   changeId,
   currentWorkingCopy,
   isElided,
+  modeClasses,
   children,
   ...rest
 }: {
   changeId: string;
   currentWorkingCopy: boolean;
   isElided: boolean;
+  modeClasses: string;
   children?: preact.ComponentChildren;
 } & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       class={
-        "change-node" +
-        (currentWorkingCopy ? " working-copy" : "") +
-        (isElided ? " elided-node" : "") +
-        (selectedNodes.value.has(changeId) ? " selected" : "") +
-        (dropTargetId.value === changeId ? " drop-target" : "")
+        styles.changeNode +
+        (currentWorkingCopy ? " " + styles.workingCopy : "") +
+        (isElided ? " " + styles.elidedNode : "") +
+        (selectedNodes.value.has(changeId) ? " " + styles.selected : "") +
+        (dropTargetId.value === changeId ? " " + styles.dropTarget : "") +
+        modeClasses
       }
       {...rest}
     >
@@ -204,7 +227,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
 
   return (
     <div
-      class="text-content"
+      class={styles.textContent}
       style={{
         "--graph-width": `${graphW}px`,
         "--change-id-right-padding": `${CHANGE_ID_RIGHT_PADDING}px`,
@@ -212,14 +235,17 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
     >
       <div>
         {change.workingCopies?.map((wc) => (
-          <span key={wc} class="pill workspace-pill">
+          <span key={wc} class={`${pillStyles.pill} ${pillStyles.workspacePill}`}>
             {wc}
           </span>
         ))}
         {change.localBookmarks.map((b) => (
           <span
             key={b.name}
-            class={"pill bookmark-pill" + (b.conflict ? " conflicted" : b.synced ? "" : " unsynced")}
+            class={
+              `${pillStyles.pill} ${pillStyles.bookmarkPill}` +
+              (b.conflict ? " " + pillStyles.conflicted : b.synced ? "" : " " + pillStyles.unsynced)
+            }
             data-bookmark={b.name}
             draggable={true}
             onContextMenu={(e) => {
@@ -246,7 +272,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               e.dataTransfer!.effectAllowed = "move";
 
               const ghost = document.createElement("div");
-              ghost.className = "drag-ghost bookmark-drag-ghost";
+              ghost.className = `${dragGhostStyles.dragGhost} ${dragGhostStyles.bookmarkDragGhost}`;
               ghost.textContent = b.name;
               document.body.appendChild(ghost);
               e.dataTransfer!.setDragImage(ghost, -15, 0);
@@ -264,12 +290,12 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               b.showPushButton !== false &&
               (pushingBookmarks.value.has(b.name) ? (
                 <i
-                  class="codicon codicon-sync codicon-modifier-spin bookmark-push-icon bookmark-pushing-icon"
+                  class={`codicon codicon-sync codicon-modifier-spin ${pillStyles.bookmarkPushIcon} ${pillStyles.bookmarkPushingIcon}`}
                   title="Pushing..."
                 />
               ) : (
                 <i
-                  class="codicon codicon-cloud-upload bookmark-push-icon"
+                  class={`codicon codicon-cloud-upload ${pillStyles.bookmarkPushIcon}`}
                   title="Push to all tracking remotes"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -286,14 +312,17 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
         {change.remoteBookmarks
           .filter((b) => !localBookmarkNames.has(b.name))
           .map((b) => (
-            <span key={b.name + "@" + b.remote} class="pill bookmark-pill">
+            <span key={b.name + "@" + b.remote} class={`${pillStyles.pill} ${pillStyles.bookmarkPill}`}>
               {abbreviateName(b.name)}@{b.remote}
             </span>
           ))}
         {change.localTags.map((t) => (
           <span
             key={t.name}
-            class={"pill tag-pill" + (t.conflict ? " conflicted" : t.synced ? "" : " unsynced")}
+            class={
+              `${pillStyles.pill} ${pillStyles.tagPill}` +
+              (t.conflict ? " " + pillStyles.conflicted : t.synced ? "" : " " + pillStyles.unsynced)
+            }
             data-tag={t.name}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -315,16 +344,16 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
         {change.remoteTags
           .filter((t) => !localTagNames.has(t.name))
           .map((t) => (
-            <span key={t.name + "@" + t.remote} class="pill tag-pill">
+            <span key={t.name + "@" + t.remote} class={`${pillStyles.pill} ${pillStyles.tagPill}`}>
               {abbreviateName(t.name)}@{t.remote}
             </span>
           ))}
         <span>{change.label}</span>
         {style === "compact" && !change.mine && change.authorName && (
-          <span class="author-subdued">{change.authorName}</span>
+          <span class={styles.authorSubdued}>{change.authorName}</span>
         )}
       </div>
-      {style !== "compact" && <div class="description">{change.description}</div>}
+      {style !== "compact" && <div class={styles.description}>{change.description}</div>}
       {showChangedFiles.value && !change.elided && change.changedFiles && change.changedFiles.length > 0 && (
         <ChangedFileList change={change} />
       )}
@@ -334,12 +363,12 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
 
 const ChangedFileList = memo(function ChangedFileList({ change }: { change: ChangeNode }) {
   return (
-    <div class="changed-files">
+    <div class={styles.changedFiles}>
       {change.changedFiles!.map((f) => (
         <div
           key={f.path}
           title="Open diff"
-          class={`changed-file changed-file-${f.type.toLowerCase()}`}
+          class={`${styles.changedFile} ${changedFileTypeClasses[f.type.toLowerCase()] ?? ""}`}
           onClick={(e) => {
             e.stopPropagation();
             vscode.postMessage({
@@ -351,8 +380,8 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Chan
             });
           }}
         >
-          <span class="changed-file-status">{f.type}</span>
-          <span class="changed-file-path">{f.path}</span>
+          <span class={styles.changedFileStatus}>{f.type}</span>
+          <span class={styles.changedFilePath}>{f.path}</span>
         </div>
       ))}
     </div>

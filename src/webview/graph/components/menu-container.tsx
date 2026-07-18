@@ -1,5 +1,6 @@
 import { useEffect } from "preact/hooks";
 import type { RefObject } from "preact";
+import styles from "./context-menu.module.css";
 
 export function useMenuPosition(
   menuRef: RefObject<HTMLDivElement | null>,
@@ -56,16 +57,16 @@ function positionSubmenus(menu: HTMLElement): void {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
 
-  menu.querySelectorAll(`#${menu.id} .has-submenu`).forEach((item) => {
+  menu.querySelectorAll(`#${menu.id} .${styles.hasSubmenu}`).forEach((item) => {
     const menuItem = item as HTMLElement;
-    const submenu = menuItem.querySelector(".context-submenu");
+    const submenu = menuItem.querySelector(`.${styles.contextSubmenu}`);
     if (!submenu) {
       return;
     }
     const sub = submenu as HTMLElement;
 
     const itemRect = menuItem.getBoundingClientRect();
-    sub.classList.remove("left", "above", "below", "bottom-aligned");
+    sub.classList.remove(styles.left, styles.above, styles.below, styles.bottomAligned);
     sub.style.display = "block";
     const submenuRect = sub.getBoundingClientRect();
     sub.style.display = "";
@@ -76,43 +77,43 @@ function positionSubmenus(menu: HTMLElement): void {
 
     if (fitsRight) {
       if (!fitsBelow) {
-        submenu.classList.add("bottom-aligned");
+        submenu.classList.add(styles.bottomAligned);
       }
     } else if (fitsLeft) {
-      submenu.classList.add("left");
+      submenu.classList.add(styles.left);
       if (!fitsBelow) {
-        submenu.classList.add("bottom-aligned");
+        submenu.classList.add(styles.bottomAligned);
       }
     } else {
       const fitsAbove = itemRect.top - submenuRect.height >= 10;
       if (fitsBelow) {
-        submenu.classList.add("below");
+        submenu.classList.add(styles.below);
       } else if (fitsAbove) {
-        submenu.classList.add("above");
+        submenu.classList.add(styles.above);
       } else {
-        submenu.classList.add("below");
+        submenu.classList.add(styles.below);
       }
     }
   });
 }
 
 function setupSubmenuHover(menu: HTMLElement): void {
-  menu.querySelectorAll(".context-menu-item:not(.has-submenu)").forEach((item) => {
+  menu.querySelectorAll(`.${styles.contextMenuItem}:not(.${styles.hasSubmenu})`).forEach((item) => {
     item.addEventListener("mouseenter", () => {
-      menu.querySelectorAll(".has-submenu").forEach((submenuItemEl) => {
-        submenuItemEl.classList.remove("submenu-active");
+      menu.querySelectorAll(`.${styles.hasSubmenu}`).forEach((submenuItemEl) => {
+        submenuItemEl.classList.remove(styles.submenuActive);
       });
     });
   });
 
-  menu.querySelectorAll(".has-submenu").forEach((item) => {
+  menu.querySelectorAll(`.${styles.hasSubmenu}`).forEach((item) => {
     item.addEventListener("mouseenter", () => {
-      menu.querySelectorAll(".has-submenu").forEach((otherItem) => {
+      menu.querySelectorAll(`.${styles.hasSubmenu}`).forEach((otherItem) => {
         if (otherItem !== item) {
-          otherItem.classList.remove("submenu-active");
+          otherItem.classList.remove(styles.submenuActive);
         }
       });
-      item.classList.add("submenu-active");
+      item.classList.add(styles.submenuActive);
     });
   });
 }
