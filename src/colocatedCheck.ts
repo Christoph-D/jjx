@@ -1,3 +1,4 @@
+import * as path from "path";
 import * as vscode from "vscode";
 import type { ExtensionState } from "./extensionState";
 
@@ -56,7 +57,7 @@ export async function registerColocatedCheck(
     }
 
     for (const repoRoot of colocatedRepos) {
-      const folderName = repoRoot.split("/").at(-1) || repoRoot;
+      const folderName = path.basename(repoRoot);
       const message = `Colocated Jujutsu and Git repository detected in "${folderName}". Consider disabling the Git extension to avoid conflicts.`;
       const openSettings = "Open Folder Settings";
 
@@ -71,7 +72,7 @@ export async function registerColocatedCheck(
   context.subscriptions.push(
     vscode.commands.registerCommand("jj.showColocatedWarnings", () => {
       for (const repoRoot of reposWithWarnings) {
-        const folderName = repoRoot.split("/").at(-1) || repoRoot;
+        const folderName = path.basename(repoRoot);
         const message = `Colocated Jujutsu and Git repository detected in "${folderName}". Consider disabling the Git extension to avoid conflicts.`;
         const openSettings = "Open Folder Settings";
 
