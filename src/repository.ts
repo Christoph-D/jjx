@@ -22,6 +22,7 @@ import {
   ProcessError,
 } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
+import { logger } from "./logger";
 import { filepathToFileset, pathEquals, normalizePath } from "./utils";
 import {
   getDiffToolConfigs,
@@ -1057,10 +1058,19 @@ export class JJRepository {
    * @returns undefined if the file was not modified in `rev`
    */
   async getDiffOriginal(rev: string, filepath: string, renamedFrom?: string): Promise<Buffer | undefined> {
+    const rawFilepath = filepath;
+    logger.trace(
+      `[getDiffOriginal] enter: rev=${rev} filepath=${filepath} repositoryRoot=${this.repositoryRoot} renamedFrom=${renamedFrom ?? "<none>"}`,
+    );
     try {
       filepath = realFs.realpathSync.native(filepath);
     } catch {
       // Fall back to original path if realpath fails
+    }
+    if (filepath !== rawFilepath) {
+      logger.trace(`[getDiffOriginal] realpath resolved: ${rawFilepath} -> ${filepath}`);
+    } else {
+      logger.trace(`[getDiffOriginal] realpath unchanged: ${filepath}`);
     }
 
     const diffConfigs = getDiffToolConfigs();
@@ -1075,6 +1085,7 @@ export class JJRepository {
     const filesetArgs = renamedFrom
       ? [filepathToFileset(renamedFrom.replace(/\\/g, "/")), filepathToFileset(relativePath)]
       : [filepathToFileset(relativePath)];
+    logger.trace(`[getDiffOriginal] relativePath=${relativePath} filesetArgs=${JSON.stringify(filesetArgs)}`);
     const childProcess = this.spawnJJRead(
       [
         "diff",
@@ -1095,13 +1106,23 @@ export class JJRepository {
 
     const { stdout: summaryOutput } = await collectProcessOutput(childProcess).catch(convertJJErrors);
     const summaryOutputStr = summaryOutput.toString();
+    logger.trace(
+      `[getDiffOriginal] jj diff summary output (${summaryOutputStr.length} chars): ${JSON.stringify(summaryOutputStr)}`,
+    );
 
     const { leftFiles } = await pathPromise;
+    const leftFilesDesc = Object.entries(leftFiles)
+      .map(([k, v]) => `${JSON.stringify(k)}(${v.length} bytes)`)
+      .join(", ");
+    logger.trace(`[getDiffOriginal] leftFiles keys: ${leftFilesDesc || "<empty>"}`);
 
     const summaryLines = summaryOutputStr.trim().split("\n");
 
     for (const summaryLineRaw of summaryLines) {
       const summaryLine = summaryLineRaw.trim();
+      if (!summaryLine) {
+        continue;
+      }
 
       const type = summaryLine.charAt(0);
       const file = summaryLine.slice(2).trim();
@@ -1109,11 +1130,17 @@ export class JJRepository {
       if (type === "M" || type === "D") {
         const normalizedSummaryPath = path.join(this.repositoryRoot, file).replace(/\\/g, "/");
         const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
-        if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
+        const matched = pathEquals(normalizedSummaryPath, normalizedTargetPath);
+        logger.trace(
+          `[getDiffOriginal] summary line type=${type} file=${file} summaryPath=${normalizedSummaryPath} targetPath=${normalizedTargetPath} matched=${matched}`,
+        );
+        if (matched) {
           const content = leftFiles[file];
           if (content !== undefined) {
+            logger.trace(`[getDiffOriginal] match found in leftFiles: file=${file} bytes=${content.length}`);
             return Buffer.from(content, "utf8");
           }
+          logger.warn(`[getDiffOriginal] path matched but leftFiles has no entry for ${JSON.stringify(file)}`);
           return undefined;
         }
       } else if (type === "R" || type === "C") {
@@ -1124,17 +1151,29 @@ export class JJRepository {
 
         const normalizedSummaryPath = path.join(this.repositoryRoot, parseResult.toPath).replace(/\\/g, "/");
         const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
-        if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
+        const matched = pathEquals(normalizedSummaryPath, normalizedTargetPath);
+        logger.trace(
+          `[getDiffOriginal] rename line type=${type} from=${parseResult.fromPath} to=${parseResult.toPath} summaryPath=${normalizedSummaryPath} targetPath=${normalizedTargetPath} matched=${matched}`,
+        );
+        if (matched) {
           const content = leftFiles[parseResult.fromPath];
           if (content !== undefined) {
+            logger.trace(
+              `[getDiffOriginal] rename match found in leftFiles: fromPath=${parseResult.fromPath} bytes=${content.length}`,
+            );
             return Buffer.from(content, "utf8");
           }
+          logger.warn(
+            `[getDiffOriginal] rename path matched but leftFiles has no entry for ${JSON.stringify(parseResult.fromPath)}`,
+          );
           return undefined;
         }
+      } else {
+        logger.trace(`[getDiffOriginal] unhandled summary line type=${type} raw=${summaryLineRaw}`);
       }
     }
 
-    // File was either added or unchanged in this revision.
+    logger.warn(`[getDiffOriginal] no matching summary line for filepath=${filepath}; returning undefined`);
     return undefined;
   }
 }
