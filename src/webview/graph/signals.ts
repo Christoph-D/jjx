@@ -60,6 +60,12 @@ export const rebaseMenu = signal<RebaseMenuState | null>(null);
 export const tooltip = signal<TooltipState | null>(null);
 export const diffStatsCache = signal<Map<string, DiffStats>>(new Map());
 
+export interface HighlightState {
+  focalId: string;
+  connectedIds: Set<string>;
+}
+export const connectedHighlight = signal<HighlightState | null>(null);
+
 export interface PendingGraphUpdate {
   changes: ChangeNode[];
   laneInfo: import("../../graph-protocol").ChangeIdGraph;

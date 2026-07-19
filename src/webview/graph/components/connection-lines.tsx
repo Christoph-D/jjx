@@ -1,5 +1,5 @@
 import { useSignal, useSignalEffect } from "@preact/signals";
-import { currentChanges, currentGraph, changeIdHorizontalOffset } from "../signals";
+import { currentChanges, currentGraph, changeIdHorizontalOffset, connectedHighlight } from "../signals";
 import { EDGE_EXTENSION } from "../types";
 import type { ChangeIdGraph } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
@@ -127,19 +127,28 @@ export function ConnectionLines() {
 
   return (
     <g id="connection-lines">
-      {paths.value.map((p, i) => (
-        <path
-          key={i}
-          d={p.d}
-          fill="none"
-          stroke-width="2"
-          stroke-linecap="round"
-          class={styles.connectionLine}
-          data-from-id={p.fromId}
-          data-to-id={p.toId}
-          style={{ stroke: p.color }}
-        />
-      ))}
+      {paths.value.map((p, i) => {
+        const highlight = connectedHighlight.value;
+        const dimmed =
+          highlight &&
+          !(
+            (p.fromId === highlight.focalId && highlight.connectedIds.has(p.toId)) ||
+            (p.toId === highlight.focalId && highlight.connectedIds.has(p.fromId))
+          );
+        return (
+          <path
+            key={i}
+            d={p.d}
+            fill="none"
+            stroke-width="2"
+            stroke-linecap="round"
+            class={styles.connectionLine + (dimmed ? " " + styles.dimmed : "")}
+            data-from-id={p.fromId}
+            data-to-id={p.toId}
+            style={{ stroke: p.color }}
+          />
+        );
+      })}
     </g>
   );
 }

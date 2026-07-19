@@ -1,5 +1,12 @@
 import { useSignal, useSignalEffect } from "@preact/signals";
-import { currentChanges, currentGraph, changeIdHorizontalOffset, selectedNodes, hoveredChangeId } from "../signals";
+import {
+  currentChanges,
+  currentGraph,
+  changeIdHorizontalOffset,
+  selectedNodes,
+  hoveredChangeId,
+  connectedHighlight,
+} from "../signals";
 import { CIRCLE_RADIUS } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
@@ -92,6 +99,7 @@ export function NodeCircles() {
 
   const changes = currentChanges.value;
   const graph = currentGraph.value;
+  const highlight = connectedHighlight.value;
 
   return (
     <g id="node-circles">
@@ -104,7 +112,8 @@ export function NodeCircles() {
             class={
               styles.nodeCircle +
               (selectedNodes.value.has(change.changeId) ? " " + styles.selected : "") +
-              (hoveredChangeId.value === change.changeId ? " " + styles.hovered : "")
+              (hoveredChangeId.value === change.changeId ? " " + styles.hovered : "") +
+              (highlight && !highlight.connectedIds.has(change.changeId) ? " " + styles.dimmed : "")
             }
             data-change-id={change.changeId}
             data-node-lane={nodeData?.lane ?? 0}

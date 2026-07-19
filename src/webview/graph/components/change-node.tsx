@@ -1,7 +1,6 @@
 import { type HTMLAttributes, type RefObject } from "preact";
 import { memo } from "preact/compat";
 import { useDragDrop } from "../hooks/use-drag-drop";
-import { useConnectedHighlight } from "../hooks/use-connected-highlight";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import dragGhostStyles from "./drag-ghost.module.css";
 import pillStyles from "./pill.module.css";
@@ -24,6 +23,8 @@ import {
   closeAllMenus,
   pushingBookmarks,
   hoveredChangeId,
+  currentChanges,
+  connectedHighlight,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
@@ -64,7 +65,6 @@ interface Props {
 
 export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, compact, showingFiles }: Props) {
   const dragProps = useDragDrop(change);
-  const highlightProps = useConnectedHighlight(change.changeId, change.parentChangeIds);
   const { startHoverTimers, clearHoverTimers, clearHideTimer, scheduleHideTooltip } = useTooltipTimers();
   const isElided = change.branchType === "~";
   const graphW = SWIMLANE_WIDTH * (nodeData?.numLanesActiveVisually ?? 0);
@@ -131,7 +131,18 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
   };
 
   const handleMouseEnter = (e: MouseEvent) => {
-    highlightProps.onMouseEnter();
+    if (!isDragging.value) {
+      const childIds: string[] = [];
+      for (const c of currentChanges.value) {
+        if (c.parentChangeIds?.includes(change.changeId)) {
+          childIds.push(c.changeId);
+        }
+      }
+      connectedHighlight.value = {
+        focalId: change.changeId,
+        connectedIds: new Set([change.changeId, ...(change.parentChangeIds ?? []), ...childIds]),
+      };
+    }
     hoveredChangeId.value = change.changeId;
     tryStartTooltip(e);
   };
@@ -142,7 +153,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
   };
 
   const handleMouseLeave = () => {
-    highlightProps.onMouseLeave();
+    connectedHighlight.value = null;
     hoveredChangeId.value = null;
     clearHoverTimers();
     clearHideTimer();
