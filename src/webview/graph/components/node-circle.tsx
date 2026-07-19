@@ -10,6 +10,7 @@ import {
 import { CIRCLE_RADIUS } from "../types";
 import type { ChangeNode } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
+import { cx } from "../utils";
 import styles from "./node-circle.module.css";
 
 function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; colorIndex: number }) {
@@ -30,7 +31,7 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
     const d = `M 0 ${-size} L ${size} 0 L 0 ${size} L ${-size} 0 Z`;
     return (
       <g>
-        <path d={d} class={`${styles.circleBg} ${styles.noStroke}`} />
+        <path d={d} class={cx(styles.circleBg, styles.noStroke)} />
         <path d={d} class={styles.diamondPath} />
       </g>
     );
@@ -39,8 +40,8 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
   if (change.currentWorkingCopy) {
     return (
       <g>
-        <circle cx="0" cy="0" r="10" class={`${styles.noStroke} ${styles.circleBg}`} />
-        <circle cx="0" cy="0" r="10" class={`${styles.noStroke} ${styles.bgMatch}`} />
+        <circle cx="0" cy="0" r="10" class={cx(styles.noStroke, styles.circleBg)} />
+        <circle cx="0" cy="0" r="10" class={cx(styles.noStroke, styles.bgMatch)} />
         <text x="0" y="0" class={styles.workingCopy}>
           @
         </text>
@@ -52,8 +53,8 @@ function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; color
   const r = CIRCLE_RADIUS;
   return (
     <g>
-      <circle cx="0" cy="0" r={r} class={styles.circleBg + (isOpen ? " " + styles.thinStroke : "")} />
-      <circle cx="0" cy="0" r={r} class={isOpen ? `${styles.bgMatch} ${styles.thinStroke}` : ""} />
+      <circle cx="0" cy="0" r={r} class={cx(styles.circleBg, isOpen && styles.thinStroke)} />
+      <circle cx="0" cy="0" r={r} class={cx(styles.bgMatch, isOpen && styles.thinStroke)} />
     </g>
   );
 }
@@ -109,12 +110,12 @@ export function NodeCircles() {
         return (
           <g
             key={change.changeId}
-            class={
-              styles.nodeCircle +
-              (selectedNodes.value.has(change.changeId) ? " " + styles.selected : "") +
-              (hoveredChangeId.value === change.changeId ? " " + styles.hovered : "") +
-              (highlight && !highlight.connectedIds.has(change.changeId) ? " " + styles.dimmed : "")
-            }
+            class={cx(
+              styles.nodeCircle,
+              selectedNodes.value.has(change.changeId) && styles.selected,
+              hoveredChangeId.value === change.changeId && styles.hovered,
+              highlight && !highlight.connectedIds.has(change.changeId) && styles.dimmed,
+            )}
             data-change-id={change.changeId}
             data-node-lane={nodeData?.lane ?? 0}
             style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}

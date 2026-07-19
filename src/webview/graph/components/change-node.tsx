@@ -29,7 +29,7 @@ import {
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
 import type { ChangeNode } from "../../../graph-protocol";
-import { abbreviateName } from "../utils";
+import { abbreviateName, cx } from "../utils";
 import { clearAllTooltipTimers } from "../hooks/use-tooltip-timers";
 
 const changedFileTypeClasses: Record<string, string> = {
@@ -160,7 +160,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
     scheduleHideTooltip();
   };
 
-  const modeClasses = (compact ? " " + styles.compactMode : "") + (showingFiles ? " " + styles.showingFilesMode : "");
+  const modeClasses = cx(compact && styles.compactMode, showingFiles && styles.showingFilesMode);
 
   return (
     <ChangeNodeClass
@@ -206,14 +206,14 @@ function ChangeNodeClass({
 } & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      class={
-        styles.changeNode +
-        (currentWorkingCopy ? " " + styles.workingCopy : "") +
-        (isElided ? " " + styles.elidedNode : "") +
-        (selectedNodes.value.has(changeId) ? " " + styles.selected : "") +
-        (dropTargetId.value === changeId ? " " + styles.dropTarget : "") +
-        modeClasses
-      }
+      class={cx(
+        styles.changeNode,
+        currentWorkingCopy && styles.workingCopy,
+        isElided && styles.elidedNode,
+        selectedNodes.value.has(changeId) && styles.selected,
+        dropTargetId.value === changeId && styles.dropTarget,
+        modeClasses,
+      )}
       data-selected={selectedNodes.value.has(changeId) ? "" : undefined}
       {...rest}
     >
@@ -243,17 +243,18 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
     >
       <div>
         {change.workingCopies?.map((wc) => (
-          <span key={wc} class={`${pillStyles.pill} ${pillStyles.workspacePill}`} data-workspace={wc}>
+          <span key={wc} class={cx(pillStyles.pill, pillStyles.workspacePill)} data-workspace={wc}>
             {wc}
           </span>
         ))}
         {change.localBookmarks.map((b) => (
           <span
             key={b.name}
-            class={
-              `${pillStyles.pill} ${pillStyles.bookmarkPill}` +
-              (b.conflict ? " " + pillStyles.conflicted : b.synced ? "" : " " + pillStyles.unsynced)
-            }
+            class={cx(
+              pillStyles.pill,
+              pillStyles.bookmarkPill,
+              b.conflict ? pillStyles.conflicted : !b.synced && pillStyles.unsynced,
+            )}
             data-bookmark={b.name}
             data-unsynced={!b.synced && !b.conflict ? "" : undefined}
             data-conflicted={b.conflict ? "" : undefined}
@@ -282,7 +283,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               e.dataTransfer!.effectAllowed = "move";
 
               const ghost = document.createElement("div");
-              ghost.className = `${dragGhostStyles.dragGhost} ${dragGhostStyles.bookmarkDragGhost}`;
+              ghost.className = cx(dragGhostStyles.dragGhost, dragGhostStyles.bookmarkDragGhost);
               ghost.textContent = b.name;
               document.body.appendChild(ghost);
               e.dataTransfer!.setDragImage(ghost, -15, 0);
@@ -300,13 +301,19 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               b.showPushButton !== false &&
               (pushingBookmarks.value.has(b.name) ? (
                 <i
-                  class={`codicon codicon-sync codicon-modifier-spin ${pillStyles.bookmarkPushIcon} ${pillStyles.bookmarkPushingIcon}`}
+                  class={cx(
+                    "codicon",
+                    "codicon-sync",
+                    "codicon-modifier-spin",
+                    pillStyles.bookmarkPushIcon,
+                    pillStyles.bookmarkPushingIcon,
+                  )}
                   data-role="push-icon"
                   title="Pushing..."
                 />
               ) : (
                 <i
-                  class={`codicon codicon-cloud-upload ${pillStyles.bookmarkPushIcon}`}
+                  class={cx("codicon", "codicon-cloud-upload", pillStyles.bookmarkPushIcon)}
                   data-role="push-icon"
                   title="Push to all tracking remotes"
                   onClick={(e) => {
@@ -324,17 +331,18 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
         {change.remoteBookmarks
           .filter((b) => !localBookmarkNames.has(b.name))
           .map((b) => (
-            <span key={b.name + "@" + b.remote} class={`${pillStyles.pill} ${pillStyles.bookmarkPill}`}>
+            <span key={b.name + "@" + b.remote} class={cx(pillStyles.pill, pillStyles.bookmarkPill)}>
               {abbreviateName(b.name)}@{b.remote}
             </span>
           ))}
         {change.localTags.map((t) => (
           <span
             key={t.name}
-            class={
-              `${pillStyles.pill} ${pillStyles.tagPill}` +
-              (t.conflict ? " " + pillStyles.conflicted : t.synced ? "" : " " + pillStyles.unsynced)
-            }
+            class={cx(
+              pillStyles.pill,
+              pillStyles.tagPill,
+              t.conflict ? pillStyles.conflicted : !t.synced && pillStyles.unsynced,
+            )}
             data-tag={t.name}
             data-unsynced={!t.synced && !t.conflict ? "" : undefined}
             data-conflicted={t.conflict ? "" : undefined}
@@ -358,7 +366,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
         {change.remoteTags
           .filter((t) => !localTagNames.has(t.name))
           .map((t) => (
-            <span key={t.name + "@" + t.remote} class={`${pillStyles.pill} ${pillStyles.tagPill}`}>
+            <span key={t.name + "@" + t.remote} class={cx(pillStyles.pill, pillStyles.tagPill)}>
               {abbreviateName(t.name)}@{t.remote}
             </span>
           ))}
@@ -382,7 +390,7 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Chan
         <div
           key={f.path}
           title="Open diff"
-          class={`${styles.changedFile} ${changedFileTypeClasses[f.type.toLowerCase()] ?? ""}`}
+          class={cx(styles.changedFile, changedFileTypeClasses[f.type.toLowerCase()])}
           data-role="changed-file"
           data-path={f.path}
           onClick={(e) => {

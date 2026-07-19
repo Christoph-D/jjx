@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from "preact/hooks";
 import { tooltip, diffStatsCache } from "../signals";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import { CHANGE_ID_RIGHT_PADDING } from "../types";
+import { cx } from "../utils";
 import styles from "./tooltip.module.css";
 
 export function Tooltip() {
@@ -117,9 +118,7 @@ export function Tooltip() {
             {change.localBookmarks.map((b) => (
               <span
                 key={b.name}
-                class={
-                  styles.tooltipBookmarkPill + " " + (b.conflict ? styles.conflicted : b.synced ? "" : styles.unsynced)
-                }
+                class={cx(styles.tooltipBookmarkPill, b.conflict ? styles.conflicted : !b.synced && styles.unsynced)}
               >
                 {b.name}
               </span>
@@ -132,7 +131,7 @@ export function Tooltip() {
             {change.localTags.map((t) => (
               <span
                 key={t.name}
-                class={styles.tooltipTagPill + " " + (t.conflict ? styles.conflicted : t.synced ? "" : styles.unsynced)}
+                class={cx(styles.tooltipTagPill, t.conflict ? styles.conflicted : !t.synced && styles.unsynced)}
               >
                 {t.name}
               </span>

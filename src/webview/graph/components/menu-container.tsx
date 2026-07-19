@@ -1,6 +1,7 @@
 import { createContext } from "preact";
 import type { ComponentChildren, JSX } from "preact";
 import { useCallback, useContext, useEffect, useId, useRef, useState } from "preact/hooks";
+import { cx } from "../utils";
 import styles from "./context-menu.module.css";
 
 export interface SubmenuPosition {
@@ -116,16 +117,17 @@ export function Submenu({ action, label, children }: SubmenuProps) {
   }, [id, register]);
 
   const position = positions.get(id);
-  const submenuClass =
-    styles.contextSubmenu +
-    (position?.left ? " " + styles.left : "") +
-    (position?.above ? " " + styles.above : "") +
-    (position?.below ? " " + styles.below : "") +
-    (position?.bottomAligned ? " " + styles.bottomAligned : "");
+  const submenuClass = cx(
+    styles.contextSubmenu,
+    position?.left && styles.left,
+    position?.above && styles.above,
+    position?.below && styles.below,
+    position?.bottomAligned && styles.bottomAligned,
+  );
 
   return (
     <div
-      class={`${styles.contextMenuItem} ${styles.hasSubmenu}` + (activeId === id ? " " + styles.submenuActive : "")}
+      class={cx(styles.contextMenuItem, styles.hasSubmenu, activeId === id && styles.submenuActive)}
       data-action={action}
       onMouseEnter={() => setActiveId(id)}
       ref={itemRef}

@@ -6,3 +6,7 @@ export function abbreviateName(name: string, maxLength = 20): string {
   const suffixLength = Math.floor((maxLength - 3) / 2);
   return name.substring(0, prefixLength) + "..." + name.substring(name.length - suffixLength);
 }
+
+export function cx(...args: Array<string | false | null | undefined>): string {
+  return args.filter(Boolean).join(" ");
+}

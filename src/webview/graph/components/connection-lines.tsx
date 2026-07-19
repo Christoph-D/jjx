@@ -3,6 +3,7 @@ import { currentChanges, currentGraph, changeIdHorizontalOffset, connectedHighli
 import { EDGE_EXTENSION } from "../types";
 import type { ChangeIdGraph } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
+import { cx } from "../utils";
 import styles from "./connection-lines.module.css";
 
 interface PathData {
@@ -142,7 +143,7 @@ export function ConnectionLines() {
             fill="none"
             stroke-width="2"
             stroke-linecap="round"
-            class={styles.connectionLine + (dimmed ? " " + styles.dimmed : "")}
+            class={cx(styles.connectionLine, dimmed && styles.dimmed)}
             data-from-id={p.fromId}
             data-to-id={p.toId}
             style={{ stroke: p.color }}
