@@ -165,24 +165,24 @@
   margin-right: 6px;
 }
 
-.changedFileA,
-.changedFileC {
+.changedFile[data-status="a"],
+.changedFile[data-status="c"] {
   color: var(--vscode-jjDecoration-addedResourceForeground, var(--vscode-gitDecoration-addedResourceForeground));
 }
 
-.changedFileM {
+.changedFile[data-status="m"] {
   color: var(--vscode-jjDecoration-modifiedResourceForeground, var(--vscode-gitDecoration-modifiedResourceForeground));
 }
 
-.changedFileD {
+.changedFile[data-status="d"] {
   color: var(--vscode-jjDecoration-deletedResourceForeground, var(--vscode-gitDecoration-deletedResourceForeground));
 }
 
-.changedFileR {
+.changedFile[data-status="r"] {
   color: var(--vscode-jjDecoration-renamedResourceForeground, var(--vscode-gitDecoration-renamedResourceForeground));
 }
 
-.changedFileX {
+.changedFile[data-status="x"] {
   color: var(
     --vscode-jjDecoration-conflictingResourceForeground,
     var(--vscode-gitDecoration-conflictingResourceForeground)

@@ -32,15 +32,6 @@ import type { ChangeNode } from "../../../graph-protocol";
 import { abbreviateName, cx } from "../utils";
 import { clearAllTooltipTimers } from "../hooks/use-tooltip-timers";
 
-const changedFileTypeClasses: Record<string, string> = {
-  a: styles.changedFileA,
-  c: styles.changedFileC,
-  m: styles.changedFileM,
-  d: styles.changedFileD,
-  r: styles.changedFileR,
-  x: styles.changedFileX,
-};
-
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
   return changeId !== rootChangeId && branchType !== "~";
 }
@@ -370,9 +361,10 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Chan
         <div
           key={f.path}
           title="Open diff"
-          class={cx(styles.changedFile, changedFileTypeClasses[f.type.toLowerCase()])}
+          class={styles.changedFile}
           data-role="changed-file"
           data-path={f.path}
+          data-status={f.type.toLowerCase()}
           onClick={(e) => {
             e.stopPropagation();
             vscode.postMessage({
