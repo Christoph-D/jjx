@@ -36,7 +36,6 @@
 
 .nodeCircle .circleBg {
   fill: var(--vscode-sideBar-background);
-  opacity: 1 !important;
   transition: none;
   stroke: var(--vscode-sideBar-background);
 }
@@ -58,7 +57,7 @@
   transition: opacity 0.2s ease-in-out;
 }
 
-.nodeCircle.dimmed circle {
+.nodeCircle.dimmed circle:not(.circleBg) {
   opacity: var(--dimmed-opacity);
 }
 
