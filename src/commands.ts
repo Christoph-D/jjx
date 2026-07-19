@@ -15,7 +15,7 @@ import {
   type LineChange,
 } from "./diffUtils";
 import { match } from "arktype";
-import { getActiveTextEditorDiff, pathEquals, showErrorMessage } from "./utils";
+import { getActiveTextEditorDiff, normalizePath, pathEquals, showErrorMessage } from "./utils";
 import { getMergeEditorConfigs } from "./jjEditor";
 import { handleJJCommand } from "./process";
 
@@ -315,7 +315,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
     async (fileUri: vscode.Uri, fallback: { command: string; args: unknown[] }) => {
       const repoSCM = state.workspaceSCM.getRepositorySourceControlManagerFromUri(fileUri);
       const conflictedFiles = repoSCM?.status?.conflictedFiles;
-      if (conflictedFiles?.has(fileUri.fsPath)) {
+      if (conflictedFiles?.has(normalizePath(fileUri.fsPath))) {
         await vscode.commands.executeCommand("jj.openMergeEditor", fileUri);
       } else {
         await vscode.commands.executeCommand(fallback.command, ...fallback.args);

@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import { resolveRev, toJJUri } from "./uri";
 import type { JJDecorationProvider } from "./decorationProvider";
 import { logger } from "./logger";
-import { anyEvent, filterEvent } from "./utils";
+import { anyEvent, filterEvent, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./fileSystemProvider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -798,7 +798,7 @@ function buildResourceStates(
 
   return fileStatuses.map((fileStatus) => {
     const workingCopyUri = vscode.Uri.file(fileStatus.path);
-    const isConflicted = conflictedFiles?.has(fileStatus.path) ?? false;
+    const isConflicted = conflictedFiles?.has(normalizePath(fileStatus.path)) ?? false;
     const beforeUri =
       fileStatus.type === "A"
         ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })

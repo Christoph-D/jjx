@@ -59,7 +59,7 @@ export function parseFileStatuses(
   for (const conflictedPath of conflictedPaths || []) {
     const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
     const fullPath = path.join(repositoryRoot, normalizedPath);
-    conflictedFiles.add(fullPath);
+    conflictedFiles.add(normalizePath(fullPath));
 
     const normalizedFullPath = normalizePath(fullPath);
     if (!fileStatusesByPath.has(normalizedFullPath)) {
