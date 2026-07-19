@@ -1,10 +1,7 @@
-import { useRef } from "preact/hooks";
 import { rebaseMenu, vscode } from "../signals";
-import { useMenuPosition } from "./menu-container";
-import styles from "./context-menu.module.css";
+import { Menu, MenuItem, MenuSeparator, Submenu, SubmenuItem } from "./menu-container";
 
 export function RebaseMenu() {
-  const menuRef = useRef<HTMLDivElement>(null);
   const state = rebaseMenu.value;
   if (!state) {
     return null;
@@ -14,133 +11,81 @@ export function RebaseMenu() {
   const isDivergent = !!targetChange.changeOffset && targetChange.changeOffset !== "";
   const isImmutable = targetChange.branchType === "◆";
 
-  useMenuPosition(menuRef, state);
-
   const sendCommand = (command: string, withDescendants = false) => {
     vscode.postMessage({ command, changeId: sourceId, targetChangeId: targetId, withDescendants });
     rebaseMenu.value = null;
   };
 
   return (
-    <div
+    <Menu
       id="rebase-menu"
-      class={styles.contextMenu}
-      ref={menuRef}
-      style="display: none"
+      state={state}
       onClick={(e) => e.stopPropagation()}
       data-source-id={sourceId}
       data-target-id={targetId}
     >
       {!isDivergent && (
         <>
-          <div class={`${styles.contextMenuItem} ${styles.hasSubmenu}`} data-action="rebase">
-            Rebase
-            <div class={styles.contextSubmenu}>
-              <div class={styles.contextSubmenuItem} data-action="rebaseOnto" onClick={() => sendCommand("rebaseOnto")}>
-                Onto
-              </div>
-              <div
-                class={styles.contextSubmenuItem}
-                data-action="rebaseAfter"
-                onClick={() => sendCommand("rebaseAfter")}
-              >
-                After
-              </div>
-              {!isImmutable && (
-                <div
-                  class={styles.contextSubmenuItem}
-                  data-action="rebaseBefore"
-                  onClick={() => sendCommand("rebaseBefore")}
-                >
-                  Before
-                </div>
-              )}
-            </div>
-          </div>
-          <div class={`${styles.contextMenuItem} ${styles.hasSubmenu}`} data-action="rebaseWithDescendants">
-            Rebase With Descendants
-            <div class={styles.contextSubmenu}>
-              <div
-                class={styles.contextSubmenuItem}
-                data-action="rebaseOntoWithDescendants"
-                onClick={() => sendCommand("rebaseOnto", true)}
-              >
-                Onto
-              </div>
-              <div
-                class={styles.contextSubmenuItem}
-                data-action="rebaseAfterWithDescendants"
-                onClick={() => sendCommand("rebaseAfter", true)}
-              >
-                After
-              </div>
-              {!isImmutable && (
-                <div
-                  class={styles.contextSubmenuItem}
-                  data-action="rebaseBeforeWithDescendants"
-                  onClick={() => sendCommand("rebaseBefore", true)}
-                >
-                  Before
-                </div>
-              )}
-            </div>
-          </div>
-          <div class={styles.contextMenuSeparator}></div>
+          <Submenu action="rebase" label="Rebase">
+            <SubmenuItem action="rebaseOnto" onClick={() => sendCommand("rebaseOnto")}>
+              Onto
+            </SubmenuItem>
+            <SubmenuItem action="rebaseAfter" onClick={() => sendCommand("rebaseAfter")}>
+              After
+            </SubmenuItem>
+            {!isImmutable && (
+              <SubmenuItem action="rebaseBefore" onClick={() => sendCommand("rebaseBefore")}>
+                Before
+              </SubmenuItem>
+            )}
+          </Submenu>
+          <Submenu action="rebaseWithDescendants" label="Rebase With Descendants">
+            <SubmenuItem action="rebaseOntoWithDescendants" onClick={() => sendCommand("rebaseOnto", true)}>
+              Onto
+            </SubmenuItem>
+            <SubmenuItem action="rebaseAfterWithDescendants" onClick={() => sendCommand("rebaseAfter", true)}>
+              After
+            </SubmenuItem>
+            {!isImmutable && (
+              <SubmenuItem action="rebaseBeforeWithDescendants" onClick={() => sendCommand("rebaseBefore", true)}>
+                Before
+              </SubmenuItem>
+            )}
+          </Submenu>
+          <MenuSeparator />
           {!isImmutable && (
-            <div class={styles.contextMenuItem} data-action="squashInto" onClick={() => sendCommand("squashInto")}>
+            <MenuItem action="squashInto" onClick={() => sendCommand("squashInto")}>
               Squash Into
-            </div>
+            </MenuItem>
           )}
         </>
       )}
-      <div class={`${styles.contextMenuItem} ${styles.hasSubmenu}`} data-action="duplicate">
-        Duplicate
-        <div class={styles.contextSubmenu}>
-          <div
-            class={styles.contextSubmenuItem}
-            data-action="duplicateOnto"
-            onClick={() => sendCommand("duplicateOnto")}
-          >
-            Onto
-          </div>
-          <div
-            class={styles.contextSubmenuItem}
-            data-action="duplicateAfter"
-            onClick={() => sendCommand("duplicateAfter")}
-          >
-            After
-          </div>
-          {(!isDivergent ? !isImmutable : true) && (
-            <div
-              class={styles.contextSubmenuItem}
-              data-action="duplicateBefore"
-              onClick={() => sendCommand("duplicateBefore")}
-            >
-              Before
-            </div>
-          )}
-        </div>
-      </div>
-      <div class={`${styles.contextMenuItem} ${styles.hasSubmenu}`} data-action="revert">
-        Revert
-        <div class={styles.contextSubmenu}>
-          <div class={styles.contextSubmenuItem} data-action="revertOnto" onClick={() => sendCommand("revertOnto")}>
-            Onto
-          </div>
-          <div class={styles.contextSubmenuItem} data-action="revertAfter" onClick={() => sendCommand("revertAfter")}>
-            After
-          </div>
-          {(!isDivergent ? !isImmutable : true) && (
-            <div
-              class={styles.contextSubmenuItem}
-              data-action="revertBefore"
-              onClick={() => sendCommand("revertBefore")}
-            >
-              Before
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      <Submenu action="duplicate" label="Duplicate">
+        <SubmenuItem action="duplicateOnto" onClick={() => sendCommand("duplicateOnto")}>
+          Onto
+        </SubmenuItem>
+        <SubmenuItem action="duplicateAfter" onClick={() => sendCommand("duplicateAfter")}>
+          After
+        </SubmenuItem>
+        {(!isDivergent ? !isImmutable : true) && (
+          <SubmenuItem action="duplicateBefore" onClick={() => sendCommand("duplicateBefore")}>
+            Before
+          </SubmenuItem>
+        )}
+      </Submenu>
+      <Submenu action="revert" label="Revert">
+        <SubmenuItem action="revertOnto" onClick={() => sendCommand("revertOnto")}>
+          Onto
+        </SubmenuItem>
+        <SubmenuItem action="revertAfter" onClick={() => sendCommand("revertAfter")}>
+          After
+        </SubmenuItem>
+        {(!isDivergent ? !isImmutable : true) && (
+          <SubmenuItem action="revertBefore" onClick={() => sendCommand("revertBefore")}>
+            Before
+          </SubmenuItem>
+        )}
+      </Submenu>
+    </Menu>
   );
 }

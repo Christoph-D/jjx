@@ -1,16 +1,11 @@
-import { useRef } from "preact/hooks";
 import { pillContextMenu, vscode } from "../signals";
-import { useMenuPosition } from "./menu-container";
-import styles from "./context-menu.module.css";
+import { Menu, MenuItem, MenuSeparator } from "./menu-container";
 
 export function PillContextMenu() {
-  const menuRef = useRef<HTMLDivElement>(null);
   const state = pillContextMenu.value;
   if (!state || state.pendingRemotes) {
     return null;
   }
-
-  useMenuPosition(menuRef, state);
 
   const isBookmark = state.type === "bookmark";
   const deleteLabel = isBookmark ? "Delete Bookmark" : "Delete Tag";
@@ -27,82 +22,71 @@ export function PillContextMenu() {
   const needBottomDivider = showPush || showTrack || showUntrack || showTagPush;
 
   return (
-    <div
-      id="pill-context-menu"
-      class={styles.contextMenu}
-      ref={menuRef}
-      style="display: none"
-      onClick={(e) => e.stopPropagation()}
-    >
+    <Menu id="pill-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
       {showTagPush &&
         state.remotes!.map((remote) => (
-          <div
+          <MenuItem
             key={`push-${remote}`}
-            class={styles.contextMenuItem}
-            data-action="pushTag"
+            action="pushTag"
             onClick={() => {
               vscode.postMessage({ command: "pushTagToRemote", tag: state.name, remote });
               pillContextMenu.value = null;
             }}
           >
             Push to {remote}
-          </div>
+          </MenuItem>
         ))}
       {showPush &&
         state.unsyncedRemotes!.map((remote) => (
-          <div
+          <MenuItem
             key={`push-${remote}`}
-            class={styles.contextMenuItem}
-            data-action="pushBookmark"
+            action="pushBookmark"
             onClick={() => {
               vscode.postMessage({ command: "pushBookmarkToRemote", bookmark: state.name, remote });
               pillContextMenu.value = null;
             }}
           >
             Push to {remote}
-          </div>
+          </MenuItem>
         ))}
-      {showPush && needTopDivider && <div class={styles.contextMenuSeparator}></div>}
+      {showPush && needTopDivider && <MenuSeparator />}
       {showTrack &&
         state.untrackedRemotes!.map((remote) => (
-          <div
+          <MenuItem
             key={`track-${remote}`}
-            class={styles.contextMenuItem}
-            data-action="trackBookmark"
+            action="trackBookmark"
             onClick={() => {
               vscode.postMessage({ command: "trackBookmark", bookmark: state.name, remote });
               pillContextMenu.value = null;
             }}
           >
             Track on {remote}
-          </div>
+          </MenuItem>
         ))}
-      {showTrack && needMiddleDivider && <div class={styles.contextMenuSeparator}></div>}
+      {showTrack && needMiddleDivider && <MenuSeparator />}
       {showUntrack &&
         state.remotes!.map((remote) => (
-          <div
+          <MenuItem
             key={`untrack-${remote}`}
-            class={styles.contextMenuItem}
-            data-action="untrackBookmark"
+            action="untrackBookmark"
             onClick={() => {
               vscode.postMessage({ command: "untrackBookmark", bookmark: state.name, remote });
               pillContextMenu.value = null;
             }}
           >
             Untrack from {remote}
-          </div>
+          </MenuItem>
         ))}
-      {needBottomDivider && <div class={styles.contextMenuSeparator}></div>}
-      <div
-        class={styles.contextMenuItem}
-        data-action="deleteRef"
+      {needBottomDivider && <MenuSeparator />}
+      <MenuItem
+        action="deleteRef"
         onClick={() => {
           vscode.postMessage({ command: deleteCommand, ...deletePayload });
           pillContextMenu.value = null;
         }}
       >
         {deleteLabel}
-      </div>
-    </div>
+      </MenuItem>
+    </Menu>
   );
 }
