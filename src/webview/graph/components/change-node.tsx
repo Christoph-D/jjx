@@ -4,7 +4,6 @@ import { useDragDrop } from "../hooks/use-drag-drop";
 import { useConnectedHighlight } from "../hooks/use-connected-highlight";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import dragGhostStyles from "./drag-ghost.module.css";
-import nodeCircleStyles from "./node-circle.module.css";
 import pillStyles from "./pill.module.css";
 import styles from "./change-node.module.css";
 import {
@@ -24,6 +23,7 @@ import {
   pillContextMenu,
   closeAllMenus,
   pushingBookmarks,
+  hoveredChangeId,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
@@ -132,9 +132,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
 
   const handleMouseEnter = (e: MouseEvent) => {
     highlightProps.onMouseEnter();
-    document
-      .querySelector(`#node-circles > [data-change-id="${change.changeId}"]`)
-      ?.classList.add(nodeCircleStyles.hovered);
+    hoveredChangeId.value = change.changeId;
     tryStartTooltip(e);
   };
 
@@ -145,9 +143,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
 
   const handleMouseLeave = () => {
     highlightProps.onMouseLeave();
-    document
-      .querySelector(`#node-circles > [data-change-id="${change.changeId}"]`)
-      ?.classList.remove(nodeCircleStyles.hovered);
+    hoveredChangeId.value = null;
     clearHoverTimers();
     clearHideTimer();
     scheduleHideTooltip();
