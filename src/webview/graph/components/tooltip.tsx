@@ -2,8 +2,7 @@ import { useEffect, useRef, useCallback } from "preact/hooks";
 import { tooltip, diffStatsCache } from "../signals";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import { CHANGE_ID_RIGHT_PADDING } from "../types";
-import { cx } from "../utils";
-import pillStyles from "./pill.module.css";
+import { BookmarkPill, RemoteBookmarkPill, RemoteTagPill, TagPill } from "./pill";
 import styles from "./tooltip.module.css";
 
 export function Tooltip() {
@@ -117,33 +116,24 @@ export function Tooltip() {
           filteredRemoteTags.length > 0 ? (
           <div class={styles.tooltipPills}>
             {change.localBookmarks.map((b) => (
-              <span
-                key={b.name}
-                class={cx(
-                  pillStyles.bookmarkPill,
-                  b.conflict ? pillStyles.conflicted : !b.synced && pillStyles.unsynced,
-                )}
-              >
+              <BookmarkPill key={b.name} conflict={b.conflict} synced={b.synced}>
                 {b.name}
-              </span>
+              </BookmarkPill>
             ))}
             {filteredRemoteBookmarks.map((b) => (
-              <span key={b.name + "@" + b.remote} class={pillStyles.bookmarkPill}>
+              <RemoteBookmarkPill key={b.name + "@" + b.remote}>
                 {b.name}@{b.remote}
-              </span>
+              </RemoteBookmarkPill>
             ))}
             {change.localTags.map((t) => (
-              <span
-                key={t.name}
-                class={cx(pillStyles.tagPill, t.conflict ? pillStyles.conflicted : !t.synced && pillStyles.unsynced)}
-              >
+              <TagPill key={t.name} conflict={t.conflict} synced={t.synced}>
                 {t.name}
-              </span>
+              </TagPill>
             ))}
             {filteredRemoteTags.map((t) => (
-              <span key={t.name + "@" + t.remote} class={pillStyles.tagPill}>
+              <RemoteTagPill key={t.name + "@" + t.remote}>
                 {t.name}@{t.remote}
-              </span>
+              </RemoteTagPill>
             ))}
           </div>
         ) : null;

@@ -3,7 +3,7 @@ import { memo } from "preact/compat";
 import { useDragDrop } from "../hooks/use-drag-drop";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import dragGhostStyles from "./drag-ghost.module.css";
-import pillStyles from "./pill.module.css";
+import { BookmarkPill, BookmarkPushIcon, RemoteBookmarkPill, RemoteTagPill, TagPill, WorkspacePill } from "./pill";
 import styles from "./change-node.module.css";
 import {
   selectedNodes,
@@ -243,18 +243,15 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
     >
       <div>
         {change.workingCopies?.map((wc) => (
-          <span key={wc} class={cx(pillStyles.pill, pillStyles.workspacePill)} data-workspace={wc}>
+          <WorkspacePill key={wc} data-workspace={wc}>
             {wc}
-          </span>
+          </WorkspacePill>
         ))}
         {change.localBookmarks.map((b) => (
-          <span
+          <BookmarkPill
             key={b.name}
-            class={cx(
-              pillStyles.pill,
-              pillStyles.bookmarkPill,
-              b.conflict ? pillStyles.conflicted : !b.synced && pillStyles.unsynced,
-            )}
+            conflict={b.conflict}
+            synced={b.synced}
             data-bookmark={b.name}
             data-unsynced={!b.synced && !b.conflict ? "" : undefined}
             data-conflicted={b.conflict ? "" : undefined}
@@ -300,21 +297,9 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               !b.conflict &&
               b.showPushButton !== false &&
               (pushingBookmarks.value.has(b.name) ? (
-                <i
-                  class={cx(
-                    "codicon",
-                    "codicon-sync",
-                    "codicon-modifier-spin",
-                    pillStyles.bookmarkPushIcon,
-                    pillStyles.bookmarkPushingIcon,
-                  )}
-                  data-role="push-icon"
-                  title="Pushing..."
-                />
+                <BookmarkPushIcon pushing={true} title="Pushing..." />
               ) : (
-                <i
-                  class={cx("codicon", "codicon-cloud-upload", pillStyles.bookmarkPushIcon)}
-                  data-role="push-icon"
+                <BookmarkPushIcon
                   title="Push to all tracking remotes"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -326,23 +311,20 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                 />
               ))}
             {abbreviateName(b.name)}
-          </span>
+          </BookmarkPill>
         ))}
         {change.remoteBookmarks
           .filter((b) => !localBookmarkNames.has(b.name))
           .map((b) => (
-            <span key={b.name + "@" + b.remote} class={cx(pillStyles.pill, pillStyles.bookmarkPill)}>
+            <RemoteBookmarkPill key={b.name + "@" + b.remote}>
               {abbreviateName(b.name)}@{b.remote}
-            </span>
+            </RemoteBookmarkPill>
           ))}
         {change.localTags.map((t) => (
-          <span
+          <TagPill
             key={t.name}
-            class={cx(
-              pillStyles.pill,
-              pillStyles.tagPill,
-              t.conflict ? pillStyles.conflicted : !t.synced && pillStyles.unsynced,
-            )}
+            conflict={t.conflict}
+            synced={t.synced}
             data-tag={t.name}
             data-unsynced={!t.synced && !t.conflict ? "" : undefined}
             data-conflicted={t.conflict ? "" : undefined}
@@ -361,14 +343,14 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
             }}
           >
             {abbreviateName(t.name)}
-          </span>
+          </TagPill>
         ))}
         {change.remoteTags
           .filter((t) => !localTagNames.has(t.name))
           .map((t) => (
-            <span key={t.name + "@" + t.remote} class={cx(pillStyles.pill, pillStyles.tagPill)}>
+            <RemoteTagPill key={t.name + "@" + t.remote}>
               {abbreviateName(t.name)}@{t.remote}
-            </span>
+            </RemoteTagPill>
           ))}
         <span>{change.label}</span>
         {style === "compact" && !change.mine && change.authorName && (

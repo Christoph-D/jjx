@@ -37,7 +37,7 @@
 .tooltipPills {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 8px;
+  gap: 4px 0px;
   margin-bottom: 6px;
 }
 
