@@ -169,8 +169,6 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
       isElided={isElided}
       modeClasses={modeClasses}
       data-change-id={change.changeId}
-      data-parent-ids={JSON.stringify(change.parentChangeIds ?? [])}
-      data-branch-type={change.branchType ?? ""}
       onClick={handleClick}
       onDblClick={handleDoubleClick}
       onContextMenu={handleContextMenu}

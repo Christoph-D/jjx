@@ -144,8 +144,6 @@ export function ConnectionLines() {
             stroke-width="2"
             stroke-linecap="round"
             class={cx(styles.connectionLine, dimmed && styles.dimmed)}
-            data-from-id={p.fromId}
-            data-to-id={p.toId}
             style={{ stroke: p.color }}
           />
         );

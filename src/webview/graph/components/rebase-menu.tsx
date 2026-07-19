@@ -17,13 +17,7 @@ export function RebaseMenu() {
   };
 
   return (
-    <Menu
-      id="rebase-menu"
-      state={state}
-      onClick={(e) => e.stopPropagation()}
-      data-source-id={sourceId}
-      data-target-id={targetId}
-    >
+    <Menu id="rebase-menu" state={state} onClick={(e) => e.stopPropagation()}>
       {!isDivergent && (
         <>
           <Submenu action="rebase" label="Rebase">

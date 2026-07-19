@@ -117,7 +117,6 @@ export function NodeCircles() {
               highlight && !highlight.connectedIds.has(change.changeId) && styles.dimmed,
             )}
             data-change-id={change.changeId}
-            data-node-lane={nodeData?.lane ?? 0}
             style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}
             transform={pos ? `translate(${pos.x}, ${pos.y})` : undefined}
           >

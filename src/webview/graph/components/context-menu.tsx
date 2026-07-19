@@ -11,13 +11,7 @@ export function ContextMenu() {
   const isImmutable = change.branchType === "◆";
 
   return (
-    <Menu
-      id="context-menu"
-      state={state}
-      onClick={(e) => e.stopPropagation()}
-      data-change-id={change.changeId}
-      data-immutable={isImmutable ? "true" : "false"}
-    >
+    <Menu id="context-menu" state={state} onClick={(e) => e.stopPropagation()} data-change-id={change.changeId}>
       {!change.currentWorkingCopy && (
         <MenuItem
           action="edit"
