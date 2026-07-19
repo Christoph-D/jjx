@@ -11,19 +11,6 @@ function ensureDir(dir) {
   }
 }
 
-function copyDir(src, dest) {
-  ensureDir(dest);
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyDir(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
-  }
-}
-
 function copyFile(src, dest) {
   ensureDir(path.dirname(dest));
   fs.copyFileSync(src, dest);
@@ -33,7 +20,9 @@ function copyAssets() {
   fs.copyFileSync("src/webview/graph.html", "dist/webview/graph.html");
   copyFile("src/config.toml", "dist/config.toml");
 
-  copyDir("node_modules/@vscode/codicons/dist", "dist/codicons");
+  fs.rmSync("dist/codicons", { recursive: true, force: true });
+  copyFile("node_modules/@vscode/codicons/dist/codicon.css", "dist/codicons/codicon.css");
+  copyFile("node_modules/@vscode/codicons/dist/codicon.ttf", "dist/codicons/codicon.ttf");
 }
 
 /**
