@@ -3,6 +3,7 @@ import { tooltip, diffStatsCache } from "../signals";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import { CHANGE_ID_RIGHT_PADDING } from "../types";
 import { cx } from "../utils";
+import pillStyles from "./pill.module.css";
 import styles from "./tooltip.module.css";
 
 export function Tooltip() {
@@ -118,26 +119,29 @@ export function Tooltip() {
             {change.localBookmarks.map((b) => (
               <span
                 key={b.name}
-                class={cx(styles.tooltipBookmarkPill, b.conflict ? styles.conflicted : !b.synced && styles.unsynced)}
+                class={cx(
+                  pillStyles.bookmarkPill,
+                  b.conflict ? pillStyles.conflicted : !b.synced && pillStyles.unsynced,
+                )}
               >
                 {b.name}
               </span>
             ))}
             {filteredRemoteBookmarks.map((b) => (
-              <span key={b.name + "@" + b.remote} class={styles.tooltipBookmarkPill}>
+              <span key={b.name + "@" + b.remote} class={pillStyles.bookmarkPill}>
                 {b.name}@{b.remote}
               </span>
             ))}
             {change.localTags.map((t) => (
               <span
                 key={t.name}
-                class={cx(styles.tooltipTagPill, t.conflict ? styles.conflicted : !t.synced && styles.unsynced)}
+                class={cx(pillStyles.tagPill, t.conflict ? pillStyles.conflicted : !t.synced && pillStyles.unsynced)}
               >
                 {t.name}
               </span>
             ))}
             {filteredRemoteTags.map((t) => (
-              <span key={t.name + "@" + t.remote} class={styles.tooltipTagPill}>
+              <span key={t.name + "@" + t.remote} class={pillStyles.tagPill}>
                 {t.name}@{t.remote}
               </span>
             ))}
