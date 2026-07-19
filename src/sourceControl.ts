@@ -837,13 +837,39 @@ function getResourceStateCommand(
   isConflicted: boolean,
   changeId?: string,
 ): vscode.Command {
-  if (isConflicted) {
+  if (isConflicted && changeId !== undefined) {
     return {
       title: "Resolve Conflict",
       command: "jj.openMergeEditor",
       arguments: [workingCopyUri, changeId],
     };
   }
+  const fallback = computeFallbackCommand(
+    fileStatus,
+    beforeUri,
+    afterUri,
+    diffTitleSuffix,
+    fileClickAction,
+    workingCopyUri,
+  );
+  if (changeId === undefined) {
+    return {
+      title: isConflicted ? "Resolve Conflict" : fallback.title,
+      command: "jj.openWorkingCopyFile",
+      arguments: [workingCopyUri, { command: fallback.command, args: fallback.arguments ?? [] }],
+    };
+  }
+  return fallback;
+}
+
+function computeFallbackCommand(
+  fileStatus: FileStatus,
+  beforeUri: vscode.Uri,
+  afterUri: vscode.Uri,
+  diffTitleSuffix: string,
+  fileClickAction: "diff" | "at-revision" | "working-copy",
+  workingCopyUri: vscode.Uri,
+): vscode.Command {
   if (fileStatus.type === "D") {
     if (fileClickAction === "diff") {
       return {

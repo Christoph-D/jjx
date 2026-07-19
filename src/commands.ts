@@ -309,6 +309,21 @@ export function registerPreInitCommands(state: ExtensionState): void {
     { errorPrefix: "Failed to open file" },
   );
 
+  registerCommand(
+    context,
+    "jj.openWorkingCopyFile",
+    async (fileUri: vscode.Uri, fallback: { command: string; args: unknown[] }) => {
+      const repoSCM = state.workspaceSCM.getRepositorySourceControlManagerFromUri(fileUri);
+      const conflictedFiles = repoSCM?.status?.conflictedFiles;
+      if (conflictedFiles?.has(fileUri.fsPath)) {
+        await vscode.commands.executeCommand("jj.openMergeEditor", fileUri);
+      } else {
+        await vscode.commands.executeCommand(fallback.command, ...fallback.args);
+      }
+    },
+    { errorPrefix: "Failed to open file" },
+  );
+
   registerCommand(context, "jj.openMergeEditor", async (uri: vscode.Uri, changeId?: string) => {
     const repo = state.workspaceSCM.getRepositoryFromUri(uri);
     if (!repo) {
