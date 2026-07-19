@@ -14,11 +14,11 @@ test("revert commit onto another via drag and drop", async ({ graphFrame, testRe
 
   await commitC.dragTo(commitA);
 
-  const revertItem = graphFrame.locator('.context-menu-item[data-action="revert"]');
+  const revertItem = graphFrame.locator('[data-action="revert"]');
   await expect(revertItem).toBeVisible();
   await revertItem.hover();
 
-  const revertOntoItem = graphFrame.locator('.context-submenu-item[data-action="revertOnto"]');
+  const revertOntoItem = graphFrame.locator('[data-action="revertOnto"]');
   await expect(revertOntoItem).toBeVisible();
   await revertOntoItem.click();
 
@@ -47,11 +47,11 @@ test("revert after another commit via drag and drop", async ({ graphFrame, testR
 
   await commitC.dragTo(commitA);
 
-  const revertItem = graphFrame.locator('.context-menu-item[data-action="revert"]');
+  const revertItem = graphFrame.locator('[data-action="revert"]');
   await expect(revertItem).toBeVisible();
   await revertItem.hover();
 
-  const revertAfterItem = graphFrame.locator('.context-submenu-item[data-action="revertAfter"]');
+  const revertAfterItem = graphFrame.locator('[data-action="revertAfter"]');
   await expect(revertAfterItem).toBeVisible();
   await revertAfterItem.click();
 
@@ -83,11 +83,11 @@ test("revert before another commit via drag and drop", async ({ graphFrame, test
 
   await commitC.dragTo(commitB);
 
-  const revertItem = graphFrame.locator('.context-menu-item[data-action="revert"]');
+  const revertItem = graphFrame.locator('[data-action="revert"]');
   await expect(revertItem).toBeVisible();
   await revertItem.hover();
 
-  const revertBeforeItem = graphFrame.locator('.context-submenu-item[data-action="revertBefore"]');
+  const revertBeforeItem = graphFrame.locator('[data-action="revertBefore"]');
   await expect(revertBeforeItem).toBeVisible();
   await revertBeforeItem.click();
 

@@ -10,7 +10,7 @@ test("update change description via graph context menu", async ({ graphFrame, te
   const commitB = nodes.nth(1);
   await commitB.click({ button: "right" });
 
-  const describeItem = graphFrame.locator('.context-menu-item[data-action="describe"]');
+  const describeItem = graphFrame.locator('[data-action="describe"]');
   await expect(describeItem).toBeVisible();
   await describeItem.click();
 

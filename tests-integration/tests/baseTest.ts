@@ -349,7 +349,7 @@ export async function clickPillMenuItem(graphFrame: Frame, pill: Locator, text: 
   await expect(async () => {
     await pill.click({ button: "right" });
     const menu = graphFrame.locator("#pill-context-menu");
-    const item = menu.locator(".context-menu-item").filter({ hasText: text });
+    const item = menu.locator("[data-action]").filter({ hasText: text });
     await expect(item).toBeVisible();
     await item.click();
     await expect(menu).not.toBeVisible();

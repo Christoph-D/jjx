@@ -207,6 +207,7 @@ function ChangeNodeClass({
         (dropTargetId.value === changeId ? " " + styles.dropTarget : "") +
         modeClasses
       }
+      data-selected={selectedNodes.value.has(changeId) ? "" : undefined}
       {...rest}
     >
       {children}
@@ -235,7 +236,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
     >
       <div>
         {change.workingCopies?.map((wc) => (
-          <span key={wc} class={`${pillStyles.pill} ${pillStyles.workspacePill}`}>
+          <span key={wc} class={`${pillStyles.pill} ${pillStyles.workspacePill}`} data-workspace={wc}>
             {wc}
           </span>
         ))}
@@ -247,6 +248,8 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               (b.conflict ? " " + pillStyles.conflicted : b.synced ? "" : " " + pillStyles.unsynced)
             }
             data-bookmark={b.name}
+            data-unsynced={!b.synced && !b.conflict ? "" : undefined}
+            data-conflicted={b.conflict ? "" : undefined}
             draggable={true}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -291,11 +294,13 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               (pushingBookmarks.value.has(b.name) ? (
                 <i
                   class={`codicon codicon-sync codicon-modifier-spin ${pillStyles.bookmarkPushIcon} ${pillStyles.bookmarkPushingIcon}`}
+                  data-role="push-icon"
                   title="Pushing..."
                 />
               ) : (
                 <i
                   class={`codicon codicon-cloud-upload ${pillStyles.bookmarkPushIcon}`}
+                  data-role="push-icon"
                   title="Push to all tracking remotes"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -324,6 +329,8 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               (t.conflict ? " " + pillStyles.conflicted : t.synced ? "" : " " + pillStyles.unsynced)
             }
             data-tag={t.name}
+            data-unsynced={!t.synced && !t.conflict ? "" : undefined}
+            data-conflicted={t.conflict ? "" : undefined}
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -369,6 +376,8 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Chan
           key={f.path}
           title="Open diff"
           class={`${styles.changedFile} ${changedFileTypeClasses[f.type.toLowerCase()] ?? ""}`}
+          data-role="changed-file"
+          data-path={f.path}
           onClick={(e) => {
             e.stopPropagation();
             vscode.postMessage({

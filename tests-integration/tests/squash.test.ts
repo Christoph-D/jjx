@@ -12,7 +12,7 @@ test("squash commit into another via drag and drop", async ({ graphFrame, testRe
 
   await commitB.dragTo(commitA);
 
-  const squashIntoItem = graphFrame.locator('.context-menu-item[data-action="squashInto"]');
+  const squashIntoItem = graphFrame.locator('[data-action="squashInto"]');
   await expect(squashIntoItem).toBeVisible();
   await squashIntoItem.click();
 

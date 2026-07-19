@@ -127,7 +127,7 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
     "workbench.colorTheme": "Dark+",
     "jjx.graphStyle": "full",
   });
-  await expect(graphFrame.locator(".compact")).toHaveCount(0);
+  await expect(graphFrame.locator('[data-mode="compact"]')).toHaveCount(0);
   await screenshot(workbox, "full-view.png", {
     x: clip.x,
     y: clip.y,
@@ -136,13 +136,13 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
   });
 
   await addSettings(userDataDir, { "jjx.graphStyle": "compact" });
-  await expect(graphFrame.locator(".compact").first()).toBeVisible();
+  await expect(graphFrame.locator('[data-mode="compact"]').first()).toBeVisible();
 
   const secondCommit = nodes.nth(1);
   await secondCommit.hover();
   await workbox.waitForTimeout(500); // hover animation
   await secondCommit.click({ button: "right", position: { x: 80, y: 2 } });
-  const createBookmarkEntry = graphFrame.locator('.context-menu-item[data-action="createBookmark"]');
+  const createBookmarkEntry = graphFrame.locator('[data-action="createBookmark"]');
   await expect(createBookmarkEntry).toBeVisible();
   await screenshot(workbox, "context-menu.png", {
     x: clip.x,
@@ -169,11 +169,11 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
 
   const rebaseTarget = nodes.nth(3);
   await secondCommit.dragTo(rebaseTarget);
-  const rebaseItem = graphFrame.locator('.context-menu-item[data-action="rebase"]');
+  const rebaseItem = graphFrame.locator('[data-action="rebase"]');
   await expect(rebaseItem).toBeVisible();
   await rebaseItem.hover();
 
-  const rebaseOntoItem = graphFrame.locator('.context-submenu-item[data-action="rebaseOnto"]');
+  const rebaseOntoItem = graphFrame.locator('[data-action="rebaseOnto"]');
   await expect(rebaseOntoItem).toBeVisible();
 
   await workbox.waitForTimeout(500);
@@ -336,9 +336,9 @@ test("take screenshot of bookmark upload", async ({ userDataDir, graphFrame, tes
   await testRepo.jjCommand(["bookmark", "create", "main", "-r", "@-"]);
   await testRepo.jjCommand(["bookmark", "track", "main", "--remote=origin"]);
 
-  const unsyncedPill = graphFrame.locator('.bookmark-pill.unsynced[data-bookmark="main"]');
+  const unsyncedPill = graphFrame.locator('[data-bookmark="main"][data-unsynced]');
   await expect(unsyncedPill).toBeVisible();
-  const uploadIcon = unsyncedPill.locator(".bookmark-push-icon");
+  const uploadIcon = unsyncedPill.locator('[data-role="push-icon"]');
   await expect(uploadIcon).toBeVisible();
   await uploadIcon.hover();
   await workbox.waitForTimeout(500);
@@ -365,7 +365,7 @@ test("take screenshot of bookmark upload", async ({ userDataDir, graphFrame, tes
   await screenshot(workbox, "unsynced-bookmark.png", clip);
 
   await unsyncedPill.click({ button: "right", position: { x: 35, y: 15 } });
-  const deleteBookmarkEntry = graphFrame.locator('.context-menu-item[data-action="deleteRef"]');
+  const deleteBookmarkEntry = graphFrame.locator('[data-action="deleteRef"]');
   await expect(deleteBookmarkEntry).toBeVisible();
 
   const clip2 = {

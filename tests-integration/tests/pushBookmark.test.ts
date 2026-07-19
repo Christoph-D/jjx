@@ -12,7 +12,7 @@ async function setupRemotesWithTrackedBookmark(testRepo: TestRepo, graphFrame: F
   await testRepo.jjCommand(["git", "remote", "add", "remote-b", remoteBPath]);
   await testRepo.jjCommand(["bookmark", "create", "my-bookmark"]);
 
-  const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="my-bookmark"]');
+  const bookmarkPill = graphFrame.locator('[data-bookmark="my-bookmark"]');
   await expect(bookmarkPill).toBeVisible();
 
   await clickPillMenuItem(graphFrame, bookmarkPill, "Track on remote-a");
@@ -30,8 +30,8 @@ test("push bookmark to all remotes via upload icon", async ({ graphFrame, testRe
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(3);
 
-  const unsyncedPill = graphFrame.locator('.bookmark-pill.unsynced[data-bookmark="my-bookmark"]');
-  const uploadIcon = bookmarkPill.locator(".bookmark-push-icon");
+  const unsyncedPill = graphFrame.locator('[data-bookmark="my-bookmark"][data-unsynced]');
+  const uploadIcon = bookmarkPill.locator('[data-role="push-icon"]');
 
   await expect(uploadIcon).toBeVisible();
 
@@ -45,11 +45,11 @@ test("push bookmark to single remote via context menu", async ({ graphFrame, tes
   const { remoteARepo, remoteBRepo, bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
 
   await testRepo.commitFile("test.txt", "content", "initial commit");
-  const uploadIcon = bookmarkPill.locator(".bookmark-push-icon");
+  const uploadIcon = bookmarkPill.locator('[data-role="push-icon"]');
   await expect(uploadIcon).toBeVisible();
   await uploadIcon.click();
 
-  const unsyncedPill = graphFrame.locator('.bookmark-pill.unsynced[data-bookmark="my-bookmark"]');
+  const unsyncedPill = graphFrame.locator('[data-bookmark="my-bookmark"][data-unsynced]');
   await expect(unsyncedPill).not.toBeVisible();
 
   const changeId = await testRepo.commitFile("new.txt", "new content", "second commit");
@@ -74,9 +74,9 @@ test("push bookmark to single remote via context menu", async ({ graphFrame, tes
     await bookmarkPill.click({ button: "right" });
     const pushMenu = graphFrame.locator("#pill-context-menu");
     await expect(pushMenu).toBeVisible();
-    const pushToB = pushMenu.locator(".context-menu-item").filter({ hasText: "Push to remote-b" });
+    const pushToB = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-b" });
     await expect(pushToB).toBeVisible();
-    const pushToA = pushMenu.locator(".context-menu-item").filter({ hasText: "Push to remote-a" });
+    const pushToA = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-a" });
     await expect(pushToA).not.toBeVisible({ timeout: 2_000 });
     await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
     await expect(pushMenu).not.toBeVisible();
@@ -91,11 +91,11 @@ test("push to one remote and untrack from another", async ({ graphFrame, testRep
   const { remoteARepo, bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
 
   await testRepo.commitFile("test.txt", "content", "initial commit");
-  const uploadIcon = bookmarkPill.locator(".bookmark-push-icon");
+  const uploadIcon = bookmarkPill.locator('[data-role="push-icon"]');
   await expect(uploadIcon).toBeVisible();
   await uploadIcon.click();
 
-  const unsyncedPill = graphFrame.locator('.bookmark-pill.unsynced[data-bookmark="my-bookmark"]');
+  const unsyncedPill = graphFrame.locator('[data-bookmark="my-bookmark"][data-unsynced]');
   await expect(unsyncedPill).not.toBeVisible();
 
   const changeId = await testRepo.commitFile("new.txt", "new content", "second commit");

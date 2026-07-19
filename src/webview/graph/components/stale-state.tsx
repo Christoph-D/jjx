@@ -7,7 +7,9 @@ export function StaleState() {
       <div class={styles.staleStateIcon}>
         <i class="codicon codicon-refresh"></i>
       </div>
-      <div class={styles.staleStateMessage}>Working Copy Is Stale</div>
+      <div class={styles.staleStateMessage} data-role="message">
+        Working Copy Is Stale
+      </div>
       <div class={styles.staleStateDescription}>The working copy state is outdated and needs to be refreshed.</div>
       <button
         id="update-stale-button"

@@ -42,7 +42,7 @@ test("shows error views when jj binary is not found, then recovers when binary b
     throw new Error("Graph frame with not-found state not found");
   }).toPass();
 
-  await expect(graphFrame!.locator("#jj-not-found-state .stale-state-message")).toHaveText("No jj Binary Found");
+  await expect(graphFrame!.locator('#jj-not-found-state [data-role="message"]')).toHaveText("No jj Binary Found");
   const installLink = graphFrame!.locator("#jj-not-found-state a");
   await expect(installLink).toHaveAttribute("href", "https://docs.jj-vcs.dev/latest/install-and-setup/");
 

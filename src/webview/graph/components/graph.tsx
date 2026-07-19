@@ -38,6 +38,7 @@ export function Graph() {
   return (
     <div
       id="graph"
+      data-mode={compact ? "compact" : "full"}
       style={{
         "--change-id-ch-width": `${maxPrefixLength.value}ch`,
         "--change-id-offset-width": `${offsetWidth.value}ch`,

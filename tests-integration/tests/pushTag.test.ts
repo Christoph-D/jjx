@@ -13,7 +13,7 @@ test("push tag to remote via context menu", async ({ graphFrame, testRepo }) => 
   await testRepo.commitFile("test.txt", "content", "initial commit");
   await testRepo.createTag("test-tag", "@-");
 
-  const tagPill = graphFrame.locator('.tag-pill[data-tag="test-tag"]');
+  const tagPill = graphFrame.locator('[data-tag="test-tag"]');
   await expect(tagPill).toBeVisible();
 
   await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");

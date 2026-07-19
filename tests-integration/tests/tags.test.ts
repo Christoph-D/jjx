@@ -9,7 +9,7 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
   const commitNode = nodes.nth(1);
   await commitNode.click({ button: "right" });
 
-  const createTagItem = graphFrame.locator('.context-menu-item[data-action="createTag"]');
+  const createTagItem = graphFrame.locator('[data-action="createTag"]');
   await createTagItem.click();
 
   const input = workbox.locator("input").first();
@@ -17,7 +17,7 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
   await input.fill("test-tag");
   await workbox.keyboard.press("Enter");
 
-  const tagPill = graphFrame.locator('.tag-pill[data-tag="test-tag"]');
+  const tagPill = graphFrame.locator('[data-tag="test-tag"]');
   await expect(tagPill).toBeVisible();
 
   const tag = await testRepo.getTag("test-tag");
@@ -27,7 +27,7 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
 
   const pillContextMenu = graphFrame.locator("#pill-context-menu");
   await expect(pillContextMenu).toBeVisible();
-  await pillContextMenu.locator(".context-menu-item").click();
+  await pillContextMenu.locator("[data-action]").click();
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toContainText("test-tag");

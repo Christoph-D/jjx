@@ -10,7 +10,7 @@ test.describe("auto-update disabled", () => {
     const workspace2Path = path.join(testRepo.repoPath, "workspace2");
     await testRepo.jjCommand(["workspace", "add", workspace2Path]);
 
-    const workspacePills = graphFrame.locator(".pill.workspace-pill");
+    const workspacePills = graphFrame.locator("[data-workspace]");
     await expect(workspacePills).toHaveCount(2);
     await expect(workspacePills).toHaveText(["default", "workspace2"]);
 
@@ -21,7 +21,7 @@ test.describe("auto-update disabled", () => {
       throw new Error(`Failed to squash in workspace2:\n\n${result.stdout}\n\n${result.stderr}`);
     }
 
-    const staleMessage = graphFrame.locator("#stale-state .stale-state-message");
+    const staleMessage = graphFrame.locator('#stale-state [data-role="message"]');
     await expect(staleMessage).toHaveText("Working Copy Is Stale");
 
     const updateButton = graphFrame.locator("#update-stale-button");

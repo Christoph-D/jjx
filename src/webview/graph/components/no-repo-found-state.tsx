@@ -6,7 +6,9 @@ export function NoRepoFoundState() {
       <div class={styles.staleStateIcon}>
         <i class="codicon codicon-error"></i>
       </div>
-      <div class={styles.staleStateMessage}>No jj Repository Found</div>
+      <div class={styles.staleStateMessage} data-role="message">
+        No jj Repository Found
+      </div>
       <div class={styles.staleStateDescription}>No jj repository exists in the current workspace.</div>
       <div class={styles.staleStateDescription}>
         <b>Solution:</b> Open a workspace that contains a jj repository, or initialize one with <code>jj git init</code>

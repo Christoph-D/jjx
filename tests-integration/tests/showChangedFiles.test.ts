@@ -5,8 +5,7 @@ test("showChangedFiles off by default hides changed-files UI", async ({ graphFra
   await testRepo.commitFile("b.txt", "content b", "commit B");
 
   await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
-  await expect(graphFrame.locator(".changed-files")).toHaveCount(0);
-  await expect(graphFrame.locator(".changed-file")).toHaveCount(0);
+  await expect(graphFrame.locator('[data-role="changed-file"]')).toHaveCount(0);
 });
 
 test.use({ customSettings: { "jjx.showChangedFiles": true } });
@@ -15,10 +14,10 @@ test("showChangedFiles renders files and click opens diff", async ({ graphFrame,
   await testRepo.commitFile("a.txt", "content a", "commit A");
   await testRepo.commitFile("b.txt", "content b", "commit B");
 
-  await expect(graphFrame.locator(".changed-file-path", { hasText: "a.txt" })).toBeVisible();
-  await expect(graphFrame.locator(".changed-file-path", { hasText: "b.txt" })).toBeVisible();
+  await expect(graphFrame.locator('[data-role="changed-file"][data-path="a.txt"]')).toBeVisible();
+  await expect(graphFrame.locator('[data-role="changed-file"][data-path="b.txt"]')).toBeVisible();
 
-  const aFile = graphFrame.locator(".changed-file", { hasText: "a.txt" }).first();
+  const aFile = graphFrame.locator('[data-role="changed-file"][data-path="a.txt"]');
   await aFile.click();
 
   const diffEditor = workbox.locator(".editor-instance");

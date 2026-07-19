@@ -11,7 +11,7 @@ test("edit this change via context menu", async ({ graphFrame, testRepo }) => {
   const commitB = nodes.nth(2);
   await commitB.click({ button: "right" });
 
-  const editItem = graphFrame.locator('.context-menu-item[data-action="edit"]');
+  const editItem = graphFrame.locator('[data-action="edit"]');
   await expect(editItem).toBeVisible();
   await editItem.click();
 

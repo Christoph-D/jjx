@@ -12,7 +12,7 @@ test("create new child change from context menu", async ({ graphFrame, testRepo 
   const commitA = nodes.nth(3);
   await commitA.click({ button: "right" });
 
-  const newChildItem = graphFrame.locator('.context-menu-item[data-action="newChild"]');
+  const newChildItem = graphFrame.locator('[data-action="newChild"]');
   await expect(newChildItem).toBeVisible();
   await newChildItem.click();
 
@@ -37,9 +37,9 @@ test("create new change with multiple parents via toolbar", async ({ graphFrame,
   const commitC = nodes.nth(1);
 
   await commitB.click();
-  await expect(commitB).toContainClass("selected");
+  await expect(commitB).toHaveAttribute("data-selected");
   await commitC.click({ modifiers: ["Shift"] });
-  await expect(commitC).toContainClass("selected");
+  await expect(commitC).toHaveAttribute("data-selected");
 
   const newChangeButton = workbox.getByRole("button", { name: /Create New Change with Selected as Parents/i });
   await expect(newChangeButton).toBeVisible();
@@ -114,7 +114,7 @@ test.describe("commitAction = new", () => {
   test.use({ customSettings: { "jjx.commitAction": "new", "jjx.graphStyle": "full" } });
 
   test("create new change via SCM input box", async ({ graphFrame, testRepo, workbox }) => {
-    await expect(graphFrame.locator(".compact")).toHaveCount(0);
+    await expect(graphFrame.locator('[data-mode="compact"]')).toHaveCount(0);
 
     await testRepo.commitFile("a.txt", "content a", "A");
     await testRepo.commitFile("b.txt", "content b", "B");
@@ -148,7 +148,7 @@ test.describe("commitAction = new", () => {
   });
 
   test("create new change via SCM input box with editor", async ({ graphFrame, testRepo, workbox }) => {
-    await expect(graphFrame.locator(".compact")).toHaveCount(0);
+    await expect(graphFrame.locator('[data-mode="compact"]')).toHaveCount(0);
 
     await testRepo.commitFile("a.txt", "content a", "A");
     await testRepo.commitFile("b.txt", "content b", "B");

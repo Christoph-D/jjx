@@ -38,7 +38,7 @@ test("shows no repo found state when jj binary exists but no jj repo is present"
     throw new Error("Graph frame with no-repo-found state not found");
   }).toPass();
 
-  await expect(graphFrame!.locator("#no-repo-found-state .stale-state-message")).toHaveText("No jj Repository Found");
+  await expect(graphFrame!.locator('#no-repo-found-state [data-role="message"]')).toHaveText("No jj Repository Found");
 
   await expect(scmView.getByRole("treeitem", { name: /no jj repository found/i })).toBeVisible();
 });

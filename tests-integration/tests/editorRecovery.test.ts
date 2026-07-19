@@ -12,7 +12,7 @@ test("recover editor content when describe command fails after change is abandon
 
   const commitNode = nodes.nth(1);
   await commitNode.click({ button: "right" });
-  const describeItem = graphFrame.locator('.context-menu-item[data-action="describe"]');
+  const describeItem = graphFrame.locator('[data-action="describe"]');
   await expect(describeItem).toBeVisible();
   await describeItem.click();
 

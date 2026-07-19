@@ -14,11 +14,11 @@ test("duplicate commit onto another via drag and drop", async ({ graphFrame, tes
 
   await commitC.dragTo(commitA);
 
-  const duplicateItem = graphFrame.locator('.context-menu-item[data-action="duplicate"]');
+  const duplicateItem = graphFrame.locator('[data-action="duplicate"]');
   await expect(duplicateItem).toBeVisible();
   await duplicateItem.hover();
 
-  const duplicateOntoItem = graphFrame.locator('.context-submenu-item[data-action="duplicateOnto"]');
+  const duplicateOntoItem = graphFrame.locator('[data-action="duplicateOnto"]');
   await expect(duplicateOntoItem).toBeVisible();
   await duplicateOntoItem.click();
 
@@ -52,11 +52,11 @@ test("duplicate after another commit via drag and drop", async ({ graphFrame, te
 
   await commitC.dragTo(commitA);
 
-  const duplicateItem = graphFrame.locator('.context-menu-item[data-action="duplicate"]');
+  const duplicateItem = graphFrame.locator('[data-action="duplicate"]');
   await expect(duplicateItem).toBeVisible();
   await duplicateItem.hover();
 
-  const duplicateAfterItem = graphFrame.locator('.context-submenu-item[data-action="duplicateAfter"]');
+  const duplicateAfterItem = graphFrame.locator('[data-action="duplicateAfter"]');
   await expect(duplicateAfterItem).toBeVisible();
   await duplicateAfterItem.click();
 
@@ -95,11 +95,11 @@ test("duplicate before another commit via drag and drop", async ({ graphFrame, t
 
   await commitC.dragTo(commitB);
 
-  const duplicateItem = graphFrame.locator('.context-menu-item[data-action="duplicate"]');
+  const duplicateItem = graphFrame.locator('[data-action="duplicate"]');
   await expect(duplicateItem).toBeVisible();
   await duplicateItem.hover();
 
-  const duplicateBeforeItem = graphFrame.locator('.context-submenu-item[data-action="duplicateBefore"]');
+  const duplicateBeforeItem = graphFrame.locator('[data-action="duplicateBefore"]');
   await expect(duplicateBeforeItem).toBeVisible();
   await duplicateBeforeItem.click();
 

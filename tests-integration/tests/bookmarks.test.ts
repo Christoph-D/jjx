@@ -10,7 +10,7 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   const commitNode = nodes.nth(0);
   await commitNode.click({ button: "right" });
 
-  const createBookmarkItem = graphFrame.locator('.context-menu-item[data-action="createBookmark"]');
+  const createBookmarkItem = graphFrame.locator('[data-action="createBookmark"]');
   await createBookmarkItem.click();
 
   const input = workbox.locator("input").first();
@@ -18,7 +18,7 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   await input.fill("test-bookmark");
   await workbox.keyboard.press("Enter");
 
-  const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="test-bookmark"]');
+  const bookmarkPill = graphFrame.locator('[data-bookmark="test-bookmark"]');
   await expect(bookmarkPill).toBeVisible();
 
   const bookmark = await testRepo.getBookmark("test-bookmark");
@@ -28,7 +28,7 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
 
   const pillContextMenu = graphFrame.locator("#pill-context-menu");
   await expect(pillContextMenu).toBeVisible();
-  await pillContextMenu.locator(".context-menu-item").click();
+  await pillContextMenu.locator("[data-action]").click();
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toContainText("test-bookmark");
@@ -53,13 +53,13 @@ test("move bookmark via drag and drop", async ({ graphFrame, testRepo, workbox }
   const commit2Node = nodes.nth(1);
   const commit1Node = nodes.nth(2);
 
-  await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
+  await expect(commit1Node.locator('[data-bookmark="test-bookmark"]')).toBeVisible();
 
-  const bookmarkPill = graphFrame.locator('.bookmark-pill[data-bookmark="test-bookmark"]');
+  const bookmarkPill = graphFrame.locator('[data-bookmark="test-bookmark"]');
   await bookmarkPill.dragTo(commit2Node);
 
-  await expect(commit2Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
-  await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).not.toBeVisible();
+  await expect(commit2Node.locator('[data-bookmark="test-bookmark"]')).toBeVisible();
+  await expect(commit1Node.locator('[data-bookmark="test-bookmark"]')).not.toBeVisible();
 
   let bookmark = await testRepo.getBookmark("test-bookmark");
   expect(bookmark?.description).toBe("commit 2");
@@ -70,8 +70,8 @@ test("move bookmark via drag and drop", async ({ graphFrame, testRepo, workbox }
   await quickPickContinue.waitFor({ state: "visible" });
   await quickPickContinue.click();
 
-  await expect(commit1Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).toBeVisible();
-  await expect(commit2Node.locator('.bookmark-pill[data-bookmark="test-bookmark"]')).not.toBeVisible();
+  await expect(commit1Node.locator('[data-bookmark="test-bookmark"]')).toBeVisible();
+  await expect(commit2Node.locator('[data-bookmark="test-bookmark"]')).not.toBeVisible();
 
   bookmark = await testRepo.getBookmark("test-bookmark");
   expect(bookmark?.description).toBe("commit 1");
@@ -98,9 +98,9 @@ test("conflicted bookmark shows both sides with conflicted class", async ({ grap
 
   await testRepo.jjCommand(["git", "fetch"]);
 
-  const conflictedBookmarks = graphFrame.locator('.bookmark-pill.conflicted[data-bookmark="test-bookmark"]');
+  const conflictedBookmarks = graphFrame.locator('[data-bookmark="test-bookmark"][data-conflicted]');
   await expect(conflictedBookmarks).toHaveCount(2);
 
-  const allBookmarks = graphFrame.locator('.bookmark-pill[data-bookmark="test-bookmark"]');
+  const allBookmarks = graphFrame.locator('[data-bookmark="test-bookmark"]');
   await expect(allBookmarks).toHaveCount(2);
 });
