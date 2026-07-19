@@ -70,10 +70,10 @@ test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, wo
   await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
 
   await workbox.keyboard.press(`${mod}+w`);
-  await workbox.keyboard.press(`${mod}+w`);
-
-  await expect(mergeEditor1Output).toBeHidden();
   await expect(mergeEditor2Output).toBeHidden();
+
+  await workbox.keyboard.press(`${mod}+w`);
+  await expect(mergeEditor1Output).toBeHidden();
 
   await expect(async () => {
     const log = await testRepo.log("@");
