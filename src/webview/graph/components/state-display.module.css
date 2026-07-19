@@ -1,4 +1,4 @@
-.staleState {
+.stateDisplay {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -7,27 +7,27 @@
   text-align: center;
 }
 
-.staleStateIcon {
+.icon {
   font-size: 48px;
   color: var(--vscode-charts-yellow);
   margin-bottom: 16px;
 }
 
-.staleStateMessage {
+.message {
   font-size: 1.2em;
   font-weight: 600;
   color: var(--vscode-foreground);
   margin-bottom: 8px;
 }
 
-.staleStateDescription {
+.description {
   font-size: 0.9em;
   color: var(--vscode-descriptionForeground);
   margin-bottom: 20px;
   max-width: 300px;
 }
 
-.actionButton {
+.action {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -40,10 +40,10 @@
   cursor: pointer;
 }
 
-.actionButton:hover {
+.action:hover {
   background-color: var(--vscode-button-hoverBackground);
 }
 
-.actionButton .codicon {
+.action .codicon {
   font-size: 1.1em;
 }

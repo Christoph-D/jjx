@@ -1,23 +1,17 @@
-import styles from "./stale-state.module.css";
+import { StateActionLink, StateDescription, StateDisplay } from "./state-display";
 
 export function NoRepoFoundState() {
   return (
-    <div id="no-repo-found-state" class={styles.staleState}>
-      <div class={styles.staleStateIcon}>
-        <i class="codicon codicon-error"></i>
-      </div>
-      <div class={styles.staleStateMessage} data-role="message">
-        No jj Repository Found
-      </div>
-      <div class={styles.staleStateDescription}>No jj repository exists in the current workspace.</div>
-      <div class={styles.staleStateDescription}>
+    <StateDisplay id="no-repo-found-state" icon="error" message="No jj Repository Found">
+      <StateDescription>No jj repository exists in the current workspace.</StateDescription>
+      <StateDescription>
         <b>Solution:</b> Open a workspace that contains a jj repository, or initialize one with <code>jj git init</code>
         .
-      </div>
-      <a href="https://docs.jj-vcs.dev/latest/tutorial/" class={styles.actionButton} style="text-decoration: none">
+      </StateDescription>
+      <StateActionLink href="https://docs.jj-vcs.dev/latest/tutorial/">
         <i class="codicon codicon-link-external"></i>
         How to Create a jj Repository
-      </a>
-    </div>
+      </StateActionLink>
+    </StateDisplay>
   );
 }

@@ -1,26 +1,16 @@
-import styles from "./stale-state.module.css";
+import { StateActionLink, StateDescription, StateDisplay } from "./state-display";
 
 export function JJNotFoundState() {
   return (
-    <div id="jj-not-found-state" class={styles.staleState}>
-      <div class={styles.staleStateIcon}>
-        <i class="codicon codicon-error"></i>
-      </div>
-      <div class={styles.staleStateMessage} data-role="message">
-        No jj Binary Found
-      </div>
-      <div class={styles.staleStateDescription}>The jj binary could not be found on your system.</div>
-      <div class={styles.staleStateDescription}>
+    <StateDisplay id="jj-not-found-state" icon="error" message="No jj Binary Found">
+      <StateDescription>The jj binary could not be found on your system.</StateDescription>
+      <StateDescription>
         <b>Solution:</b> Install jj in a common location or set the path to the jj binary in the settings.
-      </div>
-      <a
-        href="https://docs.jj-vcs.dev/latest/install-and-setup/"
-        class={styles.actionButton}
-        style="text-decoration: none"
-      >
+      </StateDescription>
+      <StateActionLink href="https://docs.jj-vcs.dev/latest/install-and-setup/">
         <i class="codicon codicon-link-external"></i>
         How to Install jj
-      </a>
-    </div>
+      </StateActionLink>
+    </StateDisplay>
   );
 }

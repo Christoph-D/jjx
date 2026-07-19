@@ -1,6 +1,6 @@
 import { Component, type ComponentChildren } from "preact";
 import { vscode } from "../signals";
-import styles from "./stale-state.module.css";
+import { StateActionButton, StateDescription, StateDisplay } from "./state-display";
 
 interface ErrorBoundaryProps {
   children: ComponentChildren;
@@ -28,19 +28,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render() {
     if (this.state.error) {
       return (
-        <div id="error-state" class={styles.staleState}>
-          <div class={styles.staleStateIcon}>
-            <i class="codicon codicon-error"></i>
-          </div>
-          <div class={styles.staleStateMessage} data-role="message">
-            Something Went Wrong
-          </div>
-          <div class={styles.staleStateDescription}>An unexpected error occurred in the graph view.</div>
-          <button class={styles.actionButton} onClick={() => this.setState({ error: null })}>
+        <StateDisplay id="error-state" icon="error" message="Something Went Wrong">
+          <StateDescription>An unexpected error occurred in the graph view.</StateDescription>
+          <StateActionButton onClick={() => this.setState({ error: null })}>
             <i class="codicon codicon-refresh"></i>
             Try Again
-          </button>
-        </div>
+          </StateActionButton>
+        </StateDisplay>
       );
     }
     return this.props.children;
