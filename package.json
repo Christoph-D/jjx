@@ -963,7 +963,6 @@
   "dependencies": {
     "@preact/signals": "^2.9.4",
     "@vscode/codicons": "^0.0.45",
-    "ansi-regex": "^6.2.2",
     "arktype": "^2.2.3",
     "cross-spawn": "^7.0.6",
     "diff": "^9.0.0",

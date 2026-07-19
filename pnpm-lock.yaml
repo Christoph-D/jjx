@@ -14,9 +14,6 @@ importers:
       '@vscode/codicons':
         specifier: ^0.0.45
         version: 0.0.45
-      ansi-regex:
-        specifier: ^6.2.2
-        version: 6.2.2
       arktype:
         specifier: ^2.2.3
         version: 2.2.3
