@@ -10,6 +10,8 @@ const ALLOWED_ENV_KEYS = [
   "XDG_CONFIG_HOME",
   "XDG_CACHE_HOME",
   "XDG_DATA_HOME",
+  "SSH_AUTH_SOCK",
+  "SSH_AGENT_PID",
 ] as const;
 
 export function buildSpawnEnv(extra: Record<string, string | undefined> = {}): Record<string, string> {
