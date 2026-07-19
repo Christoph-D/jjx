@@ -42,7 +42,7 @@ function isMenuOpen(): boolean {
 
 function isOverTooltipTarget(e: MouseEvent): boolean {
   const target = e.target as HTMLElement;
-  return !!target.closest?.(`.${styles.textContent}`);
+  return !!target.closest?.('[data-role="text-content"]');
 }
 
 interface Props {
@@ -225,6 +225,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
   return (
     <div
       class={styles.textContent}
+      data-role="text-content"
       style={{
         "--graph-width": `${graphW}px`,
         "--change-id-right-padding": `${CHANGE_ID_RIGHT_PADDING}px`,
