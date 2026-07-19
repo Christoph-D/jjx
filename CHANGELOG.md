@@ -1,5 +1,20 @@
 # Change Log
 
+## 1.8.6
+
+### Bug Fixes
+
+- Open merge editor reliably on first click after a conflict appears (fixes a race condition)
+- Vertically align nodes with commit message in the graph
+- Restrict environment forwarded to `jj` invocations to prevent unexpected behavior
+
+### Internal
+
+- Split monolithic CSS into modules for type safety and modularity
+- Drive graph view presentation (hover, highlight, status color, tooltips, context menu) from signals and stable
+  selectors instead of cross-module CSS class queries
+- Harden integration tests against races
+
 ## 1.8.5
 
 ### New Features
