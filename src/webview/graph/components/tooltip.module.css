@@ -1,6 +1,7 @@
 .tooltip {
-  display: none;
   position: absolute;
+  left: -9999px;
+  top: -9999px;
   background-color: var(--vscode-editor-background);
   border: 1px solid var(--vscode-editorWidget-border);
   border-radius: 4px;

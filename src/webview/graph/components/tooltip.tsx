@@ -19,16 +19,11 @@ export function Tooltip() {
   }, []);
 
   useEffect(() => {
-    if (!ref.current) {
-      return;
-    }
-    if (!state) {
-      ref.current.style.display = "none";
+    if (!state || !ref.current) {
       return;
     }
 
     const el = ref.current;
-    el.style.display = "block";
     el.style.maxWidth = "";
     el.style.left = "-9999px";
     el.style.top = "-9999px";
@@ -72,30 +67,14 @@ export function Tooltip() {
   }, [state]);
 
   if (!state) {
-    return (
-      <div
-        id="tooltip"
-        class={styles.tooltip}
-        ref={ref}
-        style="display: none"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      ></div>
-    );
+    return null;
   }
 
   const { change } = state;
   const stats = diffStatsCache.value.get(change.changeId);
 
   return (
-    <div
-      id="tooltip"
-      class={styles.tooltip}
-      ref={ref}
-      style="display: none"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div id="tooltip" class={styles.tooltip} ref={ref} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       {(change.authorName || change.authorEmail || change.authorTimestamp) && (
         <div class={styles.tooltipHeader}>
           {change.authorName && <div class={styles.tooltipAuthor}>{change.authorName}</div>}
