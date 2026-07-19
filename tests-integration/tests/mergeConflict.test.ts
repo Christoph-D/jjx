@@ -1,4 +1,4 @@
-import { test, expect, waitForSCMView, mod } from "./baseTest";
+import { test, expect, waitForSCMView, mod, runCommand } from "./baseTest";
 
 test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.writeFile("file1.txt", "A");
@@ -69,11 +69,9 @@ test("resolve merge conflict in merge editor", async ({ graphFrame, testRepo, wo
   await workbox.keyboard.press(`${mod}+s`);
   await expect(workbox.locator(".tab.active")).not.toHaveClass(/dirty/);
 
-  await workbox.keyboard.press(`${mod}+w`);
-  await expect(mergeEditor2Output).toBeHidden();
-
-  await workbox.keyboard.press(`${mod}+w`);
+  await runCommand(workbox, "View: Close All Editors");
   await expect(mergeEditor1Output).toBeHidden();
+  await expect(mergeEditor2Output).toBeHidden();
 
   await expect(async () => {
     const log = await testRepo.log("@");

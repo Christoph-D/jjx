@@ -1,4 +1,4 @@
-import { test, expect, newTestRepo } from "./baseTest";
+import { test, expect, newTestRepo, clickPillMenuItem, runCommand } from "./baseTest";
 import path from "path";
 
 test("create and delete bookmark from context menu", async ({ graphFrame, testRepo, workbox }) => {
@@ -24,18 +24,11 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   const bookmark = await testRepo.getBookmark("test-bookmark");
   expect(bookmark).toBeDefined();
 
-  await bookmarkPill.click({ button: "right" });
-
-  const pillContextMenu = graphFrame.locator("#pill-context-menu");
-  await expect(pillContextMenu).toBeVisible();
-  await pillContextMenu.locator("[data-action]").click();
+  await clickPillMenuItem(graphFrame, bookmarkPill, "Delete Bookmark");
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toContainText("test-bookmark");
-
-  const modalDelete = dialog.getByRole("button", { name: "Delete" });
-  await modalDelete.waitFor();
-  await modalDelete.click();
+  await dialog.getByRole("button", { name: "Delete" }).click();
 
   await expect(bookmarkPill).not.toBeVisible();
 
@@ -66,8 +59,7 @@ test("move bookmark via drag and drop", async ({ graphFrame, testRepo, workbox }
 
   await bookmarkPill.dragTo(commit1Node);
 
-  const quickPickContinue = workbox.getByRole("option", { name: "Continue" });
-  await quickPickContinue.waitFor({ state: "visible" });
+  const quickPickContinue = workbox.getByRole("option", { name: "Continue", exact: true });
   await quickPickContinue.click();
 
   await expect(commit1Node.locator('[data-bookmark="test-bookmark"]')).toBeVisible();
@@ -77,7 +69,7 @@ test("move bookmark via drag and drop", async ({ graphFrame, testRepo, workbox }
   expect(bookmark?.description).toBe("commit 1");
 });
 
-test("conflicted bookmark shows both sides with conflicted class", async ({ graphFrame, testRepo }) => {
+test("conflicted bookmark shows both sides with conflicted class", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content", "commit A");
   await testRepo.jjCommand(["bookmark", "create", "test-bookmark"]);
 
@@ -97,6 +89,7 @@ test("conflicted bookmark shows both sides with conflicted class", async ({ grap
   await testRepo.jjCommand(["bookmark", "set", "test-bookmark"]);
 
   await testRepo.jjCommand(["git", "fetch"]);
+  await runCommand(workbox, "Refresh");
 
   const conflictedBookmarks = graphFrame.locator('[data-bookmark="test-bookmark"][data-conflicted]');
   await expect(conflictedBookmarks).toHaveCount(2);
