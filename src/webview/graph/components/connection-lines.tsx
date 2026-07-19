@@ -140,9 +140,6 @@ export function ConnectionLines() {
           <path
             key={i}
             d={p.d}
-            fill="none"
-            stroke-width="2"
-            stroke-linecap="round"
             class={cx(styles.connectionLine, dimmed && styles.dimmed)}
             style={{ stroke: p.color }}
           />
