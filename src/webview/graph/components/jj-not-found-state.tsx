@@ -2,7 +2,7 @@ import styles from "./stale-state.module.css";
 
 export function JJNotFoundState() {
   return (
-    <div id="jj-not-found-state" class={styles.staleState} style="display: flex">
+    <div id="jj-not-found-state" class={styles.staleState}>
       <div class={styles.staleStateIcon}>
         <i class="codicon codicon-error"></i>
       </div>

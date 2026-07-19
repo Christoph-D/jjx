@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render() {
     if (this.state.error) {
       return (
-        <div id="error-state" class={styles.staleState} style="display: flex">
+        <div id="error-state" class={styles.staleState}>
           <div class={styles.staleStateIcon}>
             <i class="codicon codicon-error"></i>
           </div>

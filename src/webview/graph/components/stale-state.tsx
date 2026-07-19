@@ -3,7 +3,7 @@ import styles from "./stale-state.module.css";
 
 export function StaleState() {
   return (
-    <div id="stale-state" class={styles.staleState} style="display: flex">
+    <div id="stale-state" class={styles.staleState}>
       <div class={styles.staleStateIcon}>
         <i class="codicon codicon-refresh"></i>
       </div>

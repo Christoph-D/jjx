@@ -2,7 +2,7 @@ import styles from "./stale-state.module.css";
 
 export function NoRepoFoundState() {
   return (
-    <div id="no-repo-found-state" class={styles.staleState} style="display: flex">
+    <div id="no-repo-found-state" class={styles.staleState}>
       <div class={styles.staleStateIcon}>
         <i class="codicon codicon-error"></i>
       </div>
