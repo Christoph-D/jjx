@@ -32,7 +32,7 @@
 .textContent {
   display: flex;
   flex-direction: column;
-  height: 42px;
+  height: 28px;
   justify-content: flex-start;
   overflow: hidden;
   margin-left: calc(
@@ -116,7 +116,7 @@
 
 .changeNode.showingFilesMode:not(.elidedNode) .textContent {
   height: auto;
-  min-height: 42px;
+  min-height: 28px;
   overflow: visible;
 }
 
@@ -126,8 +126,16 @@
   overflow: visible;
 }
 
+.changeNode.compactMode.showingFilesMode .textContent > div:first-child {
+  margin-top: 1px;
+}
+
+.changeNode.compactMode.showingFilesMode .changeIdLeft {
+  margin-top: 2px;
+}
+
 .changedFiles {
-  margin-top: 4px;
+  margin-top: 2px;
   padding-left: 14px;
   font-size: 0.85em;
   line-height: 1.4;
@@ -139,8 +147,7 @@
   display: flex;
   align-items: baseline;
   cursor: pointer;
-  padding: 1px 4px;
-  border-radius: 3px;
+  padding: 0px 4px;
   width: fit-content;
   max-width: 100%;
 }
