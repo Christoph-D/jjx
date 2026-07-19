@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.8.7
+
+### Bug Fixes
+
+- Forward `SSH_AUTH_SOCK` and `SSH_AGENT_PID` to `jj` invocations so agent-based SSH authentication works
+
 ## 1.8.6
 
 ### Bug Fixes
