@@ -80,8 +80,11 @@ export function NodeCircles() {
     domNodes.forEach((node, i) => {
       const nodeData = graph.nodes[i];
       const x = getLaneX(nodeData?.lane ?? 0);
-      const nodeRect = node.getBoundingClientRect();
-      const y = nodeRect.top - svgRect.top + nodeRect.height / 2;
+      const isElided = currentChanges.value[i]?.branchType === "~";
+      const changeIdEl = node.querySelector(`[data-role="change-id"]`);
+      const refEl = (isElided ? node : (changeIdEl ?? node)) as HTMLElement;
+      const refRect = refEl.getBoundingClientRect();
+      const y = refRect.top - svgRect.top + refRect.height / 2;
       newPositions.push({ x, y });
     });
     nodePositions.value = newPositions;

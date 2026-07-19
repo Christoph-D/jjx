@@ -94,9 +94,12 @@ export function ConnectionLines() {
 
     const svgRect = svg.getBoundingClientRect();
     const rowYList: number[] = [];
-    nodes.forEach((node) => {
-      const nodeRect = node.getBoundingClientRect();
-      rowYList.push(nodeRect.top - svgRect.top + nodeRect.height / 2);
+    nodes.forEach((node, i) => {
+      const isElided = currentChanges.value[i]?.branchType === "~";
+      const changeIdEl = node.querySelector(`[data-role="change-id"]`);
+      const refEl = (isElided ? node : (changeIdEl ?? node)) as HTMLElement;
+      const refRect = refEl.getBoundingClientRect();
+      rowYList.push(refRect.top - svgRect.top + refRect.height / 2);
     });
     const bottomY = Math.max(...rowYList, 0) + 50;
 

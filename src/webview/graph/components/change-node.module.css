@@ -24,6 +24,7 @@
 
 .changeIdLeft {
   position: absolute;
+  align-self: flex-start;
   width: calc(var(--change-id-ch-width, 4ch) + var(--change-id-offset-width, 0ch));
   font-family: var(--vscode-editor-font-family, monospace);
 }
@@ -32,7 +33,7 @@
   display: flex;
   flex-direction: column;
   height: 42px;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: hidden;
   margin-left: calc(
     var(--change-id-ch-width, 4ch) + var(--change-id-offset-width, 0ch) + var(--change-id-right-padding) +
@@ -103,6 +104,14 @@
 
 .changeNode.compactMode .description {
   display: none;
+}
+
+.changeNode.compactMode:not(.showingFilesMode) .changeIdLeft {
+  align-self: center;
+}
+
+.changeNode.compactMode:not(.showingFilesMode) .textContent {
+  justify-content: center;
 }
 
 .changeNode.showingFilesMode:not(.elidedNode) .textContent {
