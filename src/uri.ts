@@ -1,15 +1,23 @@
 import { Uri } from "vscode";
-import { type } from "arktype";
 
-const RevUriParams = type({ rev: "string" });
-const DiffOriginalRevUriParams = type({
-  diffOriginalRev: "string",
-  "renamedFrom?": "string",
-});
-const DeletedUriParams = type({ deleted: "boolean" });
-const JJUriParams = RevUriParams.or(DiffOriginalRevUriParams).or(DeletedUriParams);
+export type JJUriParams = { rev: string } | { diffOriginalRev: string; renamedFrom?: string } | { deleted: boolean };
 
-export type JJUriParams = typeof JJUriParams.infer;
+function isJJUriParams(v: unknown): v is JJUriParams {
+  if (typeof v !== "object" || v === null) {
+    return false;
+  }
+  const o = v as Record<string, unknown>;
+  if (typeof o.rev === "string") {
+    return true;
+  }
+  if (typeof o.deleted === "boolean") {
+    return true;
+  }
+  if (typeof o.diffOriginalRev === "string") {
+    return o.renamedFrom === undefined || typeof o.renamedFrom === "string";
+  }
+  return false;
+}
 
 /**
  * Use this for any URI that will go to JJFileSystemProvider.
@@ -21,12 +29,12 @@ export function toJJUri(uri: Uri, params: JJUriParams): Uri {
   });
 }
 
-export function getParams(uri: Uri) {
+export function getParams(uri: Uri): JJUriParams {
   if (uri.query === "") {
     throw new Error("URI has no query");
   }
-  const parsed = JJUriParams(JSON.parse(uri.query));
-  if (parsed instanceof type.errors) {
+  const parsed: unknown = JSON.parse(uri.query);
+  if (!isJJUriParams(parsed)) {
     throw new Error("URI query is not JJUriParams");
   }
   return parsed;

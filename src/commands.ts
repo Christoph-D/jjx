@@ -14,7 +14,6 @@ import {
   applyLineChanges,
   type LineChange,
 } from "./diffUtils";
-import { match } from "arktype";
 import { getActiveTextEditorDiff, normalizePath, pathEquals, showErrorMessage } from "./utils";
 import { getMergeEditorConfigs } from "./jjEditor";
 import { handleJJCommand } from "./process";
@@ -940,16 +939,16 @@ export function registerInitCommands(state: ExtensionState): void {
 
         const diffInput = getActiveTextEditorDiff();
 
-        if (
-          diffInput &&
-          diffInput.modified.scheme === "file" &&
-          diffInput.original.scheme === "jj" &&
-          match({})
-            .case({ diffOriginalRev: "string" }, ({ diffOriginalRev }) =>
-              ["@", status.workingCopy.changeId, status.workingCopy.commitId].includes(diffOriginalRev),
-            )
-            .default(() => false)(getParams(diffInput.original))
-        ) {
+        const originalParams =
+          diffInput && diffInput.modified.scheme === "file" && diffInput.original.scheme === "jj"
+            ? getParams(diffInput.original)
+            : undefined;
+        const isDiffOriginalRevMatch =
+          originalParams !== undefined &&
+          "diffOriginalRev" in originalParams &&
+          ["@", status.workingCopy.changeId, status.workingCopy.commitId].includes(originalParams.diffOriginalRev);
+
+        if (isDiffOriginalRevMatch && diffInput) {
           await computeAndSquashSelectedDiff(repository, diffInput.original, textEditor);
         } else if (textEditor.document.uri.scheme === "file") {
           await computeAndSquashSelectedDiff(
