@@ -58,9 +58,6 @@ export function Menu({ state, children, ...rest }: MenuProps) {
     if (!menu) {
       return;
     }
-    menu.style.left = "-9999px";
-    menu.style.top = "-9999px";
-    menu.style.display = "block";
     requestAnimationFrame(() => {
       if (!menuRef.current) {
         return;
@@ -72,13 +69,7 @@ export function Menu({ state, children, ...rest }: MenuProps) {
 
   return (
     <MenuContext.Provider value={{ activeId, setActiveId, positions, register }}>
-      <div
-        {...rest}
-        class={styles.contextMenu}
-        ref={menuRef}
-        style="display: none"
-        onMouseLeave={() => setActiveId(null)}
-      >
+      <div {...rest} class={styles.contextMenu} ref={menuRef} onMouseLeave={() => setActiveId(null)}>
         {children}
       </div>
     </MenuContext.Provider>

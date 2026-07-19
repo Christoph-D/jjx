@@ -1,6 +1,5 @@
 .contextMenu,
 .contextSubmenu {
-  display: none;
   position: absolute;
   background-color: var(--vscode-menu-background);
   border: 1px solid var(--vscode-menu-border);
@@ -10,6 +9,8 @@
 }
 
 .contextMenu {
+  left: -9999px;
+  top: -9999px;
   z-index: 1000;
   min-width: 120px;
 }
@@ -40,6 +41,7 @@
 }
 
 .contextSubmenu {
+  display: none;
   left: 100%;
   top: 0;
   min-width: 100px;
