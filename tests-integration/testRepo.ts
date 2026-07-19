@@ -43,7 +43,19 @@ function getJJPath(): string {
 }
 
 function isTransientLockError(stderr: string): boolean {
-  return /lock/i.test(stderr) || /Access is denied/i.test(stderr);
+  return (
+    /lock/i.test(stderr) ||
+    /Access is denied/i.test(stderr) ||
+    // On Windows, when the extension's background poll snapshots the working
+    // copy concurrently with a test-initiated `jj` command, the file system may
+    // briefly expose an interim state where `.jj/working_copy/type` does not
+    // exist, producing the errors below. They are transient and a retry
+    // succeeds once the snapshot swap completes.
+    /broken or inaccessible/i.test(stderr) ||
+    /Failed to read working copy backend type/i.test(stderr) ||
+    /system cannot find the file specified/i.test(stderr) ||
+    (/working_copy/i.test(stderr) && /os error 2/i.test(stderr))
+  );
 }
 
 export class TestRepo {
