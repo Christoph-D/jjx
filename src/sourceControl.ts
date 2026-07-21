@@ -404,7 +404,7 @@ export class RepositorySourceControlManager {
   trackedFiles: Set<string> = new Set();
   status: RepositoryStatus | undefined;
   parentShowResults: Map<string, Show> = new Map();
-  private repoWatcherTimer: NodeJS.Timeout | undefined;
+  private watcherDebounceTimer: NodeJS.Timeout | undefined;
 
   constructor(
     public repositoryRoot: string,
@@ -460,16 +460,7 @@ export class RepositorySourceControlManager {
       opstoreWatcher.onDidChange,
       opstoreWatcher.onDidDelete,
     );
-    opstoreChangedWatchEvent(
-      async () => {
-        this.fileSystemProvider.onDidChangeRepository({
-          repositoryRoot: this.repositoryRoot,
-        });
-        await this.checkForUpdates();
-      },
-      undefined,
-      this.subscriptions,
-    );
+    opstoreChangedWatchEvent(() => this.handleWatcherEvent(), undefined, this.subscriptions);
 
     const repoChangedWatchEvent = filterEvent(
       anyEvent(repoWatcher.onDidCreate, repoWatcher.onDidChange, repoWatcher.onDidDelete),
@@ -485,15 +476,15 @@ export class RepositorySourceControlManager {
         return !segments.includes(".jj") && !segments.includes(".git");
       },
     );
-    repoChangedWatchEvent(() => this.handleRepoWatcherEvent(), undefined, this.subscriptions);
+    repoChangedWatchEvent(() => this.handleWatcherEvent(), undefined, this.subscriptions);
   }
 
-  private handleRepoWatcherEvent() {
-    if (this.repoWatcherTimer) {
-      clearTimeout(this.repoWatcherTimer);
+  private handleWatcherEvent() {
+    if (this.watcherDebounceTimer) {
+      clearTimeout(this.watcherDebounceTimer);
     }
-    this.repoWatcherTimer = setTimeout(() => {
-      this.repoWatcherTimer = undefined;
+    this.watcherDebounceTimer = setTimeout(() => {
+      this.watcherDebounceTimer = undefined;
       this.fileSystemProvider.onDidChangeRepository({
         repositoryRoot: this.repositoryRoot,
       });
@@ -770,9 +761,9 @@ export class RepositorySourceControlManager {
   dispose() {
     this.cancellationTokenSource.cancel();
     this.cancellationTokenSource.dispose();
-    if (this.repoWatcherTimer) {
-      clearTimeout(this.repoWatcherTimer);
-      this.repoWatcherTimer = undefined;
+    if (this.watcherDebounceTimer) {
+      clearTimeout(this.watcherDebounceTimer);
+      this.watcherDebounceTimer = undefined;
     }
     for (const subscription of this.subscriptions) {
       subscription.dispose();
