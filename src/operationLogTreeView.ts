@@ -22,8 +22,8 @@ export class OperationLogManager {
     this.operationLogTreeView.title = `Operation Log (${path.basename(repo.repositoryRoot)})`;
   }
 
-  async refresh() {
-    await this.operationLogTreeDataProvider.refresh();
+  async refresh(operationId?: string) {
+    await this.operationLogTreeDataProvider.refresh(operationId);
   }
 
   dispose() {
@@ -59,14 +59,14 @@ export class OperationLogTreeDataProvider implements TreeDataProvider<unknown> {
     return this.operationTreeItems;
   }
 
-  async refresh() {
+  async refresh(providedOperationId?: string) {
     if (!this.selectedRepository) {
       return;
     }
     const repo = this.selectedRepository;
-    await repo.getLatestOperationId(false);
+    const operationId = providedOperationId ?? (await repo.getLatestOperationId(false));
     const prev = this.operationTreeItems;
-    const operations = await repo.operationLog();
+    const operations = await repo.operationLog(operationId);
     this.operationTreeItems = operations.map((op) => new OperationTreeItem(op, repo.repositoryRoot));
     if (
       prev.length !== this.operationTreeItems.length ||

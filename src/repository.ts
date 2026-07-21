@@ -13,7 +13,7 @@ import {
   BOOKMARK_TRACKING_INFO_TEMPLATE,
 } from "./templateBuilder";
 import spawn from "cross-spawn";
-import { ImmutableError, convertJJErrors } from "./errors";
+import { ImmutableError, DivergentOperationsError, convertJJErrors } from "./errors";
 import {
   spawnJJ,
   handleJJCommand,
@@ -35,7 +35,7 @@ import {
   consumeEditorSession,
   openRecoveredEditor,
 } from "./jjEditor";
-import { TIMEOUTS } from "./constants";
+import { DIVERGENCE_BACKOFF, TIMEOUTS } from "./constants";
 import type {
   FileStatus,
   FileStatusType,
@@ -71,6 +71,7 @@ export class JJRepository {
   gitFetchPromise: Promise<ProcessOutput> | undefined;
   private autoUpdateStaleAttempted = false;
   private _gitDirPromise: Promise<string> | undefined;
+  private divergenceRetries = 0;
 
   constructor(
     public repositoryRoot: string,
@@ -136,8 +137,11 @@ export class JJRepository {
     return spawnJJ(this.jjPath, finalArgs, options);
   }
 
-  spawnJJRead(args: string[], options: SpawnOptions) {
-    return this.spawnJJ(["--ignore-working-copy", ...args], options);
+  spawnJJRead(args: string[], options: SpawnOptions, operationId?: string) {
+    // Reads pinned to a specific operation never reconcile divergent operation heads, so they
+    // cannot create new operations themselves.
+    const atOperationArgs = operationId ? [`--at-operation=${operationId}`] : [];
+    return this.spawnJJ(["--ignore-working-copy", ...atOperationArgs, ...args], options);
   }
 
   private jjCommand(
@@ -150,9 +154,13 @@ export class JJRepository {
     );
   }
 
-  private jjCommandRead(args: string[], options?: { token?: vscode.CancellationToken; timeout?: number }) {
+  private jjCommandRead(
+    args: string[],
+    options?: { token?: vscode.CancellationToken; timeout?: number },
+    operationId?: string,
+  ) {
     return handleJJCommand(
-      this.spawnJJRead(args, { timeout: options?.timeout, cwd: this.repositoryRoot }),
+      this.spawnJJRead(args, { timeout: options?.timeout, cwd: this.repositoryRoot }, operationId),
       options?.token,
     );
   }
@@ -167,22 +175,87 @@ export class JJRepository {
   }
 
   /**
-   * Note: this command may itself snapshot the working copy and add an operation to the log, in which case it will
-   * return the new operation id.
+   * Note: when called with `ignoreWorkingCopy: false`, this command may itself snapshot the working copy and add an
+   * operation to the log, in which case it will return the new operation id.
+   *
+   * The command is run with `--at-operation=@` first, which loads the current operation head without reconciling
+   * divergent operation heads (reconciliation writes a new operation, which can cascade when several instances share
+   * the repository). If the heads have diverged, the divergence is resolved with jittered backoff instead.
    */
   async getLatestOperationId(ignoreWorkingCopy: boolean = true, token?: vscode.CancellationToken) {
     const args = ["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"];
+    try {
+      const id = await this.operationIdAtCurrentHead(args, ignoreWorkingCopy, token);
+      this.divergenceRetries = 0;
+      return id;
+    } catch (e) {
+      if (!(e instanceof DivergentOperationsError)) {
+        throw e;
+      }
+    }
+    return this.resolveDivergentOperations(args, ignoreWorkingCopy, token);
+  }
+
+  private operationIdAtCurrentHead(
+    args: string[],
+    ignoreWorkingCopy: boolean,
+    token?: vscode.CancellationToken,
+  ): Promise<string> {
+    // `--at-operation=@` still counts as the head operation, so the working copy is snapshotted
+    // unless `--ignore-working-copy` is passed, but divergent heads are never merged.
+    const globalArgs = ignoreWorkingCopy ? ["--ignore-working-copy", "--at-operation=@"] : ["--at-operation=@"];
+    return handleJJCommand(this.spawnJJ([...globalArgs, ...args], { cwd: this.repositoryRoot }), token).then((buf) =>
+      buf.toString().trim(),
+    );
+  }
+
+  /**
+   * Reconciles divergent operation heads, but only after a randomized backoff and a re-check: if another process
+   * sharing the repository reconciled in the meantime, this instance does not need to write any operation at all.
+   */
+  private async resolveDivergentOperations(
+    args: string[],
+    ignoreWorkingCopy: boolean,
+    token?: vscode.CancellationToken,
+  ): Promise<string> {
+    this.divergenceRetries = Math.min(this.divergenceRetries + 1, DIVERGENCE_BACKOFF.MAX_RETRIES);
+    const maxDelay = Math.min(
+      DIVERGENCE_BACKOFF.CAP_MS,
+      DIVERGENCE_BACKOFF.BASE_MS * 2 ** (this.divergenceRetries - 1),
+    );
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        disposable?.dispose();
+        resolve();
+      }, Math.random() * maxDelay);
+      const disposable = token?.onCancellationRequested(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+    try {
+      const id = await this.operationIdAtCurrentHead(args, ignoreWorkingCopy, token);
+      this.divergenceRetries = 0;
+      return id;
+    } catch (e) {
+      if (!(e instanceof DivergentOperationsError)) {
+        throw e;
+      }
+    }
+    // Still divergent: reconcile. Loading the repo at head merges the divergent heads into a new
+    // operation and snapshots the working copy unless `--ignore-working-copy` is passed.
     const buf = ignoreWorkingCopy ? await this.jjCommandRead(args, { token }) : await this.jjCommand(args, { token });
+    this.divergenceRetries = 0;
     return buf.toString().trim();
   }
 
-  async getStatus(useCache = false, token?: vscode.CancellationToken): Promise<RepositoryStatus> {
+  async getStatus(useCache = false, token?: vscode.CancellationToken, operationId?: string): Promise<RepositoryStatus> {
     if (useCache && this.statusCache) {
       return this.statusCache;
     }
 
     const output = (
-      await this.jjCommandRead(["log", "-r", "@", "-T", STATUS_TEMPLATE, "--no-graph"], { token })
+      await this.jjCommandRead(["log", "-r", "@", "-T", STATUS_TEMPLATE, "--no-graph"], { token }, operationId)
     ).toString();
 
     const entry = JSON.parse(output.trim()) as {
@@ -248,12 +321,12 @@ export class JJRepository {
     return status;
   }
 
-  async fileList(token?: vscode.CancellationToken) {
-    return (await this.jjCommandRead(["file", "list"], { token })).toString().trim().split("\n");
+  async fileList(token?: vscode.CancellationToken, operationId?: string) {
+    return (await this.jjCommandRead(["file", "list"], { token }, operationId)).toString().trim().split("\n");
   }
 
-  async show(rev: string, token?: vscode.CancellationToken) {
-    const results = await this.showAll([rev], token);
+  async show(rev: string, token?: vscode.CancellationToken, operationId?: string) {
+    const results = await this.showAll([rev], token, operationId);
     if (results.length > 1) {
       throw new Error("Multiple results found for the given revision.");
     }
@@ -263,11 +336,12 @@ export class JJRepository {
     return results[0];
   }
 
-  async showAll(revsets: string[], token?: vscode.CancellationToken) {
+  async showAll(revsets: string[], token?: vscode.CancellationToken, operationId?: string) {
     const output = (
       await this.jjCommandRead(
         ["log", "-T", SHOW_TEMPLATE, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])],
         { token },
+        operationId,
       )
     ).toString();
 
@@ -560,9 +634,16 @@ export class JJRepository {
     await jjExit;
   }
 
-  async log(rev: string, limit: number = 100, opts?: { includeFiles?: boolean }): Promise<LogEntry[]> {
+  async log(
+    rev: string,
+    limit: number = 100,
+    opts?: { includeFiles?: boolean },
+    operationId?: string,
+  ): Promise<LogEntry[]> {
     const template = opts?.includeFiles ? buildLogTemplate({ includeFiles: true }) : LOG_TEMPLATE;
-    const output = (await this.jjCommandRead(["log", "-r", rev, "-n", limit.toString(), "-T", template])).toString();
+    const output = (
+      await this.jjCommandRead(["log", "-r", rev, "-n", limit.toString(), "-T", template], undefined, operationId)
+    ).toString();
 
     if (!output.trim()) {
       return [];
@@ -663,14 +744,13 @@ export class JJRepository {
     return remotes;
   }
 
-  async getBookmarksWithUnsyncedNonGitRemotes(): Promise<Set<string>> {
+  async getBookmarksWithUnsyncedNonGitRemotes(operationId?: string): Promise<Set<string>> {
     const output = (
-      await this.jjCommandRead([
-        "bookmark",
-        "list",
-        "-T",
-        `if(remote != "" && tracked && !synced && remote != "git", name ++ "\\n", "")`,
-      ])
+      await this.jjCommandRead(
+        ["bookmark", "list", "-T", `if(remote != "" && tracked && !synced && remote != "git", name ++ "\\n", "")`],
+        undefined,
+        operationId,
+      )
     )
       .toString()
       .trim();
@@ -969,18 +1049,13 @@ export class JJRepository {
     return output.trim().split("\n");
   }
 
-  async operationLog(): Promise<Operation[]> {
+  async operationLog(operationId?: string): Promise<Operation[]> {
     const output = (
-      await this.jjCommandRead([
-        "operation",
-        "log",
-        "--limit",
-        "10",
-        "--no-graph",
-        "--at-operation=@",
-        "-T",
-        OPERATION_TEMPLATE,
-      ])
+      await this.jjCommandRead(
+        ["operation", "log", "--limit", "10", "--no-graph", "-T", OPERATION_TEMPLATE],
+        undefined,
+        operationId ?? "@",
+      )
     ).toString();
 
     const ret: Operation[] = [];

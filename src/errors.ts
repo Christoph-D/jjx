@@ -21,6 +21,13 @@ export class StaleWorkingCopyError extends Error {
   }
 }
 
+export class DivergentOperationsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DivergentOperationsError";
+  }
+}
+
 export function parseJJError(error: unknown): Error {
   if (error instanceof Error) {
     const match = error.message.match(/error:\s*([\s\S]+)$/i);
@@ -48,6 +55,9 @@ export function convertJJErrors(e: unknown): never {
     }
     if (text.includes("working copy is stale")) {
       throw new StaleWorkingCopyError(e.message);
+    }
+    if (text.includes("resolved to more than one operation")) {
+      throw new DivergentOperationsError(e.message);
     }
   }
   throw e;

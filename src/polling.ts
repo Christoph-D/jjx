@@ -58,13 +58,13 @@ export function initInfrastructure(state: ExtensionState) {
   );
 
   context.subscriptions.push(
-    state.workspaceSCM.onDidRepoUpdate(({ repoSCM }) => {
+    state.workspaceSCM.onDidRepoUpdate(({ repoSCM, operationId }) => {
       const opLogRepo = operationLogManager.operationLogTreeDataProvider.getSelectedRepo();
       if (opLogRepo && opLogRepo.repositoryRoot === repoSCM.repositoryRoot) {
-        void operationLogManager.refresh();
+        void operationLogManager.refresh(operationId);
       }
       if (graphWebview.repository && graphWebview.repository.repositoryRoot === repoSCM.repositoryRoot) {
-        void graphWebview.refresh();
+        void graphWebview.refresh(operationId);
       }
     }),
   );

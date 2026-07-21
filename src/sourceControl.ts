@@ -73,9 +73,11 @@ export class WorkspaceSourceControlManager {
 
   private _onDidRepoUpdate = new vscode.EventEmitter<{
     repoSCM: RepositorySourceControlManager;
+    operationId?: string;
   }>();
   readonly onDidRepoUpdate: vscode.Event<{
     repoSCM: RepositorySourceControlManager;
+    operationId?: string;
   }> = this._onDidRepoUpdate.event;
 
   constructor(private decorationProvider: JJDecorationProvider) {
@@ -250,8 +252,8 @@ export class WorkspaceSourceControlManager {
         jjConfigArgs,
       );
       repoSCM.onDidUpdate(
-        () => {
-          this._onDidRepoUpdate.fire({ repoSCM });
+        (e) => {
+          this._onDidRepoUpdate.fire({ repoSCM, operationId: e?.operationId });
         },
         undefined,
         repoSCM.subscriptions,
@@ -395,8 +397,8 @@ export class RepositorySourceControlManager {
   checkForUpdatesPromise: Promise<void> | undefined;
   private cancellationTokenSource = new vscode.CancellationTokenSource();
 
-  private _onDidUpdate = new vscode.EventEmitter<void>();
-  readonly onDidUpdate: vscode.Event<void> = this._onDidUpdate.event;
+  private _onDidUpdate = new vscode.EventEmitter<{ operationId?: string }>();
+  readonly onDidUpdate: vscode.Event<{ operationId?: string }> = this._onDidUpdate.event;
 
   operationId: string | undefined;
   fileStatusesByChange: Map<string, FileStatus[]> = new Map();
@@ -540,7 +542,7 @@ export class RepositorySourceControlManager {
           return;
         }
         // Need to update the graph view to show the stale state.
-        this._onDidUpdate.fire(undefined);
+        this._onDidUpdate.fire({});
       }
       throw error;
     }
@@ -549,28 +551,28 @@ export class RepositorySourceControlManager {
     }
     if (this.operationId !== latestOperationId) {
       this.operationId = latestOperationId;
-      const status = await this.repository.getStatus(false, token);
+      const status = await this.repository.getStatus(false, token, latestOperationId);
 
       if (token.isCancellationRequested) {
         return;
       }
-      await this.updateState(status, token);
+      await this.updateState(status, token, latestOperationId);
       if (token.isCancellationRequested) {
         return;
       }
       this.render();
 
-      this._onDidUpdate.fire(undefined);
+      this._onDidUpdate.fire({ operationId: latestOperationId });
     }
   }
 
-  async updateState(status: RepositoryStatus, token: vscode.CancellationToken) {
+  async updateState(status: RepositoryStatus, token: vscode.CancellationToken, operationId?: string) {
     const newTrackedFiles = new Set<string>();
     const newParentShowResults = new Map<string, Show>();
     const newFileStatusesByChange = new Map<string, FileStatus[]>([["@", status.fileStatuses]]);
     const newConflictedFilesByChange = new Map<string, Set<string>>([["@", status.conflictedFiles]]);
 
-    const trackedFilesList = await this.repository.fileList(token);
+    const trackedFilesList = await this.repository.fileList(token, operationId);
     if (token.isCancellationRequested) {
       return;
     }
@@ -586,7 +588,7 @@ export class RepositorySourceControlManager {
 
     const parentShowPromises = status.parentChanges.map(async (parentChange) => {
       const rev = getRevFromChange(parentChange);
-      const showResult = await this.repository.show(rev, token);
+      const showResult = await this.repository.show(rev, token, operationId);
       return { changeId: parentChange.changeId, showResult };
     });
 

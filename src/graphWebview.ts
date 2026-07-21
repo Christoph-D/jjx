@@ -450,13 +450,13 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     await vscode.commands.executeCommand("setContext", "jjGraphView.elidingActive", effectiveEliding);
   }
 
-  public async refresh() {
+  public async refresh(providedOperationId?: string) {
     if (!this.panel || !this.repository) {
       return;
     }
 
     try {
-      await this.repository.getLatestOperationId(false);
+      const operationId = providedOperationId ?? (await this.repository.getLatestOperationId(false));
       this.repository.resetAutoUpdateStaleAttempted();
       const config = vscode.workspace.getConfiguration("jjx");
       const graphStyle = config.get<string>("graphStyle") || "full";
@@ -464,9 +464,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const logLimit = config.get<number>("logLimit") ?? DEFAULT_LOG_LIMIT;
       const showChangedFiles = config.get<boolean>("showChangedFiles") ?? false;
       const logStart = performance.now();
-      const rawEntries = await this.repository.log(getLogRevset(), logLimit, {
-        includeFiles: showChangedFiles,
-      });
+      const rawEntries = await this.repository.log(
+        getLogRevset(),
+        logLimit,
+        {
+          includeFiles: showChangedFiles,
+        },
+        operationId,
+      );
       const logDuration = performance.now() - logStart;
       logger.info(`jj log took ${logDuration.toFixed(1)}ms`);
       const elideImmutableCommits = this.getEffectiveEliding();
@@ -491,7 +496,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         }
       }
       if (unsyncedBookmarks.size > 0) {
-        const bookmarksWithPushTargets = await this.repository.getBookmarksWithUnsyncedNonGitRemotes();
+        const bookmarksWithPushTargets = await this.repository.getBookmarksWithUnsyncedNonGitRemotes(operationId);
         for (const change of changes) {
           for (const b of change.localBookmarks) {
             if (!b.synced && !b.conflict) {
@@ -521,7 +526,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       };
       this.panel.webview.postMessage(msg);
       try {
-        await this.repository.getStatus(false);
+        await this.repository.getStatus(false, undefined, operationId);
       } catch {
         // best effort — don't let cache update failure affect the graph
       }
