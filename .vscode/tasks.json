@@ -59,6 +59,17 @@
             "type": "npm",
             "script": "watch:css-types",
             "group": "build",
+            "problemMatcher": {
+                "owner": "css-types",
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "tcm",
+                    "endsPattern": "^Watch .+\\.css\\.\\.\\.$"
+                }
+            },
             "isBackground": true,
             "label": "pnpm: watch:css-types",
             "presentation": {
