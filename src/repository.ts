@@ -14,7 +14,7 @@ import {
 } from "./templateBuilder";
 import spawn from "cross-spawn";
 import type { ChildProcess } from "child_process";
-import { ImmutableError, DivergentOperationsError, convertJJErrors } from "./errors";
+import { ImmutableError, convertJJErrors } from "./errors";
 import {
   spawnJJ,
   handleJJCommand,
@@ -36,7 +36,7 @@ import {
   consumeEditorSession,
   openRecoveredEditor,
 } from "./jjEditor";
-import { DIVERGENCE_BACKOFF, TIMEOUTS } from "./constants";
+import { TIMEOUTS } from "./constants";
 import { withDivergenceHandling } from "./divergenceHandling";
 import type {
   FileStatus,
@@ -73,7 +73,6 @@ export class JJRepository {
   gitFetchPromise: Promise<ProcessOutput> | undefined;
   private autoUpdateStaleAttempted = false;
   private _gitDirPromise: Promise<string> | undefined;
-  private divergenceRetries = 0;
 
   constructor(
     public repositoryRoot: string,
@@ -234,66 +233,19 @@ export class JJRepository {
    *
    * The command is run with `--at-operation=@` first, which loads the current operation head without reconciling
    * divergent operation heads (reconciliation writes a new operation, which can cascade when several instances share
-   * the repository). If the heads have diverged, the divergence is resolved with jittered backoff instead.
+   * the repository). If the heads have diverged, withDivergenceHandling backs off and retries before reconciling.
    */
   async getLatestOperationId(ignoreWorkingCopy: boolean = true, token?: vscode.CancellationToken) {
     const args = ["operation", "log", "--limit", "1", "-T", "self.id()", "--no-graph"];
-    try {
-      const id = await this.operationIdAtCurrentHead(args, ignoreWorkingCopy, token);
-      this.divergenceRetries = 0;
-      return id;
-    } catch (e) {
-      if (!(e instanceof DivergentOperationsError)) {
-        throw e;
-      }
-    }
-    return this.resolveDivergentOperations(args, ignoreWorkingCopy, token);
-  }
-
-  private operationIdAtCurrentHead(
-    args: string[],
-    ignoreWorkingCopy: boolean,
-    token?: vscode.CancellationToken,
-  ): Promise<string> {
-    // `--at-operation=@` still counts as the head operation, so the working copy is snapshotted
-    // unless `--ignore-working-copy` is passed, but divergent heads are never merged.
-    const globalArgs = ignoreWorkingCopy ? ["--ignore-working-copy", "--at-operation=@"] : ["--at-operation=@"];
-    return handleJJCommand(this.spawnJJ([...globalArgs, ...args], { cwd: this.repositoryRoot }), token).then((buf) =>
-      buf.toString().trim(),
+    const attemptArgs = ignoreWorkingCopy
+      ? ["--ignore-working-copy", "--at-operation=@", ...args]
+      : ["--at-operation=@", ...args];
+    const reconcileArgs = ignoreWorkingCopy ? ["--ignore-working-copy", ...args] : args;
+    const buf = await withDivergenceHandling(
+      () => handleJJCommand(this.spawnJJ(attemptArgs, { cwd: this.repositoryRoot }), token),
+      () => handleJJCommand(this.spawnJJ(reconcileArgs, { cwd: this.repositoryRoot }), token),
+      (maxDelayMs) => this.jitteredDelay(maxDelayMs, token),
     );
-  }
-
-  /**
-   * Reconciles divergent operation heads, but only after a randomized backoff and a re-check: if another process
-   * sharing the repository reconciled in the meantime, this instance does not need to write any operation at all.
-   */
-  private async resolveDivergentOperations(
-    args: string[],
-    ignoreWorkingCopy: boolean,
-    token?: vscode.CancellationToken,
-  ): Promise<string> {
-    this.divergenceRetries = Math.min(this.divergenceRetries + 1, DIVERGENCE_BACKOFF.MAX_RETRIES);
-    const maxDelay = Math.min(
-      DIVERGENCE_BACKOFF.CAP_MS,
-      DIVERGENCE_BACKOFF.BASE_MS * 2 ** (this.divergenceRetries - 1),
-    );
-    await this.jitteredDelay(maxDelay, token);
-    try {
-      const id = await this.operationIdAtCurrentHead(args, ignoreWorkingCopy, token);
-      this.divergenceRetries = 0;
-      return id;
-    } catch (e) {
-      if (!(e instanceof DivergentOperationsError)) {
-        throw e;
-      }
-    }
-    // Still divergent: reconcile. Loading the repo at head merges the divergent heads into a new
-    // operation and snapshots the working copy unless `--ignore-working-copy` is passed. Spawn
-    // directly (not via jjCommandRead) so the call does not route back through
-    // runReadWithDivergenceHandling, which would loop.
-    const globalArgs = ignoreWorkingCopy ? ["--ignore-working-copy", ...args] : args;
-    const buf = await handleJJCommand(this.spawnJJ(globalArgs, { cwd: this.repositoryRoot }), token);
-    this.divergenceRetries = 0;
     return buf.toString().trim();
   }
 
