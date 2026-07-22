@@ -13,6 +13,7 @@ import {
   BOOKMARK_TRACKING_INFO_TEMPLATE,
 } from "./templateBuilder";
 import spawn from "cross-spawn";
+import type { ChildProcess } from "child_process";
 import { ImmutableError, DivergentOperationsError, convertJJErrors } from "./errors";
 import {
   spawnJJ,
@@ -36,6 +37,7 @@ import {
   openRecoveredEditor,
 } from "./jjEditor";
 import { DIVERGENCE_BACKOFF, TIMEOUTS } from "./constants";
+import { withDivergenceHandling } from "./divergenceHandling";
 import type {
   FileStatus,
   FileStatusType,
@@ -138,10 +140,13 @@ export class JJRepository {
   }
 
   spawnJJRead(args: string[], options: SpawnOptions, operationId?: string) {
-    // Reads pinned to a specific operation never reconcile divergent operation heads, so they
-    // cannot create new operations themselves.
-    const atOperationArgs = operationId ? [`--at-operation=${operationId}`] : [];
-    return this.spawnJJ(["--ignore-working-copy", ...atOperationArgs, ...args], options);
+    // Reads always run at a fixed operation so they cannot reconcile divergent operation heads
+    // (reconciliation writes a new operation, which can cascade when several instances share the
+    // repository). When no operationId is given, pin to "@" — this still loads the head operation
+    // but never merges divergent heads; the resulting DivergentOperationsError is handled
+    // centrally by runReadWithDivergenceHandling.
+    const atOp = operationId ?? "@";
+    return this.spawnJJ(["--ignore-working-copy", `--at-operation=${atOp}`, ...args], options);
   }
 
   private jjCommand(
@@ -159,9 +164,58 @@ export class JJRepository {
     options?: { token?: vscode.CancellationToken; timeout?: number },
     operationId?: string,
   ) {
-    return handleJJCommand(
-      this.spawnJJRead(args, { timeout: options?.timeout, cwd: this.repositoryRoot }, operationId),
-      options?.token,
+    if (operationId) {
+      // Explicit pin: the read cannot diverge, so no retry/backoff is needed.
+      return handleJJCommand(
+        this.spawnJJRead(args, { timeout: options?.timeout, cwd: this.repositoryRoot }, operationId),
+        options?.token,
+      );
+    }
+    // Unpinned read: spawnJJRead defaults to --at-operation=@, which never reconciles.
+    // Reconciliation of divergent operations is handled separately to prevent
+    // reconciliation cascades on shared repositories.
+    return this.runReadWithDivergenceHandling(args, options);
+  }
+
+  /**
+   * Randomized delay used before re-checking or reconciling divergent operation heads. The
+   * randomization breaks the phase-lock between multiple jjx instances sharing one repository, so
+   * their reconciliations cannot sustain a cascade. Resolves early if the token is cancelled.
+   */
+  private jitteredDelay(maxDelayMs: number, token?: vscode.CancellationToken): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        disposable?.dispose();
+        resolve();
+      }, Math.random() * maxDelayMs);
+      const disposable = token?.onCancellationRequested(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Runs an unpinned read with central handling of divergent operation heads. The read is first
+   * attempted at --at-operation=@ (see spawnJJRead), which never writes an operation. If the heads
+   * are divergent, the read is retried after a jittered backoff — usually another process sharing
+   * the repository will have reconciled by then, so this instance writes nothing. If the heads are
+   * still divergent after the retry, exactly one reconcile is performed by issuing the read without
+   * --at-operation, which makes jj merge the divergent heads into a new operation.
+   */
+  private runReadWithDivergenceHandling(
+    args: string[],
+    options: { token?: vscode.CancellationToken; timeout?: number } = {},
+  ): Promise<Buffer> {
+    const token = options.token;
+    const spawnOpts = { timeout: options.timeout, cwd: this.repositoryRoot };
+    return withDivergenceHandling(
+      () => handleJJCommand(this.spawnJJRead(args, spawnOpts), token),
+      () => {
+        logger.info(`Reconciling divergent operations after retries for: jj ${args.join(" ")}`);
+        return handleJJCommand(this.spawnJJ(["--ignore-working-copy", ...args], spawnOpts), token);
+      },
+      (maxDelayMs) => this.jitteredDelay(maxDelayMs, token),
     );
   }
 
@@ -223,16 +277,7 @@ export class JJRepository {
       DIVERGENCE_BACKOFF.CAP_MS,
       DIVERGENCE_BACKOFF.BASE_MS * 2 ** (this.divergenceRetries - 1),
     );
-    await new Promise<void>((resolve) => {
-      const timer = setTimeout(() => {
-        disposable?.dispose();
-        resolve();
-      }, Math.random() * maxDelay);
-      const disposable = token?.onCancellationRequested(() => {
-        clearTimeout(timer);
-        resolve();
-      });
-    });
+    await this.jitteredDelay(maxDelay, token);
     try {
       const id = await this.operationIdAtCurrentHead(args, ignoreWorkingCopy, token);
       this.divergenceRetries = 0;
@@ -243,8 +288,11 @@ export class JJRepository {
       }
     }
     // Still divergent: reconcile. Loading the repo at head merges the divergent heads into a new
-    // operation and snapshots the working copy unless `--ignore-working-copy` is passed.
-    const buf = ignoreWorkingCopy ? await this.jjCommandRead(args, { token }) : await this.jjCommand(args, { token });
+    // operation and snapshots the working copy unless `--ignore-working-copy` is passed. Spawn
+    // directly (not via jjCommandRead) so the call does not route back through
+    // runReadWithDivergenceHandling, which would loop.
+    const globalArgs = ignoreWorkingCopy ? ["--ignore-working-copy", ...args] : args;
+    const buf = await handleJJCommand(this.spawnJJ(globalArgs, { cwd: this.repositoryRoot }), token);
     this.divergenceRetries = 0;
     return buf.toString().trim();
   }
@@ -1109,15 +1157,15 @@ export class JJRepository {
       throw new Error("Diff tool not initialized.");
     }
 
-    const requestId = crypto.randomUUID();
-    const pathPromise = expectDiffToolRequest(requestId);
-
     const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
     const filesetArgs = renamedFrom
       ? [filepathToFileset(renamedFrom.replace(/\\/g, "/")), filepathToFileset(relativePath)]
       : [filepathToFileset(relativePath)];
     logger.trace(`[getDiffOriginal] relativePath=${relativePath} filesetArgs=${JSON.stringify(filesetArgs)}`);
-    const childProcess = this.spawnJJRead(
+
+    // The diff tool handshake (expectDiffToolRequest) is per-spawn, so each attempt/reconcile below
+    // sets up its own requestId.
+    const buildArgs = () =>
       [
         "diff",
         "--summary",
@@ -1127,21 +1175,33 @@ export class JJRepository {
         rev,
         "--",
         ...filesetArgs,
-      ],
-      {
+      ] as string[];
+
+    const runDiff = async (spawnFn: (args: string[], options: SpawnOptions) => ChildProcess) => {
+      const requestId = crypto.randomUUID();
+      const pathPromise = expectDiffToolRequest(requestId);
+      const childProcess = spawnFn(buildArgs(), {
         timeout: 10_000,
         cwd: this.repositoryRoot,
         env: { VSCODE_JJ_DIFF_REQUEST_ID: requestId },
-      },
-    );
+      });
+      // collectProcessOutput rejects (via convertJJErrors) on DivergentOperationsError, which
+      // exits runDiff before awaiting pathPromise — so the IPC handshake is only consumed when the
+      // spawn actually ran the diff tool.
+      const { stdout } = await collectProcessOutput(childProcess).catch(convertJJErrors);
+      const { leftFiles } = await pathPromise;
+      return { summaryOutput: stdout.toString(), leftFiles };
+    };
 
-    const { stdout: summaryOutput } = await collectProcessOutput(childProcess).catch(convertJJErrors);
-    const summaryOutputStr = summaryOutput.toString();
+    const { summaryOutput: summaryOutputStr, leftFiles } = await withDivergenceHandling(
+      () => runDiff((args, options) => this.spawnJJRead(args, options)),
+      () => runDiff((args, options) => this.spawnJJ(["--ignore-working-copy", ...args], options)),
+      (maxDelayMs) => this.jitteredDelay(maxDelayMs),
+    );
     logger.trace(
       `[getDiffOriginal] jj diff summary output (${summaryOutputStr.length} chars): ${JSON.stringify(summaryOutputStr)}`,
     );
 
-    const { leftFiles } = await pathPromise;
     const leftFilesDesc = Object.entries(leftFiles)
       .map(([k, v]) => `${JSON.stringify(k)}(${v.length} bytes)`)
       .join(", ");
