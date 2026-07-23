@@ -2,13 +2,14 @@ import { test, expect, waitForSCMView } from "./baseTest";
 
 async function getInterdiffSection(
   workbox: import("@playwright/test").Page,
-): Promise<{ exists: boolean; files: string[] }> {
+): Promise<{ exists: boolean; files: string[]; labels: string[] }> {
   const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
   return scmTree.evaluate((el) => {
     const items = Array.from(el.querySelectorAll("[role='treeitem']"));
     let exists = false;
     let inSection = false;
     const files: string[] = [];
+    const labels: string[] = [];
     for (const item of items) {
       const level = item.getAttribute("aria-level");
       const label = item.getAttribute("aria-label") ?? "";
@@ -20,13 +21,14 @@ async function getInterdiffSection(
           inSection = false;
         }
       } else if (level === "2" && inSection) {
+        labels.push(label);
         const fileName = label.split(",")[0].trim();
         if (fileName) {
           files.push(fileName);
         }
       }
     }
-    return { exists, files };
+    return { exists, files, labels };
   });
 }
 
@@ -60,6 +62,26 @@ test("interdiff section shows for two selected changes, opens diff, hides otherw
     const section = await getInterdiffSection(workbox);
     expect(section.exists).toBe(true);
     expect(section.files).toEqual(expect.arrayContaining(["a.txt"]));
+  }).toPass();
+
+  // Each interdiff file shows its status letter (M/A/D/...) as a decoration badge,
+  // the same way the Working Copy / Parent Commit rows do.
+  await expect(async () => {
+    const hasBadge = await workbox.getByRole("tree", { name: "Source Control Management" }).evaluate((el) => {
+      const items = Array.from(el.querySelectorAll("[role='treeitem']"));
+      let inInterdiff = false;
+      for (const item of items) {
+        if (item.getAttribute("aria-level") === "1") {
+          inInterdiff = (item.getAttribute("aria-label") ?? "").startsWith("Interdiff");
+        } else if (inInterdiff && item.getAttribute("aria-level") === "2") {
+          if (item.querySelector('[class*="decoration-itemBadge"], [class*="decoration-iconBadge"]')) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+    expect(hasBadge).toBe(true);
   }).toPass();
 
   // Clicking the interdiff a.txt opens a diff editor. Selection order is [B, A],

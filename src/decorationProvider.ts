@@ -1,7 +1,11 @@
 import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, ThemeColor } from "vscode";
 import { FileStatus, FileStatusType } from "./types";
-import { resolveRev, toJJUri } from "./uri";
+import { resolveRev, toJJUri, getParams } from "./uri";
 import { normalizePath } from "./utils";
+
+export function interdiffKey(from: string, to: string): string {
+  return `interdiff:${from}..${to}`;
+}
 
 const colorOfType = (type: FileStatusType) => {
   switch (type) {
@@ -164,6 +168,12 @@ export class JJDecorationProvider implements FileDecorationProvider {
     if (!this.hasData) {
       throw new Error("provideFileDecoration was called before data was available");
     }
+    if (uri.scheme === "jj") {
+      const params = getParams(uri);
+      if ("interdiffFrom" in params) {
+        return this.decorations.get(getKey(uri.fsPath, interdiffKey(params.interdiffFrom, params.interdiffTo)));
+      }
+    }
     const rev = resolveRev(uri, { diffOriginalRevBehavior: "exclude", excludeSpecial: true });
     if (rev === undefined) {
       return undefined;
@@ -211,14 +221,30 @@ export class JJDecorationProvider implements FileDecorationProvider {
   }
 
   private fireChanged(changedKeys: Set<string>, changedTrackedFiles: Set<string>) {
-    const changedUris = [
-      ...[...changedKeys].map((key) => {
-        const { fsPath, rev } = parseKey(key);
-        return toJJUri(Uri.file(fsPath), { rev });
-      }),
-      ...[...changedKeys].filter((key) => parseKey(key).rev === "@").map((key) => Uri.file(parseKey(key).fsPath)),
-      ...[...changedTrackedFiles].map((file) => Uri.file(file)),
-    ];
+    const changedUris: Uri[] = [];
+    for (const key of changedKeys) {
+      const { fsPath, rev } = parseKey(key);
+      const interdiff = parseInterdiffRev(rev);
+      if (interdiff) {
+        // Interdiff resource states are keyed by {interdiffFrom, interdiffTo, side}, so emit
+        // those URIs (rather than a synthetic {rev}) so VS Code refreshes their badges.
+        changedUris.push(
+          toJJUri(Uri.file(fsPath), {
+            interdiffFrom: interdiff.from,
+            interdiffTo: interdiff.to,
+            side: "right",
+          }),
+        );
+      } else {
+        changedUris.push(toJJUri(Uri.file(fsPath), { rev }));
+        if (rev === "@") {
+          changedUris.push(Uri.file(fsPath));
+        }
+      }
+    }
+    for (const file of changedTrackedFiles) {
+      changedUris.push(Uri.file(file));
+    }
     this._onDidChangeDecorations.fire(changedUris);
   }
 }
@@ -230,6 +256,20 @@ function getKey(fsPath: string, rev: string) {
 
 function parseKey(key: string) {
   return JSON.parse(key) as { fsPath: string; rev: string };
+}
+
+function parseInterdiffRev(rev: string): { from: string; to: string } | undefined {
+  if (!rev.startsWith("interdiff:")) {
+    return undefined;
+  }
+  const sep = rev.indexOf("..", "interdiff:".length);
+  if (sep === -1) {
+    return undefined;
+  }
+  return {
+    from: rev.slice("interdiff:".length, sep),
+    to: rev.slice(sep + 2),
+  };
 }
 
 function convertSetToLowercase<T>(originalSet: Set<T>): Set<T> {

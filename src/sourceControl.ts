@@ -3,7 +3,7 @@ import os from "os";
 import fs from "fs";
 import * as vscode from "vscode";
 import { resolveRev, toJJUri } from "./uri";
-import type { JJDecorationProvider } from "./decorationProvider";
+import { interdiffKey, type JJDecorationProvider } from "./decorationProvider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./fileSystemProvider";
@@ -760,6 +760,12 @@ export class RepositorySourceControlManager {
         this.selectedCommitShowResult.fileStatuses,
       );
     }
+    if (this.interdiffSelection && this.interdiffFileStatuses) {
+      combinedFileStatusesByChange.set(
+        interdiffKey(this.interdiffSelection.from, this.interdiffSelection.to),
+        this.interdiffFileStatuses,
+      );
+    }
     this.decorationProvider.onRefresh(
       this.repositoryRoot,
       combinedFileStatusesByChange,
@@ -873,7 +879,7 @@ function buildInterdiffResourceStates(
         : toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side: "right" });
     const titlePrefix = fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "";
     return {
-      resourceUri: rightUri,
+      resourceUri: toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side: "right" }),
       decorations: {
         strikeThrough: fileStatus.type === "D",
         tooltip: path.basename(fileStatus.file),
