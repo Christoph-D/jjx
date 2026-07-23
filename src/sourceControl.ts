@@ -316,7 +316,8 @@ export class WorkspaceSourceControlManager {
       (repo) =>
         repo.workingCopyResourceGroup === resourceGroup ||
         repo.parentResourceGroups.includes(resourceGroup) ||
-        repo.selectedCommitResourceGroup === resourceGroup,
+        repo.selectedCommitResourceGroup === resourceGroup ||
+        repo.interdiffResourceGroup === resourceGroup,
     );
   }
 
@@ -340,6 +341,7 @@ export class WorkspaceSourceControlManager {
         repo.workingCopyResourceGroup,
         ...repo.parentResourceGroups,
         ...(repo.selectedCommitResourceGroup ? [repo.selectedCommitResourceGroup] : []),
+        ...(repo.interdiffResourceGroup ? [repo.interdiffResourceGroup] : []),
       ];
 
       for (const group of groups) {
@@ -393,6 +395,9 @@ export class RepositorySourceControlManager {
   selectedCommitResourceGroup: vscode.SourceControlResourceGroup | undefined;
   selectedCommitShowResult: Show | undefined;
   selectedCommitChangeId: string | undefined;
+  interdiffResourceGroup: vscode.SourceControlResourceGroup | undefined;
+  interdiffSelection: { from: string; to: string } | undefined;
+  interdiffFileStatuses: FileStatus[] | undefined;
   repository: JJRepository;
   checkForUpdatesPromise: Promise<void> | undefined;
   private cancellationTokenSource = new vscode.CancellationTokenSource();
@@ -696,6 +701,8 @@ export class RepositorySourceControlManager {
     if (newParentCreated && this.selectedCommitResourceGroup) {
       this.selectedCommitResourceGroup.dispose();
       this.selectedCommitResourceGroup = undefined;
+      this.interdiffResourceGroup?.dispose();
+      this.interdiffResourceGroup = undefined;
     }
 
     if (this.selectedCommitShowResult) {
@@ -731,6 +738,21 @@ export class RepositorySourceControlManager {
       this.selectedCommitChangeId = undefined;
     }
 
+    if (this.interdiffSelection && this.interdiffFileStatuses) {
+      const { from, to } = this.interdiffSelection;
+      if (!this.interdiffResourceGroup) {
+        this.interdiffResourceGroup = this.sourceControl.createResourceGroup("interdiff", "Interdiff");
+      }
+      this.interdiffResourceGroup.label = `Interdiff ${from.substring(0, 8)} → ${to.substring(0, 8)}`;
+      this.interdiffResourceGroup.resourceStates = buildInterdiffResourceStates(this.interdiffFileStatuses, {
+        from,
+        to,
+      });
+    } else {
+      this.interdiffResourceGroup?.dispose();
+      this.interdiffResourceGroup = undefined;
+    }
+
     const combinedFileStatusesByChange = new Map(this.fileStatusesByChange);
     if (this.selectedCommitShowResult && this.selectedCommitChangeId) {
       combinedFileStatusesByChange.set(
@@ -760,6 +782,17 @@ export class RepositorySourceControlManager {
     this.render();
   }
 
+  async setInterdiffSelection(from?: string, to?: string) {
+    if (from && to) {
+      this.interdiffSelection = { from, to };
+      this.interdiffFileStatuses = await this.repository.interdiffSummary(from, to);
+    } else {
+      this.interdiffSelection = undefined;
+      this.interdiffFileStatuses = undefined;
+    }
+    this.render();
+  }
+
   dispose() {
     this.cancellationTokenSource.cancel();
     this.cancellationTokenSource.dispose();
@@ -774,6 +807,7 @@ export class RepositorySourceControlManager {
       group.dispose();
     }
     this.selectedCommitResourceGroup?.dispose();
+    this.interdiffResourceGroup?.dispose();
   }
 }
 
@@ -816,6 +850,39 @@ function buildResourceStates(
         isConflicted,
         changeId,
       ),
+    };
+  });
+}
+
+function buildInterdiffResourceStates(
+  fileStatuses: FileStatus[],
+  options: { from: string; to: string },
+): vscode.SourceControlResourceState[] {
+  const { from, to } = options;
+  const fromShort = from.substring(0, 8);
+  const toShort = to.substring(0, 8);
+  return fileStatuses.map((fileStatus) => {
+    const fileUri = vscode.Uri.file(fileStatus.path);
+    const leftUri =
+      fileStatus.type === "A"
+        ? toJJUri(fileUri, { deleted: true })
+        : toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side: "left" });
+    const rightUri =
+      fileStatus.type === "D"
+        ? toJJUri(fileUri, { deleted: true })
+        : toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side: "right" });
+    const titlePrefix = fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "";
+    return {
+      resourceUri: rightUri,
+      decorations: {
+        strikeThrough: fileStatus.type === "D",
+        tooltip: path.basename(fileStatus.file),
+      },
+      command: {
+        title: "Open",
+        command: "vscode.diff",
+        arguments: [leftUri, rightUri, `${titlePrefix}${fileStatus.file} Interdiff ${fromShort} → ${toShort}`],
+      },
     };
   });
 }

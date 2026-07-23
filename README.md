@@ -16,6 +16,7 @@ system.
 - Bookmark and tag management with remote sync
 - Multi-workspace support with automatic stale workspace updates
 - Operation log with undo/redo
+- Compare two changes with an interdiff (`jj interdiff`)
 - Handles divergent commits, conflicted bookmarks, and more
 
 ## 📖 Full Feature List
@@ -30,6 +31,7 @@ system.
 - Elided commits  
   ![elided commits](images/elided-commits.gif)
 - Select a change to see its affected files and diffs
+- Select two changes (shift-click) to compare them with an interdiff, shown as an "Interdiff" section in the change view
 - Create merge changes with shift-select and then pressing the "+" button
 - Drag & drop changes onto other changes
 - Optionally show each commit's changed files inline in the graph (like `jj log -s`), with one-click diff opening (⚠️
@@ -60,6 +62,7 @@ system.
 
 - Show changed files in the working copy and parent changes
 - Show changed files in the selected change when clicking on a change in the graph
+- Show an interdiff between two selected changes; clicking a file opens a side-by-side diff of how the changes differ
 - Right-click context menu: View as diff, open at revision, open in working copy, copy paths
 - Configurable file click action: View as diff, open at revision, open in working copy
 - Line-by-line blame annotations (optional)

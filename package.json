@@ -455,12 +455,12 @@
       "scm/resourceState/context": [
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != interdiff && jj.jjBinaryFound",
           "group": "1_modification@1"
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != interdiff && jj.jjBinaryFound",
           "group": "1_modification@2"
         },
         {
@@ -490,22 +490,22 @@
         },
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'diff' && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && config.jjx.fileClickAction != 'diff' && jj.jjBinaryFound",
           "group": "inline@1"
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'at-revision' && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && config.jjx.fileClickAction != 'at-revision' && jj.jjBinaryFound",
           "group": "inline@2"
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && config.jjx.fileClickAction != 'working-copy' && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && config.jjx.fileClickAction != 'working-copy' && jj.jjBinaryFound",
           "group": "inline@3"
         },
         {
           "command": "jj.restoreResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != selected && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != selected && scmResourceGroup != interdiff && jj.jjBinaryFound",
           "group": "inline@4"
         },
         {
@@ -515,7 +515,7 @@
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && scmResourceGroup != interdiff && jj.jjBinaryFound",
           "group": "inline@5"
         }
       ],

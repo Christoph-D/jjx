@@ -1,6 +1,10 @@
 import { Uri } from "vscode";
 
-export type JJUriParams = { rev: string } | { diffOriginalRev: string; renamedFrom?: string } | { deleted: boolean };
+export type JJUriParams =
+  | { rev: string }
+  | { diffOriginalRev: string; renamedFrom?: string }
+  | { deleted: boolean }
+  | { interdiffFrom: string; interdiffTo: string; side: "left" | "right" };
 
 function isJJUriParams(v: unknown): v is JJUriParams {
   if (typeof v !== "object" || v === null) {
@@ -15,6 +19,13 @@ function isJJUriParams(v: unknown): v is JJUriParams {
   }
   if (typeof o.diffOriginalRev === "string") {
     return o.renamedFrom === undefined || typeof o.renamedFrom === "string";
+  }
+  if (
+    typeof o.interdiffFrom === "string" &&
+    typeof o.interdiffTo === "string" &&
+    (o.side === "left" || o.side === "right")
+  ) {
+    return true;
   }
   return false;
 }

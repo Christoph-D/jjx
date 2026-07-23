@@ -36,8 +36,14 @@ export function initInfrastructure(state: ExtensionState) {
       }
       const repoSCM = state.workspaceSCM.getByRoot(repoRoot);
       if (repoSCM) {
-        const changeId = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
-        await repoSCM.setSelectedCommit(changeId);
+        if (selectedNodes.length === 2) {
+          await repoSCM.setSelectedCommit(undefined);
+          await repoSCM.setInterdiffSelection(selectedNodes[0], selectedNodes[1]);
+        } else {
+          const changeId = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
+          await repoSCM.setInterdiffSelection();
+          await repoSCM.setSelectedCommit(changeId);
+        }
       }
     }),
   );

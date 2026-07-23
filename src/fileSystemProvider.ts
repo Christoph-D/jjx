@@ -31,6 +31,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
 
   private changedRepositoryRoots = new Set<string>();
   private cache = new Map<string, CacheRow>();
+  private interdiffCache = new Map<string, Promise<{ left: Uint8Array | undefined; right: Uint8Array | undefined }>>();
   private mtime = Date.now();
   private disposables: Disposable[] = [];
   private cleanupInterval?: ReturnType<typeof setInterval>;
@@ -57,6 +58,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
 
   onDidChangeRepository({ repositoryRoot }: { repositoryRoot: string }): void {
     this.changedRepositoryRoots.add(repositoryRoot);
+    this.interdiffCache.clear();
     void this.fireChangeEvents();
   }
 
@@ -156,7 +158,28 @@ export class JJFileSystemProvider implements FileSystemProvider {
     if ("rev" in params) {
       return this.readFileOrNotFound(repository, params.rev, uri.fsPath);
     }
+    if ("interdiffFrom" in params) {
+      const pair = await this.getInterdiffPair(repository, params, uri.fsPath);
+      const content = params.side === "left" ? pair.left : pair.right;
+      return content ?? new Uint8Array(0);
+    }
     throw new Error("Unknown URI params");
+  }
+
+  private getInterdiffPair(
+    repository: JJRepository,
+    params: { interdiffFrom: string; interdiffTo: string },
+    fsPath: string,
+  ): Promise<{ left: Uint8Array | undefined; right: Uint8Array | undefined }> {
+    const key = `${params.interdiffFrom}\0${params.interdiffTo}\0${fsPath}`;
+    let promise = this.interdiffCache.get(key);
+    if (!promise) {
+      promise = repository.getInterdiff(params.interdiffFrom, params.interdiffTo, fsPath).finally(() => {
+        this.interdiffCache.delete(key);
+      });
+      this.interdiffCache.set(key, promise);
+    }
+    return promise;
   }
 
   private async readFileOrNotFound(repository: JJRepository, rev: string, fsPath: string): Promise<Uint8Array> {

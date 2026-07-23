@@ -25,6 +25,7 @@ import {
 } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
 import { parseFileStatuses, type ParsedFileStatuses } from "./parseFileStatuses";
+import { parseInterdiffSummary } from "./parseInterdiffSummary";
 import { logger } from "./logger";
 import { filepathToFileset, isWindows, pathEquals } from "./utils";
 import {
@@ -1218,5 +1219,134 @@ export class JJRepository {
 
     logger.warn(`[getDiffOriginal] no matching summary line for filepath=${filepath}; returning undefined`);
     return undefined;
+  }
+
+  /**
+   * Lists the files that differ between two revisions, via `jj interdiff --summary`.
+   * Output format mirrors `jj diff --summary` (`<status> <path>`, renames as `{from => to}`).
+   */
+  async interdiffSummary(fromRev: string, toRev: string): Promise<FileStatus[]> {
+    const output = (await this.jjCommandRead(["interdiff", "--summary", "--from", fromRev, "--to", toRev])).toString();
+    return parseInterdiffSummary(output, this.repositoryRoot);
+  }
+
+  /**
+   * Returns the left (from-rev) and right (to-rev) content of a single file's interdiff,
+   * captured via the `jjx-vscode-diff` diff tool (mirrors {@link getDiffOriginal} but for an
+   * arbitrary two-revision interdiff). `left`/`right` are undefined when the file is absent on
+   * that side (pure addition/deletion).
+   */
+  async getInterdiff(
+    fromRev: string,
+    toRev: string,
+    filepath: string,
+  ): Promise<{ left: Buffer | undefined; right: Buffer | undefined }> {
+    logger.trace(
+      `[getInterdiff] enter: from=${fromRev} to=${toRev} filepath=${filepath} repositoryRoot=${this.repositoryRoot}`,
+    );
+    try {
+      filepath = realFs.realpathSync.native(filepath);
+    } catch {
+      // Fall back to original path if realpath fails
+    }
+
+    const diffConfigs = getDiffToolConfigs();
+    if (!diffConfigs.length) {
+      throw new Error("Diff tool not initialized.");
+    }
+
+    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    const filesetArgs = [filepathToFileset(relativePath)];
+    logger.trace(`[getInterdiff] relativePath=${relativePath} filesetArgs=${JSON.stringify(filesetArgs)}`);
+
+    const buildArgs = () =>
+      [
+        "interdiff",
+        "--summary",
+        "--tool=jjx-vscode-diff",
+        ...diffConfigs.flatMap((c) => ["--config", c]),
+        "--from",
+        fromRev,
+        "--to",
+        toRev,
+        "--",
+        ...filesetArgs,
+      ] as string[];
+
+    const runInterdiff = async (spawnFn: (args: string[], options: SpawnOptions) => ChildProcess) => {
+      const requestId = crypto.randomUUID();
+      const pathPromise = expectDiffToolRequest(requestId);
+      const childProcess = spawnFn(buildArgs(), {
+        timeout: 10_000,
+        cwd: this.repositoryRoot,
+        env: { VSCODE_JJ_DIFF_REQUEST_ID: requestId },
+      });
+      const { stdout } = await collectProcessOutput(childProcess).catch(convertJJErrors);
+      const { leftFiles, rightFiles } = await pathPromise;
+      return { summaryOutput: stdout.toString(), leftFiles, rightFiles };
+    };
+
+    const {
+      summaryOutput: summaryOutputStr,
+      leftFiles,
+      rightFiles,
+    } = await withDivergenceHandling(
+      () => runInterdiff((args, options) => this.spawnJJRead(args, options)),
+      () => runInterdiff((args, options) => this.spawnJJ(["--ignore-working-copy", ...args], options)),
+      (maxDelayMs) => this.jitteredDelay(maxDelayMs),
+    );
+    logger.trace(
+      `[getInterdiff] jj interdiff summary output (${summaryOutputStr.length} chars): ${JSON.stringify(summaryOutputStr)}`,
+    );
+
+    const summaryLines = summaryOutputStr.trim().split("\n");
+    const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
+
+    for (const summaryLineRaw of summaryLines) {
+      const summaryLine = summaryLineRaw.trim();
+      if (!summaryLine) {
+        continue;
+      }
+
+      const type = summaryLine.charAt(0);
+      const file = isWindows ? summaryLine.slice(2).trim().replace(/\\/g, "/") : summaryLine.slice(2).trim();
+
+      if (type === "M" || type === "D" || type === "A") {
+        const normalizedSummaryPath = path.join(this.repositoryRoot, file).replace(/\\/g, "/");
+        if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
+          const left = type === "A" ? undefined : leftFiles[file];
+          const right = type === "D" ? undefined : rightFiles[file];
+          logger.trace(
+            `[getInterdiff] match type=${type} file=${file} left=${left !== undefined} right=${right !== undefined}`,
+          );
+          return {
+            left: left !== undefined ? Buffer.from(left, "utf8") : undefined,
+            right: right !== undefined ? Buffer.from(right, "utf8") : undefined,
+          };
+        }
+      } else if (type === "R" || type === "C") {
+        const parseResult = parseRenamePaths(file);
+        if (!parseResult) {
+          throw new Error(`Unexpected rename line: ${summaryLineRaw}`);
+        }
+        const normalizedSummaryPath = path.join(this.repositoryRoot, parseResult.toPath).replace(/\\/g, "/");
+        if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
+          const left = leftFiles[parseResult.fromPath];
+          const right = rightFiles[parseResult.toPath];
+          logger.trace(
+            `[getInterdiff] rename match from=${parseResult.fromPath} to=${parseResult.toPath} left=${left !== undefined} right=${right !== undefined}`,
+          );
+          return {
+            left: left !== undefined ? Buffer.from(left, "utf8") : undefined,
+            right: right !== undefined ? Buffer.from(right, "utf8") : undefined,
+          };
+        }
+      } else {
+        logger.trace(`[getInterdiff] unhandled summary line type=${type} raw=${summaryLineRaw}`);
+      }
+    }
+
+    logger.warn(`[getInterdiff] no matching summary line for filepath=${filepath}`);
+    return { left: undefined, right: undefined };
   }
 }
