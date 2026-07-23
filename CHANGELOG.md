@@ -1,5 +1,22 @@
 # Change Log
 
+## 1.9.0
+
+### New Features
+
+- **Compare two changes with an interdiff** - Shift-select two changes in the graph to see an "Interdiff" section in the
+  change view (`jj interdiff`), with side-by-side diffs showing how the selected changes differ.
+
+### Bug Fixes
+
+- Prevent operation reconciliation cascades on shared repositories (e.g. a host and a VM over virtiofs). This fixes the
+  symptom of the op log quickly growing to hundreds of MB when two Jujutsu X instances were pointed at the same repo
+- Trim files included in the vsix
+
+### Internal
+
+- Remove unnecessary dependencies
+
 ## 1.8.7
 
 ### Bug Fixes
