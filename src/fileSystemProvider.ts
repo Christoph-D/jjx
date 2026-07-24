@@ -20,6 +20,7 @@ import { createThrottledAsyncFn, eventToPromise, filterEvent, isDescendant } fro
 interface CacheRow {
   uri: Uri;
   timestamp: number;
+  size: number;
 }
 
 const THREE_MINUTES = 1000 * 60 * 3;
@@ -117,11 +118,12 @@ export class JJFileSystemProvider implements FileSystemProvider {
     return new Disposable(() => {});
   }
 
-  stat(_uri: Uri): FileStat {
+  stat(uri: Uri): FileStat {
+    const row = this.cache.get(uri.toString());
     return {
       type: FileType.File,
-      size: 0,
-      mtime: this.mtime,
+      size: row?.size ?? 0,
+      mtime: row?.timestamp ?? this.mtime,
       ctime: 0,
     };
   }
@@ -146,26 +148,24 @@ export class JJFileSystemProvider implements FileSystemProvider {
       throw FileSystemError.FileNotFound();
     }
 
-    this.cache.set(uri.toString(), { uri, timestamp: Date.now() });
-
+    let content: Uint8Array;
     if ("diffOriginalRev" in params) {
       const renamedFrom = "renamedFrom" in params ? params.renamedFrom : undefined;
       const originalContent = await repository.getDiffOriginal(params.diffOriginalRev, uri.fsPath, renamedFrom);
-      if (originalContent) {
-        return originalContent;
-      }
-      const pathToRead = renamedFrom ?? uri.fsPath;
-      return this.readFileOrNotFound(repository, params.diffOriginalRev, pathToRead);
-    }
-    if ("rev" in params) {
-      return this.readFileOrNotFound(repository, params.rev, uri.fsPath);
-    }
-    if ("interdiffFrom" in params) {
+      content =
+        originalContent ??
+        (await this.readFileOrNotFound(repository, params.diffOriginalRev, renamedFrom ?? uri.fsPath));
+    } else if ("rev" in params) {
+      content = await this.readFileOrNotFound(repository, params.rev, uri.fsPath);
+    } else if ("interdiffFrom" in params) {
       const pair = await this.getInterdiffPair(repository, params, uri.fsPath);
-      const content = params.side === "left" ? pair.left : pair.right;
-      return content ?? new Uint8Array(0);
+      content = (params.side === "left" ? pair.left : pair.right) ?? new Uint8Array(0);
+    } else {
+      throw new Error("Unknown URI params");
     }
-    throw new Error("Unknown URI params");
+
+    this.cache.set(uri.toString(), { uri, timestamp: Date.now(), size: content.byteLength });
+    return content;
   }
 
   private getInterdiffPair(
