@@ -400,11 +400,7 @@ export class JJRepository {
   }
 
   readFile(rev: string, filepath: string) {
-    try {
-      filepath = realFs.realpathSync.native(filepath);
-    } catch {
-      // Fall back to original path if realpath fails
-    }
+    filepath = resolveRealpath(filepath);
     const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
     return this.jjCommandRead(["file", "show", "--revision", rev, filepathToFileset(relativePath)]);
   }
@@ -569,11 +565,7 @@ export class JJRepository {
     content: string;
     ignoreImmutable?: boolean;
   }): Promise<void> {
-    try {
-      filepath = realFs.realpathSync.native(filepath);
-    } catch {
-      // Fall back to original path if realpath fails
-    }
+    filepath = resolveRealpath(filepath);
 
     const squashConfigs = getSquashToolConfigs();
     if (!squashConfigs.length) {
@@ -1032,11 +1024,7 @@ export class JJRepository {
   }
 
   async annotate(filepath: string, rev: string): Promise<string[]> {
-    try {
-      filepath = realFs.realpathSync.native(filepath);
-    } catch {
-      // Fall back to original path if realpath fails
-    }
+    filepath = resolveRealpath(filepath);
     const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
     const output = (
       await this.jjCommandRead(
@@ -1090,25 +1078,8 @@ export class JJRepository {
    * @returns undefined if the file was not modified in `rev`
    */
   async getDiffOriginal(rev: string, filepath: string, renamedFrom?: string): Promise<Buffer | undefined> {
-    const rawFilepath = filepath;
-    logger.trace(
-      `[getDiffOriginal] enter: rev=${rev} filepath=${filepath} repositoryRoot=${this.repositoryRoot} renamedFrom=${renamedFrom ?? "<none>"}`,
-    );
-    try {
-      filepath = realFs.realpathSync.native(filepath);
-    } catch {
-      // Fall back to original path if realpath fails
-    }
-    if (filepath !== rawFilepath) {
-      logger.trace(`[getDiffOriginal] realpath resolved: ${rawFilepath} -> ${filepath}`);
-    } else {
-      logger.trace(`[getDiffOriginal] realpath unchanged: ${filepath}`);
-    }
-
-    const diffConfigs = getDiffToolConfigs();
-    if (!diffConfigs.length) {
-      throw new Error("Diff tool not initialized.");
-    }
+    logger.trace(`[getDiffOriginal] enter: rev=${rev} filepath=${filepath} renamedFrom=${renamedFrom ?? "<none>"}`);
+    filepath = resolveRealpath(filepath);
 
     const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
     const filesetArgs = renamedFrom
@@ -1116,109 +1087,22 @@ export class JJRepository {
       : [filepathToFileset(relativePath)];
     logger.trace(`[getDiffOriginal] relativePath=${relativePath} filesetArgs=${JSON.stringify(filesetArgs)}`);
 
-    // The diff tool handshake (expectDiffToolRequest) is per-spawn, so each attempt/reconcile below
-    // sets up its own requestId.
-    const buildArgs = () =>
-      [
-        "diff",
-        "--summary",
-        "--tool=jjx-vscode-diff",
-        ...diffConfigs.flatMap((c) => ["--config", c]),
-        "-r",
-        rev,
-        "--",
-        ...filesetArgs,
-      ] as string[];
+    const { summary, leftFiles } = await this.runDiffToolSummary(["diff", "-r", rev], filesetArgs);
+    logger.trace(`[getDiffOriginal] summary (${summary.length} chars): ${JSON.stringify(summary)}`);
+    logger.trace(`[getDiffOriginal] leftFiles keys: ${Object.keys(leftFiles).join(", ") || "<empty>"}`);
 
-    const runDiff = async (spawnFn: (args: string[], options: SpawnOptions) => ChildProcess) => {
-      const requestId = crypto.randomUUID();
-      const pathPromise = expectDiffToolRequest(requestId);
-      const childProcess = spawnFn(buildArgs(), {
-        timeout: 10_000,
-        cwd: this.repositoryRoot,
-        env: { VSCODE_JJ_DIFF_REQUEST_ID: requestId },
-      });
-      // collectProcessOutput rejects (via convertJJErrors) on DivergentOperationsError, which
-      // exits runDiff before awaiting pathPromise — so the IPC handshake is only consumed when the
-      // spawn actually ran the diff tool.
-      const { stdout } = await collectProcessOutput(childProcess).catch(convertJJErrors);
-      const { leftFiles } = await pathPromise;
-      return { summaryOutput: stdout.toString(), leftFiles };
-    };
-
-    const { summaryOutput: summaryOutputStr, leftFiles } = await withDivergenceHandling(
-      () => runDiff((args, options) => this.spawnJJRead(args, options)),
-      () => runDiff((args, options) => this.spawnJJ(["--ignore-working-copy", ...args], options)),
-      (maxDelayMs) => this.jitteredDelay(maxDelayMs),
-    );
-    logger.trace(
-      `[getDiffOriginal] jj diff summary output (${summaryOutputStr.length} chars): ${JSON.stringify(summaryOutputStr)}`,
-    );
-
-    const leftFilesDesc = Object.entries(leftFiles)
-      .map(([k, v]) => `${JSON.stringify(k)}(${v.length} bytes)`)
-      .join(", ");
-    logger.trace(`[getDiffOriginal] leftFiles keys: ${leftFilesDesc || "<empty>"}`);
-
-    const summaryLines = summaryOutputStr.trim().split("\n");
-
-    for (const summaryLineRaw of summaryLines) {
-      const summaryLine = summaryLineRaw.trim();
-      if (!summaryLine) {
-        continue;
-      }
-
-      const type = summaryLine.charAt(0);
-      const file = isWindows ? summaryLine.slice(2).trim().replace(/\\/g, "/") : summaryLine.slice(2).trim();
-
-      if (type === "M" || type === "D") {
-        const normalizedSummaryPath = path.join(this.repositoryRoot, file).replace(/\\/g, "/");
-        const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
-        const matched = pathEquals(normalizedSummaryPath, normalizedTargetPath);
-        logger.trace(
-          `[getDiffOriginal] summary line type=${type} file=${file} summaryPath=${normalizedSummaryPath} targetPath=${normalizedTargetPath} matched=${matched}`,
-        );
-        if (matched) {
-          const content = leftFiles[file];
-          if (content !== undefined) {
-            logger.trace(`[getDiffOriginal] match found in leftFiles: file=${file} bytes=${content.length}`);
-            return Buffer.from(content, "utf8");
-          }
-          logger.warn(`[getDiffOriginal] path matched but leftFiles has no entry for ${JSON.stringify(file)}`);
-          return undefined;
-        }
-      } else if (type === "R" || type === "C") {
-        const parseResult = parseRenamePaths(file);
-        if (!parseResult) {
-          throw new Error(`Unexpected rename line: ${summaryLineRaw}`);
-        }
-
-        const normalizedSummaryPath = path.join(this.repositoryRoot, parseResult.toPath).replace(/\\/g, "/");
-        const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
-        const matched = pathEquals(normalizedSummaryPath, normalizedTargetPath);
-        logger.trace(
-          `[getDiffOriginal] rename line type=${type} from=${parseResult.fromPath} to=${parseResult.toPath} summaryPath=${normalizedSummaryPath} targetPath=${normalizedTargetPath} matched=${matched}`,
-        );
-        if (matched) {
-          const content = leftFiles[parseResult.fromPath];
-          if (content !== undefined) {
-            logger.trace(
-              `[getDiffOriginal] rename match found in leftFiles: fromPath=${parseResult.fromPath} bytes=${content.length}`,
-            );
-            return Buffer.from(content, "utf8");
-          }
-          logger.warn(
-            `[getDiffOriginal] rename path matched but leftFiles has no entry for ${JSON.stringify(parseResult.fromPath)}`,
-          );
-          return undefined;
-        }
-      } else {
-        logger.trace(`[getDiffOriginal] unhandled summary line type=${type} raw=${summaryLineRaw}`);
-      }
+    const leftPath = this.matchDiffSummaryLine(summary, filepath)?.leftPath;
+    if (!leftPath) {
+      logger.warn(`[getDiffOriginal] no matching left content for filepath=${filepath}; returning undefined`);
+      return undefined;
     }
-
-    logger.warn(`[getDiffOriginal] no matching summary line for filepath=${filepath}; returning undefined`);
-    return undefined;
+    const content = leftFiles[leftPath];
+    if (content === undefined) {
+      logger.warn(`[getDiffOriginal] path matched but leftFiles has no entry for ${JSON.stringify(leftPath)}`);
+      return undefined;
+    }
+    logger.trace(`[getDiffOriginal] match found: leftPath=${leftPath} bytes=${content.length}`);
+    return Buffer.from(content, "utf8");
   }
 
   /**
@@ -1241,39 +1125,61 @@ export class JJRepository {
     toRev: string,
     filepath: string,
   ): Promise<{ left: Buffer | undefined; right: Buffer | undefined }> {
-    logger.trace(
-      `[getInterdiff] enter: from=${fromRev} to=${toRev} filepath=${filepath} repositoryRoot=${this.repositoryRoot}`,
-    );
-    try {
-      filepath = realFs.realpathSync.native(filepath);
-    } catch {
-      // Fall back to original path if realpath fails
-    }
+    logger.trace(`[getInterdiff] enter: from=${fromRev} to=${toRev} filepath=${filepath}`);
+    filepath = resolveRealpath(filepath);
 
+    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    logger.trace(`[getInterdiff] relativePath=${relativePath}`);
+
+    const { summary, leftFiles, rightFiles } = await this.runDiffToolSummary(
+      ["interdiff", "--from", fromRev, "--to", toRev],
+      [filepathToFileset(relativePath)],
+    );
+    logger.trace(`[getInterdiff] summary (${summary.length} chars): ${JSON.stringify(summary)}`);
+
+    const match = this.matchDiffSummaryLine(summary, filepath);
+    if (!match) {
+      logger.warn(`[getInterdiff] no matching summary line for filepath=${filepath}`);
+      return { left: undefined, right: undefined };
+    }
+    const left = match.leftPath !== undefined ? leftFiles[match.leftPath] : undefined;
+    const right = match.rightPath !== undefined ? rightFiles[match.rightPath] : undefined;
+    logger.trace(`[getInterdiff] match left=${left !== undefined} right=${right !== undefined}`);
+    return {
+      left: left !== undefined ? Buffer.from(left, "utf8") : undefined,
+      right: right !== undefined ? Buffer.from(right, "utf8") : undefined,
+    };
+  }
+
+  /**
+   * Runs `jj <revArgs> --summary --tool=jjx-vscode-diff -- <filesetArgs>` and captures both sides'
+   * file contents via the `jjx-vscode-diff` IPC handshake. Retries with `--ignore-working-copy`
+   * reconciliation on divergent operations.
+   */
+  private async runDiffToolSummary(
+    revArgs: string[],
+    filesetArgs: string[],
+  ): Promise<{
+    summary: string;
+    leftFiles: Record<string, string>;
+    rightFiles: Record<string, string>;
+  }> {
     const diffConfigs = getDiffToolConfigs();
     if (!diffConfigs.length) {
       throw new Error("Diff tool not initialized.");
     }
 
-    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
-    const filesetArgs = [filepathToFileset(relativePath)];
-    logger.trace(`[getInterdiff] relativePath=${relativePath} filesetArgs=${JSON.stringify(filesetArgs)}`);
-
     const buildArgs = () =>
       [
-        "interdiff",
+        ...revArgs,
         "--summary",
         "--tool=jjx-vscode-diff",
         ...diffConfigs.flatMap((c) => ["--config", c]),
-        "--from",
-        fromRev,
-        "--to",
-        toRev,
         "--",
         ...filesetArgs,
       ] as string[];
 
-    const runInterdiff = async (spawnFn: (args: string[], options: SpawnOptions) => ChildProcess) => {
+    const run = async (spawnFn: (args: string[], options: SpawnOptions) => ChildProcess) => {
       const requestId = crypto.randomUUID();
       const pathPromise = expectDiffToolRequest(requestId);
       const childProcess = spawnFn(buildArgs(), {
@@ -1281,48 +1187,44 @@ export class JJRepository {
         cwd: this.repositoryRoot,
         env: { VSCODE_JJ_DIFF_REQUEST_ID: requestId },
       });
+      // collectProcessOutput rejects (via convertJJErrors) on DivergentOperationsError, which
+      // exits run before awaiting pathPromise — so the IPC handshake is only consumed when the
+      // spawn actually ran the diff tool.
       const { stdout } = await collectProcessOutput(childProcess).catch(convertJJErrors);
       const { leftFiles, rightFiles } = await pathPromise;
-      return { summaryOutput: stdout.toString(), leftFiles, rightFiles };
+      return { summary: stdout.toString(), leftFiles, rightFiles };
     };
 
-    const {
-      summaryOutput: summaryOutputStr,
-      leftFiles,
-      rightFiles,
-    } = await withDivergenceHandling(
-      () => runInterdiff((args, options) => this.spawnJJRead(args, options)),
-      () => runInterdiff((args, options) => this.spawnJJ(["--ignore-working-copy", ...args], options)),
+    return withDivergenceHandling(
+      () => run((args, options) => this.spawnJJRead(args, options)),
+      () => run((args, options) => this.spawnJJ(["--ignore-working-copy", ...args], options)),
       (maxDelayMs) => this.jitteredDelay(maxDelayMs),
     );
-    logger.trace(
-      `[getInterdiff] jj interdiff summary output (${summaryOutputStr.length} chars): ${JSON.stringify(summaryOutputStr)}`,
-    );
+  }
 
-    const summaryLines = summaryOutputStr.trim().split("\n");
+  /**
+   * Finds the `jj diff`/`jj interdiff --summary` line whose (post-rename) target path equals
+   * `filepath`, and returns the left/right content keys it implies. Returns undefined when no line
+   * matches. `M`/`A`/`D` lines use `file` for both sides (left absent for adds, right absent for
+   * deletes); `R`/`C` rename lines map left to `fromPath` and right to `toPath`.
+   */
+  private matchDiffSummaryLine(
+    summary: string,
+    filepath: string,
+  ): { leftPath?: string; rightPath?: string } | undefined {
     const normalizedTargetPath = path.normalize(filepath).replace(/\\/g, "/");
-
-    for (const summaryLineRaw of summaryLines) {
+    for (const summaryLineRaw of summary.trim().split("\n")) {
       const summaryLine = summaryLineRaw.trim();
       if (!summaryLine) {
         continue;
       }
-
       const type = summaryLine.charAt(0);
       const file = isWindows ? summaryLine.slice(2).trim().replace(/\\/g, "/") : summaryLine.slice(2).trim();
 
       if (type === "M" || type === "D" || type === "A") {
         const normalizedSummaryPath = path.join(this.repositoryRoot, file).replace(/\\/g, "/");
         if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
-          const left = type === "A" ? undefined : leftFiles[file];
-          const right = type === "D" ? undefined : rightFiles[file];
-          logger.trace(
-            `[getInterdiff] match type=${type} file=${file} left=${left !== undefined} right=${right !== undefined}`,
-          );
-          return {
-            left: left !== undefined ? Buffer.from(left, "utf8") : undefined,
-            right: right !== undefined ? Buffer.from(right, "utf8") : undefined,
-          };
+          return { leftPath: type === "A" ? undefined : file, rightPath: type === "D" ? undefined : file };
         }
       } else if (type === "R" || type === "C") {
         const parseResult = parseRenamePaths(file);
@@ -1331,22 +1233,18 @@ export class JJRepository {
         }
         const normalizedSummaryPath = path.join(this.repositoryRoot, parseResult.toPath).replace(/\\/g, "/");
         if (pathEquals(normalizedSummaryPath, normalizedTargetPath)) {
-          const left = leftFiles[parseResult.fromPath];
-          const right = rightFiles[parseResult.toPath];
-          logger.trace(
-            `[getInterdiff] rename match from=${parseResult.fromPath} to=${parseResult.toPath} left=${left !== undefined} right=${right !== undefined}`,
-          );
-          return {
-            left: left !== undefined ? Buffer.from(left, "utf8") : undefined,
-            right: right !== undefined ? Buffer.from(right, "utf8") : undefined,
-          };
+          return { leftPath: parseResult.fromPath, rightPath: parseResult.toPath };
         }
-      } else {
-        logger.trace(`[getInterdiff] unhandled summary line type=${type} raw=${summaryLineRaw}`);
       }
     }
+    return undefined;
+  }
+}
 
-    logger.warn(`[getInterdiff] no matching summary line for filepath=${filepath}`);
-    return { left: undefined, right: undefined };
+function resolveRealpath(filepath: string): string {
+  try {
+    return realFs.realpathSync.native(filepath);
+  } catch {
+    return filepath;
   }
 }
