@@ -11,21 +11,29 @@ function isJJUriParams(v: unknown): v is JJUriParams {
     return false;
   }
   const o = v as Record<string, unknown>;
-  if (typeof o.rev === "string") {
-    return true;
+  const keys = Object.keys(o);
+  const has = (k: string): boolean => k in o;
+
+  // Each variant is matched by exactly its own (exhaustive) set of keys, so
+  // mixed shapes and objects carrying extra/bogus fields are rejected.
+  if (keys.length === 1 && has("rev")) {
+    return typeof o.rev === "string";
   }
-  if (typeof o.deleted === "boolean") {
-    return true;
+  if (keys.length === 1 && has("deleted")) {
+    return typeof o.deleted === "boolean";
   }
-  if (typeof o.diffOriginalRev === "string") {
-    return o.renamedFrom === undefined || typeof o.renamedFrom === "string";
+  if (keys.length === 1 && has("diffOriginalRev")) {
+    return typeof o.diffOriginalRev === "string";
   }
-  if (
-    typeof o.interdiffFrom === "string" &&
-    typeof o.interdiffTo === "string" &&
-    (o.side === "left" || o.side === "right")
-  ) {
-    return true;
+  if (keys.length === 2 && has("diffOriginalRev") && has("renamedFrom")) {
+    return typeof o.diffOriginalRev === "string" && typeof o.renamedFrom === "string";
+  }
+  if (keys.length === 3 && has("interdiffFrom") && has("interdiffTo") && has("side")) {
+    return (
+      typeof o.interdiffFrom === "string" &&
+      typeof o.interdiffTo === "string" &&
+      (o.side === "left" || o.side === "right")
+    );
   }
   return false;
 }
