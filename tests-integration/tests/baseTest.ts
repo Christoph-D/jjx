@@ -34,6 +34,7 @@ type TestFixtures = TestOptions & {
   scmView: Locator;
   opLog: Locator;
   testRepo: TestRepo;
+  workspaceFolders: string[];
   userDataDir: string;
   customSettings: Record<string, unknown>;
 };
@@ -163,6 +164,13 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       await use({});
     },
 
+  workspaceFolders: [
+    async ({ testRepo }, use) => {
+      await use([testRepo.repoPath]);
+    },
+    { scope: "test" },
+  ],
+
   userDataDir: async ({ cachePath, customSettings }, use) => {
     const userDataDir = path.join(cachePath, "user-data");
     const userDir = path.join(userDataDir, "User");
@@ -184,8 +192,17 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(userDataDir);
   },
 
-  workbox: async ({ cachePath, vscodePath, testRepo, userDataDir, xvfbDisplay }, use, testInfo) => {
+  workbox: async ({ cachePath, vscodePath, workspaceFolders, userDataDir, xvfbDisplay }, use, testInfo) => {
     const extensionPath = path.resolve(__dirname, "..", "..");
+
+    let workspaceArg = workspaceFolders[0];
+    if (workspaceFolders.length > 1) {
+      workspaceArg = path.join(cachePath, "multi-root.code-workspace");
+      await fs.promises.writeFile(
+        workspaceArg,
+        JSON.stringify({ folders: workspaceFolders.map((folder) => ({ path: folder })) }),
+      );
+    }
 
     const electronApp = await _electron.launch({
       executablePath: vscodePath,
@@ -202,7 +219,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         `--extensionDevelopmentPath=${extensionPath}`,
         `--extensions-dir=${path.join(cachePath, "extensions")}`,
         `--user-data-dir=${userDataDir}`,
-        testRepo.repoPath,
+        workspaceArg,
       ],
       env: { ...process.env, DISPLAY: xvfbDisplay },
     });
