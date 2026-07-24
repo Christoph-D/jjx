@@ -77,11 +77,11 @@ test("multi-root workspace exposes both repos across the graph, operation log, a
   const graphPicker = await openRepoPicker(workbox, graphPaneHeader(scmView));
   await expect(graphPicker.locator("input").first()).toHaveAttribute("placeholder", "Select a Repository");
   await expect(graphPicker.getByRole("option")).toHaveCount(2);
-  await expect(graphPicker.getByRole("option", { name: repoA.repoPath })).toBeVisible();
-  await expect(graphPicker.getByRole("option", { name: repoB.repoPath })).toBeVisible();
+  await expect(graphPicker.getByRole("option", { name: /repo-alpha/ })).toBeVisible();
+  await expect(graphPicker.getByRole("option", { name: /repo-beta/ })).toBeVisible();
 
   // Switching the selected repo via the graph picker refreshes the graph.
-  await graphPicker.getByRole("option", { name: repoB.repoPath }).click();
+  await graphPicker.getByRole("option", { name: /repo-beta/ }).click();
   await expect(graphFrame.getByText("beta commit one")).toBeVisible();
   await expect(graphFrame.getByText("alpha commit one")).toHaveCount(0);
   await expect(graphPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-beta/);
@@ -91,9 +91,9 @@ test("multi-root workspace exposes both repos across the graph, operation log, a
   const opLogPicker = await openRepoPicker(workbox, opLogPaneHeader(scmView));
   await expect(opLogPicker.locator("input").first()).toHaveAttribute("placeholder", "Select a Repository");
   await expect(opLogPicker.getByRole("option")).toHaveCount(2);
-  await expect(opLogPicker.getByRole("option", { name: repoA.repoPath })).toBeVisible();
-  await expect(opLogPicker.getByRole("option", { name: repoB.repoPath })).toBeVisible();
-  await opLogPicker.getByRole("option", { name: repoA.repoPath }).click();
+  await expect(opLogPicker.getByRole("option", { name: /repo-alpha/ })).toBeVisible();
+  await expect(opLogPicker.getByRole("option", { name: /repo-beta/ })).toBeVisible();
+  await opLogPicker.getByRole("option", { name: /repo-alpha/ }).click();
 
   // The operation log refreshes to show the other repository's history.
   await expect(opLogPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-alpha/);
