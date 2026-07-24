@@ -8,7 +8,7 @@ export default defineConfig<void, TestOptions>({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   timeout: 60_000,
   retries: process.platform === "win32" ? 2 : 0,
-  workers: 4,
+  workers: 5,
   fullyParallel: true,
   use: {
     screenshot: "only-on-failure",
