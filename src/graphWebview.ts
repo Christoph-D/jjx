@@ -270,14 +270,18 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             }
           });
           break;
-        case "abandonChange":
-          await this.confirmAndExecute(
-            "Are you sure you want to abandon this change?",
-            "Abandon",
-            "abandon change",
-            () => repo.abandonRetryImmutable([message.changeId]),
+        case "abandonChange": {
+          const change = this.currentChanges.find((c) => c.changeId === message.changeId);
+          const firstLine = change?.fullDescription.split("\n")[0].trim() || "(no description set)";
+          const truncated = firstLine.length > 120 ? firstLine.slice(0, 120) + "..." : firstLine;
+          const prompt = change
+            ? `Are you sure you want to abandon change "${change.changeIdPrefix}"?\n\n→ ${truncated}`
+            : "Are you sure you want to abandon this change?";
+          await this.confirmAndExecute(prompt, "Abandon", "abandon change", () =>
+            repo.abandonRetryImmutable([message.changeId]),
           );
           break;
+        }
         case "abandonChanges":
           await this.confirmAndExecute(
             `Are you sure you want to abandon ${message.changeIds.length} changes?`,

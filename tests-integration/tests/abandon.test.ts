@@ -3,8 +3,10 @@ import { getParents } from "../testRepo";
 
 test("abandon single change via context menu", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
-  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.commitFile("b.txt", "content b", "Second commit");
   await testRepo.commitFile("c.txt", "content c", "C");
+
+  const changeB = (await testRepo.log()).find((e) => e.description.trim() === "Second commit")!;
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
@@ -18,7 +20,8 @@ test("abandon single change via context menu", async ({ graphFrame, testRepo, wo
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Are you sure you want to abandon this change?");
+  await expect(dialog).toContainText(`Are you sure you want to abandon change "${changeB.change_id_shortest}"?`);
+  await expect(dialog).toContainText("→ Second commit");
 
   await workbox.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
@@ -27,15 +30,16 @@ test("abandon single change via context menu", async ({ graphFrame, testRepo, wo
 
   await expect(async () => {
     const logEntries = await testRepo.log();
-    expect(logEntries.find((e) => e.description.trim() === "B")).toBeDefined();
-    expect(getParents(logEntries, "C")).toEqual(["B"]);
+    expect(logEntries.find((e) => e.description.trim() === "Second commit")).toBeDefined();
+    expect(getParents(logEntries, "C")).toEqual(["Second commit"]);
   }).toPass();
 
   await commitB.click({ button: "right" });
   await expect(abandonItem).toBeVisible();
   await abandonItem.click();
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Are you sure you want to abandon this change?");
+  await expect(dialog).toContainText(`Are you sure you want to abandon change "${changeB.change_id_shortest}"?`);
+  await expect(dialog).toContainText("→ Second commit");
 
   await dialog.getByRole("button", { name: "Abandon" }).click();
 
@@ -45,7 +49,7 @@ test("abandon single change via context menu", async ({ graphFrame, testRepo, wo
 
   await expect(async () => {
     const logEntries = await testRepo.log();
-    expect(logEntries.find((e) => e.description.trim() === "B")).toBeUndefined();
+    expect(logEntries.find((e) => e.description.trim() === "Second commit")).toBeUndefined();
     expect(getParents(logEntries, "C")).toEqual(["A"]);
   }).toPass();
 });
