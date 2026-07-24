@@ -51,53 +51,10 @@ async function openRepoPicker(workbox: Page, paneHeader: Locator): Promise<Locat
   return quickInput;
 }
 
-test("graph webview shows the selected repo and the repo picker lists both repos", async ({
+test("multi-root workspace exposes both repos across the graph, operation log, and source controls", async ({
   workbox,
   scmView,
   graphFrame,
-  repoA,
-  repoB,
-}) => {
-  await repoA.commitFile("alpha.txt", "alpha", "alpha commit one");
-  await repoB.commitFile("beta.txt", "beta", "beta commit one");
-
-  // The first workspace folder is the initially selected repository.
-  await expect(graphFrame.getByText("alpha commit one")).toBeVisible();
-  await expect(graphPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-alpha/);
-
-  const picker = await openRepoPicker(workbox, graphPaneHeader(scmView));
-  await expect(picker.locator("input").first()).toHaveAttribute("placeholder", "Select a Repository");
-  await expect(picker.getByRole("option")).toHaveCount(2);
-  await expect(picker.getByRole("option", { name: repoA.repoPath })).toBeVisible();
-  await expect(picker.getByRole("option", { name: repoB.repoPath })).toBeVisible();
-
-  await workbox.keyboard.press("Escape");
-});
-
-test("switching the selected repo via the graph picker refreshes the graph", async ({
-  workbox,
-  scmView,
-  graphFrame,
-  repoA,
-  repoB,
-}) => {
-  await repoA.commitFile("alpha.txt", "alpha", "alpha commit one");
-  await repoB.commitFile("beta.txt", "beta", "beta commit one");
-
-  await expect(graphFrame.getByText("alpha commit one")).toBeVisible();
-
-  const picker = await openRepoPicker(workbox, graphPaneHeader(scmView));
-  await picker.getByRole("option", { name: repoB.repoPath }).click();
-
-  // The graph refreshes to show the other repository's commits.
-  await expect(graphFrame.getByText("beta commit one")).toBeVisible();
-  await expect(graphFrame.getByText("alpha commit one")).toHaveCount(0);
-  await expect(graphPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-beta/);
-});
-
-test("operation log repo picker lists both repos and switching refreshes the operation log", async ({
-  workbox,
-  scmView,
   opLog,
   repoA,
   repoB,
@@ -105,24 +62,45 @@ test("operation log repo picker lists both repos and switching refreshes the ope
   await repoA.commitFile("alpha.txt", "alpha", "alpha commit one");
   await repoB.commitFile("beta.txt", "beta", "beta commit one");
 
+  // The graph and operation log share a single selected repository, so the
+  // default state is verified before any picker switches and each picker is
+  // then exercised as a switch trigger in turn (graph A->B, op-log B->A).
+
+  // --- Initial selection (first workspace folder) ---
+
+  await expect(graphFrame.getByText("alpha commit one")).toBeVisible();
+  await expect(graphPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-alpha/);
   await expect(opLogPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-alpha/);
 
-  const picker = await openRepoPicker(workbox, opLogPaneHeader(scmView));
-  await expect(picker.locator("input").first()).toHaveAttribute("placeholder", "Select a Repository");
-  await expect(picker.getByRole("option")).toHaveCount(2);
-  await expect(picker.getByRole("option", { name: repoA.repoPath })).toBeVisible();
-  await expect(picker.getByRole("option", { name: repoB.repoPath })).toBeVisible();
-  await picker.getByRole("option", { name: repoB.repoPath }).click();
+  // --- Graph view: repo picker listing and switch ---
+
+  const graphPicker = await openRepoPicker(workbox, graphPaneHeader(scmView));
+  await expect(graphPicker.locator("input").first()).toHaveAttribute("placeholder", "Select a Repository");
+  await expect(graphPicker.getByRole("option")).toHaveCount(2);
+  await expect(graphPicker.getByRole("option", { name: repoA.repoPath })).toBeVisible();
+  await expect(graphPicker.getByRole("option", { name: repoB.repoPath })).toBeVisible();
+
+  // Switching the selected repo via the graph picker refreshes the graph.
+  await graphPicker.getByRole("option", { name: repoB.repoPath }).click();
+  await expect(graphFrame.getByText("beta commit one")).toBeVisible();
+  await expect(graphFrame.getByText("alpha commit one")).toHaveCount(0);
+  await expect(graphPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-beta/);
+
+  // --- Operation log view: repo picker listing and switch ---
+
+  const opLogPicker = await openRepoPicker(workbox, opLogPaneHeader(scmView));
+  await expect(opLogPicker.locator("input").first()).toHaveAttribute("placeholder", "Select a Repository");
+  await expect(opLogPicker.getByRole("option")).toHaveCount(2);
+  await expect(opLogPicker.getByRole("option", { name: repoA.repoPath })).toBeVisible();
+  await expect(opLogPicker.getByRole("option", { name: repoB.repoPath })).toBeVisible();
+  await opLogPicker.getByRole("option", { name: repoA.repoPath }).click();
 
   // The operation log refreshes to show the other repository's history.
-  await expect(opLogPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-beta/);
-  await expect(opLog.locator('[role="treeitem"]').filter({ hasText: "beta commit one" }).first()).toBeVisible();
-  await expect(opLog.locator('[role="treeitem"]').filter({ hasText: "alpha commit one" })).toHaveCount(0);
-});
+  await expect(opLogPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-alpha/);
+  await expect(opLog.locator('[role="treeitem"]').filter({ hasText: "alpha commit one" }).first()).toBeVisible();
+  await expect(opLog.locator('[role="treeitem"]').filter({ hasText: "beta commit one" })).toHaveCount(0);
 
-test("SCM view shows both repositories as separate source controls", async ({ scmView, repoA, repoB }) => {
-  await repoA.commitFile("alpha.txt", "alpha", "alpha commit one");
-  await repoB.commitFile("beta.txt", "beta", "beta commit one");
+  // --- Source control view: both repos registered independently ---
 
   const scmTree = scmView.getByRole("tree", { name: "Source Control Management" });
   const repoItems = scmTree.locator('[role="treeitem"][aria-level="1"]');
