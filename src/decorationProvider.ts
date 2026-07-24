@@ -1,6 +1,6 @@
 import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, ThemeColor } from "vscode";
 import { FileStatus, FileStatusType } from "./types";
-import { resolveRev, toJJUri, getParams } from "./uri";
+import { resolveRev, toJJUri, getParams, type JJUriParams } from "./uri";
 import { normalizePath } from "./utils";
 
 export function interdiffKey(from: string, to: string): string {
@@ -169,7 +169,15 @@ export class JJDecorationProvider implements FileDecorationProvider {
       throw new Error("provideFileDecoration was called before data was available");
     }
     if (uri.scheme === "jj") {
-      const params = getParams(uri);
+      let params: JJUriParams;
+      try {
+        params = getParams(uri);
+      } catch {
+        // Stray or serialized jj: URIs (e.g. from stale state, logs, or
+        // another extension) may have an empty or malformed query. Return
+        // undefined instead of surfacing an error from the decoration provider.
+        return undefined;
+      }
       if ("interdiffFrom" in params) {
         return this.decorations.get(getKey(uri.fsPath, interdiffKey(params.interdiffFrom, params.interdiffTo)));
       }
