@@ -1,5 +1,21 @@
 # Change Log
 
+## 1.9.1
+
+### Bug Fixes
+
+- Include the change in the abandon confirmation dialog
+- Return per-URI size and mtime from `JJFileSystemProvider.stat()`
+- Keep cache entries alive for open `jj://` diff documents instead of evicting them after three minutes
+
+### Internal
+
+- Add integration tests for multi-root workspace/repository selection, the colocated repo warning, abandoning changes,
+  and the absorb change command
+- Increase the integration test worker count from 4 to 5
+- Inline the esbuild problem matcher instead of relying on an extension dependency
+- Some cleanups
+
 ## 1.9.0
 
 ### New Features
