@@ -106,8 +106,6 @@ export class JJFileSystemProvider implements FileSystemProvider {
 
       if (isOpen || now - row.timestamp < THREE_MINUTES) {
         cache.set(uriString, row);
-      } else {
-        // TODO: should fire delete events?
       }
     }
 
