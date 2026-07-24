@@ -211,9 +211,23 @@ export function getParents(logEntries: LogEntry[], description: string): string[
   });
 }
 
-export async function newTestRepo(repoPath: string): Promise<TestRepo> {
+export interface NewTestRepoOptions {
+  // When true, force a colocated repo (top-level `.git` alongside `.jj`) via
+  // `jj git init --colocate`. When false, force a non-colocated, git-backed jj
+  // repo store (no top-level `.git`) via `jj git init --no-colocate`. When
+  // undefined, use `jj git init`'s default.
+  colocate?: boolean;
+}
+
+export async function newTestRepo(repoPath: string, options: NewTestRepoOptions = {}): Promise<TestRepo> {
   const repo = new TestRepo(repoPath);
   await fs.mkdir(repoPath, { recursive: true });
-  await repo.jjCommand(["git", "init"]);
+  const initArgs = ["git", "init"];
+  if (options.colocate === true) {
+    initArgs.push("--colocate");
+  } else if (options.colocate === false) {
+    initArgs.push("--no-colocate");
+  }
+  await repo.jjCommand(initArgs);
   return repo;
 }
