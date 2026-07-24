@@ -154,7 +154,8 @@ export class JJFileSystemProvider implements FileSystemProvider {
       if (originalContent) {
         return originalContent;
       }
-      return this.readFileOrNotFound(repository, params.diffOriginalRev, uri.fsPath);
+      const pathToRead = renamedFrom ?? uri.fsPath;
+      return this.readFileOrNotFound(repository, params.diffOriginalRev, pathToRead);
     }
     if ("rev" in params) {
       return this.readFileOrNotFound(repository, params.rev, uri.fsPath);
