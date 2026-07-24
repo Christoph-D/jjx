@@ -15,7 +15,7 @@ import {
 import { getParams } from "./uri";
 import type { WorkspaceSourceControlManager } from "./sourceControl";
 import type { JJRepository } from "./repository";
-import { createThrottledAsyncFn, eventToPromise, filterEvent, isDescendant, pathEquals } from "./utils";
+import { createThrottledAsyncFn, eventToPromise, filterEvent, isDescendant } from "./utils";
 
 interface CacheRow {
   uri: Uri;
@@ -97,13 +97,14 @@ export class JJFileSystemProvider implements FileSystemProvider {
     const cache = new Map<string, CacheRow>();
 
     for (const row of this.cache.values()) {
-      const path = row.uri.fsPath;
-      const isOpen = workspace.textDocuments
-        .filter((d) => d.uri.scheme === "file")
-        .some((d) => pathEquals(d.uri.fsPath, path));
+      const uriString = row.uri.toString();
+      // Cache entries are keyed by their full `jj://` URI, and an open diff
+      // editor's document is itself a `jj://` URI, so keep a row alive when an
+      // open document matches it (regardless of scheme).
+      const isOpen = workspace.textDocuments.some((d) => d.uri.toString() === uriString);
 
       if (isOpen || now - row.timestamp < THREE_MINUTES) {
-        cache.set(row.uri.toString(), row);
+        cache.set(uriString, row);
       } else {
         // TODO: should fire delete events?
       }
