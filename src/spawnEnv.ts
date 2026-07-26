@@ -14,9 +14,17 @@ const ALLOWED_ENV_KEYS = [
   "SSH_AGENT_PID",
 ] as const;
 
+const WINDOWS_ENV_KEYS = ["SystemRoot", "SystemDrive", "TEMP", "TMP", "PATHEXT", "COMSPEC"] as const;
+
 export function buildSpawnEnv(extra: Record<string, string | undefined> = {}): Record<string, string> {
   const env: Record<string, string> = {};
   for (const key of ALLOWED_ENV_KEYS) {
+    const value = process.env[key];
+    if (value !== undefined) {
+      env[key] = value;
+    }
+  }
+  for (const key of WINDOWS_ENV_KEYS) {
     const value = process.env[key];
     if (value !== undefined) {
       env[key] = value;
