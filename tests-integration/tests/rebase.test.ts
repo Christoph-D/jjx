@@ -245,3 +245,75 @@ test("add parent is hidden when dropping onto an existing parent", async ({ grap
   const rebaseAddParentItem = graphFrame.locator('[data-action="rebaseAddParentWithDescendants"]');
   await expect(rebaseAddParentItem).toBeHidden();
 });
+
+test("remove parent removes a parent of a merge via drag and drop", async ({ graphFrame, testRepo }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.commitFile("c.txt", "content c", "C");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(5);
+
+  const commitC = nodes.nth(1);
+  const commitA = nodes.nth(3);
+
+  const rebaseWithDescendantsItem = graphFrame.locator('[data-action="rebaseWithDescendants"]');
+  const rebaseAddParentItem = graphFrame.locator('[data-action="rebaseAddParentWithDescendants"]');
+  const rebaseRemoveParentItem = graphFrame.locator('[data-action="rebaseRemoveParentWithDescendants"]');
+
+  // First make C a merge of B and A via "Add Parent".
+  await commitC.dragTo(commitA);
+  await expect(rebaseWithDescendantsItem).toBeVisible();
+  await rebaseWithDescendantsItem.hover();
+  await expect(rebaseAddParentItem).toBeVisible();
+  await rebaseAddParentItem.click();
+
+  await expect(nodes).toHaveCount(5);
+
+  // C is now a merge with parents A and B.
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "C").sort()).toEqual(["A", "B"]);
+  }).toPass();
+
+  // Now drag C onto A (an existing parent). Since C has >= 2 parents,
+  // "Remove Parent" should be visible and remove A from C's parents.
+  await commitC.dragTo(commitA);
+  await expect(rebaseWithDescendantsItem).toBeVisible();
+  await rebaseWithDescendantsItem.hover();
+  await expect(rebaseRemoveParentItem).toBeVisible();
+  await rebaseRemoveParentItem.click();
+
+  await expect(nodes).toHaveCount(5);
+
+  // Before: C is a merge of A and B. After: A is removed, C is left with only B.
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "C")).toEqual(["B"]);
+    expect(getParents(logEntries, "@")).toEqual(["C"]);
+  }).toPass();
+});
+
+test("remove parent is hidden when dropping onto the only parent", async ({ graphFrame, testRepo }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.commitFile("c.txt", "content c", "C");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(5);
+
+  // Stack: A -> B -> C -> @. B is the only parent of C.
+  const commitC = nodes.nth(1);
+  const commitB = nodes.nth(2);
+
+  await commitC.dragTo(commitB);
+
+  const rebaseWithDescendantsItem = graphFrame.locator('[data-action="rebaseWithDescendants"]');
+  await expect(rebaseWithDescendantsItem).toBeVisible();
+  await rebaseWithDescendantsItem.hover();
+
+  // C only has a single parent, so removing one would leave it with none;
+  // the entry must be hidden.
+  const rebaseRemoveParentItem = graphFrame.locator('[data-action="rebaseRemoveParentWithDescendants"]');
+  await expect(rebaseRemoveParentItem).toBeHidden();
+});

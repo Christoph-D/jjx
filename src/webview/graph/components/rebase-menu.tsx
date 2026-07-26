@@ -44,6 +44,11 @@ export function RebaseMenu() {
                 Add Parent
               </SubmenuItem>
             )}
+            {isTargetAlreadyParent && (sourceChange?.parentChangeIds?.length ?? 0) >= 2 && (
+              <SubmenuItem action="rebaseRemoveParentWithDescendants" onClick={() => sendCommand("rebaseRemoveParent")}>
+                Remove Parent
+              </SubmenuItem>
+            )}
             <SubmenuItem action="rebaseAfterWithDescendants" onClick={() => sendCommand("rebaseAfter", true)}>
               After
             </SubmenuItem>
