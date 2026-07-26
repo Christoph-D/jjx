@@ -1,5 +1,18 @@
 # Change Log
 
+## 1.9.2
+
+### New Features
+
+- **Add and remove parents via drag and drop** - Quickly modify a change's parents with drag&drop through a new item
+  under the "Rebase With Descendants" submenu.
+
+### Bug Fixes
+
+- Handle binary files in the diff tool IPC, which fixes diff view of images
+- Clear the "Selected Change" and "Interdiff" sections in the change view after abandoning changes
+- Keep the "Selected Commit" and "Interdiff" resource groups below the "Parent Commits" group
+
 ## 1.9.1
 
 ### Bug Fixes
