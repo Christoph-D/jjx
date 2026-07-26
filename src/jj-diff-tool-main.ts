@@ -15,7 +15,7 @@ function readDirRecursive(dir: string, base: string = dir): Record<string, strin
     if (entry.isDirectory()) {
       Object.assign(files, readDirRecursive(fullPath, base));
     } else {
-      files[relativePath] = fs.readFileSync(fullPath, "utf8");
+      files[relativePath] = fs.readFileSync(fullPath).toString("base64");
     }
   }
   return files;

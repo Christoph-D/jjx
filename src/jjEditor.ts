@@ -92,6 +92,8 @@ function parseConflictLabels(content: string): { left?: ConflictSideLabels; righ
 
 interface DiffToolRequest {
   requestId: string;
+  // File contents are base64-encoded so binary files (e.g. images) survive the
+  // JSON IPC transport undistorted.
   leftFiles: Record<string, string>;
   rightFiles: Record<string, string>;
 }

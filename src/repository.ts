@@ -1144,7 +1144,7 @@ export class JJRepository {
       return undefined;
     }
     logger.trace(`[getDiffOriginal] match found: leftPath=${leftPath} bytes=${content.length}`);
-    return Buffer.from(content, "utf8");
+    return Buffer.from(content, "base64");
   }
 
   /**
@@ -1188,8 +1188,8 @@ export class JJRepository {
     const right = match.rightPath !== undefined ? rightFiles[match.rightPath] : undefined;
     logger.trace(`[getInterdiff] match left=${left !== undefined} right=${right !== undefined}`);
     return {
-      left: left !== undefined ? Buffer.from(left, "utf8") : undefined,
-      right: right !== undefined ? Buffer.from(right, "utf8") : undefined,
+      left: left !== undefined ? Buffer.from(left, "base64") : undefined,
+      right: right !== undefined ? Buffer.from(right, "base64") : undefined,
     };
   }
 
