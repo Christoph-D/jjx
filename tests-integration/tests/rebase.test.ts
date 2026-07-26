@@ -188,3 +188,60 @@ test("rebase commit with descendants before another via drag and drop", async ({
     expect(getParents(logEntries, "@")).toEqual(["C"]);
   }).toPass();
 });
+
+test("rebase commit with descendants add parent via drag and drop", async ({ graphFrame, testRepo }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.commitFile("c.txt", "content c", "C");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(5);
+
+  const commitC = nodes.nth(1);
+  const commitA = nodes.nth(3);
+
+  await commitC.dragTo(commitA);
+
+  const rebaseWithDescendantsItem = graphFrame.locator('[data-action="rebaseWithDescendants"]');
+  await expect(rebaseWithDescendantsItem).toBeVisible();
+  await rebaseWithDescendantsItem.hover();
+
+  const rebaseAddParentItem = graphFrame.locator('[data-action="rebaseAddParentWithDescendants"]');
+  await expect(rebaseAddParentItem).toBeVisible();
+  await rebaseAddParentItem.click();
+
+  await expect(nodes).toHaveCount(5);
+
+  // Before: A -> B -> C -> @
+  // After:  C is rebased onto its existing parents plus A, becoming a merge of B and A.
+  //         @ stays a child of C.
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "C").sort()).toEqual(["A", "B"]);
+    expect(getParents(logEntries, "@")).toEqual(["C"]);
+    expect(getParents(logEntries, "B")).toEqual(["A"]);
+  }).toPass();
+});
+
+test("add parent is hidden when dropping onto an existing parent", async ({ graphFrame, testRepo }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.commitFile("c.txt", "content c", "C");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(5);
+
+  // Stack: A -> B -> C -> @. B is already a parent of C.
+  const commitC = nodes.nth(1);
+  const commitB = nodes.nth(2);
+
+  await commitC.dragTo(commitB);
+
+  const rebaseWithDescendantsItem = graphFrame.locator('[data-action="rebaseWithDescendants"]');
+  await expect(rebaseWithDescendantsItem).toBeVisible();
+  await rebaseWithDescendantsItem.hover();
+
+  // Adding B as a parent of C is a no-op, so the entry should be hidden.
+  const rebaseAddParentItem = graphFrame.locator('[data-action="rebaseAddParentWithDescendants"]');
+  await expect(rebaseAddParentItem).toBeHidden();
+});

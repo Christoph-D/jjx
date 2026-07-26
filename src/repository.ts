@@ -907,6 +907,28 @@ export class JJRepository {
     );
   }
 
+  private async rebaseAddParent(source: string, destination: string, ignoreImmutable = false) {
+    return this.jjCommand([
+      "rebase",
+      "--source",
+      source,
+      "--onto",
+      `parents(${source})`,
+      "--onto",
+      destination,
+      ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+    ]);
+  }
+
+  async rebaseAddParentRetryImmutable(source: string, destination: string) {
+    return this.retryWithImmutable(
+      source,
+      () => this.rebaseAddParent(source, destination),
+      () => this.rebaseAddParent(source, destination, true),
+      "This rebase modifies one or more immutable commits, are you sure?",
+    );
+  }
+
   async duplicate(source: string, destination: string, mode: "onto" | "after" | "before") {
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
     return this.jjCommand(["duplicate", "-r", source, flag, destination]);

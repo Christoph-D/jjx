@@ -1,4 +1,4 @@
-import { rebaseMenu, vscode } from "../signals";
+import { currentChanges, rebaseMenu, vscode } from "../signals";
 import { Menu, MenuItem, MenuSeparator, Submenu, SubmenuItem } from "./menu-container";
 
 export function RebaseMenu() {
@@ -10,6 +10,8 @@ export function RebaseMenu() {
   const { sourceId, targetId, targetChange } = state;
   const isDivergent = !!targetChange.changeOffset && targetChange.changeOffset !== "";
   const isImmutable = targetChange.branchType === "◆";
+  const sourceChange = currentChanges.value.find((c) => c.changeId === sourceId);
+  const isTargetAlreadyParent = !!sourceChange?.parentChangeIds?.includes(targetId);
 
   const sendCommand = (command: string, withDescendants = false) => {
     vscode.postMessage({ command, changeId: sourceId, targetChangeId: targetId, withDescendants });
@@ -37,6 +39,11 @@ export function RebaseMenu() {
             <SubmenuItem action="rebaseOntoWithDescendants" onClick={() => sendCommand("rebaseOnto", true)}>
               Onto
             </SubmenuItem>
+            {!isTargetAlreadyParent && (
+              <SubmenuItem action="rebaseAddParentWithDescendants" onClick={() => sendCommand("rebaseAddParent")}>
+                Add Parent
+              </SubmenuItem>
+            )}
             <SubmenuItem action="rebaseAfterWithDescendants" onClick={() => sendCommand("rebaseAfter", true)}>
               After
             </SubmenuItem>

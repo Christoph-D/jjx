@@ -315,6 +315,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           );
           break;
         }
+        case "rebaseAddParent":
+          await this.withRefresh("rebase", () =>
+            repo.rebaseAddParentRetryImmutable(message.changeId, message.targetChangeId),
+          );
+          break;
         case "squashInto":
           await this.withRefresh("squash", () =>
             repo.squashRetryImmutable({ fromRev: message.changeId, toRev: message.targetChangeId }),

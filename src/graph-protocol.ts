@@ -100,6 +100,7 @@ export type WebviewToExtensionMessage =
   | { command: "rebaseOnto"; changeId: string; targetChangeId: string; withDescendants: boolean }
   | { command: "rebaseAfter"; changeId: string; targetChangeId: string; withDescendants: boolean }
   | { command: "rebaseBefore"; changeId: string; targetChangeId: string; withDescendants: boolean }
+  | { command: "rebaseAddParent"; changeId: string; targetChangeId: string }
   | { command: "squashInto"; changeId: string; targetChangeId: string }
   | { command: "duplicateOnto"; changeId: string; targetChangeId: string }
   | { command: "duplicateAfter"; changeId: string; targetChangeId: string }
