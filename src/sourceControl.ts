@@ -698,8 +698,10 @@ export class RepositorySourceControlManager {
       }
     }
 
-    if (newParentCreated && this.selectedCommitResourceGroup) {
-      this.selectedCommitResourceGroup.dispose();
+    // VS Code renders SCM groups in creation order with no reorder API. Always
+    // dispose the tail group here and let it be recreated below the parents.
+    if (newParentCreated) {
+      this.selectedCommitResourceGroup?.dispose();
       this.selectedCommitResourceGroup = undefined;
       this.interdiffResourceGroup?.dispose();
       this.interdiffResourceGroup = undefined;
