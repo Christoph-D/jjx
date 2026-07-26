@@ -521,7 +521,13 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       }
 
       const changeIdsInGraph = new Set(changes.map((c) => c.changeId));
-      this.selectedNodes = new Set(Array.from(this.selectedNodes).filter((id) => changeIdsInGraph.has(id)));
+      const previousSelectedNodes = this.selectedNodes;
+      this.selectedNodes = new Set(Array.from(previousSelectedNodes).filter((id) => changeIdsInGraph.has(id)));
+      // If any selected changes were removed (e.g. abandoned), notify listeners so the
+      // SCM view can clear its stale sections.
+      if (this.selectedNodes.size !== previousSelectedNodes.size) {
+        this._onDidChangeSelection.fire(Array.from(this.selectedNodes));
+      }
       const changeDoubleClickAction = config.get<string>("changeDoubleClickAction") || "edit";
 
       const laneInfo = assignLanes(entriesWithSynthetics);
