@@ -259,19 +259,45 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       await graphHeader.click();
     }
 
-    let graphFrame: Frame | undefined;
-    await expect(async () => {
+    const findGraphFrame = async (): Promise<Frame | undefined> => {
       for (const frame of workbox.frames()) {
-        const content = await frame.content();
-        if (content.includes('id="nodes"')) {
-          graphFrame = frame;
-          return;
+        try {
+          const content = await frame.content();
+          if (content.includes('id="nodes"')) {
+            return frame;
+          }
+        } catch {
+          // The frame can be mid-navigation while the webview (re)loads; the
+          // content read throws while it is settling, so just try the next.
         }
       }
-      throw new Error("Graph frame not found");
+      return undefined;
+    };
+
+    let graphFrame: Frame | undefined;
+    await expect(async () => {
+      const frame = await findGraphFrame();
+      if (!frame || frame.isDetached()) {
+        throw new Error("Graph frame not ready");
+      }
+      if ((await frame.locator("#nodes > div").count()) === 0) {
+        throw new Error("Graph not rendered");
+      }
+      graphFrame = frame;
     }).toPass();
 
     await increaseJJVisibleSize(workbox);
+
+    await expect(async () => {
+      const frame = await findGraphFrame();
+      if (!frame || frame.isDetached()) {
+        throw new Error("Graph frame detached after layout resize");
+      }
+      if ((await frame.locator("#nodes > div").count()) === 0) {
+        throw new Error("Graph not rendered after layout resize");
+      }
+      graphFrame = frame;
+    }).toPass();
 
     await use(graphFrame!);
   },
