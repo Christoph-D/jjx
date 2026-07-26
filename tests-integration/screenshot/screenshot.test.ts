@@ -211,7 +211,7 @@ test("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, 
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(4);
-  await expect(nodes.locator(".conflict-indicator")).toHaveCount(2);
+  await expect(nodes.locator('[data-role="conflict-indicator"]')).toHaveCount(2);
 
   const conflicts = scmView.getByRole("treeitem").filter({ hasText: "file.txt" });
   await expect(conflicts).toHaveCount(2);

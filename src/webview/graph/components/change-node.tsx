@@ -169,7 +169,11 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
       {...dragProps}
     >
       <div class={styles.changeIdLeft} data-role="change-id" ref={changeIdRef}>
-        {change.conflict && <span class={styles.conflictIndicator}>✗</span>}
+        {change.conflict && (
+          <span class={styles.conflictIndicator} data-role="conflict-indicator">
+            ✗
+          </span>
+        )}
         <span class={styles.changeIdPrefix}>{change.changeIdPrefix}</span>
         <span class={styles.changeIdSuffix}>{change.changeIdSuffix}</span>
         {change.changeOffset && <span class={styles.changeIdOffset}>/{change.changeOffset}</span>}
