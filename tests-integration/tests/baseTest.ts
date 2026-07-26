@@ -214,7 +214,15 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         "--skip-welcome",
         "--skip-release-notes",
         "--disable-workspace-trust",
-        ...(process.platform === "win32" || process.platform === "darwin" ? ["--window-size=1920,1080"] : []),
+        ...(process.platform === "win32" || process.platform === "darwin"
+          ? [
+              "--window-size=1920,1080",
+              "--disable-background-timer-throttling",
+              "--disable-backgrounding-occluded-windows",
+              "--disable-renderer-backgrounding",
+              "--disable-features=CalculateNativeWinOcclusion",
+            ]
+          : []),
         "--log=trace",
         `--extensionDevelopmentPath=${extensionPath}`,
         `--extensions-dir=${path.join(cachePath, "extensions")}`,
