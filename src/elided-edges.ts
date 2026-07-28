@@ -3,14 +3,14 @@
 
 import type { LogEntry, ParentRef } from "./types";
 
-export type GraphEdgeType = "direct" | "indirect" | "missing";
+type GraphEdgeType = "direct" | "indirect" | "missing";
 
 export interface ClassifiedEdge {
   targetId: string;
   edgeType: GraphEdgeType;
 }
 
-export interface SyntheticNode {
+interface SyntheticNode {
   id: string;
   targetId: string;
   edgeType: GraphEdgeType;
@@ -126,7 +126,7 @@ function buildAncestryInfo(
   return { visibleIds, parentMap, ancestorOfVisible, reachableVisibleFrom };
 }
 
-export interface ClassifyEdgesOptions {
+interface ClassifyEdgesOptions {
   elideImmutableCommits?: boolean;
   elidedVisibleImmutableParents?: number;
 }

@@ -12,7 +12,7 @@ export interface LogEntryRemoteRef {
   remote: string;
 }
 
-export interface ChangedFile {
+interface ChangedFile {
   type: FileStatusType;
   path: string;
   renamedFrom?: string;
@@ -53,7 +53,7 @@ export interface LaneNode {
   numLanesActiveVisually: number;
 }
 
-export interface LaneEdge {
+interface LaneEdge {
   fromRow: number;
   toRow: number;
   lanePath: number[];

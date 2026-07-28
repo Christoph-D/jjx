@@ -398,7 +398,7 @@ export function provideOriginalResource(uri: vscode.Uri) {
   return originalUri;
 }
 
-export class RepositorySourceControlManager {
+class RepositorySourceControlManager {
   subscriptions: {
     dispose(): unknown;
   }[] = [];

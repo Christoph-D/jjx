@@ -144,7 +144,7 @@ export function intersectDiffWithRange(
   }
 }
 
-export function getModifiedRange(textDocument: vscode.TextDocument, diff: LineChange): vscode.Range {
+function getModifiedRange(textDocument: vscode.TextDocument, diff: LineChange): vscode.Range {
   if (diff.modifiedEndLineNumber === 0) {
     if (diff.modifiedStartLineNumber === 0) {
       return new vscode.Range(

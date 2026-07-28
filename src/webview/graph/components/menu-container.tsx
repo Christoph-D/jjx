@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useId, useRef, useState } from "pre
 import { cx } from "../utils";
 import styles from "./context-menu.module.css";
 
-export interface SubmenuPosition {
+interface SubmenuPosition {
   left?: boolean;
   above?: boolean;
   below?: boolean;
@@ -33,7 +33,7 @@ function useMenuContext(): MenuContextValue {
   return ctx;
 }
 
-export interface MenuProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
+interface MenuProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
   state: { pageX: number; pageY: number };
   children: ComponentChildren;
   [dataAttr: `data-${string}`]: string | undefined;
@@ -76,7 +76,7 @@ export function Menu({ state, children, ...rest }: MenuProps) {
   );
 }
 
-export interface MenuItemProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
+interface MenuItemProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
   action: string;
   children: ComponentChildren;
 }
@@ -90,7 +90,7 @@ export function MenuItem({ action, children, ...rest }: MenuItemProps) {
   );
 }
 
-export interface SubmenuProps {
+interface SubmenuProps {
   action: string;
   label: string;
   children: ComponentChildren;
@@ -131,7 +131,7 @@ export function Submenu({ action, label, children }: SubmenuProps) {
   );
 }
 
-export interface SubmenuItemProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
+interface SubmenuItemProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
   action: string;
   children: ComponentChildren;
 }

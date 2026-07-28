@@ -35,14 +35,14 @@ export const tooltipTimeout = signal<ReturnType<typeof setTimeout> | null>(null)
 export const tooltipHideTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
 export const diffStatsPrefetchTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
 
-export interface ContextMenuState {
+interface ContextMenuState {
   change: ChangeNode;
   pageX: number;
   pageY: number;
   changeDoubleClickAction: string;
 }
 
-export interface RebaseMenuState {
+interface RebaseMenuState {
   sourceId: string;
   targetId: string;
   targetChange: ChangeNode;
@@ -50,7 +50,7 @@ export interface RebaseMenuState {
   pageY: number;
 }
 
-export interface TooltipState {
+interface TooltipState {
   change: ChangeNode;
   pageX: number;
   pageY: number;
@@ -61,7 +61,7 @@ export const rebaseMenu = signal<RebaseMenuState | null>(null);
 export const tooltip = signal<TooltipState | null>(null);
 export const diffStatsCache = signal<Map<string, DiffStats>>(new Map());
 
-export interface HighlightState {
+interface HighlightState {
   focalId: string;
   connectedIds: Set<string>;
 }
@@ -79,7 +79,7 @@ export interface PendingGraphUpdate {
   showChangedFiles: boolean;
 }
 
-export interface PillContextMenuState {
+interface PillContextMenuState {
   type: "bookmark" | "tag";
   name: string;
   pageX: number;

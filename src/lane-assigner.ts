@@ -1,6 +1,5 @@
 import type { LogEntry, ParentRef } from "./types";
-import type { LaneNode, LaneEdge, ChangeIdGraph } from "./graph-protocol";
-export type { LaneNode, LaneEdge, ChangeIdGraph };
+import type { ChangeIdGraph } from "./graph-protocol";
 
 const colorRegistryLength = 5;
 

@@ -5,31 +5,31 @@
  */
 import { type JJVersion, versionAtLeast, JJ_VERSION_WITH_OPERATION_ATTRIBUTES } from "./constants";
 
-export interface PrimitiveField {
+interface PrimitiveField {
   type: "string" | "raw" | "boolean" | "number";
   expr: string;
 }
 
-export interface DictField {
+interface DictField {
   type: "dict";
   contents: TemplateFields;
 }
 
-export interface ArrayField {
+interface ArrayField {
   type: "array";
   expr: string;
   loopVar: string;
   contents: TemplateFields;
 }
 
-export interface StringArrayField {
+interface StringArrayField {
   type: "string_array";
   expr: string;
   loopVar: string;
   value: string;
 }
 
-export type TemplateField = PrimitiveField | DictField | ArrayField | StringArrayField;
+type TemplateField = PrimitiveField | DictField | ArrayField | StringArrayField;
 
 export type TemplateFields = Record<string, TemplateField>;
 
@@ -381,6 +381,5 @@ const BOOKMARK_TRACKING_INFO_FIELDS: TemplateFields = {
 export const SHOW_TEMPLATE = generateTemplate(SHOW_ENTRY_FIELDS);
 export const STATUS_TEMPLATE = generateTemplate(STATUS_ENTRY_FIELDS);
 export const LOG_TEMPLATE = buildLogTemplate();
-export const OPERATION_TEMPLATE = buildOperationTemplate();
 export const DIFF_STATS_TEMPLATE = generateTemplate(DIFF_STATS_FIELDS);
 export const BOOKMARK_TRACKING_INFO_TEMPLATE = generateTemplate(BOOKMARK_TRACKING_INFO_FIELDS);

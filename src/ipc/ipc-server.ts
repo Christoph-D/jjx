@@ -61,7 +61,7 @@ export async function createIPCServer(context?: string): Promise<IPCServer> {
   });
 }
 
-export interface IIPCServer extends Disposable {
+interface IIPCServer extends Disposable {
   readonly ipcHandlePath: string;
   registerHandler(name: string, handler: IIPCHandler): Disposable;
 }

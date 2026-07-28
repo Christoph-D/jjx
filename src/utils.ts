@@ -22,7 +22,7 @@ export function filepathToFileset(filepath: string): string {
   return `file:"${escaped}"`;
 }
 
-export const isMacintosh = process.platform === "darwin";
+const isMacintosh = process.platform === "darwin";
 export const isWindows = process.platform === "win32";
 
 export function toDisposable(dispose: () => void): Disposable {

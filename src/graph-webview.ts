@@ -12,14 +12,9 @@ import { getLogRevset, getElidedVisibleImmutableParents } from "./config";
 import { DEFAULT_LOG_LIMIT } from "./constants";
 import { toJJUri } from "./uri";
 
-export type { LaneNode, LaneEdge, ChangeIdGraph } from "./lane-assigner";
-export type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
-
 const rootChangeId = "z".repeat(32);
 
 type Message = WebviewToExtensionMessage;
-
-export { assignLanes } from "./lane-assigner";
 
 export class JJGraphWebview implements vscode.WebviewViewProvider {
   subscriptions: {
@@ -616,7 +611,7 @@ function description(entry: LogEntry) {
   return prefix + desc;
 }
 
-export function parseJJLogJson(
+function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
   repositoryRoot?: string,
