@@ -68,7 +68,7 @@ function generateFieldEntry(name: string, field: TemplateField): string {
       return `"\\"${escapedName}\\": [" ++ ${field.expr}.map(|${field.loopVar}| "{" ++ ${inner} ++ "}").join(",") ++ "]"`;
     }
     case "string_array":
-      return `"\\"${escapedName}\\": [" ++ ${field.expr}.map(|${field.loopVar}| "\\"" ++ ${field.value} ++ "\\"").join(",") ++ "]"`;
+      return `"\\"${escapedName}\\": [" ++ ${field.expr}.map(|${field.loopVar}| stringify(${field.value}).escape_json()).join(",") ++ "]"`;
   }
 }
 

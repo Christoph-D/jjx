@@ -113,7 +113,7 @@ describe("TemplateBuilder Test Suite", () => {
     const result = generateTemplate(fields);
     assert.strictEqual(
       result,
-      `"{" ++ "\\"tags\\": [" ++ tags.map(|t| "\\"" ++ t.name() ++ "\\"").join(",") ++ "]" ++ "}\\n"`,
+      `"{" ++ "\\"tags\\": [" ++ tags.map(|t| stringify(t.name()).escape_json()).join(",") ++ "]" ++ "}\\n"`,
     );
   });
 
