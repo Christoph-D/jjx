@@ -17,7 +17,7 @@ Always run `pnpm run format` and `pnpm run check` after adding or changing anyth
 ## Testing
 
 - Unit tests in `src/unit-test`: `pnpm run unit-test`
-- Integration tests in `src/tests-integration`: `pnpm run playwright-test`
+- Integration tests in `tests-integration`: `pnpm run playwright-test`
 - Run all tests: `pnpm run test`
 
 ### Integration Tests
@@ -25,40 +25,40 @@ Always run `pnpm run format` and `pnpm run check` after adding or changing anyth
 Run tests in a single file:
 
 ```shell
-pnpm exec playwright test --config=tests-integration/playwright.config.ts tests-integration/tests/mergeConflict.test.ts
+pnpm exec playwright test --config=tests-integration/playwright.config.ts tests-integration/tests/merge-conflict.test.ts
 ```
 
 Do not add custom timeouts to Playwright expectations. The Playwright config already sets `expect.timeout`.
 
 ## Architecture (Key Files)
 
-| File                          | Purpose                                                      |
-| ----------------------------- | ------------------------------------------------------------ |
-| `src/main.ts`                 | Extension entry point, command registration                  |
-| `src/commands.ts`             | VS Code command handlers (rebase, squash, abandon, etc.)     |
-| `src/repository.ts`           | Core JJ command execution, repository state                  |
-| `src/sourceControl.ts`        | VS Code source control integration                           |
-| `src/config.ts`               | VS Code settings (jj path, timeout, config paths)            |
-| `src/extensionState.ts`       | Shared mutable extension state with change notifications     |
-| `src/polling.ts`              | Graph webview init and periodic repository state polling     |
-| `src/process.ts`              | Child process spawning for jj CLI invocations                |
-| `src/constants.ts`            | Timeout defaults, debounce intervals, min jj version         |
-| `src/templateBuilder.ts`      | JJ template string generation for JSON output                |
-| `src/graphWebview.ts`         | Commit graph webview host                                    |
-| `src/graph-protocol.ts`       | TypeScript interfaces for commit graph data (webview IPC)    |
-| `src/webview/graph/`          | Commit graph UI (Preact)                                     |
-| `src/laneAssigner.ts`         | Algorithm for commit graph lane layout                       |
-| `src/elidedEdges.ts`          | Collapsed edge rendering for graph                           |
-| `src/fileSystemProvider.ts`   | Virtual file system for `jj://` URIs                         |
-| `src/uri.ts`                  | Constructs and parses `jj://` scheme URIs                    |
-| `src/annotations.ts`          | Inline editor decorations showing change IDs (`jj annotate`) |
-| `src/ipc/`                    | IPC server/client for extension subprocess communication     |
-| `src/jjEditor.ts`             | External editor integration (`jj edit`, squash, merge, diff) |
-| `src/jj-*-main.ts`            | Standalone subprocess entry points for jj tools (IPC)        |
-| `src/decorationProvider.ts`   | In-editor line decorations (change IDs, etc.)                |
-| `src/operationLogTreeView.ts` | Tree view for JJ operation log                               |
-| `src/colocatedCheck.ts`       | Detects and warns colocated repos (`.jj` + `.git`)           |
-| `src/errors.ts`               | Custom error classes and jj error message parsing            |
+| File                             | Purpose                                                      |
+| -------------------------------- | ------------------------------------------------------------ |
+| `src/main.ts`                    | Extension entry point, command registration                  |
+| `src/commands.ts`                | VS Code command handlers (rebase, squash, abandon, etc.)     |
+| `src/repository.ts`              | Core JJ command execution, repository state                  |
+| `src/source-control.ts`          | VS Code source control integration                           |
+| `src/config.ts`                  | VS Code settings (jj path, timeout, config paths)            |
+| `src/extension-state.ts`         | Shared mutable extension state with change notifications     |
+| `src/polling.ts`                 | Graph webview init and periodic repository state polling     |
+| `src/process.ts`                 | Child process spawning for jj CLI invocations                |
+| `src/constants.ts`               | Timeout defaults, debounce intervals, min jj version         |
+| `src/template-builder.ts`        | JJ template string generation for JSON output                |
+| `src/graph-webview.ts`           | Commit graph webview host                                    |
+| `src/graph-protocol.ts`          | TypeScript interfaces for commit graph data (webview IPC)    |
+| `src/webview/graph/`             | Commit graph UI (Preact)                                     |
+| `src/lane-assigner.ts`           | Algorithm for commit graph lane layout                       |
+| `src/elided-edges.ts`            | Collapsed edge rendering for graph                           |
+| `src/file-system-provider.ts`    | Virtual file system for `jj://` URIs                         |
+| `src/uri.ts`                     | Constructs and parses `jj://` scheme URIs                    |
+| `src/annotations.ts`             | Inline editor decorations showing change IDs (`jj annotate`) |
+| `src/ipc/`                       | IPC server/client for extension subprocess communication     |
+| `src/jj-editor.ts`               | External editor integration (`jj edit`, squash, merge, diff) |
+| `src/jj-*-main.ts`               | Standalone subprocess entry points for jj tools (IPC)        |
+| `src/decoration-provider.ts`     | In-editor line decorations (change IDs, etc.)                |
+| `src/operation-log-tree-view.ts` | Tree view for JJ operation log                               |
+| `src/colocated-check.ts`         | Detects and warns colocated repos (`.jj` + `.git`)           |
+| `src/errors.ts`                  | Custom error classes and jj error message parsing            |
 
 ## JJ Templating Reference
 
