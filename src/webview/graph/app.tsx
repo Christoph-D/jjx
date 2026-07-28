@@ -11,6 +11,7 @@ import {
   isStale,
   isJJNotFound,
   isNoRepoFound,
+  isError,
   isDragging,
   selectedNodes,
   pendingGraphUpdate,
@@ -31,6 +32,7 @@ import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
 import { JJNotFoundState } from "./components/jj-not-found-state";
 import { NoRepoFoundState } from "./components/no-repo-found-state";
+import { ErrorState } from "./components/error-state";
 import { ErrorBoundary } from "./components/error-boundary";
 import type { PendingGraphUpdate } from "./signals";
 import type { ExtensionToWebviewMessage } from "../../graph-protocol";
@@ -41,6 +43,7 @@ export function App() {
       isStale.value = false;
       isJJNotFound.value = false;
       isNoRepoFound.value = false;
+      isError.value = false;
       const newChangeIds = new Set(message.changes.map((c) => c.changeId));
       const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(id)));
       selectedNodes.value = preserved;
@@ -92,6 +95,9 @@ export function App() {
           break;
         case "showNoRepoFoundState":
           isNoRepoFound.value = true;
+          break;
+        case "showErrorState":
+          isError.value = true;
           break;
         case "diffStatsResponse": {
           const newCache = new Map(diffStatsCache.value);
@@ -162,6 +168,8 @@ export function App() {
         <JJNotFoundState />
       ) : isNoRepoFound.value ? (
         <NoRepoFoundState />
+      ) : isError.value ? (
+        <ErrorState />
       ) : (
         <Graph />
       )}

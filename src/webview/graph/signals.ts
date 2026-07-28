@@ -24,6 +24,7 @@ export const changeIdHorizontalOffset = signal(0);
 export const isStale = signal(false);
 export const isJJNotFound = signal(false);
 export const isNoRepoFound = signal(false);
+export const isError = signal(false);
 export const graphStyle = signal("full");
 export const changeDoubleClickAction = signal("new");
 export const showTooltips = signal(true);

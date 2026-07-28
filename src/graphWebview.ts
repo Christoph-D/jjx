@@ -564,6 +564,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         return;
       }
       logger.error(`Failed to refresh graph: ${error instanceof Error ? error.message : String(error)}`);
+      this.panel.webview.postMessage({ command: "showErrorState" });
     }
   }
 
