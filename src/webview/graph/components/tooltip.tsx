@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from "preact/hooks";
 import { tooltip, diffStatsCache } from "../signals";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import { CHANGE_ID_RIGHT_PADDING } from "../types";
+import { escapeInvisibleChars } from "../utils";
 import { BookmarkPill, RemoteBookmarkPill, RemoteTagPill, TagPill } from "./pill";
 import styles from "./tooltip.module.css";
 
@@ -96,22 +97,22 @@ export function Tooltip() {
           <div class={styles.tooltipPills}>
             {change.localBookmarks.map((b) => (
               <BookmarkPill key={b.name} conflict={b.conflict} synced={b.synced}>
-                {b.name}
+                {escapeInvisibleChars(b.name)}
               </BookmarkPill>
             ))}
             {filteredRemoteBookmarks.map((b) => (
               <RemoteBookmarkPill key={b.name + "@" + b.remote}>
-                {b.name}@{b.remote}
+                {escapeInvisibleChars(b.name)}@{b.remote}
               </RemoteBookmarkPill>
             ))}
             {change.localTags.map((t) => (
               <TagPill key={t.name} conflict={t.conflict} synced={t.synced}>
-                {t.name}
+                {escapeInvisibleChars(t.name)}
               </TagPill>
             ))}
             {filteredRemoteTags.map((t) => (
               <RemoteTagPill key={t.name + "@" + t.remote}>
-                {t.name}@{t.remote}
+                {escapeInvisibleChars(t.name)}@{t.remote}
               </RemoteTagPill>
             ))}
           </div>

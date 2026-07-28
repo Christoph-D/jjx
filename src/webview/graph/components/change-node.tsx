@@ -29,7 +29,7 @@ import {
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
 import type { ChangeNode } from "../../../graph-protocol";
-import { abbreviateName, cx } from "../utils";
+import { abbreviateName, cx, escapeInvisibleChars } from "../utils";
 import { clearAllTooltipTimers } from "../hooks/use-tooltip-timers";
 
 function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
@@ -238,7 +238,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
       <div>
         {change.workingCopies?.map((wc) => (
           <WorkspacePill key={wc} data-workspace={wc}>
-            {wc}
+            {escapeInvisibleChars(wc)}
           </WorkspacePill>
         ))}
         {change.localBookmarks.map((b) => (
@@ -275,7 +275,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
 
               const ghost = document.createElement("div");
               ghost.className = cx(dragGhostStyles.dragGhost, dragGhostStyles.bookmarkDragGhost);
-              ghost.textContent = b.name;
+              ghost.textContent = escapeInvisibleChars(b.name);
               document.body.appendChild(ghost);
               e.dataTransfer!.setDragImage(ghost, -15, 0);
               setTimeout(() => ghost.remove(), 0);
