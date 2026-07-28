@@ -10,6 +10,6 @@ export default defineConfig({
   use: {
     screenshot: "only-on-failure",
   },
-  globalSetup: "../globalSetup",
+  globalSetup: "../global-setup",
   testMatch: "screenshot.test.ts",
 });

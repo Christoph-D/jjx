@@ -22,6 +22,6 @@ pnpm-workspace.yaml
 tests-integration/
 test-results/
 playwright-report/
-images/togif.sh
+images/to-gif.sh
 images/logging.png
 images/logo-large.png

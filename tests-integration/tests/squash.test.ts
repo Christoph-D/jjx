@@ -1,4 +1,4 @@
-import { test, expect, handleEditor } from "./baseTest";
+import { test, expect, handleEditor } from "./base-test";
 
 test("squash commit into another via drag and drop", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "A");

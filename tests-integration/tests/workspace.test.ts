@@ -1,5 +1,5 @@
 import path from "path";
-import { test, expect, TestRepo } from "./baseTest";
+import { test, expect, TestRepo } from "./base-test";
 
 test.describe("auto-update disabled", () => {
   test.use({ customSettings: { "jjx.autoUpdateStaleWorkspace": false } });

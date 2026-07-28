@@ -1,4 +1,4 @@
-import { test, expect, clickPillMenuItem } from "./baseTest";
+import { test, expect, clickPillMenuItem } from "./base-test";
 
 test("create and delete tag from context menu", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("test.txt", "content", "test commit");

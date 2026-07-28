@@ -1,4 +1,4 @@
-import { test, expect } from "./baseTest";
+import { test, expect } from "./base-test";
 
 const FILE_COUNT = 8000;
 

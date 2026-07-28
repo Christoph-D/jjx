@@ -1,5 +1,5 @@
-import { test, expect } from "./baseTest";
-import { getParents } from "../testRepo";
+import { test, expect } from "./base-test";
+import { getParents } from "../test-repo";
 
 test("abandon single change via context menu", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "A");

@@ -11,7 +11,7 @@ import {
   OPERATION_TEMPLATE,
   DIFF_STATS_TEMPLATE,
   BOOKMARK_TRACKING_INFO_TEMPLATE,
-} from "./templateBuilder";
+} from "./template-builder";
 import spawn from "cross-spawn";
 import type { ChildProcess } from "child_process";
 import { ImmutableError, convertJJErrors } from "./errors";
@@ -23,9 +23,9 @@ import {
   type ProcessOutput,
   ProcessError,
 } from "./process";
-import { parseRenamePaths } from "./parseRenamePaths";
-import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses } from "./parseFileStatuses";
-import { parseInterdiffSummary } from "./parseInterdiffSummary";
+import { parseRenamePaths } from "./parse-rename-paths";
+import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses } from "./parse-file-statuses";
+import { parseInterdiffSummary } from "./parse-interdiff-summary";
 import { logger } from "./logger";
 import { quoteJjName } from "./quote";
 import { filepathToFileset, isWindows, pathEquals } from "./utils";
@@ -37,9 +37,9 @@ import {
   completeSquashToolRequest,
   consumeEditorSession,
   openRecoveredEditor,
-} from "./jjEditor";
+} from "./jj-editor";
 import { TIMEOUTS } from "./constants";
-import { withDivergenceHandling } from "./divergenceHandling";
+import { withDivergenceHandling } from "./divergence-handling";
 import type {
   FileStatus,
   FileStatusType,

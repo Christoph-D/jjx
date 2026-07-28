@@ -16,7 +16,7 @@ export default defineConfig<void, TestOptions>({
   expect: {
     timeout: 30_000,
   },
-  globalSetup: "./globalSetup",
+  globalSetup: "./global-setup",
   projects: [
     {
       name: "integration tests",

@@ -1,5 +1,5 @@
-import { test, expect } from "./baseTest";
-import { getParents } from "../testRepo";
+import { test, expect } from "./base-test";
+import { getParents } from "../test-repo";
 
 test("revert commit onto another via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");

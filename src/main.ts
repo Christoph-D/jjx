@@ -1,17 +1,17 @@
 import * as vscode from "vscode";
 import "./repository";
 import { initExtensionDir } from "./config";
-import { WorkspaceSourceControlManager } from "./sourceControl";
-import { JJDecorationProvider } from "./decorationProvider";
+import { WorkspaceSourceControlManager } from "./source-control";
+import { JJDecorationProvider } from "./decoration-provider";
 import { initLogger, logger } from "./logger";
-import { createIPCServer } from "./ipc/ipcServer";
-import { JJEditor, JJMergeEditor, JJDiffTool, JJSquashTool } from "./jjEditor";
+import { createIPCServer } from "./ipc/ipc-server";
+import { JJEditor, JJMergeEditor, JJDiffTool, JJSquashTool } from "./jj-editor";
 import { killAllProcesses } from "./process";
-import { createExtensionState } from "./extensionState";
+import { createExtensionState } from "./extension-state";
 import { registerPreInitCommands, registerInitCommands } from "./commands";
 import { registerAnnotations } from "./annotations";
 import { createPolling, initInfrastructure } from "./polling";
-import { registerColocatedCheck } from "./colocatedCheck";
+import { registerColocatedCheck } from "./colocated-check";
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Jujutsu X", {

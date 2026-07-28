@@ -1,4 +1,4 @@
-import { test, expect, waitForSCMView } from "./baseTest";
+import { test, expect, waitForSCMView } from "./base-test";
 
 async function getInterdiffSection(
   workbox: import("@playwright/test").Page,

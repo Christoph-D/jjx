@@ -1,4 +1,4 @@
-import { test, expect, waitForSCMView } from "./baseTest";
+import { test, expect, waitForSCMView } from "./base-test";
 
 test("shows diff when clicking modified files", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.writeFile("deleted-first.txt", "Deleted first");

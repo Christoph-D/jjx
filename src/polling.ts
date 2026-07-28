@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import { logger } from "./logger";
 import { createThrottledAsyncFn } from "./utils";
-import { OperationLogManager, OperationLogTreeDataProvider } from "./operationLogTreeView";
-import { JJGraphWebview } from "./graphWebview";
-import type { ExtensionState } from "./extensionState";
+import { OperationLogManager, OperationLogTreeDataProvider } from "./operation-log-tree-view";
+import { JJGraphWebview } from "./graph-webview";
+import type { ExtensionState } from "./extension-state";
 
 export function initInfrastructure(state: ExtensionState) {
   const context = state.context;

@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { IPCClient } from "./ipc/ipcClient";
+import { IPCClient } from "./ipc/ipc-client";
 
 function fatal(err: unknown): void {
   console.error(err);

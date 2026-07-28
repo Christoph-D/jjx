@@ -4,8 +4,8 @@ import * as vscode from "vscode";
 import { logger } from "./logger";
 import { getCommandTimeout } from "./config";
 import { convertJJErrors, extractJJWarning } from "./errors";
-import { getJjEditorEnv } from "./jjEditor";
-import { buildSpawnEnv } from "./spawnEnv";
+import { getJjEditorEnv } from "./jj-editor";
+import { buildSpawnEnv } from "./spawn-env";
 
 export class CancelledError extends Error {
   constructor() {

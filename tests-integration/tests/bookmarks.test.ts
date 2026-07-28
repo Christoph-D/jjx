@@ -1,4 +1,4 @@
-import { test, expect, newTestRepo, clickPillMenuItem, runCommand } from "./baseTest";
+import { test, expect, newTestRepo, clickPillMenuItem, runCommand } from "./base-test";
 import path from "path";
 
 test("create and delete bookmark from context menu", async ({ graphFrame, testRepo, workbox }) => {

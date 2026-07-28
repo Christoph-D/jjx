@@ -1,4 +1,4 @@
-import { test, expect, TestRepo, newTestRepo } from "../tests/baseTest";
+import { test, expect, TestRepo, newTestRepo } from "../tests/base-test";
 import path from "path";
 import fs from "fs/promises";
 import { execSync } from "child_process";

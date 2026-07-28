@@ -1,4 +1,4 @@
-import { IPCClient } from "./ipc/ipcClient";
+import { IPCClient } from "./ipc/ipc-client";
 
 function fatal(err: unknown): void {
   console.error(err);

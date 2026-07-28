@@ -1,4 +1,4 @@
-import { test, expect, mod, cursorTop } from "./baseTest";
+import { test, expect, mod, cursorTop } from "./base-test";
 import type { Locator } from "@playwright/test";
 
 async function openFile(workbox: import("@playwright/test").Page, fileName: string): Promise<Locator> {

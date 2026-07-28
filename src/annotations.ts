@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 import type { ChangeWithDetails } from "./types";
 import { resolveRev } from "./uri";
-import type { ExtensionState } from "./extensionState";
-import { relativeTime } from "./relativeTime";
+import type { ExtensionState } from "./extension-state";
+import { relativeTime } from "./relative-time";
 
 export function registerAnnotations(state: ExtensionState): void {
   const context = state.context;

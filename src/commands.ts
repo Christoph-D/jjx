@@ -1,11 +1,11 @@
 import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
-import { provideOriginalResource } from "./sourceControl";
+import { provideOriginalResource } from "./source-control";
 import { resolveRealpath, type JJRepository } from "./repository";
-import type { ExtensionState } from "./extensionState";
+import type { ExtensionState } from "./extension-state";
 import type { FileStatus } from "./types";
-import { OperationTreeItem } from "./operationLogTreeView";
+import { OperationTreeItem } from "./operation-log-tree-view";
 import { getParams, resolveRev, toJJUri } from "./uri";
 import {
   computeLineChanges,
@@ -13,9 +13,9 @@ import {
   intersectDiffWithRange,
   applyLineChanges,
   type LineChange,
-} from "./diffUtils";
+} from "./diff-utils";
 import { getActiveTextEditorDiff, normalizePath, pathEquals, showErrorMessage } from "./utils";
-import { getMergeEditorConfigs } from "./jjEditor";
+import { getMergeEditorConfigs } from "./jj-editor";
 import { handleJJCommand } from "./process";
 
 function registerCommand<T extends unknown[]>(
