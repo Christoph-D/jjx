@@ -1,5 +1,26 @@
 # Change Log
 
+## 1.10.0
+
+### New Features
+
+- **Handle untracked files in the SCM view** - Show files that jj does not ignore but also does not track (e.g. files
+  exceeding jj's max file size or excluded by `snapshot.auto-track`) in a new "Untracked Files" section below the
+  working copy.
+
+### Bug Fixes
+
+- Surface jj export-failure warnings (e.g. "Failed to export some bookmarks") as a VS Code warning popup
+- Fix failures with bookmark/tag/workspace names containing special characters
+- Escape invisible characters in bookmark/tag/workspace names in the graph view
+- Show an error in the graph webview when a refresh fails, instead of leaving a stale graph visible
+- Use `operation.attributes()` instead of `operation.tags()`, the latter was deprecated in jj 0.41
+
+### Internal
+
+- Rename source and test files to kebab-case
+- Remove unnecessary exports
+
 ## 1.9.2
 
 ### New Features
