@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { quoteJjName } from "../quoteJjName";
+import { quoteJjName } from "../quote";
 
 describe("quoteJjName", () => {
   it("wraps a simple name in double quotes", () => {

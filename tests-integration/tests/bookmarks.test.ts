@@ -8,21 +8,33 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   await expect(nodes).toHaveCount(3);
 
   const commitNode = nodes.nth(0);
-  await commitNode.click({ button: "right" });
 
-  const createBookmarkItem = graphFrame.locator('[data-action="createBookmark"]');
-  await createBookmarkItem.click();
+  const createBookmarkViaContextMenu = async (name: string) => {
+    await commitNode.locator('[data-role="change-id"]').click({ button: "right" });
 
-  const input = workbox.locator("input").first();
-  await input.waitFor({ state: "visible" });
-  await input.fill("test-bookmark");
-  await workbox.keyboard.press("Enter");
+    const createBookmarkItem = graphFrame.locator('[data-action="createBookmark"]');
+    await createBookmarkItem.click();
+
+    const input = workbox.locator("input").first();
+    await input.waitFor({ state: "visible" });
+    await input.fill(name);
+    await workbox.keyboard.press("Enter");
+  };
+
+  await createBookmarkViaContextMenu("test-bookmark");
 
   const bookmarkPill = graphFrame.locator('[data-bookmark="test-bookmark"]');
   await expect(bookmarkPill).toBeVisible();
 
   const bookmark = await testRepo.getBookmark("test-bookmark");
   expect(bookmark).toBeDefined();
+
+  await createBookmarkViaContextMenu("#special");
+
+  const specialBookmarkPill = graphFrame.locator('[data-bookmark="#special"]');
+  await expect(specialBookmarkPill).toBeVisible();
+
+  expect((await testRepo.jjCommand(["bookmark", "list"])).stdout).toContain("#special");
 
   await clickPillMenuItem(graphFrame, bookmarkPill, "Delete Bookmark");
 
@@ -33,6 +45,14 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   await expect(bookmarkPill).not.toBeVisible();
 
   expect(await testRepo.getBookmark("test-bookmark")).toBeUndefined();
+
+  await clickPillMenuItem(graphFrame, specialBookmarkPill, "Delete Bookmark");
+
+  await expect(dialog).toContainText("#special");
+  await dialog.getByRole("button", { name: "Delete" }).click();
+
+  await expect(specialBookmarkPill).not.toBeVisible();
+  expect((await testRepo.jjCommand(["bookmark", "list"])).stdout).not.toContain("#special");
 });
 
 test("move bookmark via drag and drop", async ({ graphFrame, testRepo, workbox }) => {

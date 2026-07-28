@@ -27,7 +27,7 @@ import { parseRenamePaths } from "./parseRenamePaths";
 import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses } from "./parseFileStatuses";
 import { parseInterdiffSummary } from "./parseInterdiffSummary";
 import { logger } from "./logger";
-import { quoteJjName } from "./quoteJjName";
+import { quoteJjName } from "./quote";
 import { filepathToFileset, isWindows, pathEquals } from "./utils";
 import {
   getDiffToolConfigs,
@@ -725,7 +725,7 @@ export class JJRepository {
     return this.jjCommand([
       "bookmark",
       "move",
-      bookmark,
+      quoteJjName(bookmark),
       "-t",
       targetRev,
       ...(allowBackwards ? ["--allow-backwards"] : []),
@@ -733,7 +733,7 @@ export class JJRepository {
   }
 
   async createBookmark(bookmark: string, targetRev: string) {
-    return this.jjCommand(["bookmark", "create", bookmark, "-r", targetRev]);
+    return this.jjCommand(["bookmark", "create", quoteJjName(bookmark), "-r", targetRev]);
   }
 
   async createTag(tag: string, targetRev: string) {
@@ -741,7 +741,7 @@ export class JJRepository {
   }
 
   async deleteBookmark(bookmark: string) {
-    return this.jjCommand(["bookmark", "delete", bookmark]);
+    return this.jjCommand(["bookmark", "delete", quoteJjName(bookmark)]);
   }
 
   async pushBookmark(bookmark: string): Promise<string[]> {
@@ -787,7 +787,7 @@ export class JJRepository {
         "bookmark",
         "list",
         "--all-remotes",
-        bookmark,
+        quoteJjName(bookmark),
         "-T",
         `if(remote != "", if(${filter}, remote ++ "\\n", ""), "")`,
       ])
@@ -801,7 +801,14 @@ export class JJRepository {
     bookmark: string,
   ): Promise<{ trackedRemotes: string[]; unsyncedTrackedRemotes: string[]; untrackedRemotes: string[] }> {
     const [trackingOutput, remotesOutput] = await Promise.all([
-      this.jjCommandRead(["bookmark", "list", "--all-remotes", bookmark, "-T", BOOKMARK_TRACKING_INFO_TEMPLATE]),
+      this.jjCommandRead([
+        "bookmark",
+        "list",
+        "--all-remotes",
+        quoteJjName(bookmark),
+        "-T",
+        BOOKMARK_TRACKING_INFO_TEMPLATE,
+      ]),
       this.jjCommandRead(["git", "remote", "list"]),
     ]);
     const trackingEntries = this.splitLines(trackingOutput)
@@ -815,15 +822,15 @@ export class JJRepository {
   }
 
   async trackBookmark(bookmark: string, remote: string): Promise<void> {
-    await this.jjCommand(["bookmark", "track", bookmark, `--remote=${remote}`]);
+    await this.jjCommand(["bookmark", "track", quoteJjName(bookmark), `--remote=${remote}`]);
   }
 
   async untrackBookmark(bookmark: string, remote: string): Promise<void> {
-    await this.jjCommand(["bookmark", "untrack", bookmark, `--remote=${remote}`]);
+    await this.jjCommand(["bookmark", "untrack", quoteJjName(bookmark), `--remote=${remote}`]);
   }
 
   async pushBookmarkToRemote(bookmark: string, remote: string): Promise<void> {
-    await this.jjCommand(["git", "push", "--bookmark", bookmark, "--remote", remote], {
+    await this.jjCommand(["git", "push", "--bookmark", quoteJjName(bookmark), "--remote", remote], {
       timeout: TIMEOUTS.GIT_FETCH,
     });
   }
