@@ -14,16 +14,16 @@ import { JJRepository } from "./repository";
 import { StaleWorkingCopyError } from "./errors";
 import type { FileStatus, RepositoryStatus, Show, Change } from "./types";
 import { getRevFromChange } from "./types";
-import { TIMEOUTS, MINIMUM_JJ_VERSION } from "./constants";
+import { TIMEOUTS, MINIMUM_JJ_VERSION, type JJVersion } from "./constants";
 
-const checkedJjVersions = new Set<string>();
+const checkedJjVersions = new Map<string, JJVersion | undefined>();
 
-async function checkJJVersion(jjFilepath: string): Promise<void> {
+async function checkJJVersion(jjFilepath: string): Promise<JJVersion | undefined> {
   if (checkedJjVersions.has(jjFilepath)) {
-    return;
+    return checkedJjVersions.get(jjFilepath);
   }
-  checkedJjVersions.add(jjFilepath);
 
+  let version: JJVersion | undefined;
   try {
     const output = await collectProcessOutput(
       spawnJJ(jjFilepath, ["version", "--ignore-working-copy"], {
@@ -35,20 +35,27 @@ async function checkJJVersion(jjFilepath: string): Promise<void> {
       .toString()
       .trim()
       .match(/^jj (\d+)\.(\d+)\.(\d+)/);
-    if (!match) {
-      return;
-    }
-    const major = parseInt(match[1], 10);
-    const minor = parseInt(match[2], 10);
-    const patch = parseInt(match[3], 10);
-    if (major < MINIMUM_JJ_VERSION.major || (major === MINIMUM_JJ_VERSION.major && minor < MINIMUM_JJ_VERSION.minor)) {
-      void vscode.window.showErrorMessage(
-        `Jujutsu X requires jj version ${MINIMUM_JJ_VERSION.major}.${MINIMUM_JJ_VERSION.minor}.${MINIMUM_JJ_VERSION.patch} or later. It may work incorrectly with the currently installed version: ${major}.${minor}.${patch}.`,
-      );
+    if (match) {
+      version = {
+        major: parseInt(match[1], 10),
+        minor: parseInt(match[2], 10),
+        patch: parseInt(match[3], 10),
+      };
+      if (
+        version.major < MINIMUM_JJ_VERSION.major ||
+        (version.major === MINIMUM_JJ_VERSION.major && version.minor < MINIMUM_JJ_VERSION.minor)
+      ) {
+        void vscode.window.showErrorMessage(
+          `Jujutsu X requires jj version ${MINIMUM_JJ_VERSION.major}.${MINIMUM_JJ_VERSION.minor}.${MINIMUM_JJ_VERSION.patch} or later. It may work incorrectly with the currently installed version: ${version.major}.${version.minor}.${version.patch}.`,
+        );
+      }
     }
   } catch (error) {
     logger.error(`Failed to check jj version: ${String(error)}`);
   }
+
+  checkedJjVersions.set(jjFilepath, version);
+  return version;
 }
 
 export class WorkspaceSourceControlManager {
@@ -58,6 +65,7 @@ export class WorkspaceSourceControlManager {
       jjPath: Awaited<ReturnType<typeof getJJPath>>;
       jjConfigArgs: string[];
       repoRoot: string;
+      jjVersion: JJVersion | undefined;
     }
   > = new Map();
   repoSCMs: RepositorySourceControlManager[] = [];
@@ -123,6 +131,7 @@ export class WorkspaceSourceControlManager {
         jjPath: Awaited<ReturnType<typeof getJJPath>>;
         jjConfigArgs: string[];
         repoRoot: string;
+        jjVersion: JJVersion | undefined;
       }
     >();
     let anyBinaryNotFound = false;
@@ -135,7 +144,7 @@ export class WorkspaceSourceControlManager {
         if (effectiveToken.isCancellationRequested) {
           return false;
         }
-        await checkJJVersion(jjPath.filepath);
+        const jjVersion = await checkJJVersion(jjPath.filepath);
         if (effectiveToken.isCancellationRequested) {
           return false;
         }
@@ -168,6 +177,7 @@ export class WorkspaceSourceControlManager {
             jjPath,
             jjConfigArgs,
             repoRoot,
+            jjVersion,
           });
         }
       } catch (e) {
@@ -242,7 +252,7 @@ export class WorkspaceSourceControlManager {
       if (effectiveToken.isCancellationRequested) {
         break;
       }
-      const { repoRoot, jjPath, jjConfigArgs } = newRepoInfos.get(key)!;
+      const { repoRoot, jjPath, jjConfigArgs, jjVersion } = newRepoInfos.get(key)!;
       logger.info(`Initializing jjx in workspace ${key}. Using jj at ${jjPath.filepath} (${jjPath.source}).`);
       const repoSCM = new RepositorySourceControlManager(
         repoRoot,
@@ -250,6 +260,7 @@ export class WorkspaceSourceControlManager {
         this.fileSystemProvider,
         jjPath.filepath,
         jjConfigArgs,
+        jjVersion,
       );
       repoSCM.onDidUpdate(
         (e) => {
@@ -422,8 +433,9 @@ export class RepositorySourceControlManager {
     private fileSystemProvider: JJFileSystemProvider,
     jjPath: string,
     jjConfigArgs: string[],
+    jjVersion: JJVersion | undefined,
   ) {
-    this.repository = new JJRepository(repositoryRoot, jjPath, jjConfigArgs);
+    this.repository = new JJRepository(repositoryRoot, jjPath, jjConfigArgs, jjVersion);
 
     this.sourceControl = vscode.scm.createSourceControl("jj", "Jujutsu", vscode.Uri.file(repositoryRoot));
     this.subscriptions.push(this.sourceControl);

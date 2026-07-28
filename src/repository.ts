@@ -8,7 +8,7 @@ import {
   STATUS_TEMPLATE,
   LOG_TEMPLATE,
   buildLogTemplate,
-  OPERATION_TEMPLATE,
+  buildOperationTemplate,
   DIFF_STATS_TEMPLATE,
   BOOKMARK_TRACKING_INFO_TEMPLATE,
 } from "./template-builder";
@@ -38,7 +38,7 @@ import {
   consumeEditorSession,
   openRecoveredEditor,
 } from "./jj-editor";
-import { TIMEOUTS } from "./constants";
+import { TIMEOUTS, type JJVersion } from "./constants";
 import { withDivergenceHandling } from "./divergence-handling";
 import type {
   FileStatus,
@@ -80,6 +80,7 @@ export class JJRepository {
     public repositoryRoot: string,
     private jjPath: string,
     private jjConfigArgs: string[],
+    private jjVersion: JJVersion | undefined,
   ) {}
 
   async getGitDir(): Promise<string> {
@@ -1117,7 +1118,7 @@ export class JJRepository {
   async operationLog(operationId?: string): Promise<Operation[]> {
     const output = (
       await this.jjCommandRead(
-        ["operation", "log", "--limit", "10", "--no-graph", "-T", OPERATION_TEMPLATE],
+        ["operation", "log", "--limit", "10", "--no-graph", "-T", buildOperationTemplate(this.jjVersion)],
         undefined,
         operationId ?? "@",
       )

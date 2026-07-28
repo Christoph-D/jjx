@@ -10,6 +10,32 @@ export const TIMEOUTS = {
 
 export const MINIMUM_JJ_VERSION = { major: 0, minor: 38, patch: 0 } as const;
 
+/** Parsed semantic version of the detected jj binary. */
+export interface JJVersion {
+  major: number;
+  minor: number;
+  patch: number;
+}
+
+/**
+ * Returns true if `v` is greater than or equal to `target`.
+ * Both arguments are assumed to be non-negative integers.
+ */
+export function versionAtLeast(v: JJVersion, target: JJVersion): boolean {
+  if (v.major !== target.major) {
+    return v.major > target.major;
+  }
+  if (v.minor !== target.minor) {
+    return v.minor > target.minor;
+  }
+  return v.patch >= target.patch;
+}
+
+/**
+ * jj 0.41 deprecated `operation.tags()` in favor of `operation.attributes()`.
+ */
+export const JJ_VERSION_WITH_OPERATION_ATTRIBUTES: JJVersion = { major: 0, minor: 41, patch: 0 };
+
 // Backoff before reconciling divergent operation heads. The randomized delay breaks the phase-lock
 // between multiple jjx instances sharing one repository (e.g. over a network/shared filesystem),
 // so their reconciliations cannot sustain a cascade.

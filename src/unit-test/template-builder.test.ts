@@ -1,7 +1,13 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { generateTemplate, TemplateFields, LOG_TEMPLATE, buildLogTemplate } from "../template-builder";
+import {
+  generateTemplate,
+  TemplateFields,
+  LOG_TEMPLATE,
+  buildLogTemplate,
+  buildOperationTemplate,
+} from "../template-builder";
 
 describe("TemplateBuilder Test Suite", () => {
   it("generateTemplate with string field", () => {
@@ -184,5 +190,55 @@ describe("TemplateBuilder Test Suite", () => {
     assert.ok(result.includes("conflicted_files"));
     assert.ok(result.includes("self.conflicted_files()"));
     assert.ok(result.includes("f.path().display()"));
+  });
+
+  it("buildOperationTemplate() (no version) defaults to deprecated self.tags()", () => {
+    const result = buildOperationTemplate();
+    assert.ok(result.includes("self.tags()"), "expected deprecated tags() expression");
+    assert.ok(!result.includes("self.attributes()"), "must not emit attributes() when version is unknown");
+    // JSON key is `attributes` regardless of the underlying expression.
+    assert.ok(result.includes('\\"attributes\\"'), "JSON key is 'attributes'");
+  });
+
+  it("buildOperationTemplate(undefined) defaults to deprecated self.tags()", () => {
+    const result = buildOperationTemplate(undefined);
+    assert.ok(result.includes("self.tags()"));
+    assert.ok(!result.includes("self.attributes()"));
+    assert.ok(result.includes('\\"attributes\\"'), "JSON key is 'attributes'");
+  });
+
+  it("buildOperationTemplate(< 0.41) uses deprecated self.tags()", () => {
+    const result = buildOperationTemplate({ major: 0, minor: 38, patch: 0 });
+    assert.ok(result.includes("self.tags()"));
+    assert.ok(!result.includes("self.attributes()"));
+    assert.ok(result.includes('\\"attributes\\"'), "JSON key is 'attributes'");
+  });
+
+  it("buildOperationTemplate(0.40.x) uses deprecated self.tags()", () => {
+    const result = buildOperationTemplate({ major: 0, minor: 40, patch: 5 });
+    assert.ok(result.includes("self.tags()"));
+    assert.ok(!result.includes("self.attributes()"));
+    assert.ok(result.includes('\\"attributes\\"'), "JSON key is 'attributes'");
+  });
+
+  it("buildOperationTemplate(>= 0.41) uses self.attributes() with the attributes JSON key", () => {
+    const result = buildOperationTemplate({ major: 0, minor: 41, patch: 0 });
+    assert.ok(result.includes("self.attributes()"), "expected attributes() on 0.41");
+    assert.ok(!result.includes("self.tags()"), "must not emit deprecated tags() on >= 0.41");
+    assert.ok(result.includes('\\"attributes\\"'), "JSON key is 'attributes'");
+  });
+
+  it("buildOperationTemplate(0.42.0) uses self.attributes()", () => {
+    const result = buildOperationTemplate({ major: 0, minor: 42, patch: 0 });
+    assert.ok(result.includes("self.attributes()"));
+    assert.ok(!result.includes("self.tags()"));
+    assert.ok(result.includes('\\"attributes\\"'), "JSON key is 'attributes'");
+  });
+
+  it("buildOperationTemplate(1.0.0) uses self.attributes()", () => {
+    const result = buildOperationTemplate({ major: 1, minor: 0, patch: 0 });
+    assert.ok(result.includes("self.attributes()"));
+    assert.ok(!result.includes("self.tags()"));
+    assert.ok(result.includes('\\"attributes\\"'), "JSON key is 'attributes'");
   });
 });

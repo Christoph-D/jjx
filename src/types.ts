@@ -102,7 +102,7 @@ export type Show = {
 export type Operation = {
   id: string;
   description: string;
-  tags: string;
+  attributes: string;
   start: string;
   user: string;
   snapshot: boolean;

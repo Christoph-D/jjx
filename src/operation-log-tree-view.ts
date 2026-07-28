@@ -36,10 +36,10 @@ export class OperationTreeItem extends TreeItem {
     public readonly operation: Operation,
     public readonly repositoryRoot: string,
   ) {
-    super(operation.tags.startsWith("args: ") ? operation.tags.slice(6) : operation.tags);
+    super(operation.attributes.startsWith("args: ") ? operation.attributes.slice(6) : operation.attributes);
     this.id = operation.id;
     this.description = operation.description;
-    this.tooltip = new MarkdownString(`**${operation.start}**  \n${operation.tags}  \n${operation.description}`);
+    this.tooltip = new MarkdownString(`**${operation.start}**  \n${operation.attributes}  \n${operation.description}`);
   }
 }
 

@@ -3,6 +3,7 @@
  * This module provides a type-safe way to define template fields and generate
  * the corresponding jj template syntax for JSON output.
  */
+import { type JJVersion, versionAtLeast, JJ_VERSION_WITH_OPERATION_ATTRIBUTES } from "./constants";
 
 export interface PrimitiveField {
   type: "string" | "raw" | "boolean" | "number";
@@ -336,14 +337,25 @@ export function buildLogTemplate(opts?: { includeFiles?: boolean }): string {
   return generateTemplate(fields);
 }
 
-const OPERATION_ENTRY_FIELDS: TemplateFields = {
-  id: { type: "string", expr: "self.id()" },
-  description: { type: "string", expr: "self.description()" },
-  tags: { type: "string", expr: "self.tags()" },
-  start: { type: "string", expr: "self.time().start()" },
-  user: { type: "string", expr: "self.user()" },
-  snapshot: { type: "boolean", expr: "self.snapshot()" },
-};
+/**
+ * Builds the `jj operation log` JSON template.
+ *
+ * jj 0.41 deprecated `operation.tags()` in favor of `operation.attributes()`.
+ * The JSON output key is `attributes` either way.
+ */
+export function buildOperationTemplate(version?: JJVersion): string {
+  const attributesExpr =
+    version && versionAtLeast(version, JJ_VERSION_WITH_OPERATION_ATTRIBUTES) ? "self.attributes()" : "self.tags()";
+  const fields: TemplateFields = {
+    id: { type: "string", expr: "self.id()" },
+    description: { type: "string", expr: "self.description()" },
+    attributes: { type: "string", expr: attributesExpr },
+    start: { type: "string", expr: "self.time().start()" },
+    user: { type: "string", expr: "self.user()" },
+    snapshot: { type: "boolean", expr: "self.snapshot()" },
+  };
+  return generateTemplate(fields);
+}
 
 const DIFF_STATS_FIELDS: TemplateFields = {
   files_changed: {
@@ -369,6 +381,6 @@ const BOOKMARK_TRACKING_INFO_FIELDS: TemplateFields = {
 export const SHOW_TEMPLATE = generateTemplate(SHOW_ENTRY_FIELDS);
 export const STATUS_TEMPLATE = generateTemplate(STATUS_ENTRY_FIELDS);
 export const LOG_TEMPLATE = buildLogTemplate();
-export const OPERATION_TEMPLATE = generateTemplate(OPERATION_ENTRY_FIELDS);
+export const OPERATION_TEMPLATE = buildOperationTemplate();
 export const DIFF_STATS_TEMPLATE = generateTemplate(DIFF_STATS_FIELDS);
 export const BOOKMARK_TRACKING_INFO_TEMPLATE = generateTemplate(BOOKMARK_TRACKING_INFO_FIELDS);
