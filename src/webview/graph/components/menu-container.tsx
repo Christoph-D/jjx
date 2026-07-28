@@ -1,5 +1,5 @@
 import { createContext } from "preact";
-import type { ComponentChildren, JSX } from "preact";
+import type { ComponentChildren, HTMLAttributes } from "preact";
 import { useCallback, useContext, useEffect, useId, useRef, useState } from "preact/hooks";
 import { cx } from "../utils";
 import styles from "./context-menu.module.css";
@@ -33,7 +33,7 @@ function useMenuContext(): MenuContextValue {
   return ctx;
 }
 
-interface MenuProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
+interface MenuProps extends Omit<HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
   state: { pageX: number; pageY: number };
   children: ComponentChildren;
   [dataAttr: `data-${string}`]: string | undefined;
@@ -76,7 +76,7 @@ export function Menu({ state, children, ...rest }: MenuProps) {
   );
 }
 
-interface MenuItemProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
+interface MenuItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
   action: string;
   children: ComponentChildren;
 }
@@ -131,7 +131,7 @@ export function Submenu({ action, label, children }: SubmenuProps) {
   );
 }
 
-interface SubmenuItemProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
+interface SubmenuItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
   action: string;
   children: ComponentChildren;
 }
