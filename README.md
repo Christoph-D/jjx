@@ -56,6 +56,7 @@ system.
 - Squash a change into any other change
 - Duplicate a change onto/after/before any other change
 - Apply the reverse of change (revert) onto/after/before any other change
+- Add or remove parents of a change
 - Move bookmarks by dragging them onto a target change
 
 ### 📁 File management
@@ -63,6 +64,7 @@ system.
 - Show changed files in the working copy and parent changes
 - Show changed files in the selected change when clicking on a change in the graph
 - Show an interdiff between two selected changes; clicking a file opens a side-by-side diff of how the changes differ
+- Show untracked files (files jj does not ignore but does not track)
 - Right-click context menu: View as diff, open at revision, open in working copy, copy paths
 - Configurable file click action: View as diff, open at revision, open in working copy
 - Line-by-line blame annotations (optional)
