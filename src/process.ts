@@ -3,7 +3,7 @@ import type { ChildProcess, SpawnOptions as NodeSpawnOptions } from "child_proce
 import * as vscode from "vscode";
 import { logger } from "./logger";
 import { getCommandTimeout } from "./config";
-import { convertJJErrors } from "./errors";
+import { convertJJErrors, extractJJWarning } from "./errors";
 import { getJjEditorEnv } from "./jjEditor";
 import { buildSpawnEnv } from "./spawnEnv";
 
@@ -113,5 +113,13 @@ export function spawnJJ(jjPath: string, args: string[], options: SpawnOptions) {
 export function handleJJCommand(childProcess: ChildProcess, token?: vscode.CancellationToken): Promise<Buffer> {
   return collectProcessOutput(childProcess, token)
     .catch(convertJJErrors)
-    .then((output) => output.stdout);
+    .then((output) => {
+      // jj prints warnings (e.g. "Failed to export some bookmarks") on stderr even when a command
+      // exits successfully. Surface them so the user knows the operation only partially succeeded.
+      const warning = extractJJWarning(output.stderr.toString());
+      if (warning) {
+        void vscode.window.showWarningMessage(warning);
+      }
+      return output.stdout;
+    });
 }

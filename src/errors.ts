@@ -40,6 +40,32 @@ export function parseJJError(error: unknown): Error {
 }
 
 /**
+ * Warnings worth surfacing to the user.
+ */
+const SURFACED_WARNING_PREFIXES = ["Warning: Failed to export some bookmarks", "Warning: Failed to export some tags"];
+
+/**
+ * Extracts the bookmark/tag export-failure warnings jj printed on stderr, or undefined if there are
+ * none.
+ */
+export function extractJJWarning(stderr: string): string | undefined {
+  const trimmed = stderr.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const blocks: string[] = [];
+  for (const line of trimmed.split("\n")) {
+    if (line.startsWith("Warning:")) {
+      blocks.push(line);
+    } else if (blocks.length > 0) {
+      blocks[blocks.length - 1] += "\n" + line;
+    }
+  }
+  const relevant = blocks.filter((block) => SURFACED_WARNING_PREFIXES.some((prefix) => block.startsWith(prefix)));
+  return relevant.length > 0 ? relevant.join("\n") : undefined;
+}
+
+/**
  * Detects common error messages from jj and converts them to custom error instances to make them easier to selectively
  * handle.
  */
