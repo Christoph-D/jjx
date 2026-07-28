@@ -27,6 +27,7 @@ import { parseRenamePaths } from "./parseRenamePaths";
 import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses } from "./parseFileStatuses";
 import { parseInterdiffSummary } from "./parseInterdiffSummary";
 import { logger } from "./logger";
+import { quoteJjName } from "./quoteJjName";
 import { filepathToFileset, isWindows, pathEquals } from "./utils";
 import {
   getDiffToolConfigs,
@@ -736,7 +737,7 @@ export class JJRepository {
   }
 
   async createTag(tag: string, targetRev: string) {
-    return this.jjCommand(["tag", "set", tag, "-r", targetRev]);
+    return this.jjCommand(["tag", "set", quoteJjName(tag), "-r", targetRev]);
   }
 
   async deleteBookmark(bookmark: string) {
@@ -828,7 +829,7 @@ export class JJRepository {
   }
 
   async deleteTag(tag: string) {
-    return this.jjCommand(["tag", "delete", tag]);
+    return this.jjCommand(["tag", "delete", quoteJjName(tag)]);
   }
 
   async getRemotes(): Promise<string[]> {
