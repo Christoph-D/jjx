@@ -1,4 +1,4 @@
-export type FileStatusType = "A" | "M" | "D" | "R" | "C" | "X";
+export type FileStatusType = "A" | "M" | "D" | "R" | "C" | "X" | "?";
 
 export type FileStatus = {
   type: FileStatusType;
@@ -87,6 +87,7 @@ export interface LogEntry {
 
 export type RepositoryStatus = {
   fileStatuses: FileStatus[];
+  untrackedFiles: FileStatus[];
   workingCopy: Change;
   parentChanges: Change[];
   conflictedFiles: Set<string>;

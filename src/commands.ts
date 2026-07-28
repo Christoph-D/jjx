@@ -850,6 +850,96 @@ export function registerInitCommands(state: ExtensionState): void {
     await navigateToRelativeChange(uri, "{}+", state);
   });
 
+  registerCommandWithLoading(
+    context,
+    "jj.trackUntrackedFile",
+    async (resourceState: vscode.SourceControlResourceState) => {
+      const repository = state.workspaceSCM.getRepositoryFromUri(resourceState.resourceUri);
+      if (!repository) {
+        throw new Error("Repository not found");
+      }
+      let filepath = resourceState.resourceUri.fsPath;
+      try {
+        filepath = fs.realpathSync.native(filepath);
+      } catch {
+        // Fall back to original path if realpath fails
+      }
+      await repository.fileTrack([filepath]);
+    },
+    { errorPrefix: "Failed to track file" },
+  );
+
+  registerCommand(
+    context,
+    "jj.deleteUntrackedFile",
+    async (resourceState: vscode.SourceControlResourceState) => {
+      const repository = state.workspaceSCM.getRepositoryFromUri(resourceState.resourceUri);
+      if (!repository) {
+        throw new Error("Repository not found");
+      }
+      let filepath = resourceState.resourceUri.fsPath;
+      try {
+        filepath = fs.realpathSync.native(filepath);
+      } catch {
+        // Fall back to original path if realpath fails
+      }
+      const relativePath = path.relative(repository.repositoryRoot, filepath);
+      const confirm = await vscode.window.showWarningMessage(
+        `Are you sure you want to delete the untracked file '${relativePath}'?\n\n!!! This file is not recorded in jj and cannot be restored !!!`,
+        { modal: true },
+        "Delete",
+      );
+      if (confirm !== "Delete") {
+        return;
+      }
+      await fs.promises.rm(filepath, { recursive: true, force: false });
+    },
+    { errorPrefix: "Failed to delete file" },
+  );
+
+  registerCommandWithLoading(
+    context,
+    "jj.trackAllUntrackedFiles",
+    async (resourceGroup: vscode.SourceControlResourceGroup) => {
+      const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
+      if (!scm) {
+        throw new Error("SCM not found for resource group");
+      }
+      const untrackedFiles = scm.status?.untrackedFiles ?? [];
+      if (untrackedFiles.length === 0) {
+        return;
+      }
+      await scm.repository.fileTrack(untrackedFiles.map((f) => f.path));
+    },
+    { errorPrefix: "Failed to track files" },
+  );
+
+  registerCommand(
+    context,
+    "jj.deleteAllUntrackedFiles",
+    async (resourceGroup: vscode.SourceControlResourceGroup) => {
+      const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
+      if (!scm) {
+        throw new Error("SCM not found for resource group");
+      }
+      const untrackedFiles = scm.status?.untrackedFiles ?? [];
+      if (untrackedFiles.length === 0) {
+        return;
+      }
+      const fileCount = untrackedFiles.length;
+      const confirm = await vscode.window.showWarningMessage(
+        `Are you sure you want to delete ${fileCount} untracked file${fileCount === 1 ? "" : "s"}?\n\n!!! These files are not recorded in jj and cannot be restored !!!`,
+        { modal: true },
+        "Delete",
+      );
+      if (confirm !== "Delete") {
+        return;
+      }
+      await Promise.all(untrackedFiles.map((f) => fs.promises.rm(f.path, { recursive: true, force: false })));
+    },
+    { errorPrefix: "Failed to delete files" },
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand("jj.squashSelectedRanges", async () => {
       // this is based on the Git extension's git.stageSelectedRanges function

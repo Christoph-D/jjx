@@ -315,6 +315,7 @@ export class WorkspaceSourceControlManager {
     return this.repoSCMs.find(
       (repo) =>
         repo.workingCopyResourceGroup === resourceGroup ||
+        repo.untrackedResourceGroup === resourceGroup ||
         repo.parentResourceGroups.includes(resourceGroup) ||
         repo.selectedCommitResourceGroup === resourceGroup ||
         repo.interdiffResourceGroup === resourceGroup,
@@ -339,6 +340,7 @@ export class WorkspaceSourceControlManager {
     for (const repo of this.repoSCMs) {
       const groups = [
         repo.workingCopyResourceGroup,
+        repo.untrackedResourceGroup,
         ...repo.parentResourceGroups,
         ...(repo.selectedCommitResourceGroup ? [repo.selectedCommitResourceGroup] : []),
         ...(repo.interdiffResourceGroup ? [repo.interdiffResourceGroup] : []),
@@ -391,6 +393,7 @@ export class RepositorySourceControlManager {
   }[] = [];
   sourceControl: vscode.SourceControl;
   workingCopyResourceGroup: vscode.SourceControlResourceGroup;
+  untrackedResourceGroup: vscode.SourceControlResourceGroup;
   parentResourceGroups: vscode.SourceControlResourceGroup[] = [];
   selectedCommitResourceGroup: vscode.SourceControlResourceGroup | undefined;
   selectedCommitShowResult: Show | undefined;
@@ -427,6 +430,14 @@ export class RepositorySourceControlManager {
 
     this.workingCopyResourceGroup = this.sourceControl.createResourceGroup("@", "Working Copy");
     this.subscriptions.push(this.workingCopyResourceGroup);
+
+    // Created immediately after the working copy group so that VS Code (which
+    // renders SCM resource groups in creation order) places "Untracked Files"
+    // directly below "Working Copy". Hidden when empty so it only appears when
+    // there are untracked files.
+    this.untrackedResourceGroup = this.sourceControl.createResourceGroup("untracked", "Untracked Files");
+    this.untrackedResourceGroup.hideWhenEmpty = true;
+    this.subscriptions.push(this.untrackedResourceGroup);
 
     this.updatePlaceholderText();
 
@@ -653,6 +664,8 @@ export class RepositorySourceControlManager {
     });
     this.sourceControl.count = this.status.fileStatuses.length;
 
+    this.untrackedResourceGroup.resourceStates = buildUntrackedResourceStates(this.status.untrackedFiles);
+
     const showParentChangeId = this.status.parentChanges.length > 1;
     const desiredParentIds = this.status.parentChanges.map((change) => change.changeId);
     const currentParentIds = this.parentResourceGroups.map((group) => group.id);
@@ -773,6 +786,7 @@ export class RepositorySourceControlManager {
       combinedFileStatusesByChange,
       this.trackedFiles,
       this.conflictedFilesByChange,
+      this.status.untrackedFiles,
     );
   }
 
@@ -858,6 +872,23 @@ function buildResourceStates(
         isConflicted,
         changeId,
       ),
+    };
+  });
+}
+
+function buildUntrackedResourceStates(fileStatuses: FileStatus[]): vscode.SourceControlResourceState[] {
+  return fileStatuses.map((fileStatus) => {
+    const fileUri = vscode.Uri.file(fileStatus.path);
+    return {
+      resourceUri: fileUri,
+      decorations: {
+        tooltip: "Untracked",
+      },
+      command: {
+        title: "Open File",
+        command: "vscode.open",
+        arguments: [fileUri],
+      },
     };
   });
 }

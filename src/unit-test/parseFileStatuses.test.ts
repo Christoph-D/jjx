@@ -2,7 +2,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { parseFileStatuses } from "../parseFileStatuses";
+import { parseFileStatuses, parseUntrackedFileStatuses } from "../parseFileStatuses";
 import type { DiffFileEntry } from "../types";
 
 const repoRoot = process.platform === "win32" ? "C:\\repo" : "/repo";
@@ -92,5 +92,54 @@ describe("parseFileStatuses Test Suite", () => {
     const { fileStatuses, conflictedFiles } = parseFileStatuses([], undefined, repoRoot);
     assert.equal(fileStatuses.length, 0);
     assert.equal(conflictedFiles.size, 0);
+  });
+});
+
+describe("parseUntrackedFileStatuses Test Suite", () => {
+  it("parses the Untracked paths section", () => {
+    const output = [
+      "Working copy changes:",
+      "A tracked.txt",
+      "Untracked paths:",
+      "? big.bin",
+      "? subdir/other.bin",
+      "Working copy  (@) : kxurvqky 9e573ae7 (no description set)",
+      "Parent commit (@-): zzzzzzzz 00000000 (empty) (no description set)",
+    ].join("\n");
+
+    const files = parseUntrackedFileStatuses(output, repoRoot);
+    assert.equal(files.length, 2);
+    assert.deepEqual(
+      files.map((f) => f.type),
+      ["?", "?"],
+    );
+    assert.equal(files[0].file, "big.bin");
+    assert.equal(path.relative(repoRoot, files[0].path), path.normalize("big.bin"));
+    assert.equal(files[1].file, "other.bin");
+    assert.equal(path.relative(repoRoot, files[1].path), path.normalize("subdir/other.bin"));
+  });
+
+  it("returns an empty array when there is no Untracked paths section", () => {
+    const output = [
+      "Working copy changes:",
+      "A tracked.txt",
+      "Working copy  (@) : kxurvqky 9e573ae7 (no description set)",
+    ].join("\n");
+    const files = parseUntrackedFileStatuses(output, repoRoot);
+    assert.equal(files.length, 0);
+  });
+
+  it("ignores the snapshot warning printed to stderr", () => {
+    const output = [
+      "Warning: Refused to snapshot some files:",
+      "  big.bin: 2.1MiB; the maximum size allowed is 1.0MiB",
+      "Working copy changes:",
+      "Untracked paths:",
+      "? big.bin",
+      "Working copy  (@) : kxurvqky 9e573ae7 (no description set)",
+    ].join("\n");
+    const files = parseUntrackedFileStatuses(output, repoRoot);
+    assert.equal(files.length, 1);
+    assert.equal(files[0].file, "big.bin");
   });
 });

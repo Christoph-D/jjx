@@ -21,6 +21,8 @@ const colorOfType = (type: FileStatusType) => {
       return new ThemeColor("jjDecoration.addedResourceForeground");
     case "X":
       return new ThemeColor("jjDecoration.conflictingResourceForeground");
+    case "?":
+      return new ThemeColor("jjDecoration.untrackedResourceForeground");
   }
 };
 
@@ -49,6 +51,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     fileStatusesByChange: Map<string, FileStatus[]>,
     trackedFiles: Set<string>,
     conflictedFiles: Map<string, Set<string>>,
+    untrackedFiles: FileStatus[],
   ) {
     if (process.platform === "win32") {
       trackedFiles = convertSetToLowercase(trackedFiles);
@@ -98,6 +101,16 @@ export class JJDecorationProvider implements FileDecorationProvider {
           });
         }
       }
+    }
+
+    for (const fileStatus of untrackedFiles) {
+      const key = getKey(Uri.file(fileStatus.path).fsPath, "@");
+      newKeys.add(key);
+      this.decorations.set(key, {
+        badge: fileStatus.type,
+        tooltip: fileStatus.file,
+        color: colorOfType(fileStatus.type),
+      });
     }
 
     this.decorationKeysByRepository.set(repositoryKey, newKeys);

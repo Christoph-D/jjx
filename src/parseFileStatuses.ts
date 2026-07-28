@@ -74,3 +74,39 @@ export function parseFileStatuses(
 
   return { fileStatuses, fileStatusesByPath, conflictedFiles };
 }
+
+const UNTRACKED_SECTION_HEADER = "Untracked paths:";
+
+/**
+ * Parses the "Untracked paths:" section of `jj status` output into
+ * {@link FileStatus} objects with type `?`. Untracked files only ever appear
+ * for the working copy, so this is only relevant when inspecting `@`.
+ */
+export function parseUntrackedFileStatuses(statusOutput: string, repositoryRoot: string): FileStatus[] {
+  const lines = statusOutput.split("\n");
+  const result: FileStatus[] = [];
+  let inUntrackedSection = false;
+  for (const line of lines) {
+    if (!inUntrackedSection) {
+      if (line.trim() === UNTRACKED_SECTION_HEADER) {
+        inUntrackedSection = true;
+      }
+      continue;
+    }
+    if (line.startsWith("? ")) {
+      const relativePath = path.normalize(line.slice(2).trim()).replace(/\\/g, "/");
+      if (!relativePath) {
+        continue;
+      }
+      const fullPath = path.join(repositoryRoot, relativePath);
+      result.push({
+        type: "?",
+        file: path.basename(relativePath),
+        path: fullPath,
+      });
+    } else if (line.trim() !== "" && !line.startsWith("?")) {
+      break;
+    }
+  }
+  return result;
+}

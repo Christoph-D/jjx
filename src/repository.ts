@@ -24,7 +24,7 @@ import {
   ProcessError,
 } from "./process";
 import { parseRenamePaths } from "./parseRenamePaths";
-import { parseFileStatuses, type ParsedFileStatuses } from "./parseFileStatuses";
+import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses } from "./parseFileStatuses";
 import { parseInterdiffSummary } from "./parseInterdiffSummary";
 import { logger } from "./logger";
 import { filepathToFileset, isWindows, pathEquals } from "./utils";
@@ -289,6 +289,8 @@ export class JJRepository {
 
     const { fileStatuses, conflictedFiles } = this.parseFileStatuses(entry.diff_files, entry.conflicted_files);
 
+    const untrackedFiles = await this.getUntrackedFiles(token);
+
     const workingCopy: Change = {
       changeId: entry.change_id,
       commitId: entry.commit_id,
@@ -315,6 +317,7 @@ export class JJRepository {
       workingCopy,
       parentChanges,
       fileStatuses,
+      untrackedFiles,
       conflictedFiles,
     };
 
@@ -324,6 +327,29 @@ export class JJRepository {
 
   async fileList(token?: vscode.CancellationToken, operationId?: string) {
     return (await this.jjCommandRead(["file", "list"], { token }, operationId)).toString().trim().split("\n");
+  }
+
+  /**
+   * Returns the untracked files in the working copy, parsed from the
+   * "Untracked paths:" section of `jj status`. Unlike the diff-based status,
+   * this requires snapshotting the working copy (no `--ignore-working-copy`),
+   * since untracked files (e.g. files exceeding the max file size, or excluded
+   * by `snapshot.auto-track`) are only surfaced by the snapshot.
+   */
+  async getUntrackedFiles(token?: vscode.CancellationToken): Promise<FileStatus[]> {
+    const output = (await this.jjCommand(["status"], { token })).toString();
+    return parseUntrackedFileStatuses(output, this.repositoryRoot);
+  }
+
+  /**
+   * Tracks the given paths in the working copy via `jj file track
+   * --include-ignored`, which tracks files regardless of size or ignore rules.
+   */
+  async fileTrack(filepaths: string[]): Promise<Buffer> {
+    const relativePaths = filepaths.map((filepath) =>
+      filepathToFileset(path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/")),
+    );
+    return this.jjCommand(["file", "track", "--include-ignored", "--", ...relativePaths]);
   }
 
   async show(rev: string, token?: vscode.CancellationToken, operationId?: string) {
