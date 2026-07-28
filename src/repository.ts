@@ -1309,7 +1309,7 @@ export class JJRepository {
   }
 }
 
-function resolveRealpath(filepath: string): string {
+export function resolveRealpath(filepath: string): string {
   try {
     return realFs.realpathSync.native(filepath);
   } catch {

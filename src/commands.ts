@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
 import { provideOriginalResource } from "./sourceControl";
-import type { JJRepository } from "./repository";
+import { resolveRealpath, type JJRepository } from "./repository";
 import type { ExtensionState } from "./extensionState";
 import type { FileStatus } from "./types";
 import { OperationTreeItem } from "./operationLogTreeView";
@@ -332,12 +332,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
     if (!configs.length) {
       throw new Error("Merge editor not initialized");
     }
-    let fsPath = uri.fsPath;
-    try {
-      fsPath = fs.realpathSync.native(fsPath);
-    } catch {
-      // Fall back to original path if realpath fails
-    }
+    const fsPath = resolveRealpath(uri.fsPath);
     const relativePath = path.relative(repo.repositoryRoot, fsPath);
     const args = ["resolve", "--tool=jjx-vscode-merge", ...configs.flatMap((c) => ["--config", c])];
     if (changeId) {
@@ -551,13 +546,7 @@ export function registerInitCommands(state: ExtensionState): void {
       await repository.squashRetryImmutable({
         fromRev: "@",
         toRev: destinationParentChange.changeId,
-        filepaths: resourceStates.map((rs) => {
-          try {
-            return fs.realpathSync.native(rs.resourceUri.fsPath);
-          } catch {
-            return rs.resourceUri.fsPath;
-          }
-        }),
+        filepaths: resourceStates.map((rs) => resolveRealpath(rs.resourceUri.fsPath)),
       });
     },
     { errorPrefix: "Failed to squash" },
@@ -583,13 +572,7 @@ export function registerInitCommands(state: ExtensionState): void {
       await repository.squashRetryImmutable({
         fromRev: resourceGroup.id,
         toRev: "@",
-        filepaths: resourceStates.map((rs) => {
-          try {
-            return fs.realpathSync.native(rs.resourceUri.fsPath);
-          } catch {
-            return rs.resourceUri.fsPath;
-          }
-        }),
+        filepaths: resourceStates.map((rs) => resolveRealpath(rs.resourceUri.fsPath)),
       });
     },
     { errorPrefix: "Failed to squash" },
@@ -858,12 +841,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repository) {
         throw new Error("Repository not found");
       }
-      let filepath = resourceState.resourceUri.fsPath;
-      try {
-        filepath = fs.realpathSync.native(filepath);
-      } catch {
-        // Fall back to original path if realpath fails
-      }
+      const filepath = resolveRealpath(resourceState.resourceUri.fsPath);
       await repository.fileTrack([filepath]);
     },
     { errorPrefix: "Failed to track file" },
@@ -877,12 +855,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repository) {
         throw new Error("Repository not found");
       }
-      let filepath = resourceState.resourceUri.fsPath;
-      try {
-        filepath = fs.realpathSync.native(filepath);
-      } catch {
-        // Fall back to original path if realpath fails
-      }
+      const filepath = resolveRealpath(resourceState.resourceUri.fsPath);
       const relativePath = path.relative(repository.repositoryRoot, filepath);
       const confirm = await vscode.window.showWarningMessage(
         `Are you sure you want to delete the untracked file '${relativePath}'?\n\n!!! This file is not recorded in jj and cannot be restored !!!`,
