@@ -1170,7 +1170,8 @@ export class JJRepository {
 
     const leftPath = this.matchDiffSummaryLine(summary, filepath)?.leftPath;
     if (!leftPath) {
-      logger.warn(`[getDiffOriginal] no matching left content for filepath=${filepath}; returning undefined`);
+      // Expected when the file was not modified in `rev`.
+      logger.trace(`[getDiffOriginal] no diff entry for filepath=${filepath} in rev=${rev}; returning undefined`);
       return undefined;
     }
     const content = leftFiles[leftPath];
