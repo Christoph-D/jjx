@@ -272,6 +272,7 @@ export class WorkspaceSourceControlManager {
       updatedRepoSCMs.push(repoSCM);
     }
     this.repoSCMs = updatedRepoSCMs;
+    void vscode.commands.executeCommand("setContext", "jj.hasMultipleRepos", updatedRepoSCMs.length > 1);
 
     if (updatedRepoSCMs.length > 0) {
       this.clearErrorState();

@@ -359,7 +359,7 @@
         },
         {
           "command": "jj.selectOperationLogRepo",
-          "when": "view == jjOperationLog",
+          "when": "view == jjOperationLog && jj.hasMultipleRepos",
           "group": "navigation@4"
         },
         {
@@ -404,7 +404,7 @@
         },
         {
           "command": "jj.selectGraphWebviewRepo",
-          "when": "view == jjGraphWebview",
+          "when": "view == jjGraphWebview && jj.hasMultipleRepos",
           "group": "navigation@6"
         },
         {
