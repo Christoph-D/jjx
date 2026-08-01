@@ -4,6 +4,7 @@ import { createThrottledAsyncFn } from "./utils";
 import { OperationLogManager, OperationLogTreeDataProvider } from "./operation-log-tree-view";
 import { JJGraphWebview } from "./graph-webview";
 import type { ExtensionState } from "./extension-state";
+import type { ForceRefresh } from "./source-control";
 
 export function initInfrastructure(state: ExtensionState) {
   const context = state.context;
@@ -83,12 +84,12 @@ export function createPolling(
   state: ExtensionState,
   checkRepos: (specificFolders?: string[]) => Promise<void>,
 ): {
-  throttledPoll: () => Promise<void>;
+  throttledPoll: (forceRefresh: ForceRefresh) => Promise<void>;
   scheduleNextPoll: () => Promise<void>;
 } {
   const context = state.context;
 
-  async function poll() {
+  async function poll(forceRefresh: ForceRefresh) {
     const didUpdate = await state.workspaceSCM.refresh();
     if (didUpdate) {
       const repo = state.getSelectedRepo();
@@ -97,7 +98,7 @@ export function createPolling(
       }
     }
 
-    await Promise.all(state.workspaceSCM.repoSCMs.map((repoSCM) => repoSCM.checkForUpdates()));
+    await Promise.all(state.workspaceSCM.repoSCMs.map((repoSCM) => repoSCM.checkForUpdates(undefined, forceRefresh)));
   }
 
   const throttledPoll = createThrottledAsyncFn(poll);
@@ -109,7 +110,7 @@ export function createPolling(
       return;
     }
     try {
-      await throttledPoll();
+      await throttledPoll("if-changed");
     } catch (err) {
       logger.error(`Error during background poll: ${String(err)}`);
     } finally {

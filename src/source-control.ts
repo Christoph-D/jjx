@@ -399,6 +399,8 @@ export function provideOriginalResource(uri: vscode.Uri) {
   return originalUri;
 }
 
+export type ForceRefresh = "force" | "if-changed";
+
 class RepositorySourceControlManager {
   subscriptions: {
     dispose(): unknown;
@@ -519,7 +521,7 @@ class RepositorySourceControlManager {
       this.fileSystemProvider.onDidChangeRepository({
         repositoryRoot: this.repositoryRoot,
       });
-      void this.checkForUpdates();
+      void this.checkForUpdates(undefined, "if-changed");
     }, TIMEOUTS.REPO_WATCHER_DEBOUNCE);
   }
 
@@ -527,10 +529,10 @@ class RepositorySourceControlManager {
     this.sourceControl.inputBox.placeholder = "Commit Message... (Ctrl+Enter or Shift+Ctrl+Enter)";
   }
 
-  async checkForUpdates(token?: vscode.CancellationToken) {
+  async checkForUpdates(token: vscode.CancellationToken | undefined, forceRefresh: ForceRefresh) {
     const effectiveToken = token ?? this.cancellationTokenSource.token;
     if (!this.checkForUpdatesPromise) {
-      this.checkForUpdatesPromise = this.checkForUpdatesUnsafe(effectiveToken).catch((e) => {
+      this.checkForUpdatesPromise = this.checkForUpdatesUnsafe(effectiveToken, forceRefresh).catch((e) => {
         if (e instanceof CancelledError) {
           return;
         }
@@ -549,7 +551,7 @@ class RepositorySourceControlManager {
   /**
    * This should never be called concurrently.
    */
-  async checkForUpdatesUnsafe(token: vscode.CancellationToken) {
+  async checkForUpdatesUnsafe(token: vscode.CancellationToken, forceRefresh: ForceRefresh) {
     let latestOperationId: string;
     try {
       latestOperationId = await this.repository.getLatestOperationId(false, token);
@@ -567,7 +569,7 @@ class RepositorySourceControlManager {
           return;
         }
         if (didAutoUpdate) {
-          await this.checkForUpdatesUnsafe(token);
+          await this.checkForUpdatesUnsafe(token, forceRefresh);
           return;
         }
         // Need to update the graph view to show the stale state.
@@ -578,7 +580,7 @@ class RepositorySourceControlManager {
     if (token.isCancellationRequested) {
       return;
     }
-    if (this.operationId !== latestOperationId) {
+    if (this.operationId !== latestOperationId || forceRefresh === "force") {
       this.operationId = latestOperationId;
       const status = await this.repository.getStatus(false, token, latestOperationId);
 

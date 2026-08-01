@@ -215,7 +215,7 @@ async function createChange(
 export function registerPreInitCommands(state: ExtensionState): void {
   const context = state.context;
 
-  registerCommandWithLoading(context, "jj.refresh", () => state.throttledPoll?.() ?? Promise.resolve());
+  registerCommandWithLoading(context, "jj.refresh", () => state.throttledPoll?.("force") ?? Promise.resolve());
 
   context.subscriptions.push(
     vscode.commands.registerCommand("jj.openFolderGitSettings", async (repoPath: string) => {

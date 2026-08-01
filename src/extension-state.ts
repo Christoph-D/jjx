@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import type { JJRepository } from "./repository";
-import { WorkspaceSourceControlManager } from "./source-control";
+import { WorkspaceSourceControlManager, type ForceRefresh } from "./source-control";
 import type { JJGraphWebview } from "./graph-webview";
 import type { OperationLogManager } from "./operation-log-tree-view";
 
@@ -9,7 +9,7 @@ export interface ExtensionState {
   workspaceSCM: WorkspaceSourceControlManager;
   graphWebview: JJGraphWebview | undefined;
   operationLogManager: OperationLogManager | undefined;
-  throttledPoll: (() => Promise<void>) | undefined;
+  throttledPoll: ((forceRefresh: ForceRefresh) => Promise<void>) | undefined;
   getSelectedRepo(): JJRepository | undefined;
   setSelectedRepo(repository: JJRepository): void;
   onDidSetSelectedRepository: vscode.Event<void>;
