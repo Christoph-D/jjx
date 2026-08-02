@@ -837,12 +837,13 @@ export function registerInitCommands(state: ExtensionState): void {
     context,
     "jj.trackUntrackedFile",
     async (resourceState: vscode.SourceControlResourceState) => {
-      const repository = state.workspaceSCM.getRepositoryFromUri(resourceState.resourceUri);
-      if (!repository) {
+      const scm = state.workspaceSCM.getRepositorySourceControlManagerFromUri(resourceState.resourceUri);
+      if (!scm) {
         throw new Error("Repository not found");
       }
       const filepath = resolveRealpath(resourceState.resourceUri.fsPath);
-      await repository.fileTrack([filepath]);
+      await scm.repository.fileTrack([filepath]);
+      await scm.checkForUpdates(undefined, "force");
     },
     { errorPrefix: "Failed to track file" },
   );
@@ -851,12 +852,12 @@ export function registerInitCommands(state: ExtensionState): void {
     context,
     "jj.deleteUntrackedFile",
     async (resourceState: vscode.SourceControlResourceState) => {
-      const repository = state.workspaceSCM.getRepositoryFromUri(resourceState.resourceUri);
-      if (!repository) {
+      const scm = state.workspaceSCM.getRepositorySourceControlManagerFromUri(resourceState.resourceUri);
+      if (!scm) {
         throw new Error("Repository not found");
       }
       const filepath = resolveRealpath(resourceState.resourceUri.fsPath);
-      const relativePath = path.relative(repository.repositoryRoot, filepath);
+      const relativePath = path.relative(scm.repositoryRoot, filepath);
       const confirm = await vscode.window.showWarningMessage(
         `Are you sure you want to delete the untracked file '${relativePath}'?\n\n!!! This file is not recorded in jj and cannot be restored !!!`,
         { modal: true },
@@ -866,6 +867,7 @@ export function registerInitCommands(state: ExtensionState): void {
         return;
       }
       await fs.promises.rm(filepath, { recursive: true, force: false });
+      await scm.checkForUpdates(undefined, "force");
     },
     { errorPrefix: "Failed to delete file" },
   );
@@ -883,6 +885,7 @@ export function registerInitCommands(state: ExtensionState): void {
         return;
       }
       await scm.repository.fileTrack(untrackedFiles.map((f) => f.path));
+      await scm.checkForUpdates(undefined, "force");
     },
     { errorPrefix: "Failed to track files" },
   );
@@ -909,6 +912,7 @@ export function registerInitCommands(state: ExtensionState): void {
         return;
       }
       await Promise.all(untrackedFiles.map((f) => fs.promises.rm(f.path, { recursive: true, force: false })));
+      await scm.checkForUpdates(undefined, "force");
     },
     { errorPrefix: "Failed to delete files" },
   );
