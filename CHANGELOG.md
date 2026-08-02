@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.10.1
+
+### Bug Fixes
+
+- Force a full refresh of the SCM view when clicking the "Refresh" button
+- Refresh the SCM view when deleting an untracked file
+- Hide the "Select Repository" button in the graph and operation log views when only one repository exists
+- Remove an unnecessary warning log emitted during normal diff operations
+
 ## 1.10.0
 
 ### New Features
