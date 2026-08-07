@@ -27,7 +27,7 @@ export function formatRevSuffix(rev: string): string {
 }
 
 export function formatDiffTitle(renamedFrom: string | undefined, baseName: string, suffix: string): string {
-  return (renamedFrom ? `${renamedFrom} => ` : "") + `${baseName} ${suffix}`;
+  return (renamedFrom ? `${renamedFrom} → ` : "") + `${baseName} ${suffix}`;
 }
 
 const isMacintosh = process.platform === "darwin";
