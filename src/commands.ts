@@ -219,6 +219,34 @@ async function createChange(
   sourceControl.inputBox.value = "";
 }
 
+async function openFileDiff(repo: JJRepository, filePath: string, changeId: string): Promise<void> {
+  const { fileStatuses } = await repo.show(changeId);
+  const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
+
+  const beforeUri =
+    fileStatus?.type === "A"
+      ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
+      : toJJUri(vscode.Uri.file(filePath), {
+          diffOriginalRev: changeId,
+          ...(fileStatus?.renamedFrom ? { renamedFrom: fileStatus.renamedFrom } : {}),
+        });
+  const afterUri =
+    fileStatus?.type === "D"
+      ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
+      : changeId === "@"
+        ? vscode.Uri.file(filePath)
+        : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
+
+  const diffTitleSuffix = formatRevSuffix(changeId);
+
+  await vscode.commands.executeCommand(
+    "vscode.diff",
+    beforeUri,
+    afterUri,
+    formatDiffTitle(fileStatus?.renamedFrom, path.basename(filePath), diffTitleSuffix),
+  );
+}
+
 export function registerPreInitCommands(state: ExtensionState): void {
   const context = state.context;
 
@@ -263,31 +291,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
         throw new Error("Repository not found");
       }
 
-      const { fileStatuses } = await repo.show(changeId);
-      const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
-
-      const beforeUri =
-        fileStatus?.type === "A"
-          ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
-          : toJJUri(vscode.Uri.file(filePath), {
-              diffOriginalRev: changeId,
-              ...(fileStatus?.renamedFrom ? { renamedFrom: fileStatus.renamedFrom } : {}),
-            });
-      const afterUri =
-        fileStatus?.type === "D"
-          ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
-          : changeId === "@"
-            ? vscode.Uri.file(filePath)
-            : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
-
-      const diffTitleSuffix = formatRevSuffix(changeId);
-
-      await vscode.commands.executeCommand(
-        "vscode.diff",
-        beforeUri,
-        afterUri,
-        formatDiffTitle(fileStatus?.renamedFrom, path.basename(filePath), diffTitleSuffix),
-      );
+      await openFileDiff(repo, filePath, changeId);
     },
     { errorPrefix: "Failed to open diff" },
   );
@@ -438,23 +442,12 @@ export function registerInitCommands(state: ExtensionState): void {
           throw new Error("Original resource does not have a diffOriginalRev. This is a bug.");
         }
 
-        const rev = params.diffOriginalRev;
-
         const repo = state.workspaceSCM.getRepositoryFromUri(originalUri);
         if (!repo) {
           throw new Error("Repository could not be found with given URI.");
         }
 
-        const { fileStatuses } = await repo.show(rev);
-        const fileStatus = fileStatuses.find((file) => pathEquals(file.path, originalUri.fsPath));
-
-        const diffTitleSuffix = formatRevSuffix(rev);
-        await vscode.commands.executeCommand(
-          "vscode.diff",
-          originalUri,
-          uri,
-          formatDiffTitle(fileStatus?.renamedFrom, path.basename(originalUri.path), diffTitleSuffix),
-        );
+        await openFileDiff(repo, originalUri.fsPath, params.diffOriginalRev);
         return;
       }
 
