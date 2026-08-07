@@ -22,6 +22,14 @@ export function filepathToFileset(filepath: string): string {
   return `file:"${escaped}"`;
 }
 
+export function formatRevSuffix(rev: string): string {
+  return rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
+}
+
+export function formatDiffTitle(renamedFrom: string | undefined, baseName: string, suffix: string): string {
+  return (renamedFrom ? `${renamedFrom} => ` : "") + `${baseName} ${suffix}`;
+}
+
 const isMacintosh = process.platform === "darwin";
 export const isWindows = process.platform === "win32";
 

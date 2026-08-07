@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import { resolveRev, toJJUri } from "./uri";
 import { interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
-import { anyEvent, filterEvent, normalizePath } from "./utils";
+import { anyEvent, filterEvent, formatDiffTitle, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -1019,10 +1019,6 @@ function computeFallbackCommand(
   return {
     title: "Open",
     command: "vscode.diff",
-    arguments: [
-      beforeUri,
-      afterUri,
-      (fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") + `${fileStatus.file} ${diffTitleSuffix}`,
-    ],
+    arguments: [beforeUri, afterUri, formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, diffTitleSuffix)],
   };
 }

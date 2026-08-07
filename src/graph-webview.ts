@@ -3,7 +3,7 @@ import * as fs from "fs";
 import type { JJRepository, LogEntry, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
-import { showErrorMessage } from "./utils";
+import { formatDiffTitle, formatRevSuffix, showErrorMessage } from "./utils";
 import { assignLanes } from "./lane-assigner";
 import type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elided-edges";
@@ -377,11 +377,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           const beforeUri = toJJUri(fileUri, beforeParams);
           const afterUri = toJJUri(fileUri, afterParams);
-          const diffTitleSuffix = changeId === "@" ? "(Working Copy)" : `(${changeId.substring(0, 8)})`;
-          const title =
-            status === "R" || status === "C"
-              ? `${path.basename(renamedFrom ?? "")} → ${path.basename(relPath)} ${diffTitleSuffix}`
-              : `${relPath} ${diffTitleSuffix}`;
+          const diffTitleSuffix = formatRevSuffix(changeId);
+          const title = formatDiffTitle(renamedFrom, path.basename(relPath), diffTitleSuffix);
           try {
             await vscode.commands.executeCommand("vscode.diff", beforeUri, afterUri, title);
           } catch (error: unknown) {

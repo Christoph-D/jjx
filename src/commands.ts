@@ -14,7 +14,14 @@ import {
   applyLineChanges,
   type LineChange,
 } from "./diff-utils";
-import { getActiveTextEditorDiff, normalizePath, pathEquals, showErrorMessage } from "./utils";
+import {
+  formatDiffTitle,
+  formatRevSuffix,
+  getActiveTextEditorDiff,
+  normalizePath,
+  pathEquals,
+  showErrorMessage,
+} from "./utils";
 import { getMergeEditorConfigs } from "./jj-editor";
 import { handleJJCommand } from "./process";
 
@@ -273,14 +280,13 @@ export function registerPreInitCommands(state: ExtensionState): void {
             ? vscode.Uri.file(filePath)
             : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
 
-      const diffTitleSuffix = changeId === "@" ? "(Working Copy)" : `(${changeId.substring(0, 8)})`;
+      const diffTitleSuffix = formatRevSuffix(changeId);
 
       await vscode.commands.executeCommand(
         "vscode.diff",
         beforeUri,
         afterUri,
-        (fileStatus?.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") +
-          `${path.basename(filePath)} ${diffTitleSuffix}`,
+        formatDiffTitle(fileStatus?.renamedFrom, path.basename(filePath), diffTitleSuffix),
       );
     },
     { errorPrefix: "Failed to open diff" },
@@ -405,7 +411,7 @@ export function registerInitCommands(state: ExtensionState): void {
     async (resourceState: vscode.SourceControlResourceState) => {
       const uri = resourceState.resourceUri;
       const rev = resolveRev(uri) ?? "@";
-      const titleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
+      const titleSuffix = formatRevSuffix(rev);
       await vscode.commands.executeCommand("vscode.open", uri, {}, `${path.basename(uri.fsPath)} ${titleSuffix}`);
     },
     { errorPrefix: "Failed to open file" },
@@ -442,13 +448,12 @@ export function registerInitCommands(state: ExtensionState): void {
         const { fileStatuses } = await repo.show(rev);
         const fileStatus = fileStatuses.find((file) => pathEquals(file.path, originalUri.fsPath));
 
-        const diffTitleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
+        const diffTitleSuffix = formatRevSuffix(rev);
         await vscode.commands.executeCommand(
           "vscode.diff",
           originalUri,
           uri,
-          (fileStatus?.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") +
-            `${path.basename(originalUri.path)} ${diffTitleSuffix}`,
+          formatDiffTitle(fileStatus?.renamedFrom, path.basename(originalUri.path), diffTitleSuffix),
         );
         return;
       }
@@ -474,7 +479,7 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       const rev = originalParams.diffOriginalRev;
-      const titleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
+      const titleSuffix = formatRevSuffix(rev);
       await vscode.commands.executeCommand(
         "vscode.open",
         modified,
