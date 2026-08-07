@@ -302,7 +302,11 @@ export function registerPreInitCommands(state: ExtensionState): void {
   registerCommand(
     context,
     "jj.openFileInWorkingCopyEditor",
-    async (uri: vscode.Uri) => {
+    async (uri?: vscode.Uri) => {
+      uri ??= vscode.window.activeTextEditor?.document.uri;
+      if (!uri) {
+        return;
+      }
       await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(uri.fsPath), {});
     },
     { errorPrefix: "Failed to open file" },
@@ -410,7 +414,12 @@ export function registerInitCommands(state: ExtensionState): void {
   registerCommand(
     context,
     "jj.openFileEditor",
-    async (uri: vscode.Uri) => {
+    async (uri?: vscode.Uri) => {
+      uri ??= vscode.window.activeTextEditor?.document.uri;
+      if (!uri) {
+        return;
+      }
+
       if (!["file", "jj"].includes(uri.scheme)) {
         return;
       }
@@ -430,7 +439,12 @@ export function registerInitCommands(state: ExtensionState): void {
   registerCommand(
     context,
     "jj.openDiffEditor",
-    async (uri: vscode.Uri) => {
+    async (uri?: vscode.Uri) => {
+      uri ??= vscode.window.activeTextEditor?.document.uri;
+      if (!uri) {
+        return;
+      }
+
       const originalUri = provideOriginalResource(uri);
       if (!originalUri) {
         throw new Error("Original resource not found");
