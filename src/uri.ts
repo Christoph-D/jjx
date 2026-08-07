@@ -97,3 +97,15 @@ export function resolveRev(
 
   return undefined;
 }
+
+export function isInterdiffUri(uri: Uri): boolean {
+  if (uri.scheme !== "jj" || uri.query === "") {
+    return false;
+  }
+  try {
+    const params = getParams(uri);
+    return "interdiffFrom" in params;
+  } catch {
+    return false;
+  }
+}

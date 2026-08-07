@@ -1,4 +1,4 @@
-import { test, expect, waitForSCMView } from "./base-test";
+import { test, expect, waitForSCMView, runCommand } from "./base-test";
 
 test("shows diff when clicking modified files", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.writeFile("deleted-first.txt", "Deleted first");
@@ -84,4 +84,53 @@ test("shows diff when clicking modified files", async ({ graphFrame, testRepo, w
   await expect(nestedFile).toHaveCount(1);
   await nestedFile.first().click();
   await validateDiff("Original content", "Modified content");
+});
+
+test("toggle diff view switches between file and diff editors", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("a.txt", "FIRST", "First commit");
+  await testRepo.commitFile("a.txt", "SECOND", "Second commit");
+  await testRepo.writeFile("a.txt", "THIRD");
+
+  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
+  const scmView = await waitForSCMView(workbox, ["a.txt"], ["a.txt"]);
+
+  const diffEditor = workbox.locator(".editor-instance");
+  const originalPane = diffEditor.locator(".editor.original .view-lines");
+  const modifiedPane = diffEditor.locator(".editor.modified .view-lines");
+
+  const expectDiff = async (left: string, right: string) => {
+    await expect(modifiedPane).toBeVisible();
+    await expect(originalPane.getByText(left, { exact: true })).toBeVisible();
+    await expect(modifiedPane.getByText(right, { exact: true })).toBeVisible();
+  };
+
+  const expectFile = async (content: string) => {
+    await expect(modifiedPane).toBeHidden();
+    await expect(diffEditor.locator(".monaco-editor .view-lines").getByText(content, { exact: true })).toBeVisible();
+  };
+
+  const aFileItems = scmView.getByRole("treeitem", { name: /a\.txt/ });
+  await expect(aFileItems).toHaveCount(2);
+
+  // Diff at revision -> file at that revision
+  await aFileItems.nth(1).click();
+  await expectDiff("FIRST", "SECOND");
+  await runCommand(workbox, "Toggle Diff View");
+  await expectFile("SECOND");
+
+  // File at revision -> diff at that revision
+  await runCommand(workbox, "Toggle Diff View");
+  await expectDiff("FIRST", "SECOND");
+
+  await runCommand(workbox, "View: Close All Editors");
+
+  // Working-copy diff -> plain working-copy file
+  await aFileItems.first().click();
+  await expectDiff("SECOND", "THIRD");
+  await runCommand(workbox, "Toggle Diff View");
+  await expectFile("THIRD");
+
+  // Plain working-copy file -> working-copy diff
+  await runCommand(workbox, "Toggle Diff View");
+  await expectDiff("SECOND", "THIRD");
 });

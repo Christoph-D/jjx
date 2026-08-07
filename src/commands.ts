@@ -6,7 +6,7 @@ import { resolveRealpath, type JJRepository } from "./repository";
 import type { ExtensionState } from "./extension-state";
 import type { FileStatus } from "./types";
 import { OperationTreeItem } from "./operation-log-tree-view";
-import { getParams, resolveRev, toJJUri } from "./uri";
+import { getParams, isInterdiffUri, resolveRev, toJJUri, type JJUriParams } from "./uri";
 import {
   computeLineChanges,
   toLineRanges,
@@ -415,7 +415,10 @@ export function registerInitCommands(state: ExtensionState): void {
     context,
     "jj.openFileEditor",
     async (uri?: vscode.Uri) => {
-      uri ??= vscode.window.activeTextEditor?.document.uri;
+      const diffInput = getActiveTextEditorDiff();
+      if (diffInput) {
+        uri = diffInput.modified;
+      }
       if (!uri) {
         return;
       }
@@ -474,6 +477,49 @@ export function registerInitCommands(state: ExtensionState): void {
       );
     },
     { errorPrefix: "Failed to open diff" },
+  );
+
+  registerCommand(
+    context,
+    "jj.toggleDiffView",
+    async () => {
+      const diffInput = getActiveTextEditorDiff();
+
+      if (!diffInput) {
+        await vscode.commands.executeCommand("jj.openDiffEditor");
+        return;
+      }
+
+      const { original, modified } = diffInput;
+
+      if (isInterdiffUri(original) || isInterdiffUri(modified)) {
+        return;
+      }
+
+      if (original.scheme !== "jj") {
+        return;
+      }
+
+      let originalParams: JJUriParams | undefined;
+      try {
+        originalParams = getParams(original);
+      } catch {
+        // A malformed jj URI is not a diff we know how to toggle.
+      }
+      if (!originalParams || !("diffOriginalRev" in originalParams)) {
+        return;
+      }
+
+      const rev = originalParams.diffOriginalRev;
+      const titleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
+      await vscode.commands.executeCommand(
+        "vscode.open",
+        modified,
+        {},
+        `${path.basename(modified.fsPath)} ${titleSuffix}`,
+      );
+    },
+    { errorPrefix: "Failed to toggle diff view" },
   );
 
   registerCommandWithLoading(
