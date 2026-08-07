@@ -60,18 +60,6 @@
         "icon": "$(eye)"
       },
       {
-        "command": "jj.openFileEditor",
-        "title": "View as File",
-        "category": "Jujutsu",
-        "icon": "$(request-changes)"
-      },
-      {
-        "command": "jj.openDiffEditor",
-        "title": "View as Diff",
-        "category": "Jujutsu",
-        "icon": "$(compare-changes)"
-      },
-      {
         "command": "jj.toggleDiffView",
         "title": "Toggle Diff View",
         "category": "Jujutsu",
@@ -316,13 +304,8 @@
           "when": "jj.reposExist && editorTextFocus && editorHasSelection && !editorReadonly"
         },
         {
-          "command": "jj.openFileEditor",
-          "when": "jj.reposExist && isInDiffEditor",
-          "group": "navigation"
-        },
-        {
-          "command": "jj.openDiffEditor",
-          "when": "jj.reposExist && !isInDiffEditor",
+          "command": "jj.toggleDiffView",
+          "when": "jj.reposExist",
           "group": "navigation@1"
         },
         {
@@ -608,14 +591,6 @@
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "false"
-        },
-        {
-          "command": "jj.openFileEditor",
-          "when": "false"
-        },
-        {
-          "command": "jj.openDiffEditor",
           "when": "false"
         },
         {

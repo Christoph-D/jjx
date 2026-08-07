@@ -413,80 +413,43 @@ export function registerInitCommands(state: ExtensionState): void {
 
   registerCommand(
     context,
-    "jj.openFileEditor",
-    async (uri?: vscode.Uri) => {
-      const diffInput = getActiveTextEditorDiff();
-      if (diffInput) {
-        uri = diffInput.modified;
-      }
-      if (!uri) {
-        return;
-      }
-
-      if (!["file", "jj"].includes(uri.scheme)) {
-        return;
-      }
-
-      const rev = resolveRev(uri) ?? "@";
-
-      await vscode.commands.executeCommand(
-        "vscode.open",
-        uri,
-        {},
-        `${path.basename(uri.fsPath)} (${rev.substring(0, 8)})`,
-      );
-    },
-    { errorPrefix: "Failed to open file" },
-  );
-
-  registerCommand(
-    context,
-    "jj.openDiffEditor",
-    async (uri?: vscode.Uri) => {
-      uri ??= vscode.window.activeTextEditor?.document.uri;
-      if (!uri) {
-        return;
-      }
-
-      const originalUri = provideOriginalResource(uri);
-      if (!originalUri) {
-        throw new Error("Original resource not found");
-      }
-      const params = getParams(originalUri);
-      if (!("diffOriginalRev" in params)) {
-        throw new Error("Original resource does not have a diffOriginalRev. This is a bug.");
-      }
-
-      const rev = params.diffOriginalRev;
-
-      const repo = state.workspaceSCM.getRepositoryFromUri(originalUri);
-      if (!repo) {
-        throw new Error("Repository could not be found with given URI.");
-      }
-
-      const { fileStatuses } = await repo.show(rev);
-      const fileStatus = fileStatuses.find((file) => pathEquals(file.path, originalUri.fsPath));
-
-      const diffTitleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
-      await vscode.commands.executeCommand(
-        "vscode.diff",
-        originalUri,
-        uri,
-        (fileStatus?.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") +
-          `${path.basename(originalUri.path)} ${diffTitleSuffix}`,
-      );
-    },
-    { errorPrefix: "Failed to open diff" },
-  );
-
-  registerCommand(
-    context,
     "jj.toggleDiffView",
     async () => {
       const diffInput = getActiveTextEditorDiff();
 
       if (!diffInput) {
-        await vscode.commands.executeCommand("jj.openDiffEditor");
+        const uri = vscode.window.activeTextEditor?.document.uri;
+        if (!uri) {
+          return;
+        }
+
+        const originalUri = provideOriginalResource(uri);
+        if (!originalUri) {
+          throw new Error("Original resource not found");
+        }
+        const params = getParams(originalUri);
+        if (!("diffOriginalRev" in params)) {
+          throw new Error("Original resource does not have a diffOriginalRev. This is a bug.");
+        }
+
+        const rev = params.diffOriginalRev;
+
+        const repo = state.workspaceSCM.getRepositoryFromUri(originalUri);
+        if (!repo) {
+          throw new Error("Repository could not be found with given URI.");
+        }
+
+        const { fileStatuses } = await repo.show(rev);
+        const fileStatus = fileStatuses.find((file) => pathEquals(file.path, originalUri.fsPath));
+
+        const diffTitleSuffix = rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
+        await vscode.commands.executeCommand(
+          "vscode.diff",
+          originalUri,
+          uri,
+          (fileStatus?.renamedFrom ? `${fileStatus.renamedFrom} => ` : "") +
+            `${path.basename(originalUri.path)} ${diffTitleSuffix}`,
+        );
         return;
       }
 
