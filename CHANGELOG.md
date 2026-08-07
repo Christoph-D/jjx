@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.11.0
+
+### New Features
+
+- **Toggle Diff View command** - A new "Toggle Diff View" command switches the active editor between a file view and a
+  diff view, replacing the separate "View as File" and "View as Diff" commands with a single toggle.
+
 ## 1.10.1
 
 ### Bug Fixes
