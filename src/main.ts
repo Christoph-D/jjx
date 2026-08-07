@@ -12,6 +12,8 @@ import { registerPreInitCommands, registerInitCommands } from "./commands";
 import { registerAnnotations } from "./annotations";
 import { createPolling, initInfrastructure } from "./polling";
 import { registerColocatedCheck } from "./colocated-check";
+import { isInterdiffUri } from "./uri";
+import { getActiveTextEditorDiff } from "./utils";
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Jujutsu X", {
@@ -64,6 +66,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const { throttledPoll, scheduleNextPoll } = createPolling(state, checkRepos);
   state.throttledPoll = throttledPoll;
+
+  const updateInterdiffContext = () => {
+    const diffInput = getActiveTextEditorDiff();
+    const isInterdiff = !!diffInput && (isInterdiffUri(diffInput.original) || isInterdiffUri(diffInput.modified));
+    void vscode.commands.executeCommand("setContext", "jj.interdiffActive", isInterdiff);
+  };
+  updateInterdiffContext();
+  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateInterdiffContext));
 
   void scheduleNextPoll();
 }

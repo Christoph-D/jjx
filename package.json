@@ -305,7 +305,7 @@
         },
         {
           "command": "jj.toggleDiffView",
-          "when": "jj.reposExist",
+          "when": "jj.reposExist && !jj.interdiffActive",
           "group": "navigation@1"
         },
         {
