@@ -1476,7 +1476,7 @@ export class JJRepository {
       const requestId = crypto.randomUUID();
       const pathPromise = expectDiffToolRequest(requestId);
       const childProcess = spawnFn(buildArgs(), {
-        timeout: 10_000,
+        timeout: TIMEOUTS.DIFF_TOOL,
         cwd: this.repositoryRoot,
         env: { VSCODE_JJ_DIFF_REQUEST_ID: requestId },
       });
