@@ -79,8 +79,9 @@ test("move bookmark via drag and drop", async ({ graphFrame, testRepo, workbox }
 
   await bookmarkPill.dragTo(commit1Node);
 
-  const quickPickContinue = workbox.getByRole("option", { name: "Continue", exact: true });
-  await quickPickContinue.click();
+  const dialog = workbox.locator(".monaco-dialog-box");
+  await expect(dialog).toContainText("Moving bookmark backwards or sideways");
+  await dialog.getByRole("button", { name: "Move Bookmark" }).click();
 
   await expect(commit1Node.locator('[data-bookmark="test-bookmark"]')).toBeVisible();
   await expect(commit2Node.locator('[data-bookmark="test-bookmark"]')).not.toBeVisible();

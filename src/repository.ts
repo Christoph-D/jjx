@@ -104,9 +104,11 @@ export class JJRepository {
       return await operation();
     } catch (e) {
       if (e instanceof ImmutableError) {
-        const choice = await vscode.window.showQuickPick(["Continue"], {
-          title: customMessage ?? `${rev} is immutable, are you sure?`,
-        });
+        const choice = await vscode.window.showWarningMessage(
+          customMessage ?? `${rev} is immutable, are you sure?`,
+          { modal: true },
+          "Continue",
+        );
         if (!choice) {
           return undefined;
         }

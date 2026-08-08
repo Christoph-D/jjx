@@ -125,9 +125,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             await this.refresh();
           } catch (error: unknown) {
             if (error instanceof BookmarkBackwardsError) {
-              const choice = await vscode.window.showQuickPick(["Continue"], {
-                title: "Moving bookmark backwards or sideways, are you sure?",
-              });
+              const choice = await vscode.window.showWarningMessage(
+                "Moving bookmark backwards or sideways, are you sure?",
+                { modal: true },
+                "Move Bookmark",
+              );
               if (choice) {
                 try {
                   await repo.moveBookmark(message.bookmark, message.targetChangeId, true);
