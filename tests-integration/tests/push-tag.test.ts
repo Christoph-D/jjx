@@ -1,5 +1,7 @@
-import { test, expect, newTestRepo, clickPillMenuItem, type TestRepo } from "./base-test";
+import { test as test, expect, newTestRepo, clickPillMenuItem, type TestRepo } from "./base-test";
 import type { Frame } from "@playwright/test";
+import * as fs from "fs";
+import * as os from "os";
 import path from "path";
 
 async function setupRemotesWithTrackedTag(testRepo: TestRepo, graphFrame: Frame) {
@@ -121,3 +123,74 @@ test("push tag to one remote and untrack from another", async ({ graphFrame, tes
     expect(trackedResult.stdout.trim()).toBe("");
   }).toPass();
 });
+
+const JJ_038_PATH = process.env.JJX_JJ_038_PATH ?? "/usr/local/bin/jj-0.38";
+
+const testJJ038 = test.extend({
+  customSettings:
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      test.skip(!fs.existsSync(JJ_038_PATH), "jj 0.38 binary not available");
+      await use({ "jjx.jjPath": JJ_038_PATH });
+    },
+  testRepo: [
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      // Route the test helper's own jj invocations (repo/remote creation) through
+      // jj 0.38 as well, so the repo format matches the version the extension uses.
+      const previousJJPath = process.env.JJ_PATH;
+      process.env.JJ_PATH = JJ_038_PATH;
+      const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "jjx-test-"));
+      const repoPath = path.join(tempDir, "repo");
+      const testRepo = await newTestRepo(repoPath);
+      try {
+        await use(testRepo);
+      } finally {
+        process.env.JJ_PATH = previousJJPath;
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
+      }
+    },
+    { scope: "test" },
+  ],
+});
+
+testJJ038(
+  "push tag to remote via context menu without tracking support (jj 0.38)",
+  async ({ graphFrame, testRepo }) => {
+    test.slow();
+    const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
+    const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
+    const remoteARepo = await newTestRepo(remoteAPath);
+    const remoteBRepo = await newTestRepo(remoteBPath);
+
+    await testRepo.jjCommand(["git", "remote", "add", "remote-a", remoteAPath]);
+    await testRepo.jjCommand(["git", "remote", "add", "remote-b", remoteBPath]);
+
+    await testRepo.commitFile("test.txt", "content", "initial commit");
+    await testRepo.createTag("test-tag", "@-");
+
+    const tagPill = graphFrame.locator('[data-tag="test-tag"]');
+    await expect(tagPill).toBeVisible();
+
+    // Without tracking support there is no push-all icon on the pill, only a
+    // per-remote "Push to <remote>" entry in the context menu.
+    await expect(tagPill.locator('[data-role="push-icon"]')).not.toBeVisible();
+
+    await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");
+
+    await expect(async () => {
+      const tag = await remoteARepo.getTag("test-tag");
+      expect(tag).toBeDefined();
+    }).toPass();
+
+    const tagB = await remoteBRepo.getTag("test-tag");
+    expect(tagB).toBeUndefined();
+
+    await clickPillMenuItem(graphFrame, tagPill, "Push to remote-b");
+
+    await expect(async () => {
+      const tag = await remoteBRepo.getTag("test-tag");
+      expect(tag).toBeDefined();
+    }).toPass();
+  },
+);

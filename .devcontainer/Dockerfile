@@ -8,6 +8,13 @@ RUN curl -L https://github.com/jj-vcs/jj/releases/download/v0.44.0/jj-v0.44.0-x8
   && tar xz -C /usr/local/bin ./jj -f /tmp/jj.tar.gz \
   && rm /tmp/jj.tar.gz
 
+# Older jj version for some integration tests.
+RUN curl -L https://github.com/jj-vcs/jj/releases/download/v0.38.0/jj-v0.38.0-x86_64-unknown-linux-musl.tar.gz -o /tmp/jj-0.38.tar.gz \
+  && echo "ed830d9a34a304f8ba258806b52521250a9fffded32ae89c4eb5285b33556a17  /tmp/jj-0.38.tar.gz" | sha256sum -c \
+  && tar xz -C /tmp ./jj -f /tmp/jj-0.38.tar.gz \
+  && mv /tmp/jj /usr/local/bin/jj-0.38 \
+  && rm /tmp/jj-0.38.tar.gz
+
 USER ubuntu
 WORKDIR /home/ubuntu
 
