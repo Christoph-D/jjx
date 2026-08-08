@@ -39,7 +39,7 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toContainText("test-tag");
-  await dialog.getByRole("button", { name: "Delete" }).click();
+  await dialog.getByRole("button", { name: "Delete Tag" }).click();
 
   await expect(tagPill).not.toBeVisible();
 
@@ -48,7 +48,7 @@ test("create and delete tag from context menu", async ({ graphFrame, testRepo, w
   await clickPillMenuItem(graphFrame, specialTagPill, "Delete Tag");
 
   await expect(dialog).toContainText("#special");
-  await dialog.getByRole("button", { name: "Delete" }).click();
+  await dialog.getByRole("button", { name: "Delete Tag" }).click();
 
   await expect(specialTagPill).not.toBeVisible();
 

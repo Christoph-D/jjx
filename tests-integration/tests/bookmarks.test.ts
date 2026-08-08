@@ -40,7 +40,7 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toContainText("test-bookmark");
-  await dialog.getByRole("button", { name: "Delete" }).click();
+  await dialog.getByRole("button", { name: "Delete Bookmark" }).click();
 
   await expect(bookmarkPill).not.toBeVisible();
 
@@ -49,7 +49,7 @@ test("create and delete bookmark from context menu", async ({ graphFrame, testRe
   await clickPillMenuItem(graphFrame, specialBookmarkPill, "Delete Bookmark");
 
   await expect(dialog).toContainText("#special");
-  await dialog.getByRole("button", { name: "Delete" }).click();
+  await dialog.getByRole("button", { name: "Delete Bookmark" }).click();
 
   await expect(specialBookmarkPill).not.toBeVisible();
   expect((await testRepo.jjCommand(["bookmark", "list"])).stdout).not.toContain("#special");

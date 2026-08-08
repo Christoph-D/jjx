@@ -214,7 +214,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "deleteBookmark":
           await this.confirmAndExecute(
             `Are you sure you want to delete the bookmark "${message.bookmark}"?`,
-            "Delete",
+            "Delete Bookmark",
             "delete bookmark",
             () => repo.deleteBookmark(message.bookmark),
           );
@@ -222,7 +222,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "deleteTag":
           await this.confirmAndExecute(
             `Are you sure you want to delete the tag "${message.tag}"?`,
-            "Delete",
+            "Delete Tag",
             "delete tag",
             () => repo.deleteTag(message.tag),
           );
