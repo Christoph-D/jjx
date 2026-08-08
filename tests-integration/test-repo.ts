@@ -50,7 +50,10 @@ function isTransientLockError(stderr: string): boolean {
     /broken or inaccessible/i.test(stderr) ||
     /Failed to read working copy backend type/i.test(stderr) ||
     /system cannot find the file specified/i.test(stderr) ||
-    (/working_copy/i.test(stderr) && /os error 2/i.test(stderr))
+    (/working_copy/i.test(stderr) && /os error 2/i.test(stderr)) ||
+    // On the Windows CI runner, jj invocations intermittently exit non-zero
+    // with no output at all under heavy load.
+    (process.platform === "win32" && stderr.length === 0)
   );
 }
 
@@ -177,17 +180,29 @@ export class TestRepo {
     const fullArgs = config.concat(args);
     const maxAttempts = 3;
     for (let attempt = 0; ; attempt++) {
-      const result = await new Promise<JJCommandResult>((resolve) => {
+      const raw = await new Promise<{
+        stdout: string;
+        stderr: string;
+        exitCode: number;
+        spawnError: string;
+      }>((resolve) => {
         execFile(jjPath, fullArgs, { cwd: this.repoPath, timeout: 10000 }, (error, stdout, stderr) => {
           const stderrText = stderr?.toString() ?? "";
           resolve({
             stdout: stdout?.toString() ?? "",
-            stderr: stderrText.length > 0 ? stderrText : (error?.message ?? ""),
+            stderr: stderrText,
             exitCode: error ? (typeof error.code === "number" ? error.code : 1) : 0,
+            spawnError: error?.message ?? "",
           });
         });
       });
-      if (result.exitCode === 0 || attempt >= maxAttempts - 1 || !isTransientLockError(result.stderr)) {
+      const result: JJCommandResult = {
+        stdout: raw.stdout,
+        stderr: raw.stderr.length > 0 ? raw.stderr : raw.spawnError,
+        exitCode: raw.exitCode,
+      };
+      const transient = isTransientLockError(raw.stderr);
+      if (result.exitCode === 0 || attempt >= maxAttempts - 1 || !transient) {
         return result;
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -251,7 +266,7 @@ export async function newTestRepo(repoPath: string, options: NewTestRepoOptions 
       return repo;
     }
     if (jjExists) {
-      break;
+      await fs.rm(path.join(repoPath, ".jj"), { recursive: true, force: true });
     }
     if (attempt < maxAttempts - 1) {
       await new Promise((resolve) => setTimeout(resolve, 500));
