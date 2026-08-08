@@ -37,13 +37,13 @@ jobs:
         uses: actions/cache@v5
         with:
           path: /usr/local/bin/jj
-          key: jj-v0.43.0-${{ runner.os }}-aarch64
+          key: jj-v0.44.0-${{ runner.os }}-aarch64
 
       - name: Install jj
         if: steps.cache-jj.outputs.cache-hit != 'true'
         run: |
-          curl -L https://github.com/jj-vcs/jj/releases/download/v0.43.0/jj-v0.43.0-aarch64-apple-darwin.tar.gz -o /tmp/jj.tar.gz
-          echo "84336bbe5673a36ccc6395c494021ba632794da078eb8c8c513a60f8e1cc3083  /tmp/jj.tar.gz" | shasum -a 256 -c
+          curl -L https://github.com/jj-vcs/jj/releases/download/v0.44.0/jj-v0.44.0-aarch64-apple-darwin.tar.gz -o /tmp/jj.tar.gz
+          echo "22b92ed109378a9638f0ae55ca7a7bdc9ef26aa60124215a1f04f6808623ba94  /tmp/jj.tar.gz" | shasum -a 256 -c
           tar xzf /tmp/jj.tar.gz -C /usr/local/bin ./jj
 
       - name: Playwright tests
