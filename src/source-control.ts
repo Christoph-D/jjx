@@ -429,6 +429,9 @@ class RepositorySourceControlManager {
   diffMode: "diff" | "interdiff" = "diff";
   repository: JJRepository;
   checkForUpdatesPromise: Promise<void> | undefined;
+  // True when a "force" refresh was requested while another refresh was already in flight. The
+  // next refresh honors it so the force intent is not dropped by coalescing.
+  forceRefreshPending = false;
   private cancellationTokenSource = new vscode.CancellationTokenSource();
 
   private _onDidUpdate = new vscode.EventEmitter<{ operationId?: string }>();
@@ -543,8 +546,31 @@ class RepositorySourceControlManager {
 
   async checkForUpdates(token: vscode.CancellationToken | undefined, forceRefresh: ForceRefresh) {
     const effectiveToken = token ?? this.cancellationTokenSource.token;
-    if (!this.checkForUpdatesPromise) {
-      this.checkForUpdatesPromise = this.checkForUpdatesUnsafe(effectiveToken, forceRefresh).catch((e) => {
+    if (forceRefresh === "force") {
+      // Register the intent up front so it is not dropped when this call is coalesced onto an
+      // in-flight refresh below.
+      this.forceRefreshPending = true;
+    }
+
+    // Loop instead of just awaiting an in-flight refresh so that a "force" request is never lost
+    // and so a "force" caller does not resolve until a force refresh has actually completed.
+    // The single-threaded async runtime means only one caller executes between awaits, so
+    // checkForUpdatesPromise doubles as a coalescing lock.
+    let observedRefresh = false;
+    for (;;) {
+      if (this.checkForUpdatesPromise) {
+        await this.checkForUpdatesPromise;
+        observedRefresh = true;
+        continue;
+      }
+      const pendingForce = this.forceRefreshPending;
+      // An if-changed caller that already joined a refresh is done unless a force is pending.
+      if (!pendingForce && observedRefresh) {
+        return;
+      }
+      this.forceRefreshPending = false;
+      const refreshForce: ForceRefresh = pendingForce ? "force" : "if-changed";
+      this.checkForUpdatesPromise = this.checkForUpdatesUnsafe(effectiveToken, refreshForce).catch((e) => {
         if (e instanceof CancelledError) {
           return;
         }
@@ -555,8 +581,7 @@ class RepositorySourceControlManager {
       } finally {
         this.checkForUpdatesPromise = undefined;
       }
-    } else {
-      await this.checkForUpdatesPromise;
+      observedRefresh = true;
     }
   }
 
