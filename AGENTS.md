@@ -30,6 +30,18 @@ pnpm exec playwright test --config=tests-integration/playwright.config.ts tests-
 
 Do not add custom timeouts to Playwright expectations. The Playwright config already sets `expect.timeout`.
 
+### Debugging CI Failures
+
+When a CI Playwright run fails and the downloaded HTML report (`index.html`) is available locally, extract the full test
+log with `tests-integration/extract-playwright-artifacts.ts`:
+
+```shell
+pnpm exec tsx tests-integration/extract-playwright-artifacts.ts path/to/index.html /tmp/ci-test.log
+```
+
+The script decodes the embedded report, prints a pass/fail summary, lists each test's status, and dumps captured stdout
+and error messages for failing or noisy results. Read the resulting log to diagnose the failure.
+
 ## Architecture (Key Files)
 
 | File                             | Purpose                                                      |
