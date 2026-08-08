@@ -1,5 +1,25 @@
 # Change Log
 
+## 1.12.1
+
+### New Features
+
+- **Consistent local tag pill context menu** - Right-clicking a local tag pill now shows a unified menu independent of
+  the jj version, allowing pushing the tag to remotes and deleting the local tag. Tag tracking, supported by jj 0.44+,
+  is used internally but not surfaced in this menu.
+
+### Bug Fixes
+
+- Maintain the force-refresh flag when coalescing update checks in `checkForUpdates`
+- Fall back to the active editor URI for the Open Parent/Child Change commands when the resource argument is undefined,
+  fixing a timing-dependent race (most visible on Windows) where the editor stayed on the working copy
+- Raise the diff-tool subprocess timeout for slow Windows CI
+
+### Internal
+
+- Shard integration test workflows to reduce runtime
+- Add a helper script to extract the test log from a downloaded Playwright HTML report
+
 ## 1.12.0
 
 ### New Features
