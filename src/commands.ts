@@ -6,7 +6,7 @@ import { resolveRealpath, type JJRepository } from "./repository";
 import type { ExtensionState } from "./extension-state";
 import type { FileStatus } from "./types";
 import { OperationTreeItem } from "./operation-log-tree-view";
-import { getParams, isInterdiffUri, resolveRev, toJJUri, type JJUriParams } from "./uri";
+import { getParams, isComparisonDiffUri, resolveRev, toJJUri, type JJUriParams } from "./uri";
 import {
   computeLineChanges,
   toLineRanges,
@@ -453,7 +453,7 @@ export function registerInitCommands(state: ExtensionState): void {
 
       const { original, modified } = diffInput;
 
-      if (isInterdiffUri(original) || isInterdiffUri(modified)) {
+      if (isComparisonDiffUri(original) || isComparisonDiffUri(modified)) {
         return;
       }
 
@@ -688,6 +688,32 @@ export function registerInitCommands(state: ExtensionState): void {
       await repository.editRetryImmutable(resourceGroup.id);
     },
     { errorPrefix: "Failed to switch to change" },
+  );
+
+  registerCommand(
+    context,
+    "jj.viewInterdiff",
+    async (resourceGroup: vscode.SourceControlResourceGroup) => {
+      const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
+      if (!scm) {
+        throw new Error("SCM not found for resource group");
+      }
+      await scm.setDiffMode("interdiff");
+    },
+    { errorPrefix: "Failed to switch to interdiff" },
+  );
+
+  registerCommand(
+    context,
+    "jj.viewRegularDiff",
+    async (resourceGroup: vscode.SourceControlResourceGroup) => {
+      const scm = state.workspaceSCM.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
+      if (!scm) {
+        throw new Error("SCM not found for resource group");
+      }
+      await scm.setDiffMode("diff");
+    },
+    { errorPrefix: "Failed to switch to regular diff" },
   );
 
   registerCommand(

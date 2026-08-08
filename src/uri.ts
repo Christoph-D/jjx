@@ -4,7 +4,8 @@ export type JJUriParams =
   | { rev: string }
   | { diffOriginalRev: string; renamedFrom?: string }
   | { deleted: boolean }
-  | { interdiffFrom: string; interdiffTo: string; side: "left" | "right" };
+  | { interdiffFrom: string; interdiffTo: string; side: "left" | "right" }
+  | { diffFrom: string; diffTo: string; side: "left" | "right" };
 
 function isJJUriParams(v: unknown): v is JJUriParams {
   if (typeof v !== "object" || v === null) {
@@ -34,6 +35,9 @@ function isJJUriParams(v: unknown): v is JJUriParams {
       typeof o.interdiffTo === "string" &&
       (o.side === "left" || o.side === "right")
     );
+  }
+  if (keys.length === 3 && has("diffFrom") && has("diffTo") && has("side")) {
+    return typeof o.diffFrom === "string" && typeof o.diffTo === "string" && (o.side === "left" || o.side === "right");
   }
   return false;
 }
@@ -98,13 +102,18 @@ export function resolveRev(
   return undefined;
 }
 
-export function isInterdiffUri(uri: Uri): boolean {
+/**
+ * Returns true for URIs that represent one side of a two-revision comparison —
+ * either an interdiff (`jj interdiff --from --to`) or a regular from/to diff
+ * (`jj diff --from --to`). Such editors can't be toggled to a single-revision view.
+ */
+export function isComparisonDiffUri(uri: Uri): boolean {
   if (uri.scheme !== "jj" || uri.query === "") {
     return false;
   }
   try {
     const params = getParams(uri);
-    return "interdiffFrom" in params;
+    return "interdiffFrom" in params || "diffFrom" in params;
   } catch {
     return false;
   }

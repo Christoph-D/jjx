@@ -12,7 +12,7 @@ import { registerPreInitCommands, registerInitCommands } from "./commands";
 import { registerAnnotations } from "./annotations";
 import { createPolling, initInfrastructure } from "./polling";
 import { registerColocatedCheck } from "./colocated-check";
-import { isInterdiffUri } from "./uri";
+import { isComparisonDiffUri } from "./uri";
 import { getActiveTextEditorDiff } from "./utils";
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -69,8 +69,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const updateInterdiffContext = () => {
     const diffInput = getActiveTextEditorDiff();
-    const isInterdiff = !!diffInput && (isInterdiffUri(diffInput.original) || isInterdiffUri(diffInput.modified));
-    void vscode.commands.executeCommand("setContext", "jj.interdiffActive", isInterdiff);
+    const isComparisonDiff =
+      !!diffInput && (isComparisonDiffUri(diffInput.original) || isComparisonDiffUri(diffInput.modified));
+    void vscode.commands.executeCommand("setContext", "jj.comparisonDiffActive", isComparisonDiff);
   };
   updateInterdiffContext();
   context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateInterdiffContext));

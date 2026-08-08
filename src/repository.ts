@@ -1338,45 +1338,49 @@ export class JJRepository {
   }
 
   /**
-   * Lists the files that differ between two revisions, via `jj interdiff --summary`.
-   * Output format mirrors `jj diff --summary` (`<status> <path>`, renames as `{from => to}`).
+   * Lists the files that differ between two revisions. With `mode === "interdiff"` this runs
+   * `jj interdiff --summary --from <from> --to <to>` (the diff that `to` introduces, expressed
+   * against `from`); with `mode === "diff"` it runs `jj diff --summary --from <from> --to <to>`
+   * (a direct tree-to-tree comparison). Output format is `<status> <path>`, renames as
+   * `{from => to}`.
    */
-  async interdiffSummary(fromRev: string, toRev: string): Promise<FileStatus[]> {
-    const output = (await this.jjCommandRead(["interdiff", "--summary", "--from", fromRev, "--to", toRev])).toString();
+  async comparisonSummary(mode: "diff" | "interdiff", fromRev: string, toRev: string): Promise<FileStatus[]> {
+    const output = (await this.jjCommandRead([mode, "--summary", "--from", fromRev, "--to", toRev])).toString();
     return parseInterdiffSummary(output, this.repositoryRoot);
   }
 
   /**
-   * Returns the left (from-rev) and right (to-rev) content of a single file's interdiff,
-   * captured via the `jjx-vscode-diff` diff tool (mirrors {@link getDiffOriginal} but for an
-   * arbitrary two-revision interdiff). `left`/`right` are undefined when the file is absent on
-   * that side (pure addition/deletion).
+   * Returns the left (from-rev) and right (to-rev) content of a single file's two-revision
+   * comparison, captured via the `jjx-vscode-diff` diff tool (mirrors {@link getDiffOriginal} but
+   * for an arbitrary two-revision diff or interdiff). `left`/`right` are undefined when the file
+   * is absent on that side (pure addition/deletion).
    */
-  async getInterdiff(
+  async getComparisonDiff(
+    mode: "diff" | "interdiff",
     fromRev: string,
     toRev: string,
     filepath: string,
   ): Promise<{ left: Buffer | undefined; right: Buffer | undefined }> {
-    logger.trace(`[getInterdiff] enter: from=${fromRev} to=${toRev} filepath=${filepath}`);
+    logger.trace(`[getComparisonDiff] enter: mode=${mode} from=${fromRev} to=${toRev} filepath=${filepath}`);
     filepath = resolveRealpath(filepath);
 
     const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
-    logger.trace(`[getInterdiff] relativePath=${relativePath}`);
+    logger.trace(`[getComparisonDiff] relativePath=${relativePath}`);
 
     const { summary, leftFiles, rightFiles } = await this.runDiffToolSummary(
-      ["interdiff", "--from", fromRev, "--to", toRev],
+      [mode, "--from", fromRev, "--to", toRev],
       [filepathToFileset(relativePath)],
     );
-    logger.trace(`[getInterdiff] summary (${summary.length} chars): ${JSON.stringify(summary)}`);
+    logger.trace(`[getComparisonDiff] summary (${summary.length} chars): ${JSON.stringify(summary)}`);
 
     const match = this.matchDiffSummaryLine(summary, filepath);
     if (!match) {
-      logger.warn(`[getInterdiff] no matching summary line for filepath=${filepath}`);
+      logger.warn(`[getComparisonDiff] no matching summary line for filepath=${filepath}`);
       return { left: undefined, right: undefined };
     }
     const left = match.leftPath !== undefined ? leftFiles[match.leftPath] : undefined;
     const right = match.rightPath !== undefined ? rightFiles[match.rightPath] : undefined;
-    logger.trace(`[getInterdiff] match left=${left !== undefined} right=${right !== undefined}`);
+    logger.trace(`[getComparisonDiff] match left=${left !== undefined} right=${right !== undefined}`);
     return {
       left: left !== undefined ? Buffer.from(left, "base64") : undefined,
       right: right !== undefined ? Buffer.from(right, "base64") : undefined,

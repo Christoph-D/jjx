@@ -7,6 +7,10 @@ export function interdiffKey(from: string, to: string): string {
   return `interdiff:${from}..${to}`;
 }
 
+export function diffKey(from: string, to: string): string {
+  return `diff:${from}..${to}`;
+}
+
 const colorOfType = (type: FileStatusType) => {
   switch (type) {
     case "A":
@@ -194,6 +198,9 @@ export class JJDecorationProvider implements FileDecorationProvider {
       if ("interdiffFrom" in params) {
         return this.decorations.get(getKey(uri.fsPath, interdiffKey(params.interdiffFrom, params.interdiffTo)));
       }
+      if ("diffFrom" in params) {
+        return this.decorations.get(getKey(uri.fsPath, diffKey(params.diffFrom, params.diffTo)));
+      }
     }
     const rev = resolveRev(uri, { diffOriginalRevBehavior: "exclude", excludeSpecial: true });
     if (rev === undefined) {
@@ -245,17 +252,16 @@ export class JJDecorationProvider implements FileDecorationProvider {
     const changedUris: Uri[] = [];
     for (const key of changedKeys) {
       const { fsPath, rev } = parseKey(key);
-      const interdiff = parseInterdiffRev(rev);
-      if (interdiff) {
-        // Interdiff resource states are keyed by {interdiffFrom, interdiffTo, side}, so emit
-        // those URIs (rather than a synthetic {rev}) so VS Code refreshes their badges.
-        changedUris.push(
-          toJJUri(Uri.file(fsPath), {
-            interdiffFrom: interdiff.from,
-            interdiffTo: interdiff.to,
-            side: "right",
-          }),
-        );
+      const comparison = parseComparisonRev(rev);
+      if (comparison) {
+        // Two-revision comparison (interdiff or from/to diff) resource states are keyed by
+        // {from, to, side}, so emit those URIs (rather than a synthetic {rev}) so VS Code
+        // refreshes their badges.
+        const sideParams =
+          comparison.kind === "interdiff"
+            ? { interdiffFrom: comparison.from, interdiffTo: comparison.to, side: "right" as const }
+            : { diffFrom: comparison.from, diffTo: comparison.to, side: "right" as const };
+        changedUris.push(toJJUri(Uri.file(fsPath), sideParams));
       } else {
         changedUris.push(toJJUri(Uri.file(fsPath), { rev }));
         if (rev === "@") {
@@ -279,18 +285,23 @@ function parseKey(key: string) {
   return JSON.parse(key) as { fsPath: string; rev: string };
 }
 
-function parseInterdiffRev(rev: string): { from: string; to: string } | undefined {
-  if (!rev.startsWith("interdiff:")) {
-    return undefined;
+function parseComparisonRev(rev: string): { from: string; to: string; kind: "diff" | "interdiff" } | undefined {
+  for (const kind of ["interdiff", "diff"] as const) {
+    const prefix = `${kind}:`;
+    if (!rev.startsWith(prefix)) {
+      continue;
+    }
+    const sep = rev.indexOf("..", prefix.length);
+    if (sep === -1) {
+      return undefined;
+    }
+    return {
+      from: rev.slice(prefix.length, sep),
+      to: rev.slice(sep + 2),
+      kind,
+    };
   }
-  const sep = rev.indexOf("..", "interdiff:".length);
-  if (sep === -1) {
-    return undefined;
-  }
-  return {
-    from: rev.slice("interdiff:".length, sep),
-    to: rev.slice(sep + 2),
-  };
+  return undefined;
 }
 
 function convertSetToLowercase<T>(originalSet: Set<T>): Set<T> {

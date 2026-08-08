@@ -131,6 +131,18 @@
         "icon": "$(sign-in)"
       },
       {
+        "command": "jj.viewInterdiff",
+        "title": "View Interdiff",
+        "category": "Jujutsu",
+        "icon": "$(compare-changes)"
+      },
+      {
+        "command": "jj.viewRegularDiff",
+        "title": "View Regular Diff",
+        "category": "Jujutsu",
+        "icon": "$(diff)"
+      },
+      {
         "command": "jj.restoreResourceState",
         "title": "Discard Changes",
         "category": "Jujutsu",
@@ -305,7 +317,7 @@
         },
         {
           "command": "jj.toggleDiffView",
-          "when": "jj.reposExist && !jj.interdiffActive",
+          "when": "jj.reposExist && !jj.comparisonDiffActive",
           "group": "navigation@1"
         },
         {
@@ -446,22 +458,32 @@
         },
         {
           "command": "jj.squashToWorkingCopyResourceGroup",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && scmResourceGroup != diff && scmResourceGroup != interdiff && scmResourceGroup != untracked && jj.jjBinaryFound",
           "group": "inline"
         },
         {
           "command": "jj.restoreResourceGroup",
-          "when": "scmProvider == jj && scmResourceGroup != selected && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != selected && scmResourceGroup != diff && scmResourceGroup != interdiff && scmResourceGroup != untracked && jj.jjBinaryFound",
           "group": "inline"
         },
         {
           "command": "jj.editResourceGroup",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != diff && scmResourceGroup != interdiff && scmResourceGroup != untracked && jj.jjBinaryFound",
           "group": "inline"
         },
         {
           "command": "jj.describe",
-          "when": "scmProvider == jj && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != diff && scmResourceGroup != interdiff && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "group": "inline"
+        },
+        {
+          "command": "jj.viewInterdiff",
+          "when": "scmProvider == jj && scmResourceGroup == diff && jj.jjBinaryFound",
+          "group": "inline"
+        },
+        {
+          "command": "jj.viewRegularDiff",
+          "when": "scmProvider == jj && scmResourceGroup == interdiff && jj.jjBinaryFound",
           "group": "inline"
         },
         {
@@ -478,12 +500,12 @@
       "scm/resourceState/context": [
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != interdiff && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && jj.jjBinaryFound",
           "group": "1_modification@1"
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj && scmResourceGroup != interdiff && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && jj.jjBinaryFound",
           "group": "1_modification@2"
         },
         {
@@ -513,22 +535,22 @@
         },
         {
           "command": "jj.openDiffResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && scmResourceGroup != untracked && config.jjx.fileClickAction != 'diff' && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && config.jjx.fileClickAction != 'diff' && jj.jjBinaryFound",
           "group": "inline@1"
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && scmResourceGroup != untracked && config.jjx.fileClickAction != 'at-revision' && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && config.jjx.fileClickAction != 'at-revision' && jj.jjBinaryFound",
           "group": "inline@2"
         },
         {
           "command": "jj.openFileInWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && scmResourceGroup != untracked && config.jjx.fileClickAction != 'working-copy' && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && config.jjx.fileClickAction != 'working-copy' && jj.jjBinaryFound",
           "group": "inline@3"
         },
         {
           "command": "jj.restoreResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != selected && scmResourceGroup != interdiff && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != selected && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && jj.jjBinaryFound",
           "group": "inline@4"
         },
         {
@@ -538,7 +560,7 @@
         },
         {
           "command": "jj.squashToWorkingCopyResourceState",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && scmResourceGroup != interdiff && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != selected && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && jj.jjBinaryFound",
           "group": "inline@5"
         },
         {
@@ -627,6 +649,14 @@
         },
         {
           "command": "jj.editResourceGroup",
+          "when": "false"
+        },
+        {
+          "command": "jj.viewInterdiff",
+          "when": "false"
+        },
+        {
+          "command": "jj.viewRegularDiff",
           "when": "false"
         },
         {

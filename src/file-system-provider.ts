@@ -32,7 +32,10 @@ export class JJFileSystemProvider implements FileSystemProvider {
 
   private changedRepositoryRoots = new Set<string>();
   private cache = new Map<string, CacheRow>();
-  private interdiffCache = new Map<string, Promise<{ left: Uint8Array | undefined; right: Uint8Array | undefined }>>();
+  private comparisonDiffCache = new Map<
+    string,
+    Promise<{ left: Uint8Array | undefined; right: Uint8Array | undefined }>
+  >();
   private mtime = Date.now();
   private disposables: Disposable[] = [];
   private cleanupInterval?: ReturnType<typeof setInterval>;
@@ -59,7 +62,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
 
   onDidChangeRepository({ repositoryRoot }: { repositoryRoot: string }): void {
     this.changedRepositoryRoots.add(repositoryRoot);
-    this.interdiffCache.clear();
+    this.comparisonDiffCache.clear();
     void this.fireChangeEvents();
   }
 
@@ -156,7 +159,18 @@ export class JJFileSystemProvider implements FileSystemProvider {
     } else if ("rev" in params) {
       content = await this.readFileOrNotFound(repository, params.rev, uri.fsPath);
     } else if ("interdiffFrom" in params) {
-      const pair = await this.getInterdiffPair(repository, params, uri.fsPath);
+      const pair = await this.getComparisonDiffPair(
+        repository,
+        { mode: "interdiff", from: params.interdiffFrom, to: params.interdiffTo },
+        uri.fsPath,
+      );
+      content = (params.side === "left" ? pair.left : pair.right) ?? new Uint8Array(0);
+    } else if ("diffFrom" in params) {
+      const pair = await this.getComparisonDiffPair(
+        repository,
+        { mode: "diff", from: params.diffFrom, to: params.diffTo },
+        uri.fsPath,
+      );
       content = (params.side === "left" ? pair.left : pair.right) ?? new Uint8Array(0);
     } else {
       throw new Error("Unknown URI params");
@@ -166,18 +180,18 @@ export class JJFileSystemProvider implements FileSystemProvider {
     return content;
   }
 
-  private getInterdiffPair(
+  private getComparisonDiffPair(
     repository: JJRepository,
-    params: { interdiffFrom: string; interdiffTo: string },
+    params: { mode: "diff" | "interdiff"; from: string; to: string },
     fsPath: string,
   ): Promise<{ left: Uint8Array | undefined; right: Uint8Array | undefined }> {
-    const key = `${params.interdiffFrom}\0${params.interdiffTo}\0${fsPath}`;
-    let promise = this.interdiffCache.get(key);
+    const key = `${params.mode}\0${params.from}\0${params.to}\0${fsPath}`;
+    let promise = this.comparisonDiffCache.get(key);
     if (!promise) {
-      promise = repository.getInterdiff(params.interdiffFrom, params.interdiffTo, fsPath).finally(() => {
-        this.interdiffCache.delete(key);
+      promise = repository.getComparisonDiff(params.mode, params.from, params.to, fsPath).finally(() => {
+        this.comparisonDiffCache.delete(key);
       });
-      this.interdiffCache.set(key, promise);
+      this.comparisonDiffCache.set(key, promise);
     }
     return promise;
   }
