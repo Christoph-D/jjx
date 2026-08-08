@@ -32,6 +32,31 @@ jobs:
       - name: Unit tests
         run: pnpm run unit-test
 
+  playwright:
+    needs: build
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2]
+        shardTotal: [2]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+        with:
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Cache jj
         id: cache-jj
         uses: actions/cache@v5
@@ -50,11 +75,51 @@ jobs:
       - name: Add jj to PATH
         run: echo "C:\jj" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-      - name: Playwright tests
-        run: pnpm run playwright-test
+      - name: Build extension
+        run: pnpm run build
+
+      - name: Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        run: pnpm exec playwright test --config=tests-integration/playwright.config.ts --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: tests-integration/blob-report/
+          retention-days: 1
+
+  merge-reports:
+    needs: playwright
+    if: ${{ !cancelled() }}
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+        with:
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v6
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge Playwright reports
+        run: pnpm exec playwright merge-reports --reporter html ./all-blob-reports
 
       - name: Upload Playwright artifacts
-        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
           name: playwright-artifacts-windows
