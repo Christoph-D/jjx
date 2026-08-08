@@ -16,7 +16,7 @@ system.
 - Bookmark and tag management with remote sync
 - Multi-workspace support with automatic stale workspace updates
 - Operation log with undo/redo
-- Compare two changes with an interdiff (`jj interdiff`)
+- Compare two changes with a diff or interdiff
 - Handles divergent commits, conflicted bookmarks, and more
 
 ## 📖 Full Feature List
@@ -31,7 +31,8 @@ system.
 - Elided commits  
   ![elided commits](images/elided-commits.gif)
 - Select a change to see its affected files and diffs
-- Select two changes (shift-click) to compare them with an interdiff, shown as an "Interdiff" section in the change view
+- Select two changes (shift-click) to compare them. A "Diff" section (`jj diff`) shows the from→to changes by default;
+  toggle it to an "Interdiff" section (`jj interdiff`) via the section's inline action
 - Create merge changes with shift-select and then pressing the "+" button
 - Drag & drop changes onto other changes
 - Optionally show each commit's changed files inline in the graph (like `jj log -s`), with one-click diff opening (⚠️
@@ -63,7 +64,7 @@ system.
 
 - Show changed files in the working copy and parent changes
 - Show changed files in the selected change when clicking on a change in the graph
-- Show an interdiff between two selected changes; clicking a file opens a side-by-side diff of how the changes differ
+- Compare two selected changes with a diff or interdiff
 - Show untracked files (files jj does not ignore but does not track)
 - Right-click context menu: View as diff, open at revision, open in working copy, copy paths
 - Configurable file click action: View as diff, open at revision, open in working copy
@@ -100,11 +101,11 @@ system.
 
 - Create, move, and delete bookmarks
 - Move bookmarks via drag&drop
-- Upload a bookmark to all its tracking remotes with a single click  
+- Upload a bookmark/tag to all its tracking remotes with a single click (tag tracking requires jj 0.44+)  
   ![unsynced bookmark](images/unsynced-bookmark.png)
 - Right-click context menu to push a bookmark to a specific remote
 - Right-click context menu to push a tag to a specific remote
-- Track/untrack remotes
+- Track/untrack bookmarks and tags on specific remotes (tag tracking requires jj 0.44+)
 - Delete a bookmark/tag  
   ![bookmark context menu](images/bookmark-context-menu.png)
 - Set and delete tags
