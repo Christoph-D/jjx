@@ -130,23 +130,20 @@ const testJJ038 = test.extend({
   customSettings:
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
-      test.skip(!fs.existsSync(JJ_038_PATH), "jj 0.38 binary not available");
       await use({ "jjx.jjPath": JJ_038_PATH });
     },
   testRepo: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
+      test.skip(!fs.existsSync(JJ_038_PATH), "jj 0.38 binary not available");
       // Route the test helper's own jj invocations (repo/remote creation) through
       // jj 0.38 as well, so the repo format matches the version the extension uses.
-      const previousJJPath = process.env.JJ_PATH;
-      process.env.JJ_PATH = JJ_038_PATH;
       const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "jjx-test-"));
       const repoPath = path.join(tempDir, "repo");
-      const testRepo = await newTestRepo(repoPath);
+      const testRepo = await newTestRepo(repoPath, { jjPath: JJ_038_PATH });
       try {
         await use(testRepo);
       } finally {
-        process.env.JJ_PATH = previousJJPath;
         await fs.promises.rm(tempDir, { recursive: true, force: true });
       }
     },
@@ -160,8 +157,8 @@ testJJ038(
     test.slow();
     const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
     const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
-    const remoteARepo = await newTestRepo(remoteAPath);
-    const remoteBRepo = await newTestRepo(remoteBPath);
+    const remoteARepo = await newTestRepo(remoteAPath, { jjPath: JJ_038_PATH });
+    const remoteBRepo = await newTestRepo(remoteBPath, { jjPath: JJ_038_PATH });
 
     await testRepo.jjCommand(["git", "remote", "add", "remote-a", remoteAPath]);
     await testRepo.jjCommand(["git", "remote", "add", "remote-b", remoteBPath]);

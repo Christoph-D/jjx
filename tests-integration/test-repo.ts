@@ -38,10 +38,6 @@ const TAG_FIELDS: TemplateFields = {
 };
 const TAG_TEMPLATE = generateTemplate(TAG_FIELDS);
 
-function getJJPath(): string {
-  return process.env.JJ_PATH || "jj";
-}
-
 function isTransientLockError(stderr: string): boolean {
   return (
     /lock/i.test(stderr) ||
@@ -62,7 +58,14 @@ export class TestRepo {
   static userName: string | null = "Test User";
   static userEmail: string | null = "test@example.com";
 
-  constructor(public readonly repoPath: string) {}
+  public readonly jjPath: string;
+
+  constructor(
+    public readonly repoPath: string,
+    jjPath?: string,
+  ) {
+    this.jjPath = jjPath ?? process.env.JJ_PATH ?? "jj";
+  }
 
   async commit(message: string): Promise<string> {
     const result = await this.jjCommand(["commit", "-m", message]);
@@ -170,7 +173,7 @@ export class TestRepo {
     if (TestRepo.userName && TestRepo.userEmail) {
       config = ["--config", `user.name=${TestRepo.userName}`, "--config", `user.email=${TestRepo.userEmail}`];
     }
-    const jjPath = getJJPath();
+    const jjPath = this.jjPath;
     const fullArgs = config.concat(args);
     const maxAttempts = 3;
     for (let attempt = 0; ; attempt++) {
@@ -218,10 +221,13 @@ export interface NewTestRepoOptions {
   // repo store (no top-level `.git`) via `jj git init --no-colocate`. When
   // undefined, use `jj git init`'s default.
   colocate?: boolean;
+  // Path to the jj binary used for this repo's invocations. Defaults to
+  // `process.env.JJ_PATH` or "jj".
+  jjPath?: string;
 }
 
 export async function newTestRepo(repoPath: string, options: NewTestRepoOptions = {}): Promise<TestRepo> {
-  const repo = new TestRepo(repoPath);
+  const repo = new TestRepo(repoPath, options.jjPath);
   await fs.mkdir(repoPath, { recursive: true });
   const initArgs = ["git", "init"];
   if (options.colocate === true) {
