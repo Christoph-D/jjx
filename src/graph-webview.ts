@@ -331,14 +331,18 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "duplicateAfter":
         case "duplicateBefore": {
           const mode = message.command.replace("duplicate", "").toLowerCase() as "onto" | "after" | "before";
-          await this.withRefresh("duplicate", () => repo.duplicate(message.changeId, message.targetChangeId, mode));
+          await this.withRefresh("duplicate", () =>
+            repo.duplicateRetryImmutable(message.changeId, message.targetChangeId, mode),
+          );
           break;
         }
         case "revertOnto":
         case "revertAfter":
         case "revertBefore": {
           const mode = message.command.replace("revert", "").toLowerCase() as "onto" | "after" | "before";
-          await this.withRefresh("revert", () => repo.revert(message.changeId, message.targetChangeId, mode));
+          await this.withRefresh("revert", () =>
+            repo.revertRetryImmutable(message.changeId, message.targetChangeId, mode),
+          );
           break;
         }
         case "updateStale":

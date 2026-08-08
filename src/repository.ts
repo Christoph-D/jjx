@@ -999,14 +999,58 @@ export class JJRepository {
     );
   }
 
-  async duplicate(source: string, destination: string, mode: "onto" | "after" | "before") {
+  private async duplicate(
+    source: string,
+    destination: string,
+    mode: "onto" | "after" | "before",
+    ignoreImmutable = false,
+  ) {
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
-    return this.jjCommand(["duplicate", "-r", source, flag, destination]);
+    return this.jjCommand([
+      "duplicate",
+      "-r",
+      source,
+      flag,
+      destination,
+      ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+    ]);
   }
 
-  async revert(source: string, destination: string, mode: "onto" | "after" | "before") {
+  async duplicateRetryImmutable(source: string, destination: string, mode: "onto" | "after" | "before") {
+    return this.retryWithImmutable(
+      source,
+      () => this.duplicate(source, destination, mode),
+      () => this.duplicate(source, destination, mode, true),
+      "This duplicate modifies one or more immutable commits, are you sure?",
+      "Modify Immutable Change",
+    );
+  }
+
+  private async revert(
+    source: string,
+    destination: string,
+    mode: "onto" | "after" | "before",
+    ignoreImmutable = false,
+  ) {
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
-    return this.jjCommand(["revert", "-r", source, flag, destination]);
+    return this.jjCommand([
+      "revert",
+      "-r",
+      source,
+      flag,
+      destination,
+      ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+    ]);
+  }
+
+  async revertRetryImmutable(source: string, destination: string, mode: "onto" | "after" | "before") {
+    return this.retryWithImmutable(
+      source,
+      () => this.revert(source, destination, mode),
+      () => this.revert(source, destination, mode, true),
+      "This revert modifies one or more immutable commits, are you sure?",
+      "Modify Immutable Change",
+    );
   }
 
   async restoreRetryImmutable(rev?: string, filepaths?: string[]) {

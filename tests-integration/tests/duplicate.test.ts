@@ -126,3 +126,51 @@ test("duplicate before another commit via drag and drop", async ({ graphFrame, t
     expect(duplicateCParent!.description.trim()).toBe("A");
   }).toPass();
 });
+
+test.describe("with immutable ancestors visible", () => {
+  test.use({ customSettings: { "jjx.elideImmutableCommits": false } });
+
+  test("duplicate before an immutable commit prompts for confirmation", async ({ graphFrame, testRepo, workbox }) => {
+    await testRepo.commitFile("a.txt", "content a", "A");
+    const changeIdB = await testRepo.commitFile("b.txt", "content b", "B");
+    await testRepo.commitFile("c.txt", "content c", "C");
+
+    await testRepo.createTag("immutable-tag", changeIdB);
+
+    const nodes = graphFrame.locator("#nodes > div");
+    await expect(nodes).toHaveCount(5);
+
+    const commitC = nodes.nth(1);
+    const commitB = nodes.nth(2);
+
+    await commitC.dragTo(commitB);
+
+    const duplicateItem = graphFrame.locator('[data-action="duplicate"]');
+    await expect(duplicateItem).toBeVisible();
+    await duplicateItem.hover();
+
+    const duplicateBeforeItem = graphFrame.locator('[data-action="duplicateBefore"]');
+    await expect(duplicateBeforeItem).toBeVisible();
+    await duplicateBeforeItem.click();
+
+    const dialog = workbox.locator(".monaco-dialog-box");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("This duplicate modifies one or more immutable commits");
+    await dialog.getByRole("button", { name: "Modify Immutable Change" }).click();
+    await expect(dialog).not.toBeVisible();
+
+    await expect(nodes).toHaveCount(6);
+
+    await expect(async () => {
+      const logEntries = await testRepo.log();
+      const cCommits = logEntries.filter((e) => e.description.trim() === "C");
+      expect(cCommits).toHaveLength(2);
+
+      const bEntry = logEntries.find((e) => e.description.trim() === "B");
+      expect(bEntry).toBeDefined();
+      const bParent = logEntries.find((e) => e.change_id === bEntry!.parents[0].change_id);
+      expect(bParent).toBeDefined();
+      expect(bParent!.description.trim()).toBe("C");
+    }).toPass();
+  });
+});
