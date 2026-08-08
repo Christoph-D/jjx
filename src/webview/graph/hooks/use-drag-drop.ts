@@ -17,7 +17,7 @@ import dragGhostStyles from "../components/drag-ghost.module.css";
 
 export function useDragDrop(change: ChangeNode) {
   const isElided = change.branchType === "~";
-  const isRoot = change.changeId === rootChangeId || change.branchType === "◆" || change.branchType === "~";
+  const isRoot = change.changeId === rootChangeId;
   const { clearAllTimers } = useTooltipTimers();
 
   if (isElided) {

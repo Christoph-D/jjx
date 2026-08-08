@@ -25,12 +25,14 @@ export function RebaseMenu() {
   const isDivergent = !!targetChange.changeOffset && targetChange.changeOffset !== "";
   const isImmutable = targetChange.branchType === "◆";
   const sourceChange = currentChanges.value.find((c) => c.changeId === sourceId);
+  const isSourceImmutable = sourceChange?.branchType === "◆";
   const isTargetAlreadyParent = !!sourceChange?.parentChangeIds?.includes(targetId);
-  const immutableIcon = isImmutable ? <ImmutableIcon /> : null;
+  const immutableIcon = isImmutable || isSourceImmutable ? <ImmutableIcon /> : null;
   const hasImmutableChild = currentChanges.value.some(
     (c) => c.parentChangeIds?.includes(targetId) && (c.branchType === "◆" || c.branchType === "~"),
   );
-  const afterImmutableIcon = hasImmutableChild ? <ImmutableIcon /> : null;
+  const afterImmutableIcon = hasImmutableChild || isSourceImmutable ? <ImmutableIcon /> : null;
+  const sourceImmutableIcon = isSourceImmutable ? <ImmutableIcon /> : null;
 
   const sendCommand = (command: string, withDescendants = false) => {
     vscode.postMessage({ command, changeId: sourceId, targetChangeId: targetId, withDescendants });
@@ -43,7 +45,7 @@ export function RebaseMenu() {
         <>
           <Submenu action="rebase" label="Rebase">
             <SubmenuItem action="rebaseOnto" onClick={() => sendCommand("rebaseOnto")}>
-              Onto
+              Onto{sourceImmutableIcon}
             </SubmenuItem>
             <SubmenuItem action="rebaseAfter" onClick={() => sendCommand("rebaseAfter")}>
               After{afterImmutableIcon}
@@ -54,16 +56,16 @@ export function RebaseMenu() {
           </Submenu>
           <Submenu action="rebaseWithDescendants" label="Rebase With Descendants">
             <SubmenuItem action="rebaseOntoWithDescendants" onClick={() => sendCommand("rebaseOnto", true)}>
-              Onto
+              Onto{sourceImmutableIcon}
             </SubmenuItem>
             {!isTargetAlreadyParent && (
               <SubmenuItem action="rebaseAddParentWithDescendants" onClick={() => sendCommand("rebaseAddParent")}>
-                Add Parent
+                Add Parent{sourceImmutableIcon}
               </SubmenuItem>
             )}
             {isTargetAlreadyParent && (sourceChange?.parentChangeIds?.length ?? 0) >= 2 && (
               <SubmenuItem action="rebaseRemoveParentWithDescendants" onClick={() => sendCommand("rebaseRemoveParent")}>
-                Remove Parent
+                Remove Parent{sourceImmutableIcon}
               </SubmenuItem>
             )}
             <SubmenuItem action="rebaseAfterWithDescendants" onClick={() => sendCommand("rebaseAfter", true)}>
@@ -81,7 +83,7 @@ export function RebaseMenu() {
       )}
       <Submenu action="duplicate" label="Duplicate">
         <SubmenuItem action="duplicateOnto" onClick={() => sendCommand("duplicateOnto")}>
-          Onto
+          Onto{sourceImmutableIcon}
         </SubmenuItem>
         <SubmenuItem action="duplicateAfter" onClick={() => sendCommand("duplicateAfter")}>
           After{afterImmutableIcon}
@@ -92,7 +94,7 @@ export function RebaseMenu() {
       </Submenu>
       <Submenu action="revert" label="Revert">
         <SubmenuItem action="revertOnto" onClick={() => sendCommand("revertOnto")}>
-          Onto
+          Onto{sourceImmutableIcon}
         </SubmenuItem>
         <SubmenuItem action="revertAfter" onClick={() => sendCommand("revertAfter")}>
           After{afterImmutableIcon}
