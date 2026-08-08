@@ -912,7 +912,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (confirm !== "Delete") {
         return;
       }
-      await fs.promises.rm(filepath, { recursive: true, force: false });
+      await fs.promises.rm(filepath);
       await scm.checkForUpdates(undefined, "force");
     },
     { errorPrefix: "Failed to delete file" },
@@ -957,7 +957,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (confirm !== "Delete") {
         return;
       }
-      await Promise.all(untrackedFiles.map((f) => fs.promises.rm(f.path, { recursive: true, force: false })));
+      await Promise.all(untrackedFiles.map((f) => fs.promises.rm(f.path)));
       await scm.checkForUpdates(undefined, "force");
     },
     { errorPrefix: "Failed to delete files" },
