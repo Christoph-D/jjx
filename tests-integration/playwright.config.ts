@@ -7,7 +7,7 @@ export type TestOptions = {
 export default defineConfig<void, TestOptions>({
   reporter: process.env.CI ? [["list"], ["blob", { outputDir: "blob-report" }]] : "list",
   timeout: 60_000,
-  retries: process.platform === "win32" ? 2 : 0,
+  retries: 2,
   workers: process.platform === "darwin" ? 4 : 5,
   fullyParallel: true,
   use: {
