@@ -958,7 +958,6 @@ function buildComparisonDiffResourceStates(
         : toJJUri(fileUri, { diffFrom: from, diffTo: to, side });
     const leftUri = fileStatus.type === "A" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("left");
     const rightUri = fileStatus.type === "D" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("right");
-    const titlePrefix = fileStatus.renamedFrom ? `${fileStatus.renamedFrom} => ` : "";
     return {
       resourceUri: makeSideUri("right"),
       decorations: {
@@ -968,7 +967,11 @@ function buildComparisonDiffResourceStates(
       command: {
         title: "Open",
         command: "vscode.diff",
-        arguments: [leftUri, rightUri, `${titlePrefix}${fileStatus.file} ${label} ${fromShort} → ${toShort}`],
+        arguments: [
+          leftUri,
+          rightUri,
+          formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, `${label} ${fromShort} → ${toShort}`),
+        ],
       },
     };
   });
