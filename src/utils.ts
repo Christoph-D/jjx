@@ -26,11 +26,6 @@ export function formatRevSuffix(rev: string): string {
   return rev === "@" ? "(Working Copy)" : `(${rev.substring(0, 8)})`;
 }
 
-export function formatChangeIdShort(changeId: string, changeOffset: string | null): string {
-  const prefix = changeId.substring(0, 8);
-  return changeOffset ? `${prefix}/${changeOffset}` : prefix;
-}
-
 export function formatDiffTitle(renamedFrom: string | undefined, baseName: string, suffix: string): string {
   return (renamedFrom ? `${renamedFrom} → ` : "") + `${baseName} ${suffix}`;
 }

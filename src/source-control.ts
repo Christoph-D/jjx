@@ -5,7 +5,8 @@ import * as vscode from "vscode";
 import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
-import { anyEvent, filterEvent, formatChangeIdShort, formatDiffTitle, normalizePath } from "./utils";
+import { anyEvent, filterEvent, formatDiffTitle, normalizePath } from "./utils";
+import { formatComparisonRev } from "./rev-format";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -791,14 +792,16 @@ class RepositorySourceControlManager {
       if (!this.diffResourceGroup) {
         this.diffResourceGroup = this.sourceControl.createResourceGroup(this.diffMode, "");
       }
-      const fromShort = fromIsWorkingCopy ? "Working Copy" : formatChangeIdShort(from, fromChangeOffset);
-      const toShort = toIsWorkingCopy ? "Working Copy" : formatChangeIdShort(to, toChangeOffset);
+      const fromShort = formatComparisonRev(from, fromChangeOffset, fromIsWorkingCopy, "Working Copy");
+      const toShort = formatComparisonRev(to, toChangeOffset, toIsWorkingCopy, "Working Copy");
       this.diffResourceGroup.label =
         this.diffMode === "interdiff" ? `Interdiff ${fromShort} → ${toShort}` : `Diff ${fromShort} → ${toShort}`;
       this.diffResourceGroup.resourceStates = buildComparisonDiffResourceStates(this.diffFileStatuses, {
         from,
         to,
         mode: this.diffMode,
+        fromIsWorkingCopy,
+        toIsWorkingCopy,
         fromChangeOffset,
         toChangeOffset,
       });
@@ -976,13 +979,15 @@ function buildComparisonDiffResourceStates(
     from: string;
     to: string;
     mode: "diff" | "interdiff";
+    fromIsWorkingCopy: boolean;
+    toIsWorkingCopy: boolean;
     fromChangeOffset: string | null;
     toChangeOffset: string | null;
   },
 ): vscode.SourceControlResourceState[] {
-  const { from, to, mode, fromChangeOffset, toChangeOffset } = options;
-  const fromShort = formatChangeIdShort(from, fromChangeOffset);
-  const toShort = formatChangeIdShort(to, toChangeOffset);
+  const { from, to, mode, fromChangeOffset, toChangeOffset, fromIsWorkingCopy, toIsWorkingCopy } = options;
+  const fromShort = formatComparisonRev(from, fromChangeOffset, fromIsWorkingCopy);
+  const toShort = formatComparisonRev(to, toChangeOffset, toIsWorkingCopy);
   const label = mode === "interdiff" ? "Interdiff" : "Diff";
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);
