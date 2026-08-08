@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { formatComparisonRev } from "../rev-format";
+import { formatComparisonRev } from "../utils";
 
 describe("formatComparisonRev Test Suite", () => {
   it("renders @ for the working copy side regardless of its change ID", () => {

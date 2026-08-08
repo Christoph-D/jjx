@@ -15,7 +15,8 @@ import {
 import { getParams } from "./uri";
 import type { WorkspaceSourceControlManager } from "./source-control";
 import type { JJRepository } from "./repository";
-import { createThrottledAsyncFn, eventToPromise, filterEvent, isDescendant } from "./utils";
+import { eventToPromise, filterEvent } from "./vscode-utils";
+import { createThrottledAsyncFn, isDescendant } from "./utils";
 
 interface CacheRow {
   uri: Uri;

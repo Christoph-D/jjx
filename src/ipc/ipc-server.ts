@@ -2,7 +2,7 @@
 // https://github.com/microsoft/vscode/blob/551308fdbca0849eb9f215eec5428f719fac1193/extensions/git/src/ipc/ipcServer.ts
 
 import { Disposable } from "vscode";
-import { toDisposable } from "../utils";
+import { toDisposable } from "../vscode-utils";
 import { logger } from "../logger";
 import * as path from "path";
 import * as http from "http";

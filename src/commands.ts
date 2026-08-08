@@ -14,14 +14,8 @@ import {
   applyLineChanges,
   type LineChange,
 } from "./diff-utils";
-import {
-  formatDiffTitle,
-  formatRevSuffix,
-  getActiveTextEditorDiff,
-  normalizePath,
-  pathEquals,
-  showErrorMessage,
-} from "./utils";
+import { getActiveTextEditorDiff, showErrorMessage } from "./vscode-utils";
+import { formatDiffTitle, formatRevSuffix, normalizePath, pathEquals } from "./utils";
 import { getMergeEditorConfigs } from "./jj-editor";
 import { handleJJCommand } from "./process";
 

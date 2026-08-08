@@ -4,7 +4,8 @@ import * as path from "path";
 import { commands, TabInputText, Uri, window, workspace } from "vscode";
 import { parseJJError } from "./errors";
 import { IIPCHandler, IPCServer } from "./ipc/ipc-server";
-import { EmptyDisposable, escapeTomlString } from "./utils";
+import { EmptyDisposable } from "./vscode-utils";
+import { escapeTomlString } from "./utils";
 
 interface JJEditorRequest {
   descriptionPath?: string;

@@ -13,7 +13,7 @@ import { registerAnnotations } from "./annotations";
 import { createPolling, initInfrastructure } from "./polling";
 import { registerColocatedCheck } from "./colocated-check";
 import { isComparisonDiffUri } from "./uri";
-import { getActiveTextEditorDiff } from "./utils";
+import { getActiveTextEditorDiff } from "./vscode-utils";
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Jujutsu X", {
