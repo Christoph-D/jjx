@@ -22,7 +22,6 @@ export function RebaseMenu() {
   }
 
   const { sourceId, targetId, targetChange } = state;
-  const isDivergent = !!targetChange.changeOffset && targetChange.changeOffset !== "";
   const isImmutable = targetChange.branchType === "◆";
   const sourceChange = currentChanges.value.find((c) => c.changeId === sourceId);
   const isSourceImmutable = sourceChange?.branchType === "◆";
@@ -41,46 +40,42 @@ export function RebaseMenu() {
 
   return (
     <Menu id="rebase-menu" state={state} onClick={(e) => e.stopPropagation()}>
-      {!isDivergent && (
-        <>
-          <Submenu action="rebase" label="Rebase">
-            <SubmenuItem action="rebaseOnto" onClick={() => sendCommand("rebaseOnto")}>
-              Onto{sourceImmutableIcon}
-            </SubmenuItem>
-            <SubmenuItem action="rebaseAfter" onClick={() => sendCommand("rebaseAfter")}>
-              After{afterImmutableIcon}
-            </SubmenuItem>
-            <SubmenuItem action="rebaseBefore" onClick={() => sendCommand("rebaseBefore")}>
-              Before{immutableIcon}
-            </SubmenuItem>
-          </Submenu>
-          <Submenu action="rebaseWithDescendants" label="Rebase With Descendants">
-            <SubmenuItem action="rebaseOntoWithDescendants" onClick={() => sendCommand("rebaseOnto", true)}>
-              Onto{sourceImmutableIcon}
-            </SubmenuItem>
-            {!isTargetAlreadyParent && (
-              <SubmenuItem action="rebaseAddParentWithDescendants" onClick={() => sendCommand("rebaseAddParent")}>
-                Add Parent{sourceImmutableIcon}
-              </SubmenuItem>
-            )}
-            {isTargetAlreadyParent && (sourceChange?.parentChangeIds?.length ?? 0) >= 2 && (
-              <SubmenuItem action="rebaseRemoveParentWithDescendants" onClick={() => sendCommand("rebaseRemoveParent")}>
-                Remove Parent{sourceImmutableIcon}
-              </SubmenuItem>
-            )}
-            <SubmenuItem action="rebaseAfterWithDescendants" onClick={() => sendCommand("rebaseAfter", true)}>
-              After{afterImmutableIcon}
-            </SubmenuItem>
-            <SubmenuItem action="rebaseBeforeWithDescendants" onClick={() => sendCommand("rebaseBefore", true)}>
-              Before{immutableIcon}
-            </SubmenuItem>
-          </Submenu>
-          <MenuSeparator />
-          <MenuItem action="squashInto" onClick={() => sendCommand("squashInto")}>
-            Squash Into{immutableIcon}
-          </MenuItem>
-        </>
-      )}
+      <Submenu action="rebase" label="Rebase">
+        <SubmenuItem action="rebaseOnto" onClick={() => sendCommand("rebaseOnto")}>
+          Onto{sourceImmutableIcon}
+        </SubmenuItem>
+        <SubmenuItem action="rebaseAfter" onClick={() => sendCommand("rebaseAfter")}>
+          After{afterImmutableIcon}
+        </SubmenuItem>
+        <SubmenuItem action="rebaseBefore" onClick={() => sendCommand("rebaseBefore")}>
+          Before{immutableIcon}
+        </SubmenuItem>
+      </Submenu>
+      <Submenu action="rebaseWithDescendants" label="Rebase With Descendants">
+        <SubmenuItem action="rebaseOntoWithDescendants" onClick={() => sendCommand("rebaseOnto", true)}>
+          Onto{sourceImmutableIcon}
+        </SubmenuItem>
+        {!isTargetAlreadyParent && (
+          <SubmenuItem action="rebaseAddParentWithDescendants" onClick={() => sendCommand("rebaseAddParent")}>
+            Add Parent{sourceImmutableIcon}
+          </SubmenuItem>
+        )}
+        {isTargetAlreadyParent && (sourceChange?.parentChangeIds?.length ?? 0) >= 2 && (
+          <SubmenuItem action="rebaseRemoveParentWithDescendants" onClick={() => sendCommand("rebaseRemoveParent")}>
+            Remove Parent{sourceImmutableIcon}
+          </SubmenuItem>
+        )}
+        <SubmenuItem action="rebaseAfterWithDescendants" onClick={() => sendCommand("rebaseAfter", true)}>
+          After{afterImmutableIcon}
+        </SubmenuItem>
+        <SubmenuItem action="rebaseBeforeWithDescendants" onClick={() => sendCommand("rebaseBefore", true)}>
+          Before{immutableIcon}
+        </SubmenuItem>
+      </Submenu>
+      <MenuSeparator />
+      <MenuItem action="squashInto" onClick={() => sendCommand("squashInto")}>
+        Squash Into{immutableIcon}
+      </MenuItem>
       <Submenu action="duplicate" label="Duplicate">
         <SubmenuItem action="duplicateOnto" onClick={() => sendCommand("duplicateOnto")}>
           Onto{sourceImmutableIcon}

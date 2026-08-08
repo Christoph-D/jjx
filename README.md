@@ -91,7 +91,6 @@ system.
 
 - Show divergent changes in the graph and change view  
   ![divergent commits](images/divergent-commits.png)
-- Allow all meaningful operations on divergent changes
 
 ### 🙈 Hidden changes
 
