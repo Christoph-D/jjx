@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
-import { anyEvent, filterEvent, formatDiffTitle, normalizePath } from "./utils";
+import { anyEvent, filterEvent, formatChangeIdShort, formatDiffTitle, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -407,6 +407,8 @@ interface DiffSelection {
   to: string;
   fromIsWorkingCopy: boolean;
   toIsWorkingCopy: boolean;
+  fromChangeOffset: string | null;
+  toChangeOffset: string | null;
 }
 
 class RepositorySourceControlManager {
@@ -778,7 +780,7 @@ class RepositorySourceControlManager {
     }
 
     if (this.diffSelection && this.diffFileStatuses) {
-      const { from, to, fromIsWorkingCopy, toIsWorkingCopy } = this.diffSelection;
+      const { from, to, fromIsWorkingCopy, toIsWorkingCopy, fromChangeOffset, toChangeOffset } = this.diffSelection;
       // The resource group id encodes the current mode ("diff" vs "interdiff") so the
       // per-group inline quick actions (View Interdiff / View Regular Diff) and resource-state
       // context menus can target the right section. Recreate the group when the mode changes.
@@ -789,14 +791,16 @@ class RepositorySourceControlManager {
       if (!this.diffResourceGroup) {
         this.diffResourceGroup = this.sourceControl.createResourceGroup(this.diffMode, "");
       }
-      const fromShort = fromIsWorkingCopy ? "Working Copy" : from.substring(0, 8);
-      const toShort = toIsWorkingCopy ? "Working Copy" : to.substring(0, 8);
+      const fromShort = fromIsWorkingCopy ? "Working Copy" : formatChangeIdShort(from, fromChangeOffset);
+      const toShort = toIsWorkingCopy ? "Working Copy" : formatChangeIdShort(to, toChangeOffset);
       this.diffResourceGroup.label =
         this.diffMode === "interdiff" ? `Interdiff ${fromShort} → ${toShort}` : `Diff ${fromShort} → ${toShort}`;
       this.diffResourceGroup.resourceStates = buildComparisonDiffResourceStates(this.diffFileStatuses, {
         from,
         to,
         mode: this.diffMode,
+        fromChangeOffset,
+        toChangeOffset,
       });
     } else {
       this.diffResourceGroup?.dispose();
@@ -848,7 +852,12 @@ class RepositorySourceControlManager {
   async setDiffSelection(
     from?: string,
     to?: string,
-    options?: { fromIsWorkingCopy?: boolean; toIsWorkingCopy?: boolean },
+    options?: {
+      fromIsWorkingCopy?: boolean;
+      toIsWorkingCopy?: boolean;
+      fromChangeOffset?: string | null;
+      toChangeOffset?: string | null;
+    },
   ) {
     this.diffMode = "diff";
     if (from && to) {
@@ -857,6 +866,8 @@ class RepositorySourceControlManager {
         to,
         fromIsWorkingCopy: options?.fromIsWorkingCopy ?? false,
         toIsWorkingCopy: options?.toIsWorkingCopy ?? false,
+        fromChangeOffset: options?.fromChangeOffset ?? null,
+        toChangeOffset: options?.toChangeOffset ?? null,
       };
       this.diffFileStatuses = await this.repository.comparisonSummary("diff", from, to);
     } else {
@@ -961,11 +972,17 @@ function buildUntrackedResourceStates(fileStatuses: FileStatus[]): vscode.Source
 
 function buildComparisonDiffResourceStates(
   fileStatuses: FileStatus[],
-  options: { from: string; to: string; mode: "diff" | "interdiff" },
+  options: {
+    from: string;
+    to: string;
+    mode: "diff" | "interdiff";
+    fromChangeOffset: string | null;
+    toChangeOffset: string | null;
+  },
 ): vscode.SourceControlResourceState[] {
-  const { from, to, mode } = options;
-  const fromShort = from.substring(0, 8);
-  const toShort = to.substring(0, 8);
+  const { from, to, mode, fromChangeOffset, toChangeOffset } = options;
+  const fromShort = formatChangeIdShort(from, fromChangeOffset);
+  const toShort = formatChangeIdShort(to, toChangeOffset);
   const label = mode === "interdiff" ? "Interdiff" : "Diff";
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);

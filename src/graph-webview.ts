@@ -17,6 +17,7 @@ const rootChangeId = "z".repeat(32);
 export interface GraphSelection {
   changeId: string;
   currentWorkingCopy: boolean;
+  changeOffset: string | null;
 }
 
 type Message = WebviewToExtensionMessage;
@@ -503,7 +504,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   private resolveSelection(selectedIds: string[]): GraphSelection[] {
     return selectedIds.map((id) => {
       const node = this.currentChanges.find((c) => c.changeId === id);
-      return { changeId: id, currentWorkingCopy: node?.currentWorkingCopy ?? false };
+      return {
+        changeId: id,
+        currentWorkingCopy: node?.currentWorkingCopy ?? false,
+        changeOffset: node?.changeOffset ?? null,
+      };
     });
   }
 
