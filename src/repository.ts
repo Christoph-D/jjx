@@ -971,21 +971,24 @@ export class JJRepository {
     return this.splitLines(output).filter((r) => r !== "git");
   }
 
-  async getTagTrackingInfo(
-    tag: string,
-  ): Promise<{ trackedRemotes: string[]; unsyncedTrackedRemotes: string[]; untrackedRemotes: string[] }> {
+  /**
+   * For jj 0.44+ (tag tracking), returns the remotes a local tag can be pushed
+   * to: every remote where `<tag>@<remote>` is not synced.
+   */
+  async getTagTrackingInfo(tag: string): Promise<{ pushRemotes: string[] }> {
     const [trackingOutput, remotesOutput] = await Promise.all([
       this.jjCommandRead(["tag", "list", "--all-remotes", quoteJjName(tag), "-T", BOOKMARK_TRACKING_INFO_TEMPLATE]),
       this.jjCommandRead(["git", "remote", "list"]),
     ]);
-    const trackingEntries = this.splitLines(trackingOutput)
-      .map((line) => JSON.parse(line) as { remote: string; tracked: boolean; synced: boolean })
-      .filter((e) => e.remote !== "" && e.remote !== "git" && e.tracked);
-    const trackedRemotes = trackingEntries.map((e) => e.remote);
-    const unsyncedTrackedRemotes = trackingEntries.filter((e) => !e.synced).map((e) => e.remote);
+    const syncedRemotes = new Set(
+      this.splitLines(trackingOutput)
+        .map((line) => JSON.parse(line) as { remote: string; tracked: boolean; synced: boolean })
+        .filter((e) => e.remote !== "" && e.remote !== "git" && e.synced)
+        .map((e) => e.remote),
+    );
     const allRemotes = this.splitLines(remotesOutput).map((line) => line.split(/\s+/)[0]);
-    const untrackedRemotes = allRemotes.filter((r) => !trackedRemotes.includes(r));
-    return { trackedRemotes, unsyncedTrackedRemotes, untrackedRemotes };
+    const pushRemotes = allRemotes.filter((r) => !syncedRemotes.has(r));
+    return { pushRemotes };
   }
 
   async trackTag(tag: string, remote: string): Promise<void> {

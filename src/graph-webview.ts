@@ -283,9 +283,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             this.panel?.webview.postMessage({
               command: "tagTrackingRemotesResponse",
               tag: message.tag,
-              remotes: info.trackedRemotes,
-              unsyncedRemotes: info.unsyncedTrackedRemotes,
-              untrackedRemotes: info.untrackedRemotes,
+              remotes: info.pushRemotes,
             });
           } catch (error: unknown) {
             showErrorMessage("Failed to get tag tracking remotes", error);
@@ -293,8 +291,6 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               command: "tagTrackingRemotesResponse",
               tag: message.tag,
               remotes: [],
-              unsyncedRemotes: [],
-              untrackedRemotes: [],
             });
           }
           break;

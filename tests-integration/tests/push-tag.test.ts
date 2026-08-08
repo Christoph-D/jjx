@@ -19,8 +19,8 @@ async function setupRemotesWithTrackedTag(testRepo: TestRepo, graphFrame: Frame)
   const tagPill = graphFrame.locator('[data-tag="my-tag"]');
   await expect(tagPill).toBeVisible();
 
-  await clickPillMenuItem(graphFrame, tagPill, "Track on remote-a");
-  await clickPillMenuItem(graphFrame, tagPill, "Track on remote-b");
+  await testRepo.jjCommand(["tag", "track", "my-tag", "--remote=remote-a"]);
+  await testRepo.jjCommand(["tag", "track", "my-tag", "--remote=remote-b"]);
 
   return { remoteARepo, remoteBRepo, tagPill };
 }
@@ -89,39 +89,32 @@ test("push tag to single remote via context menu", async ({ graphFrame, testRepo
   await expect(unsyncedPill).not.toBeVisible();
 });
 
-test("push tag to one remote and untrack from another", async ({ graphFrame, testRepo }) => {
+test("tag context menu offers push and delete but never track/untrack", async ({ graphFrame, testRepo }) => {
   test.slow();
-  const { remoteARepo, tagPill } = await setupRemotesWithTrackedTag(testRepo, graphFrame);
+  const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
+  const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
+  await newTestRepo(remoteAPath);
+  await newTestRepo(remoteBPath);
+  await testRepo.jjCommand(["git", "remote", "add", "remote-a", remoteAPath]);
+  await testRepo.jjCommand(["git", "remote", "add", "remote-b", remoteBPath]);
 
-  const uploadIcon = tagPill.locator('[data-role="push-icon"]');
-  await expect(uploadIcon).toBeVisible();
-  await uploadIcon.click();
+  await testRepo.commitFile("test.txt", "content", "initial commit");
+  await testRepo.createTag("menu-tag", "@-");
 
-  const unsyncedPill = graphFrame.locator('[data-tag="my-tag"][data-unsynced]');
-  await expect(unsyncedPill).not.toBeVisible();
+  const tagPill = graphFrame.locator('[data-tag="menu-tag"]');
+  await expect(tagPill).toBeVisible();
 
-  const changeId = await testRepo.commitFile("new.txt", "new content", "second commit");
-  await testRepo.jjCommand(["tag", "set", "-r", "@-", "my-tag", "--allow-move"]);
-  await expect(unsyncedPill).toBeVisible();
-
-  await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");
-
-  await expect(async () => {
-    const showResult = await remoteARepo.jjCommand(["show", changeId]);
-    expect(showResult.exitCode).toBe(0);
-  }).toPass();
-
-  // remote-b is still out of sync, but untracking it removes it as a push target,
-  // so the tag is considered in sync again.
-  await clickPillMenuItem(graphFrame, tagPill, "Untrack from remote-b");
-  await expect(unsyncedPill).not.toBeVisible();
-
-  await clickPillMenuItem(graphFrame, tagPill, "Untrack from remote-a");
-
-  await expect(async () => {
-    const trackedResult = await testRepo.jjCommand(["tag", "list", "my-tag", "--tracked"]);
-    expect(trackedResult.stdout.trim()).toBe("");
-  }).toPass();
+  // Neither remote has the tag yet, so both are push targets.
+  await tagPill.click({ button: "right" });
+  const menu = graphFrame.locator("#pill-context-menu");
+  await expect(menu).toBeVisible();
+  await expect(menu.locator("[data-action]").filter({ hasText: "Push to remote-a" })).toBeVisible();
+  await expect(menu.locator("[data-action]").filter({ hasText: "Push to remote-b" })).toBeVisible();
+  await expect(menu.locator("[data-action]").filter({ hasText: "Track on" })).toHaveCount(0);
+  await expect(menu.locator("[data-action]").filter({ hasText: "Untrack from" })).toHaveCount(0);
+  await expect(menu.locator("[data-action]").filter({ hasText: "Delete Tag" })).toBeVisible();
+  await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
+  await expect(menu).not.toBeVisible();
 });
 
 const JJ_038_PATH = process.env.JJX_JJ_038_PATH ?? "/usr/local/bin/jj-0.38";
@@ -169,8 +162,6 @@ testJJ038(
     const tagPill = graphFrame.locator('[data-tag="test-tag"]');
     await expect(tagPill).toBeVisible();
 
-    // Without tracking support there is no push-all icon on the pill, only a
-    // per-remote "Push to <remote>" entry in the context menu.
     await expect(tagPill.locator('[data-role="push-icon"]')).not.toBeVisible();
 
     await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");

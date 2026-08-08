@@ -156,13 +156,7 @@ export type ExtensionToWebviewMessage =
     }
   | { command: "tagPushRemotesResponse"; tag: string; pushRemotes: string[] }
   | { command: "pushBookmarkDone"; bookmark: string }
-  | {
-      command: "tagTrackingRemotesResponse";
-      tag: string;
-      remotes: string[];
-      unsyncedRemotes?: string[];
-      untrackedRemotes?: string[];
-    }
+  | { command: "tagTrackingRemotesResponse"; tag: string; remotes: string[] }
   | { command: "pushTagDone"; tag: string }
   | {
       command: "remoteRefStatusResponse";

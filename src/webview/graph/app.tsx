@@ -146,10 +146,6 @@ export function App() {
             pillContextMenu.value = {
               ...state,
               remotes: message.remotes.length > 0 ? message.remotes : undefined,
-              unsyncedRemotes:
-                message.unsyncedRemotes && message.unsyncedRemotes.length > 0 ? message.unsyncedRemotes : undefined,
-              untrackedRemotes:
-                message.untrackedRemotes && message.untrackedRemotes.length > 0 ? message.untrackedRemotes : undefined,
               pendingRemotes: undefined,
             };
           }

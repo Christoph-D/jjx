@@ -35,7 +35,7 @@ async function setupTrackedAndPushedTag(testRepo: TestRepo, graphFrame: Frame) {
 
   const tagPill = graphFrame.locator('[data-tag="my-tag"]');
   await expect(tagPill).toBeVisible();
-  await clickPillMenuItem(graphFrame, tagPill, "Track on remote-a");
+  await testRepo.jjCommand(["tag", "track", "my-tag", "--remote=remote-a"]);
   const uploadIcon = tagPill.locator('[data-role="push-icon"]');
   await expect(uploadIcon).toBeVisible();
   await uploadIcon.click();

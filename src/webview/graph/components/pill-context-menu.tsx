@@ -1,4 +1,4 @@
-import { pillContextMenu, supportsTagTracking, vscode } from "../signals";
+import { pillContextMenu, vscode } from "../signals";
 import { Menu, MenuItem, MenuSeparator } from "./menu-container";
 
 export function PillContextMenu() {
@@ -8,15 +8,16 @@ export function PillContextMenu() {
   }
 
   const isBookmark = state.type === "bookmark";
-  // Tags gain bookmark-style tracking (track/untrack/push) on jj 0.44+. Older
-  // jj versions only support pushing tags directly via git.
-  const trackingEnabled = isBookmark || supportsTagTracking.value;
+  const isTag = state.type === "tag";
+  // Don't show track/untrack for tags because tags are not supposed to move,
+  // so tracking has limited value beyond tracking deletion.
+  const trackingEnabled = isBookmark;
   const deleteLabel = isBookmark ? "Delete Bookmark" : "Delete Tag";
   const deleteCommand = isBookmark ? "deleteBookmark" : "deleteTag";
   const deletePayload = isBookmark ? { bookmark: state.name } : { tag: state.name };
 
   const showPush = trackingEnabled && state.unsyncedRemotes && state.unsyncedRemotes.length > 0;
-  const showTagPush = !trackingEnabled && state.remotes && state.remotes.length > 0;
+  const showTagPush = isTag && state.remotes && state.remotes.length > 0;
   const showTrack = trackingEnabled && state.untrackedRemotes && state.untrackedRemotes.length > 0;
   const showUntrack = trackingEnabled && state.remotes && state.remotes.length > 0;
 
