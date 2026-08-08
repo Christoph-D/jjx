@@ -104,7 +104,7 @@ interface RemoteRefContextMenuState {
   pageY: number;
   changeDoubleClickAction: string;
   pendingStatus?: boolean;
-  action?: "delete" | "push";
+  action?: "delete" | "push" | "track";
 }
 
 export const remoteRefContextMenu = signal<RemoteRefContextMenuState | null>(null);

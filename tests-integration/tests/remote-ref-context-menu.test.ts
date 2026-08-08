@@ -52,7 +52,7 @@ test("delete bookmark from remote via remote pill context menu", async ({ graphF
   const remotePill = graphFrame.locator('[data-remote-bookmark="my-bookmark"][data-remote="remote-a"]');
   await expect(remotePill).toBeVisible();
 
-  await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete from remote-a");
+  await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete Bookmark from remote-a");
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toBeVisible();
@@ -74,7 +74,7 @@ test("cancel deletion does not delete the bookmark from the remote", async ({ gr
   const remotePill = graphFrame.locator('[data-remote-bookmark="my-bookmark"][data-remote="remote-a"]');
   await expect(remotePill).toBeVisible();
 
-  await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete from remote-a");
+  await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete Bookmark from remote-a");
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toBeVisible();
@@ -94,7 +94,7 @@ test("delete tag from remote via remote pill context menu", async ({ graphFrame,
   const remotePill = graphFrame.locator('[data-remote-tag="my-tag"][data-remote="remote-a"]');
   await expect(remotePill).toBeVisible();
 
-  await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete from remote-a");
+  await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete Tag from remote-a");
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toBeVisible();
@@ -108,7 +108,7 @@ test("delete tag from remote via remote pill context menu", async ({ graphFrame,
   }).toPass();
 });
 
-test("right-click on untracked remote bookmark falls back to change menu", async ({ graphFrame, testRepo }) => {
+test("track untracked remote bookmark via remote pill context menu", async ({ graphFrame, testRepo }) => {
   test.slow();
   const { "remote-src": remoteSrcRepo } = await setupRemotes(testRepo, "remote-src");
   await remoteSrcRepo.commitFile("remote.txt", "content", "remote commit");
@@ -123,10 +123,32 @@ test("right-click on untracked remote bookmark falls back to change menu", async
   const remotePill = graphFrame.locator('[data-remote-bookmark="remote-only-bookmark"][data-remote="remote-src"]');
   await expect(remotePill).toBeVisible();
 
-  await remotePill.click({ button: "right" });
+  // Untracked remote ref -> a remote-ref menu offering to track it.
+  await clickRemoteRefMenuItem(graphFrame, remotePill, "Track Bookmark from remote-src");
 
-  // Untracked remote ref -> no remote-ref menu, right-click passes through to
-  // the change context menu.
-  await expect(graphFrame.locator("#context-menu")).toBeVisible();
-  await expect(graphFrame.locator("#remote-ref-context-menu")).not.toBeVisible();
+  // Tracking creates a matching local bookmark, so the remote-only pill
+  // disappears and a local bookmark pill takes its place.
+  await expect(remotePill).not.toBeVisible();
+  await expect(graphFrame.locator('[data-bookmark="remote-only-bookmark"]')).toBeVisible();
+});
+
+test("track untracked remote tag via remote pill context menu", async ({ graphFrame, testRepo }) => {
+  test.slow();
+  const { "remote-src": remoteSrcRepo } = await setupRemotes(testRepo, "remote-src");
+  await remoteSrcRepo.commitFile("remote.txt", "content", "remote commit");
+  await remoteSrcRepo.createTag("remote-only-tag", "@-");
+
+  await testRepo.jjCommand(["git", "fetch", "--remote", "remote-src", "--tag", "remote-only-tag"]);
+  await testRepo.jjCommand(["new", "remote-only-tag@remote-src"]);
+  await testRepo.jjCommand(["tag", "delete", "remote-only-tag"]);
+  await testRepo.jjCommand(["tag", "untrack", "remote-only-tag"]);
+
+  const remotePill = graphFrame.locator('[data-remote-tag="remote-only-tag"][data-remote="remote-src"]');
+  await expect(remotePill).toBeVisible();
+
+  await clickRemoteRefMenuItem(graphFrame, remotePill, "Track Tag from remote-src");
+
+  // Tracking creates a matching local tag, so the remote-only pill disappears.
+  await expect(remotePill).not.toBeVisible();
+  await expect(graphFrame.locator('[data-tag="remote-only-tag"]')).toBeVisible();
 });

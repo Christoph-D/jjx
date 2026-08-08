@@ -1,4 +1,4 @@
-import { remoteRefContextMenu, vscode } from "../signals";
+import { remoteRefContextMenu, supportsTagTracking, vscode } from "../signals";
 import { Menu, MenuItem } from "./menu-container";
 
 export function RemoteRefContextMenu() {
@@ -8,6 +8,7 @@ export function RemoteRefContextMenu() {
   }
 
   if (state.action === "delete") {
+    const deleteLabel = isBookmark ? "Delete Bookmark" : "Delete Tag";
     return (
       <Menu id="remote-ref-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
         <MenuItem
@@ -22,7 +23,41 @@ export function RemoteRefContextMenu() {
             remoteRefContextMenu.value = null;
           }}
         >
-          Delete from {state.remote}
+          {deleteLabel} from {state.remote}
+        </MenuItem>
+      </Menu>
+    );
+  }
+
+  if (state.action === "track") {
+    const isBookmark = state.type === "bookmark";
+    // Tags require jj 0.44+ for remote tracking; older versions only support
+    // pushing tags directly via git and cannot track them.
+    if (!isBookmark && !supportsTagTracking.value) {
+      return (
+        <Menu id="remote-ref-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
+          <MenuItem action="trackRemoteRefUnavailable" disabled>
+            Unavailable: Tag tracking requires jj v0.44+
+          </MenuItem>
+        </Menu>
+      );
+    }
+    const label = isBookmark ? "Track Bookmark" : "Track Tag";
+    const refKey = isBookmark ? "bookmark" : "tag";
+    return (
+      <Menu id="remote-ref-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
+        <MenuItem
+          action="trackRemoteRef"
+          onClick={() => {
+            vscode.postMessage({
+              command: isBookmark ? "trackBookmark" : "trackTag",
+              [refKey]: state.name,
+              remote: state.remote,
+            });
+            remoteRefContextMenu.value = null;
+          }}
+        >
+          {label} from {state.remote}
         </MenuItem>
       </Menu>
     );

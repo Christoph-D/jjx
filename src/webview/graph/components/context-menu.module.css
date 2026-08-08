@@ -29,6 +29,12 @@
   color: var(--vscode-menu-selectionForeground);
 }
 
+.contextMenuItem.disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
 .hasSubmenu {
   position: relative;
 }

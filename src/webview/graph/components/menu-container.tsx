@@ -78,13 +78,20 @@ export function Menu({ state, children, ...rest }: MenuProps) {
 
 interface MenuItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "class" | "style" | "ref"> {
   action: string;
+  disabled?: boolean;
   children: ComponentChildren;
 }
 
-export function MenuItem({ action, children, ...rest }: MenuItemProps) {
+export function MenuItem({ action, disabled, children, ...rest }: MenuItemProps) {
   const { setActiveId } = useMenuContext();
   return (
-    <div {...rest} class={styles.contextMenuItem} data-action={action} onMouseEnter={() => setActiveId(null)}>
+    <div
+      {...rest}
+      class={cx(styles.contextMenuItem, disabled && styles.disabled)}
+      data-action={action}
+      aria-disabled={disabled || undefined}
+      onMouseEnter={() => setActiveId(null)}
+    >
       {children}
     </div>
   );

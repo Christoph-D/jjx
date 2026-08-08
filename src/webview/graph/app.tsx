@@ -25,7 +25,6 @@ import {
   showChangedFiles,
   pillContextMenu,
   remoteRefContextMenu,
-  contextMenu,
   closeAllMenus,
 } from "./signals";
 import { Graph } from "./components/graph";
@@ -179,24 +178,14 @@ export function App() {
           ) {
             break;
           }
-          // Only a tracked, unsynced remote ref warrants a menu. In every other
-          // case (including lookup failure) fall back to the change context menu
-          // so the right-click behaves like a normal change right-click.
+          // A tracked, unsynced remote ref can be pushed (or deleted when the
+          // local ref is gone). In every other case (untracked, already synced,
+          // or lookup failure) offer to track the ref from this remote instead.
           const actionable = message.found && message.tracked && !message.synced;
-          if (!actionable) {
-            remoteRefContextMenu.value = null;
-            contextMenu.value = {
-              change: state.change,
-              pageX: state.pageX,
-              pageY: state.pageY,
-              changeDoubleClickAction: state.changeDoubleClickAction,
-            };
-            break;
-          }
           remoteRefContextMenu.value = {
             ...state,
             pendingStatus: undefined,
-            action: message.present ? "push" : "delete",
+            action: actionable ? (message.present ? "push" : "delete") : "track",
           };
           break;
         }
