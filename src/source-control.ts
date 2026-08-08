@@ -401,6 +401,14 @@ export function provideOriginalResource(uri: vscode.Uri) {
 
 export type ForceRefresh = "force" | "if-changed";
 
+// A from/to comparison selection in the SCM view.
+interface DiffSelection {
+  from: string;
+  to: string;
+  fromIsWorkingCopy: boolean;
+  toIsWorkingCopy: boolean;
+}
+
 class RepositorySourceControlManager {
   subscriptions: {
     dispose(): unknown;
@@ -413,7 +421,7 @@ class RepositorySourceControlManager {
   selectedCommitShowResult: Show | undefined;
   selectedCommitChangeId: string | undefined;
   diffResourceGroup: vscode.SourceControlResourceGroup | undefined;
-  diffSelection: { from: string; to: string } | undefined;
+  diffSelection: DiffSelection | undefined;
   diffFileStatuses: FileStatus[] | undefined;
   diffMode: "diff" | "interdiff" = "diff";
   repository: JJRepository;
@@ -770,7 +778,7 @@ class RepositorySourceControlManager {
     }
 
     if (this.diffSelection && this.diffFileStatuses) {
-      const { from, to } = this.diffSelection;
+      const { from, to, fromIsWorkingCopy, toIsWorkingCopy } = this.diffSelection;
       // The resource group id encodes the current mode ("diff" vs "interdiff") so the
       // per-group inline quick actions (View Interdiff / View Regular Diff) and resource-state
       // context menus can target the right section. Recreate the group when the mode changes.
@@ -781,8 +789,8 @@ class RepositorySourceControlManager {
       if (!this.diffResourceGroup) {
         this.diffResourceGroup = this.sourceControl.createResourceGroup(this.diffMode, "");
       }
-      const fromShort = from.substring(0, 8);
-      const toShort = to.substring(0, 8);
+      const fromShort = fromIsWorkingCopy ? "Working Copy" : from.substring(0, 8);
+      const toShort = toIsWorkingCopy ? "Working Copy" : to.substring(0, 8);
       this.diffResourceGroup.label =
         this.diffMode === "interdiff" ? `Interdiff ${fromShort} → ${toShort}` : `Diff ${fromShort} → ${toShort}`;
       this.diffResourceGroup.resourceStates = buildComparisonDiffResourceStates(this.diffFileStatuses, {
@@ -837,10 +845,19 @@ class RepositorySourceControlManager {
    * Called when the graph selection changes. Selecting two changes shows a from/to diff
    * by default and resets any prior interdiff toggle.
    */
-  async setDiffSelection(from?: string, to?: string) {
+  async setDiffSelection(
+    from?: string,
+    to?: string,
+    options?: { fromIsWorkingCopy?: boolean; toIsWorkingCopy?: boolean },
+  ) {
     this.diffMode = "diff";
     if (from && to) {
-      this.diffSelection = { from, to };
+      this.diffSelection = {
+        from,
+        to,
+        fromIsWorkingCopy: options?.fromIsWorkingCopy ?? false,
+        toIsWorkingCopy: options?.toIsWorkingCopy ?? false,
+      };
       this.diffFileStatuses = await this.repository.comparisonSummary("diff", from, to);
     } else {
       this.diffSelection = undefined;

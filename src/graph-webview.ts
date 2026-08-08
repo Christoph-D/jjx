@@ -14,6 +14,11 @@ import { toJJUri } from "./uri";
 
 const rootChangeId = "z".repeat(32);
 
+export interface GraphSelection {
+  changeId: string;
+  currentWorkingCopy: boolean;
+}
+
 type Message = WebviewToExtensionMessage;
 
 export class JJGraphWebview implements vscode.WebviewViewProvider {
@@ -27,8 +32,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   private currentChanges: ChangeNode[] = [];
   private elideOverride: boolean | null = null;
 
-  private _onDidChangeSelection = new vscode.EventEmitter<string[]>();
-  readonly onDidChangeSelection: vscode.Event<string[]> = this._onDidChangeSelection.event;
+  private _onDidChangeSelection = new vscode.EventEmitter<GraphSelection[]>();
+  readonly onDidChangeSelection: vscode.Event<GraphSelection[]> = this._onDidChangeSelection.event;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -117,7 +122,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "selectChange":
           this.selectedNodes = new Set(message.selectedNodes);
           vscode.commands.executeCommand("setContext", "jjGraphView.nodesSelected", message.selectedNodes.length);
-          this._onDidChangeSelection.fire(message.selectedNodes);
+          this._onDidChangeSelection.fire(this.resolveSelection(message.selectedNodes));
           break;
         case "moveBookmark":
           try {
@@ -490,6 +495,18 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     await this.refresh();
   }
 
+  /**
+   * Maps selected change IDs to {@link GraphSelection} entries, attaching the
+   * working-copy flag from the rendered graph nodes so listeners can detect the
+   * working copy without comparing change IDs.
+   */
+  private resolveSelection(selectedIds: string[]): GraphSelection[] {
+    return selectedIds.map((id) => {
+      const node = this.currentChanges.find((c) => c.changeId === id);
+      return { changeId: id, currentWorkingCopy: node?.currentWorkingCopy ?? false };
+    });
+  }
+
   public async setSelectedRepository(repo: JJRepository) {
     const prevRoot = this.repository?.repositoryRoot;
     this.repository = repo;
@@ -634,7 +651,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       // If any selected changes were removed (e.g. abandoned), notify listeners so the
       // SCM view can clear its stale sections.
       if (this.selectedNodes.size !== previousSelectedNodes.size) {
-        this._onDidChangeSelection.fire(Array.from(this.selectedNodes));
+        this._onDidChangeSelection.fire(this.resolveSelection(Array.from(this.selectedNodes)));
       }
       const changeDoubleClickAction = config.get<string>("changeDoubleClickAction") || "edit";
 
