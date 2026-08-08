@@ -327,12 +327,12 @@
         },
         {
           "command": "jj.openParentChange",
-          "when": "jj.reposExist",
+          "when": "jj.reposExist && !jj.comparisonDiffActive",
           "group": "navigation@2"
         },
         {
           "command": "jj.openChildChange",
-          "when": "jj.reposExist",
+          "when": "jj.reposExist && !jj.comparisonDiffActive",
           "group": "navigation@3"
         }
       ],
