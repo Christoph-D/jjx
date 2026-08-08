@@ -176,9 +176,10 @@ export class TestRepo {
     for (let attempt = 0; ; attempt++) {
       const result = await new Promise<JJCommandResult>((resolve) => {
         execFile(jjPath, fullArgs, { cwd: this.repoPath, timeout: 10000 }, (error, stdout, stderr) => {
+          const stderrText = stderr?.toString() ?? "";
           resolve({
             stdout: stdout?.toString() ?? "",
-            stderr: stderr?.toString() ?? "",
+            stderr: stderrText.length > 0 ? stderrText : (error?.message ?? ""),
             exitCode: error ? (typeof error.code === "number" ? error.code : 1) : 0,
           });
         });
@@ -228,6 +229,30 @@ export async function newTestRepo(repoPath: string, options: NewTestRepoOptions 
   } else if (options.colocate === false) {
     initArgs.push("--no-colocate");
   }
-  await repo.jjCommand(initArgs);
-  return repo;
+
+  const maxAttempts = 3;
+  let lastResult: JJCommandResult | undefined;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    lastResult = await repo.jjCommand(initArgs);
+    let jjExists: boolean;
+    try {
+      await fs.access(path.join(repoPath, ".jj"));
+      jjExists = true;
+    } catch {
+      jjExists = false;
+    }
+    if (lastResult.exitCode === 0 && jjExists) {
+      return repo;
+    }
+    if (jjExists) {
+      break;
+    }
+    if (attempt < maxAttempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+  throw new Error(
+    `Failed to initialize jj repository at ${repoPath}: \`jj git init\` exited with code ${lastResult!.exitCode}. ` +
+      `stdout=${lastResult!.stdout.trim()} stderr=${lastResult!.stderr.trim()}`,
+  );
 }
