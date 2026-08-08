@@ -1,5 +1,26 @@
 # Change Log
 
+## 1.12.0
+
+### New Features
+
+- **Remote bookmark/tag pill context menu** - Right-clicking a remote bookmark or tag pill (`<name>@<remote>`) now opens
+  a context menu with remote-specific actions such as deleting a locally-deleted bookmark from the remote.
+- **Tag tracking on remotes (jj 0.44+)** - Tags now support tracking on remotes, mirroring bookmarks. Older jj versions
+  keep the previous behavior of pushing tags directly via `git push`.
+- **From/to diff for two-change selection** - Selecting two changes in the graph now shows a from/to diff
+  (`jj diff --from --to`) by default instead of an interdiff. A button toggles the diff to an interdiff.
+- **Allow immutable changes as drag sources** - Immutable changes can now be used as drag sources in the graph.
+
+### Bug Fixes
+
+- Prompt before modifying immutable commits when using Duplicate and Revert drag&drop, consistent with other
+  target-modifying operations
+- Show an "immutable" icon in the rebase menu items to indicate operations that are guaranteed to change immutable
+  changes
+- Use modal dialogs for all confirmation prompts for consistency
+- Hide the Open Parent/Child Change buttons in complex (two-change) diffs where they are meaningless
+
 ## 1.11.0
 
 ### New Features
