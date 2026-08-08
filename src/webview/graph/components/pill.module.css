@@ -9,10 +9,14 @@
   vertical-align: middle;
 }
 
-.bookmarkPill {
-  background-color: var(--bookmark-pill-bg);
+.bookmarkPill,
+.tagPill {
   display: inline-flex;
   align-items: center;
+}
+
+.bookmarkPill {
+  background-color: var(--bookmark-pill-bg);
 }
 
 .tagPill {
@@ -32,7 +36,8 @@
   content: "*";
 }
 
-.bookmarkPill .bookmarkPushIcon {
+.bookmarkPill .bookmarkPushIcon,
+.tagPill .bookmarkPushIcon {
   cursor: pointer;
   margin-right: 4px;
 }
@@ -45,20 +50,24 @@
   cursor: grabbing;
 }
 
-.bookmarkPill .bookmarkPushIcon:hover {
+.bookmarkPill .bookmarkPushIcon:hover,
+.tagPill .bookmarkPushIcon:hover {
   background-color: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
 
-.bookmarkPill .bookmarkPushIcon:active {
+.bookmarkPill .bookmarkPushIcon:active,
+.tagPill .bookmarkPushIcon:active {
   opacity: 0.7;
 }
 
-.bookmarkPill .bookmarkPushingIcon {
+.bookmarkPill .bookmarkPushingIcon,
+.tagPill .bookmarkPushingIcon {
   cursor: default;
 }
 
-.bookmarkPill .bookmarkPushingIcon:hover {
+.bookmarkPill .bookmarkPushingIcon:hover,
+.tagPill .bookmarkPushingIcon:hover {
   background-color: transparent;
   border-radius: 0;
 }

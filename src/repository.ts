@@ -38,7 +38,7 @@ import {
   consumeEditorSession,
   openRecoveredEditor,
 } from "./jj-editor";
-import { TIMEOUTS, type JJVersion } from "./constants";
+import { TIMEOUTS, type JJVersion, versionAtLeast, JJ_VERSION_WITH_TAG_TRACKING } from "./constants";
 import { withDivergenceHandling } from "./divergence-handling";
 import type {
   FileStatus,
@@ -856,7 +856,22 @@ export class JJRepository {
     return this.splitLines(output).map((line) => line.split(/\s+/)[0]);
   }
 
+  /**
+   * jj 0.44 introduced tag tracking on remotes (`jj tag track`/`untrack` and
+   * `jj git push --tag`), mirroring bookmark tracking. When this is false, tags
+   * fall back to being pushed directly via `git push`.
+   */
+  supportsTagTracking(): boolean {
+    return !!this.jjVersion && versionAtLeast(this.jjVersion, JJ_VERSION_WITH_TAG_TRACKING);
+  }
+
   async pushTagToRemote(tag: string, remote: string): Promise<void> {
+    if (this.supportsTagTracking()) {
+      await this.jjCommand(["git", "push", "--tag", quoteJjName(tag), "--remote", remote], {
+        timeout: TIMEOUTS.GIT_FETCH,
+      });
+      return;
+    }
     const gitDir = await this.getGitDir();
     await collectProcessOutput(
       spawn("git", ["push", remote, tag], {
@@ -864,6 +879,84 @@ export class JJRepository {
         env: { ...process.env, GIT_DIR: gitDir },
       }),
     );
+  }
+
+  async getTagsWithUnsyncedNonGitRemotes(operationId?: string): Promise<Set<string>> {
+    const output = (
+      await this.jjCommandRead(
+        ["tag", "list", "-T", `if(remote != "" && tracked && !synced && remote != "git", name ++ "\\n", "")`],
+        undefined,
+        operationId,
+      )
+    )
+      .toString()
+      .trim();
+    if (!output) {
+      return new Set();
+    }
+    return new Set(this.splitLines(output));
+  }
+
+  async getTagTrackingRemotes(tag: string, unsyncedOnly = false): Promise<string[]> {
+    const filter = unsyncedOnly ? "tracked && !synced" : "tracked";
+    const output = (
+      await this.jjCommandRead([
+        "tag",
+        "list",
+        "--all-remotes",
+        quoteJjName(tag),
+        "-T",
+        `if(remote != "", if(${filter}, remote ++ "\\n", ""), "")`,
+      ])
+    )
+      .toString()
+      .trim();
+    return this.splitLines(output).filter((r) => r !== "git");
+  }
+
+  async getTagTrackingInfo(
+    tag: string,
+  ): Promise<{ trackedRemotes: string[]; unsyncedTrackedRemotes: string[]; untrackedRemotes: string[] }> {
+    const [trackingOutput, remotesOutput] = await Promise.all([
+      this.jjCommandRead(["tag", "list", "--all-remotes", quoteJjName(tag), "-T", BOOKMARK_TRACKING_INFO_TEMPLATE]),
+      this.jjCommandRead(["git", "remote", "list"]),
+    ]);
+    const trackingEntries = this.splitLines(trackingOutput)
+      .map((line) => JSON.parse(line) as { remote: string; tracked: boolean; synced: boolean })
+      .filter((e) => e.remote !== "" && e.remote !== "git" && e.tracked);
+    const trackedRemotes = trackingEntries.map((e) => e.remote);
+    const unsyncedTrackedRemotes = trackingEntries.filter((e) => !e.synced).map((e) => e.remote);
+    const allRemotes = this.splitLines(remotesOutput).map((line) => line.split(/\s+/)[0]);
+    const untrackedRemotes = allRemotes.filter((r) => !trackedRemotes.includes(r));
+    return { trackedRemotes, unsyncedTrackedRemotes, untrackedRemotes };
+  }
+
+  async trackTag(tag: string, remote: string): Promise<void> {
+    await this.jjCommand(["tag", "track", quoteJjName(tag), `--remote=${remote}`]);
+  }
+
+  async untrackTag(tag: string, remote: string): Promise<void> {
+    await this.jjCommand(["tag", "untrack", quoteJjName(tag), `--remote=${remote}`]);
+  }
+
+  async pushTag(tag: string): Promise<string[]> {
+    const remotes = await this.getTagTrackingRemotes(tag, true);
+    if (remotes.length === 0) {
+      return [];
+    }
+    const failedRemoteErrors: string[] = [];
+    for (const remote of remotes) {
+      try {
+        await this.pushTagToRemote(tag, remote);
+      } catch (e) {
+        const reason = e instanceof ProcessError ? e.stderr : e instanceof Error ? e.message : String(e);
+        failedRemoteErrors.push(`${remote}: ${reason}`);
+      }
+    }
+    if (failedRemoteErrors.length > 0) {
+      throw new Error(`Failed to push tag "${tag}":\n${failedRemoteErrors.join("\n")}`);
+    }
+    return remotes;
   }
 
   async absorb(fromRev: string) {

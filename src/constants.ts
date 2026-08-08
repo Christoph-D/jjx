@@ -36,6 +36,12 @@ export function versionAtLeast(v: JJVersion, target: JJVersion): boolean {
  */
 export const JJ_VERSION_WITH_OPERATION_ATTRIBUTES: JJVersion = { major: 0, minor: 41, patch: 0 };
 
+/**
+ * jj 0.44 introduced tag tracking on remotes (`jj tag track`/`jj tag untrack`),
+ * mirroring bookmark tracking.
+ */
+export const JJ_VERSION_WITH_TAG_TRACKING: JJVersion = { major: 0, minor: 44, patch: 0 };
+
 // Backoff before reconciling divergent operation heads. The randomized delay breaks the phase-lock
 // between multiple jjx instances sharing one repository (e.g. over a network/shared filesystem),
 // so their reconciliations cannot sustain a cascade.

@@ -22,6 +22,8 @@ import {
   pillContextMenu,
   closeAllMenus,
   pushingBookmarks,
+  pushingTags,
+  supportsTagTracking,
   hoveredChangeId,
   currentChanges,
   connectedHighlight,
@@ -333,9 +335,30 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                 pageY: e.pageY,
                 pendingRemotes: true,
               };
-              vscode.postMessage({ command: "getTagPushRemotes", tag: t.name });
+              vscode.postMessage({
+                command: supportsTagTracking.value ? "getTagTrackingRemotes" : "getTagPushRemotes",
+                tag: t.name,
+              });
             }}
           >
+            {supportsTagTracking.value &&
+              !t.synced &&
+              !t.conflict &&
+              t.showPushButton !== false &&
+              (pushingTags.value.has(t.name) ? (
+                <BookmarkPushIcon pushing={true} title="Pushing..." />
+              ) : (
+                <BookmarkPushIcon
+                  title="Push to all tracking remotes"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newSet = new Set(pushingTags.value);
+                    newSet.add(t.name);
+                    pushingTags.value = newSet;
+                    vscode.postMessage({ command: "pushTag", tag: t.name });
+                  }}
+                />
+              ))}
             {abbreviateName(t.name)}
           </TagPill>
         ))}

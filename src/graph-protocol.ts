@@ -93,6 +93,10 @@ export type WebviewToExtensionMessage =
   | { command: "deleteTag"; tag: string }
   | { command: "getTagPushRemotes"; tag: string }
   | { command: "pushTagToRemote"; tag: string; remote: string }
+  | { command: "getTagTrackingRemotes"; tag: string }
+  | { command: "trackTag"; tag: string; remote: string }
+  | { command: "untrackTag"; tag: string; remote: string }
+  | { command: "pushTag"; tag: string }
   | { command: "describeChange"; changeId: string }
   | { command: "absorbChange"; changeId: string }
   | { command: "abandonChange"; changeId: string }
@@ -132,6 +136,7 @@ export type ExtensionToWebviewMessage =
       preserveScroll: boolean;
       showTooltips: boolean;
       showChangedFiles: boolean;
+      supportsTagTracking: boolean;
     }
   | { command: "showStaleState" }
   | { command: "showJJNotFoundState" }
@@ -146,4 +151,12 @@ export type ExtensionToWebviewMessage =
       untrackedRemotes?: string[];
     }
   | { command: "tagPushRemotesResponse"; tag: string; pushRemotes: string[] }
-  | { command: "pushBookmarkDone"; bookmark: string };
+  | { command: "pushBookmarkDone"; bookmark: string }
+  | {
+      command: "tagTrackingRemotesResponse";
+      tag: string;
+      remotes: string[];
+      unsyncedRemotes?: string[];
+      untrackedRemotes?: string[];
+    }
+  | { command: "pushTagDone"; tag: string };

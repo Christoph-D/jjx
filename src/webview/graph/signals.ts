@@ -29,6 +29,7 @@ export const graphStyle = signal("full");
 export const changeDoubleClickAction = signal("new");
 export const showTooltips = signal(true);
 export const showChangedFiles = signal(false);
+export const supportsTagTracking = signal(false);
 export const scrollY = signal(0);
 export const offsetWidth = signal(0);
 export const tooltipTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
@@ -77,6 +78,7 @@ export interface PendingGraphUpdate {
   preserveScroll: boolean;
   showTooltips: boolean;
   showChangedFiles: boolean;
+  supportsTagTracking: boolean;
 }
 
 interface PillContextMenuState {
@@ -96,6 +98,7 @@ export const pillContextMenu = signal<PillContextMenuState | null>(null);
 export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);
 
 export const pushingBookmarks = signal<Set<string>>(new Set());
+export const pushingTags = signal<Set<string>>(new Set());
 
 export function closeAllMenus() {
   contextMenu.value = null;

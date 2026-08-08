@@ -16,6 +16,8 @@ import {
   selectedNodes,
   pendingGraphUpdate,
   pushingBookmarks,
+  pushingTags,
+  supportsTagTracking,
   vscode,
   diffStatsCache,
   tooltip,
@@ -64,6 +66,7 @@ export function App() {
       graphStyle.value = message.graphStyle;
       showTooltips.value = message.showTooltips;
       showChangedFiles.value = message.showChangedFiles;
+      supportsTagTracking.value = message.supportsTagTracking;
       maxPrefixLength.value = message.maxPrefixLength;
       offsetWidth.value = message.offsetWidth;
       scrollY.value = message.preserveScroll ? window.scrollY : 0;
@@ -135,10 +138,31 @@ export function App() {
           }
           break;
         }
+        case "tagTrackingRemotesResponse": {
+          const state = pillContextMenu.value;
+          if (state && state.type === "tag" && state.name === message.tag && state.pendingRemotes) {
+            pillContextMenu.value = {
+              ...state,
+              remotes: message.remotes.length > 0 ? message.remotes : undefined,
+              unsyncedRemotes:
+                message.unsyncedRemotes && message.unsyncedRemotes.length > 0 ? message.unsyncedRemotes : undefined,
+              untrackedRemotes:
+                message.untrackedRemotes && message.untrackedRemotes.length > 0 ? message.untrackedRemotes : undefined,
+              pendingRemotes: undefined,
+            };
+          }
+          break;
+        }
         case "pushBookmarkDone": {
           const newSet = new Set(pushingBookmarks.value);
           newSet.delete(message.bookmark);
           pushingBookmarks.value = newSet;
+          break;
+        }
+        case "pushTagDone": {
+          const newSet = new Set(pushingTags.value);
+          newSet.delete(message.tag);
+          pushingTags.value = newSet;
           break;
         }
       }

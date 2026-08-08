@@ -1,4 +1,4 @@
-import { pillContextMenu, vscode } from "../signals";
+import { pillContextMenu, supportsTagTracking, vscode } from "../signals";
 import { Menu, MenuItem, MenuSeparator } from "./menu-container";
 
 export function PillContextMenu() {
@@ -8,18 +8,26 @@ export function PillContextMenu() {
   }
 
   const isBookmark = state.type === "bookmark";
+  // Tags gain bookmark-style tracking (track/untrack/push) on jj 0.44+. Older
+  // jj versions only support pushing tags directly via git.
+  const trackingEnabled = isBookmark || supportsTagTracking.value;
   const deleteLabel = isBookmark ? "Delete Bookmark" : "Delete Tag";
   const deleteCommand = isBookmark ? "deleteBookmark" : "deleteTag";
   const deletePayload = isBookmark ? { bookmark: state.name } : { tag: state.name };
 
-  const showPush = isBookmark && state.unsyncedRemotes && state.unsyncedRemotes.length > 0;
-  const showTagPush = !isBookmark && state.remotes && state.remotes.length > 0;
-  const showTrack = isBookmark && state.untrackedRemotes && state.untrackedRemotes.length > 0;
-  const showUntrack = isBookmark && state.remotes && state.remotes.length > 0;
+  const showPush = trackingEnabled && state.unsyncedRemotes && state.unsyncedRemotes.length > 0;
+  const showTagPush = !trackingEnabled && state.remotes && state.remotes.length > 0;
+  const showTrack = trackingEnabled && state.untrackedRemotes && state.untrackedRemotes.length > 0;
+  const showUntrack = trackingEnabled && state.remotes && state.remotes.length > 0;
 
   const needTopDivider = (showPush && (showTrack || showUntrack)) || (!showPush && showTrack && showUntrack);
   const needMiddleDivider = showTrack && showUntrack;
   const needBottomDivider = showPush || showTrack || showUntrack || showTagPush;
+
+  const pushCommand = isBookmark ? "pushBookmarkToRemote" : "pushTagToRemote";
+  const trackCommand = isBookmark ? "trackBookmark" : "trackTag";
+  const untrackCommand = isBookmark ? "untrackBookmark" : "untrackTag";
+  const refKey = isBookmark ? "bookmark" : "tag";
 
   return (
     <Menu id="pill-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
@@ -29,7 +37,7 @@ export function PillContextMenu() {
             key={`push-${remote}`}
             action="pushTag"
             onClick={() => {
-              vscode.postMessage({ command: "pushTagToRemote", tag: state.name, remote });
+              vscode.postMessage({ command: pushCommand, [refKey]: state.name, remote });
               pillContextMenu.value = null;
             }}
           >
@@ -40,9 +48,9 @@ export function PillContextMenu() {
         state.unsyncedRemotes!.map((remote) => (
           <MenuItem
             key={`push-${remote}`}
-            action="pushBookmark"
+            action={isBookmark ? "pushBookmark" : "pushTag"}
             onClick={() => {
-              vscode.postMessage({ command: "pushBookmarkToRemote", bookmark: state.name, remote });
+              vscode.postMessage({ command: pushCommand, [refKey]: state.name, remote });
               pillContextMenu.value = null;
             }}
           >
@@ -54,9 +62,9 @@ export function PillContextMenu() {
         state.untrackedRemotes!.map((remote) => (
           <MenuItem
             key={`track-${remote}`}
-            action="trackBookmark"
+            action={isBookmark ? "trackBookmark" : "trackTag"}
             onClick={() => {
-              vscode.postMessage({ command: "trackBookmark", bookmark: state.name, remote });
+              vscode.postMessage({ command: trackCommand, [refKey]: state.name, remote });
               pillContextMenu.value = null;
             }}
           >
@@ -68,9 +76,9 @@ export function PillContextMenu() {
         state.remotes!.map((remote) => (
           <MenuItem
             key={`untrack-${remote}`}
-            action="untrackBookmark"
+            action={isBookmark ? "untrackBookmark" : "untrackTag"}
             onClick={() => {
-              vscode.postMessage({ command: "untrackBookmark", bookmark: state.name, remote });
+              vscode.postMessage({ command: untrackCommand, [refKey]: state.name, remote });
               pillContextMenu.value = null;
             }}
           >

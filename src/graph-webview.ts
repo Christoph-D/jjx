@@ -256,6 +256,47 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "pushTagToRemote":
           await this.withRefresh("push tag", () => repo.pushTagToRemote(message.tag, message.remote));
           break;
+        case "pushTag":
+          try {
+            const pushedRemotes = await repo.pushTag(message.tag);
+            if (pushedRemotes.length === 0) {
+              vscode.window.showInformationMessage(`Tag "${message.tag}" has no out-of-sync tracked remotes.`);
+            } else {
+              await this.refresh();
+            }
+          } catch (error: unknown) {
+            showErrorMessage("Failed to push tag", error);
+          } finally {
+            this.panel?.webview.postMessage({ command: "pushTagDone", tag: message.tag });
+          }
+          break;
+        case "getTagTrackingRemotes":
+          try {
+            const info = await repo.getTagTrackingInfo(message.tag);
+            this.panel?.webview.postMessage({
+              command: "tagTrackingRemotesResponse",
+              tag: message.tag,
+              remotes: info.trackedRemotes,
+              unsyncedRemotes: info.unsyncedTrackedRemotes,
+              untrackedRemotes: info.untrackedRemotes,
+            });
+          } catch (error: unknown) {
+            showErrorMessage("Failed to get tag tracking remotes", error);
+            this.panel?.webview.postMessage({
+              command: "tagTrackingRemotesResponse",
+              tag: message.tag,
+              remotes: [],
+              unsyncedRemotes: [],
+              untrackedRemotes: [],
+            });
+          }
+          break;
+        case "trackTag":
+          await this.withRefresh("track tag", () => repo.trackTag(message.tag, message.remote));
+          break;
+        case "untrackTag":
+          await this.withRefresh("untrack tag", () => repo.untrackTag(message.tag, message.remote));
+          break;
         case "describeChange":
           await this.withRefresh("describe change", () => repo.describeRetryImmutable(message.changeId));
           break;
@@ -518,6 +559,28 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         }
       }
 
+      const supportsTagTracking = this.repository.supportsTagTracking();
+      if (supportsTagTracking) {
+        const unsyncedTags = new Set<string>();
+        for (const change of changes) {
+          for (const t of change.localTags) {
+            if (!t.synced && !t.conflict) {
+              unsyncedTags.add(t.name);
+            }
+          }
+        }
+        if (unsyncedTags.size > 0) {
+          const tagsWithPushTargets = await this.repository.getTagsWithUnsyncedNonGitRemotes(operationId);
+          for (const change of changes) {
+            for (const t of change.localTags) {
+              if (!t.synced && !t.conflict) {
+                t.showPushButton = tagsWithPushTargets.has(t.name);
+              }
+            }
+          }
+        }
+      }
+
       const changeIdsInGraph = new Set(changes.map((c) => c.changeId));
       const previousSelectedNodes = this.selectedNodes;
       this.selectedNodes = new Set(Array.from(previousSelectedNodes).filter((id) => changeIdsInGraph.has(id)));
@@ -541,6 +604,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         preserveScroll: true,
         showTooltips: config.get<boolean>("showTooltips") ?? true,
         showChangedFiles,
+        supportsTagTracking,
       };
       this.panel.webview.postMessage(msg);
       try {
