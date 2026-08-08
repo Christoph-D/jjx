@@ -8,7 +8,9 @@ export function RemoteRefContextMenu() {
   }
 
   if (state.action === "delete") {
+    const isBookmark = state.type === "bookmark";
     const deleteLabel = isBookmark ? "Delete Bookmark" : "Delete Tag";
+    const restoreLabel = isBookmark ? "Restore Bookmark" : "Restore Tag";
     return (
       <Menu id="remote-ref-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
         <MenuItem
@@ -24,6 +26,20 @@ export function RemoteRefContextMenu() {
           }}
         >
           {deleteLabel} from {state.remote}
+        </MenuItem>
+        <MenuItem
+          action="restoreRemoteRef"
+          onClick={() => {
+            vscode.postMessage({
+              command: "restoreRemoteRef",
+              refType: state.type,
+              name: state.name,
+              remote: state.remote,
+            });
+            remoteRefContextMenu.value = null;
+          }}
+        >
+          {restoreLabel} from {state.remote}
         </MenuItem>
       </Menu>
     );

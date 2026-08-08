@@ -108,6 +108,41 @@ test("delete tag from remote via remote pill context menu", async ({ graphFrame,
   }).toPass();
 });
 
+test("restore deleted bookmark from remote via remote pill context menu", async ({ graphFrame, testRepo }) => {
+  test.slow();
+  const { bookmarkPill } = await setupTrackedAndPushedBookmark(testRepo, graphFrame);
+
+  // Deleting the local bookmark makes the (unsynced, tracked) remote pill appear.
+  await testRepo.jjCommand(["bookmark", "delete", "my-bookmark"]);
+  await expect(bookmarkPill).not.toBeVisible();
+  const remotePill = graphFrame.locator('[data-remote-bookmark="my-bookmark"][data-remote="remote-a"]');
+  await expect(remotePill).toBeVisible();
+
+  await clickRemoteRefMenuItem(graphFrame, remotePill, "Restore Bookmark from remote-a");
+
+  // Restoring recreates the local bookmark, so the remote-only pill disappears
+  // and a local bookmark pill takes its place.
+  await expect(remotePill).not.toBeVisible();
+  await expect(graphFrame.locator('[data-bookmark="my-bookmark"]')).toBeVisible();
+  expect(await testRepo.getBookmark("my-bookmark")).toBeDefined();
+});
+
+test("restore deleted tag from remote via remote pill context menu", async ({ graphFrame, testRepo }) => {
+  test.slow();
+  const { tagPill } = await setupTrackedAndPushedTag(testRepo, graphFrame);
+
+  await testRepo.jjCommand(["tag", "delete", "my-tag"]);
+  await expect(tagPill).not.toBeVisible();
+  const remotePill = graphFrame.locator('[data-remote-tag="my-tag"][data-remote="remote-a"]');
+  await expect(remotePill).toBeVisible();
+
+  await clickRemoteRefMenuItem(graphFrame, remotePill, "Restore Tag from remote-a");
+
+  await expect(remotePill).not.toBeVisible();
+  await expect(graphFrame.locator('[data-tag="my-tag"]')).toBeVisible();
+  expect(await testRepo.getTag("my-tag")).toBeDefined();
+});
+
 test("track untracked remote bookmark via remote pill context menu", async ({ graphFrame, testRepo }) => {
   test.slow();
   const { "remote-src": remoteSrcRepo } = await setupRemotes(testRepo, "remote-src");

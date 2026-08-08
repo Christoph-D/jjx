@@ -351,6 +351,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           );
           break;
         }
+        case "restoreRemoteRef":
+          await this.withRefresh("restore ref", () =>
+            repo.restoreRemoteRef(message.refType, message.name, message.remote),
+          );
+          break;
         case "describeChange":
           await this.withRefresh("describe change", () => repo.describeRetryImmutable(message.changeId));
           break;

@@ -902,6 +902,16 @@ export class JJRepository {
   }
 
   /**
+   * Recreates a locally-deleted bookmark or tag by pointing it at the ref still
+   * present on the given remote (`<name>@<remote>`).
+   */
+  async restoreRemoteRef(type: "bookmark" | "tag", name: string, remote: string): Promise<void> {
+    const command = type === "bookmark" ? "bookmark" : "tag";
+    const target = `${quoteJjName(name)}@${remote}`;
+    await this.jjCommand([command, "set", quoteJjName(name), "-r", target]);
+  }
+
+  /**
    * Queries the tracking/sync status of a single remote bookmark or tag, plus
    * whether the corresponding local ref is present (exists and points at a
    * commit). Used to decide which action (if any) to offer when right-clicking
