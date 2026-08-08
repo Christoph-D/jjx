@@ -99,6 +99,7 @@ export class JJRepository {
     operation: () => Promise<T>,
     retryOperation: () => Promise<T>,
     customMessage?: string,
+    continueButtonText: string = "Continue",
   ): Promise<T | undefined> {
     try {
       return await operation();
@@ -107,7 +108,7 @@ export class JJRepository {
         const choice = await vscode.window.showWarningMessage(
           customMessage ?? `${rev} is immutable, are you sure?`,
           { modal: true },
-          "Continue",
+          continueButtonText,
         );
         if (!choice) {
           return undefined;
@@ -441,6 +442,8 @@ export class JJRepository {
         rev,
         () => this.describe(rev, message, false, sessionId),
         () => this.describe(rev, message, true, sessionId),
+        undefined,
+        "Describe Immutable Change",
       ),
     );
   }
@@ -505,6 +508,8 @@ export class JJRepository {
           filepaths,
           ignoreImmutable: true,
         }),
+      undefined,
+      "Squash Into Immutable Change",
     );
   }
 
@@ -570,6 +575,8 @@ export class JJRepository {
           content,
           ignoreImmutable: true,
         }),
+      undefined,
+      "Squash Into Immutable Change",
     );
   }
 
@@ -717,6 +724,8 @@ export class JJRepository {
       rev,
       () => this.edit(rev),
       () => this.edit(rev, true),
+      undefined,
+      "Edit Immutable Change",
     );
   }
 
@@ -870,6 +879,7 @@ export class JJRepository {
       () => this.abandon(revs),
       () => this.abandon(revs, true),
       customMessage,
+      revs.length >= 2 ? "Abandon Immutable Changes" : "Abandon Immutable Change",
     );
   }
 
@@ -941,6 +951,7 @@ export class JJRepository {
       () => this.rebase(source, destination, mode, withDescendants),
       () => this.rebase(source, destination, mode, withDescendants, true),
       "This rebase modifies one or more immutable commits, are you sure?",
+      "Modify Immutable Change",
     );
   }
 
@@ -963,6 +974,7 @@ export class JJRepository {
       () => this.rebaseAddParent(source, destination),
       () => this.rebaseAddParent(source, destination, true),
       "This rebase modifies one or more immutable commits, are you sure?",
+      "Modify Immutable Change",
     );
   }
 
@@ -983,6 +995,7 @@ export class JJRepository {
       () => this.rebaseRemoveParent(source, target),
       () => this.rebaseRemoveParent(source, target, true),
       "This rebase modifies one or more immutable commits, are you sure?",
+      "Modify Immutable Change",
     );
   }
 
@@ -1001,6 +1014,8 @@ export class JJRepository {
       rev ?? "@",
       () => this.restore(rev, filepaths),
       () => this.restore(rev, filepaths, true),
+      undefined,
+      "Modify Immutable Change",
     );
   }
 
