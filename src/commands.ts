@@ -118,7 +118,12 @@ async function selectRepositoryQuickPick(state: ExtensionState): Promise<void> {
   }
 }
 
-async function navigateToRelativeChange(uri: vscode.Uri, revExpression: string, state: ExtensionState) {
+async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpression: string, state: ExtensionState) {
+  uri ??= vscode.window.activeTextEditor?.document.uri;
+  if (!uri) {
+    return;
+  }
+
   if (!["file", "jj"].includes(uri.scheme)) {
     return;
   }
@@ -866,11 +871,11 @@ export function registerInitCommands(state: ExtensionState): void {
     );
   }
 
-  registerCommand(context, "jj.openParentChange", async (uri: vscode.Uri) => {
+  registerCommand(context, "jj.openParentChange", async (uri?: vscode.Uri) => {
     await navigateToRelativeChange(uri, "{}-", state);
   });
 
-  registerCommand(context, "jj.openChildChange", async (uri: vscode.Uri) => {
+  registerCommand(context, "jj.openChildChange", async (uri?: vscode.Uri) => {
     await navigateToRelativeChange(uri, "{}+", state);
   });
 
