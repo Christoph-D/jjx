@@ -101,13 +101,13 @@ system.
 
 - Create, move, and delete bookmarks
 - Move bookmarks via drag&drop
-- Upload a bookmark/tag to all its tracking remotes with a single click (tag tracking requires jj 0.44+)  
-  ![unsynced bookmark](images/unsynced-bookmark.png)
+- Upload a bookmark to all its tracking remotes with a single click ![unsynced bookmark](images/unsynced-bookmark.png)
 - Right-click context menu to push a bookmark to a specific remote
-- Right-click context menu to push a tag to a specific remote
-- Track/untrack bookmarks and tags on specific remotes (tag tracking requires jj 0.44+)
+- Right-click context menu to push a tag to a specific remote (using proper tag tracking with jj 0.44+)
+- Track/untrack bookmarks on specific remotes
 - Delete a bookmark/tag  
   ![bookmark context menu](images/bookmark-context-menu.png)
+- Delete locally deleted bookmarks/tags from a remote
 - Set and delete tags
 - Show conflicted bookmarks and tags with `??` suffix
 
