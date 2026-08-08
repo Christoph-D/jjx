@@ -407,6 +407,17 @@ export async function clickPillMenuItem(graphFrame: Frame, pill: Locator, text: 
   }).toPass();
 }
 
+export async function clickRemoteRefMenuItem(graphFrame: Frame, pill: Locator, text: string) {
+  await expect(async () => {
+    await pill.click({ button: "right" });
+    const menu = graphFrame.locator("#remote-ref-context-menu");
+    const item = menu.locator("[data-action]").filter({ hasText: text });
+    await expect(item).toBeVisible();
+    await item.click();
+    await expect(menu).not.toBeVisible();
+  }).toPass();
+}
+
 // Closes the chat window and increases the size of the jj graph
 async function increaseJJVisibleSize(workbox: Page) {
   // Hide auxiliary side bar (chat window)

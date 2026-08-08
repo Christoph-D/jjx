@@ -378,8 +378,19 @@ const BOOKMARK_TRACKING_INFO_FIELDS: TemplateFields = {
   tracked: { type: "boolean", expr: "tracked" },
 };
 
+/**
+ * Per-entry bookmark/tag status.
+ */
+const REMOTE_REF_STATUS_FIELDS: TemplateFields = {
+  remote: { type: "string", expr: "remote" },
+  tracked: { type: "boolean", expr: "tracked" },
+  synced: { type: "boolean", expr: "synced" },
+  present: { type: "boolean", expr: "present" },
+};
+
 export const SHOW_TEMPLATE = generateTemplate(SHOW_ENTRY_FIELDS);
 export const STATUS_TEMPLATE = generateTemplate(STATUS_ENTRY_FIELDS);
 export const LOG_TEMPLATE = buildLogTemplate();
 export const DIFF_STATS_TEMPLATE = generateTemplate(DIFF_STATS_FIELDS);
 export const BOOKMARK_TRACKING_INFO_TEMPLATE = generateTemplate(BOOKMARK_TRACKING_INFO_FIELDS);
+export const REMOTE_REF_STATUS_TEMPLATE = generateTemplate(REMOTE_REF_STATUS_FIELDS);

@@ -24,12 +24,15 @@ import {
   showTooltips,
   showChangedFiles,
   pillContextMenu,
+  remoteRefContextMenu,
+  contextMenu,
   closeAllMenus,
 } from "./signals";
 import { Graph } from "./components/graph";
 import { ContextMenu } from "./components/context-menu";
 import { RebaseMenu } from "./components/rebase-menu";
 import { PillContextMenu } from "./components/pill-context-menu";
+import { RemoteRefContextMenu } from "./components/remote-ref-context-menu";
 import { Tooltip } from "./components/tooltip";
 import { StaleState } from "./components/stale-state";
 import { JJNotFoundState } from "./components/jj-not-found-state";
@@ -165,6 +168,38 @@ export function App() {
           pushingTags.value = newSet;
           break;
         }
+        case "remoteRefStatusResponse": {
+          const state = remoteRefContextMenu.value;
+          if (
+            !state ||
+            !state.pendingStatus ||
+            state.type !== message.refType ||
+            state.name !== message.name ||
+            state.remote !== message.remote
+          ) {
+            break;
+          }
+          // Only a tracked, unsynced remote ref warrants a menu. In every other
+          // case (including lookup failure) fall back to the change context menu
+          // so the right-click behaves like a normal change right-click.
+          const actionable = message.found && message.tracked && !message.synced;
+          if (!actionable) {
+            remoteRefContextMenu.value = null;
+            contextMenu.value = {
+              change: state.change,
+              pageX: state.pageX,
+              pageY: state.pageY,
+              changeDoubleClickAction: state.changeDoubleClickAction,
+            };
+            break;
+          }
+          remoteRefContextMenu.value = {
+            ...state,
+            pendingStatus: undefined,
+            action: message.present ? "push" : "delete",
+          };
+          break;
+        }
       }
     });
 
@@ -200,6 +235,7 @@ export function App() {
       <ContextMenu />
       <RebaseMenu />
       <PillContextMenu />
+      <RemoteRefContextMenu />
       <Tooltip />
     </ErrorBoundary>
   );

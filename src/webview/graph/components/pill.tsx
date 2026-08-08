@@ -26,11 +26,11 @@ export function TagPill({ conflict, synced, ...rest }: LocalPillProps) {
 }
 
 export function RemoteBookmarkPill({ ...rest }: HTMLAttributes<HTMLSpanElement>) {
-  return <span class={cx(styles.pill, styles.bookmarkPill)} {...rest} />;
+  return <span class={cx(styles.pill, styles.bookmarkPill, styles.remotePill)} {...rest} />;
 }
 
 export function RemoteTagPill({ ...rest }: HTMLAttributes<HTMLSpanElement>) {
-  return <span class={cx(styles.pill, styles.tagPill)} {...rest} />;
+  return <span class={cx(styles.pill, styles.tagPill, styles.remotePill)} {...rest} />;
 }
 
 export function WorkspacePill({ ...rest }: HTMLAttributes<HTMLSpanElement>) {

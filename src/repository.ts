@@ -11,6 +11,7 @@ import {
   buildOperationTemplate,
   DIFF_STATS_TEMPLATE,
   BOOKMARK_TRACKING_INFO_TEMPLATE,
+  REMOTE_REF_STATUS_TEMPLATE,
 } from "./template-builder";
 import spawn from "cross-spawn";
 import type { ChildProcess } from "child_process";
@@ -879,6 +880,52 @@ export class JJRepository {
         env: { ...process.env, GIT_DIR: gitDir },
       }),
     );
+  }
+
+  /**
+   * Deletes a tag from a remote. On jj 0.44+ this is the same push command as a
+   * normal push (a locally-deleted tag is removed from the remote on push). On
+   * older jj versions the tag is deleted directly via `git push --delete`.
+   */
+  async deleteTagFromRemote(tag: string, remote: string): Promise<void> {
+    if (this.supportsTagTracking()) {
+      await this.pushTagToRemote(tag, remote);
+      return;
+    }
+    const gitDir = await this.getGitDir();
+    await collectProcessOutput(
+      spawn("git", ["push", "--delete", remote, tag], {
+        cwd: this.repositoryRoot,
+        env: { ...process.env, GIT_DIR: gitDir },
+      }),
+    );
+  }
+
+  /**
+   * Queries the tracking/sync status of a single remote bookmark or tag, plus
+   * whether the corresponding local ref is present (exists and points at a
+   * commit). Used to decide which action (if any) to offer when right-clicking
+   * a remote ref pill. Returns null when the remote ref cannot be found.
+   */
+  async getRemoteRefStatus(
+    type: "bookmark" | "tag",
+    name: string,
+    remote: string,
+  ): Promise<{ tracked: boolean; synced: boolean; present: boolean } | null> {
+    const command = type === "bookmark" ? "bookmark" : "tag";
+    const entries = this.splitLines(
+      await this.jjCommandRead([command, "list", "--all-remotes", quoteJjName(name), "-T", REMOTE_REF_STATUS_TEMPLATE]),
+    ).map((line) => JSON.parse(line) as { remote: string; tracked: boolean; synced: boolean; present: boolean });
+    const remoteEntry = entries.find((e) => e.remote === remote);
+    if (!remoteEntry) {
+      return null;
+    }
+    const localEntry = entries.find((e) => e.remote === "");
+    return {
+      tracked: remoteEntry.tracked,
+      synced: remoteEntry.synced,
+      present: localEntry ? localEntry.present : false,
+    };
   }
 
   async getTagsWithUnsyncedNonGitRemotes(operationId?: string): Promise<Set<string>> {

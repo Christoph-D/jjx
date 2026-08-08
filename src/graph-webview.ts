@@ -297,6 +297,53 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "untrackTag":
           await this.withRefresh("untrack tag", () => repo.untrackTag(message.tag, message.remote));
           break;
+        case "getRemoteRefStatus":
+          try {
+            const status = await repo.getRemoteRefStatus(message.refType, message.name, message.remote);
+            this.panel?.webview.postMessage({
+              command: "remoteRefStatusResponse",
+              refType: message.refType,
+              name: message.name,
+              remote: message.remote,
+              found: status !== null,
+              tracked: status?.tracked ?? false,
+              synced: status?.synced ?? false,
+              present: status?.present ?? false,
+            });
+          } catch (error: unknown) {
+            showErrorMessage("Failed to get remote ref status", error);
+            this.panel?.webview.postMessage({
+              command: "remoteRefStatusResponse",
+              refType: message.refType,
+              name: message.name,
+              remote: message.remote,
+              found: false,
+              tracked: false,
+              synced: false,
+              present: false,
+            });
+          }
+          break;
+        case "pushRemoteRef":
+          await this.withRefresh("push ref", () =>
+            message.refType === "bookmark"
+              ? repo.pushBookmarkToRemote(message.name, message.remote)
+              : repo.pushTagToRemote(message.name, message.remote),
+          );
+          break;
+        case "deleteRemoteRef": {
+          const refKind = message.refType === "bookmark" ? "bookmark" : "tag";
+          await this.confirmAndExecute(
+            `Are you sure you want to delete the ${refKind} "${message.name}" from "${message.remote}"?\n\n!!! This deletes the ${refKind} from the remote !!!`,
+            `Delete from ${message.remote}`,
+            `delete ${refKind} from remote`,
+            () =>
+              message.refType === "bookmark"
+                ? repo.pushBookmarkToRemote(message.name, message.remote)
+                : repo.deleteTagFromRemote(message.name, message.remote),
+          );
+          break;
+        }
         case "describeChange":
           await this.withRefresh("describe change", () => repo.describeRetryImmutable(message.changeId));
           break;

@@ -23,6 +23,10 @@
   background-color: var(--tag-pill-bg);
 }
 
+.remotePill {
+  cursor: context-menu;
+}
+
 .workspacePill {
   background-color: var(--workspace-pill-bg);
 }

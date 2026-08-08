@@ -20,6 +20,7 @@ import {
   showChangedFiles,
   dragBookmarkName,
   pillContextMenu,
+  remoteRefContextMenu,
   closeAllMenus,
   pushingBookmarks,
   pushingTags,
@@ -312,7 +313,37 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
         {change.remoteBookmarks
           .filter((b) => !localBookmarkNames.has(b.name))
           .map((b) => (
-            <RemoteBookmarkPill key={b.name + "@" + b.remote}>
+            <RemoteBookmarkPill
+              key={b.name + "@" + b.remote}
+              data-remote-bookmark={b.name}
+              data-remote={b.remote}
+              title={b.remote === "git" ? undefined : "Right-click for remote actions"}
+              onContextMenu={
+                b.remote === "git"
+                  ? undefined
+                  : (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeAllMenus();
+                      remoteRefContextMenu.value = {
+                        type: "bookmark",
+                        name: b.name,
+                        remote: b.remote,
+                        change,
+                        pageX: e.pageX,
+                        pageY: e.pageY,
+                        changeDoubleClickAction: changeDoubleClickAction.value,
+                        pendingStatus: true,
+                      };
+                      vscode.postMessage({
+                        command: "getRemoteRefStatus",
+                        refType: "bookmark",
+                        name: b.name,
+                        remote: b.remote,
+                      });
+                    }
+              }
+            >
               {abbreviateName(b.name)}@{b.remote}
             </RemoteBookmarkPill>
           ))}
@@ -365,7 +396,37 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
         {change.remoteTags
           .filter((t) => !localTagNames.has(t.name))
           .map((t) => (
-            <RemoteTagPill key={t.name + "@" + t.remote}>
+            <RemoteTagPill
+              key={t.name + "@" + t.remote}
+              data-remote-tag={t.name}
+              data-remote={t.remote}
+              title={t.remote === "git" ? undefined : "Right-click for remote actions"}
+              onContextMenu={
+                t.remote === "git"
+                  ? undefined
+                  : (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeAllMenus();
+                      remoteRefContextMenu.value = {
+                        type: "tag",
+                        name: t.name,
+                        remote: t.remote,
+                        change,
+                        pageX: e.pageX,
+                        pageY: e.pageY,
+                        changeDoubleClickAction: changeDoubleClickAction.value,
+                        pendingStatus: true,
+                      };
+                      vscode.postMessage({
+                        command: "getRemoteRefStatus",
+                        refType: "tag",
+                        name: t.name,
+                        remote: t.remote,
+                      });
+                    }
+              }
+            >
               {abbreviateName(t.name)}@{t.remote}
             </RemoteTagPill>
           ))}

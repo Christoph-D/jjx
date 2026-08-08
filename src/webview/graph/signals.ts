@@ -95,6 +95,20 @@ interface PillContextMenuState {
 
 export const pillContextMenu = signal<PillContextMenuState | null>(null);
 
+interface RemoteRefContextMenuState {
+  type: "bookmark" | "tag";
+  name: string;
+  remote: string;
+  change: ChangeNode;
+  pageX: number;
+  pageY: number;
+  changeDoubleClickAction: string;
+  pendingStatus?: boolean;
+  action?: "delete" | "push";
+}
+
+export const remoteRefContextMenu = signal<RemoteRefContextMenuState | null>(null);
+
 export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);
 
 export const pushingBookmarks = signal<Set<string>>(new Set());
@@ -104,4 +118,5 @@ export function closeAllMenus() {
   contextMenu.value = null;
   rebaseMenu.value = null;
   pillContextMenu.value = null;
+  remoteRefContextMenu.value = null;
 }
