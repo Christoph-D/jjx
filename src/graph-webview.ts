@@ -842,9 +842,7 @@ function parseJJLogJson(
   const changes = entries.map((entry) => {
     const entryUniqueId = getUniqueEntryId(entry);
     if (entryUniqueId.startsWith("~") || entry.change_id.startsWith("~")) {
-      const uniqueParentIds = entry.parents.map((p: ParentRef) =>
-        p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
-      );
+      const uniqueParentIds = entry.parents.map((p: ParentRef) => fullChangeId(p.change_id, p.change_offset));
 
       return {
         fakeId: entryUniqueId,
@@ -882,9 +880,7 @@ function parseJJLogJson(
     }
     const formattedDescription = entry.mine || entry.root ? timestamp : `${email} ${timestamp}`;
 
-    const uniqueParentIds = entry.parents.map((p: ParentRef) =>
-      p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
-    );
+    const uniqueParentIds = entry.parents.map((p: ParentRef) => fullChangeId(p.change_id, p.change_offset));
 
     const changedFiles =
       repositoryRoot !== undefined && entry.fileStatuses

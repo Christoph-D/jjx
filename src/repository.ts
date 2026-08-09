@@ -63,6 +63,7 @@ import type {
   ParentRef,
   Operation,
   DiffFileEntry,
+  FullChangeId,
 } from "./types";
 
 export type {
@@ -727,7 +728,9 @@ export class JJRepository {
     return entries;
   }
 
-  async getDiffStats(changeId: string): Promise<{ filesChanged: number; linesAdded: number; linesRemoved: number }> {
+  async getDiffStats(
+    changeId: FullChangeId,
+  ): Promise<{ filesChanged: number; linesAdded: number; linesRemoved: number }> {
     const output = (
       await this.jjCommandRead(["log", "-r", changeId, "-n", "1", "--no-graph", "-T", DIFF_STATS_TEMPLATE])
     ).toString();
@@ -1061,7 +1064,7 @@ export class JJRepository {
     );
   }
 
-  async getCommitUrl(changeId: string): Promise<string | null> {
+  async getCommitUrl(changeId: FullChangeId): Promise<string | null> {
     try {
       const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
       const baseWebURL = config.get<string>("baseWebURL") ?? "";

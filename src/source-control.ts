@@ -13,7 +13,7 @@ import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
 import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
 import { StaleWorkingCopyError } from "./errors";
-import type { ChangeId, FileStatus, RepositoryStatus, Show, Change } from "./types";
+import type { ChangeId, FileStatus, FullChangeId, RepositoryStatus, Show, Change } from "./types";
 import { TIMEOUTS, MINIMUM_JJ_VERSION, type JJVersion } from "./constants";
 
 const checkedJjVersions = new Map<string, JJVersion | undefined>();
@@ -338,7 +338,7 @@ export class WorkspaceSourceControlManager {
     return this.getRepositorySourceControlManagerFromResourceGroup(resourceGroup)?.repository;
   }
 
-  getSelectedCommitChangeId(resourceGroup: vscode.SourceControlResourceGroup): string | undefined {
+  getSelectedCommitChangeId(resourceGroup: vscode.SourceControlResourceGroup): FullChangeId | undefined {
     const repo = this.getRepositorySourceControlManagerFromResourceGroup(resourceGroup);
     if (repo?.selectedCommitResourceGroup === resourceGroup) {
       return repo.selectedCommitChangeId;
@@ -419,7 +419,7 @@ class RepositorySourceControlManager {
   parentResourceGroups: vscode.SourceControlResourceGroup[] = [];
   selectedCommitResourceGroup: vscode.SourceControlResourceGroup | undefined;
   selectedCommitShowResult: Show | undefined;
-  selectedCommitChangeId: string | undefined;
+  selectedCommitChangeId: FullChangeId | undefined;
   diffResourceGroup: vscode.SourceControlResourceGroup | undefined;
   diffSelection: DiffSelection | undefined;
   diffFileStatuses: FileStatus[] | undefined;
@@ -852,7 +852,7 @@ class RepositorySourceControlManager {
     );
   }
 
-  async setSelectedCommit(changeId: string | undefined) {
+  async setSelectedCommit(changeId: FullChangeId | undefined) {
     if (
       !changeId ||
       (this.status &&
@@ -930,7 +930,7 @@ class RepositorySourceControlManager {
 function buildResourceStates(
   fileStatuses: FileStatus[],
   options: {
-    changeId?: string;
+    changeId?: FullChangeId | "@";
     toRev: string;
     fileClickAction: "diff" | "at-revision" | "working-copy";
     conflictedFiles: Set<string> | undefined;
@@ -1040,7 +1040,7 @@ function getResourceStateCommand(
   fileClickAction: "diff" | "at-revision" | "working-copy",
   workingCopyUri: vscode.Uri,
   isConflicted: boolean,
-  changeId?: string,
+  changeId?: FullChangeId | "@",
 ): vscode.Command {
   if (isConflicted && changeId !== undefined) {
     return {

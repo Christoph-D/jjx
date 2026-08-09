@@ -1,8 +1,10 @@
+import type { FullChangeId } from "../../graph-protocol";
+
 export interface VSCodeAPI {
   postMessage(message: unknown): void;
 }
 
-export const rootChangeId = "z".repeat(32);
+export const rootChangeId = "z".repeat(32) as FullChangeId;
 export const SWIMLANE_WIDTH = 14;
 export const CIRCLE_RADIUS = 5;
 export const EDGE_EXTENSION = 20;

@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import { resolveRealpath, type JJRepository } from "./repository";
 import type { ExtensionState } from "./extension-state";
-import type { ChangeId, FileStatus } from "./types";
+import type { ChangeId, FileStatus, FullChangeId } from "./types";
 import { OperationTreeItem } from "./operation-log-tree-view";
 import { getParams, isComparisonDiffUri, resolveRev, toJJUri, type JJUriParams } from "./uri";
 import {
@@ -250,7 +250,7 @@ async function resolveDisplayTitle(state: ExtensionState, repo: JJRepository, re
   return repo.resolveRevSuffix(rev);
 }
 
-async function openFileDiff(repo: JJRepository, filePath: string, changeId: string): Promise<void> {
+async function openFileDiff(repo: JJRepository, filePath: string, changeId: FullChangeId | "@"): Promise<void> {
   const { change, fileStatuses } = await repo.show(changeId);
   const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
 
@@ -315,7 +315,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
 
       const filePath = resourceState.resourceUri.fsPath;
       const selectedCommitChangeId = state.workspaceSCM.getSelectedCommitChangeId(resourceGroup);
-      const changeId = selectedCommitChangeId ?? resourceGroup.id;
+      const changeId = (selectedCommitChangeId ?? resourceGroup.id) as FullChangeId | "@";
 
       const repo = state.workspaceSCM.getRepositoryFromUri(resourceState.resourceUri);
       if (!repo) {
@@ -368,7 +368,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
     { errorPrefix: "Failed to open file" },
   );
 
-  registerCommand(context, "jj.openMergeEditor", async (uri: vscode.Uri, changeId?: string) => {
+  registerCommand(context, "jj.openMergeEditor", async (uri: vscode.Uri, changeId?: FullChangeId | "@") => {
     const repo = state.workspaceSCM.getRepositoryFromUri(uri);
     if (!repo) {
       throw new Error("Repository not found");
@@ -483,7 +483,7 @@ export function registerInitCommands(state: ExtensionState): void {
           throw new Error("Repository could not be found with given URI.");
         }
 
-        await openFileDiff(repo, uri.fsPath, rev);
+        await openFileDiff(repo, uri.fsPath, rev as FullChangeId | "@");
         return;
       }
 

@@ -131,7 +131,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
     if (!isDragging.value) {
       const childIds: string[] = [];
       for (const c of currentChanges.value) {
-        if (c.parentChangeIds?.includes(getUniqueId(change))) {
+        if (change.branchType !== "~" && c.parentChangeIds?.includes(change.id.changeId)) {
           childIds.push(getUniqueId(c));
         }
       }

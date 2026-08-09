@@ -22,7 +22,7 @@ interface ChangedFile {
 }
 
 interface ChangeNodeBase {
-  parentChangeIds?: string[];
+  parentChangeIds?: FullChangeId[];
 }
 
 export interface ElidedChangeNode extends ChangeNodeBase {
