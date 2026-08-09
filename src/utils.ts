@@ -29,6 +29,23 @@ export function formatChangeIdShort(changeId: string, changeOffset: string | nul
   return changeOffset ? `${prefix}/${changeOffset}` : prefix;
 }
 
+export function maxChangeIdPrefixLength(changeIdShortests: string[]): number {
+  return Math.max(4, ...changeIdShortests.map((s) => s.length));
+}
+
+export function changeIdAffixes(
+  changeId: string,
+  changeIdShortest: string,
+  maxPrefixLength: number,
+): { changeIdPrefix: string; changeIdSuffix: string } {
+  return {
+    changeIdPrefix: changeIdShortest,
+    changeIdSuffix: changeId
+      .slice(changeIdShortest.length)
+      .substring(0, Math.max(0, maxPrefixLength - changeIdShortest.length)),
+  };
+}
+
 export function formatComparisonRev(
   changeId: string,
   changeOffset: string | null,

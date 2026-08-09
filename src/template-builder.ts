@@ -107,6 +107,7 @@ export function generateTemplate(fields: TemplateFields): string {
 
 const SHOW_ENTRY_FIELDS: TemplateFields = {
   change_id: { type: "string", expr: "change_id" },
+  change_id_shortest: { type: "string", expr: "change_id.shortest()" },
   commit_id: { type: "string", expr: "commit_id" },
   divergent: { type: "boolean", expr: "self.divergent()" },
   change_offset: {
@@ -148,6 +149,7 @@ const SHOW_ENTRY_FIELDS: TemplateFields = {
 
 const STATUS_ENTRY_FIELDS: TemplateFields = {
   change_id: { type: "string", expr: "change_id" },
+  change_id_shortest: { type: "string", expr: "change_id.shortest()" },
   commit_id: { type: "string", expr: "commit_id" },
   divergent: { type: "boolean", expr: "self.divergent()" },
   change_offset: {
@@ -169,6 +171,7 @@ const STATUS_ENTRY_FIELDS: TemplateFields = {
     loopVar: "p",
     contents: {
       change_id: { type: "string", expr: "p.change_id()" },
+      change_id_shortest: { type: "string", expr: "p.change_id().shortest()" },
       commit_id: { type: "string", expr: "p.commit_id()" },
       divergent: { type: "boolean", expr: "p.divergent()" },
       change_offset: {

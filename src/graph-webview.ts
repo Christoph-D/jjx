@@ -4,7 +4,7 @@ import type { JJRepository, LogEntry, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { showErrorMessage } from "./vscode-utils";
-import { formatDiffTitle, formatRevSuffix } from "./utils";
+import { changeIdAffixes, formatDiffTitle, formatRevSuffix, maxChangeIdPrefixLength } from "./utils";
 import { assignLanes } from "./lane-assigner";
 import type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elided-edges";
@@ -782,7 +782,7 @@ function parseJJLogJson(
     0,
     ...nonSyntheticEntries.filter(shouldShowOffset).map((e) => e.change_offset.length + 1),
   );
-  let maxPrefixLength = Math.max(4, ...nonSyntheticEntries.map((e) => e.change_id_shortest.length));
+  let maxPrefixLength = maxChangeIdPrefixLength(nonSyntheticEntries.map((e) => e.change_id_shortest));
 
   const changes = entries.map((entry) => {
     const entryUniqueId = getUniqueEntryId(entry);
@@ -820,9 +820,7 @@ function parseJJLogJson(
     }
 
     const changeIdShortest = entry.change_id_shortest;
-    const changeIdSuffix = entry.change_id
-      .slice(changeIdShortest.length)
-      .substring(0, Math.max(0, maxPrefixLength - changeIdShortest.length));
+    const { changeIdSuffix } = changeIdAffixes(entry.change_id, changeIdShortest, maxPrefixLength);
     const email = entry.author.email;
     const timestamp = entry.author.timestamp;
     const commitId = entry.commit_id_short;

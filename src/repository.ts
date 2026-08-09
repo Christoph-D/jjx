@@ -29,7 +29,7 @@ import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses 
 import { parseInterdiffSummary } from "./parse-interdiff-summary";
 import { logger } from "./logger";
 import { quoteJjName } from "./quote";
-import { filepathToFileset, isWindows, pathEquals } from "./utils";
+import { changeIdAffixes, filepathToFileset, isWindows, maxChangeIdPrefixLength, pathEquals } from "./utils";
 import {
   getDiffToolConfigs,
   expectDiffToolRequest,
@@ -269,6 +269,7 @@ export class JJRepository {
 
     const entry = JSON.parse(output.trim()) as {
       change_id: string;
+      change_id_shortest: string;
       commit_id: string;
       divergent: boolean;
       change_offset: string;
@@ -278,6 +279,7 @@ export class JJRepository {
       local_bookmarks: string[];
       parents: Array<{
         change_id: string;
+        change_id_shortest: string;
         commit_id: string;
         divergent: boolean;
         change_offset: string;
@@ -299,11 +301,15 @@ export class JJRepository {
 
     const untrackedFiles = await this.getUntrackedFiles(token);
 
+    const maxPrefixLength = maxChangeIdPrefixLength([
+      entry.change_id_shortest,
+      ...entry.parents.map((p) => p.change_id_shortest),
+    ]);
+
     const workingCopy: Change = {
       changeId: {
         changeId: entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
-        changeIdPrefix: "",
-        changeIdSuffix: "",
+        ...changeIdAffixes(entry.change_id, entry.change_id_shortest, maxPrefixLength),
         changeOffset: entry.divergent ? entry.change_offset || null : null,
       },
       commitId: entry.commit_id,
@@ -317,8 +323,7 @@ export class JJRepository {
     const parentChanges: Change[] = entry.parents.map((p) => ({
       changeId: {
         changeId: p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
-        changeIdPrefix: "",
-        changeIdSuffix: "",
+        ...changeIdAffixes(p.change_id, p.change_id_shortest, maxPrefixLength),
         changeOffset: p.divergent ? p.change_offset || null : null,
       },
       commitId: p.commit_id,
@@ -392,38 +397,42 @@ export class JJRepository {
       throw new Error("No output from jj log. Maybe the revision couldn't be found?");
     }
 
-    const results: Show[] = [];
-    for (const line of output.trim().split("\n")) {
-      if (!line.trim()) {
-        continue;
-      }
-      const entry = JSON.parse(line) as {
-        change_id: string;
-        commit_id: string;
-        divergent: boolean;
-        change_offset: string;
-        author: { name: string; email: string };
-        authored_date: string;
-        description: string;
-        empty: boolean;
-        conflict: boolean;
-        diff_files: Array<{
-          status_char: string;
-          source_path: string;
-          target_path: string;
-          is_conflict: boolean;
-        }>;
-        conflicted_files: string[];
-      };
+    const entries = output
+      .trim()
+      .split("\n")
+      .filter((line) => line.trim())
+      .map((line) => {
+        return JSON.parse(line) as {
+          change_id: string;
+          change_id_shortest: string;
+          commit_id: string;
+          divergent: boolean;
+          change_offset: string;
+          author: { name: string; email: string };
+          authored_date: string;
+          description: string;
+          empty: boolean;
+          conflict: boolean;
+          diff_files: Array<{
+            status_char: string;
+            source_path: string;
+            target_path: string;
+            is_conflict: boolean;
+          }>;
+          conflicted_files: string[];
+        };
+      });
 
+    const maxPrefixLength = maxChangeIdPrefixLength(entries.map((e) => e.change_id_shortest));
+
+    return entries.map((entry) => {
       const { fileStatuses, conflictedFiles } = this.parseFileStatuses(entry.diff_files, entry.conflicted_files);
 
-      results.push({
+      return {
         change: {
           changeId: {
             changeId: entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
-            changeIdPrefix: "",
-            changeIdSuffix: "",
+            ...changeIdAffixes(entry.change_id, entry.change_id_shortest, maxPrefixLength),
             changeOffset: entry.divergent ? entry.change_offset || null : null,
           },
           commitId: entry.commit_id,
@@ -439,10 +448,8 @@ export class JJRepository {
         },
         fileStatuses,
         conflictedFiles,
-      });
-    }
-
-    return results;
+      };
+    });
   }
 
   readFile(rev: string, filepath: string) {
