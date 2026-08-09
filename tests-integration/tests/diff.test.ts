@@ -172,3 +172,39 @@ test("toggle diff view on a deleted file in a parent commit", async ({ graphFram
   await runCommand(workbox, "Toggle Diff View");
   await expectDiff("KEEP ME");
 });
+
+test("toggle diff view on an added file in a parent commit", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("added.txt", "ADDED", "Create file");
+  await testRepo.writeFile("added.txt", "CHANGED");
+
+  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
+  const scmView = await waitForSCMView(workbox, ["added.txt"], ["added.txt"]);
+
+  const diffEditor = workbox.locator(".editor-instance");
+  const originalPane = diffEditor.locator(".editor.original .view-lines");
+  const modifiedPane = diffEditor.locator(".editor.modified .view-lines");
+
+  const expectDiff = async (right: string) => {
+    await expect(originalPane).toHaveText(/^\s*$/);
+    await expect(modifiedPane.getByText(right, { exact: true })).toBeVisible();
+  };
+
+  const expectFile = async (content: string) => {
+    await expect(modifiedPane).toBeHidden();
+    await expect(diffEditor.locator(".monaco-editor .view-lines").getByText(content, { exact: true })).toBeVisible();
+  };
+
+  const addedItems = scmView.getByRole("treeitem", { name: /added\.txt/ });
+  await expect(addedItems).toHaveCount(2);
+
+  // Open the addition diff (empty original, "ADDED" modified), then toggle to
+  // a single editor showing the added content instead of doing nothing.
+  await addedItems.last().click();
+  await expectDiff("ADDED");
+  await runCommand(workbox, "Toggle Diff View");
+  await expectFile("ADDED");
+
+  // Toggle back to the addition diff.
+  await runCommand(workbox, "Toggle Diff View");
+  await expectDiff("ADDED");
+});

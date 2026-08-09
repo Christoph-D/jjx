@@ -467,12 +467,6 @@ export function registerInitCommands(state: ExtensionState): void {
           return;
         }
 
-        // The active single editor may hold either side of a change: a
-        // working-copy `file://` editor, a `jj://` editor pinned to a revision
-        // (`rev`), or a `jj://` editor showing a change's original content
-        // (`diffOriginalRev`, e.g. after toggling a deletion diff). Any of these
-        // resolves to a revision we can diff against; only a stateless resource
-        // such as an empty "deleted" resource cannot, and yields `undefined`.
         const rev = resolveRev(uri, { excludeSpecial: true });
         if (!rev) {
           throw new Error("Original resource not found");
@@ -493,40 +487,43 @@ export function registerInitCommands(state: ExtensionState): void {
         return;
       }
 
-      if (original.scheme !== "jj") {
+      // A diff from the SCM view pairs a `jj://` resource holding the change's
+      // original content (`diffOriginalRev`) with either a `jj://` resource
+      // pinned to the change (`rev`), a `file://` working-copy file, or an
+      // empty "deleted" resource. Pick the side that holds real file content
+      // for the single editor.
+      let singleEditorUri: vscode.Uri | undefined;
+      let rev: string | undefined;
+      for (const side of [modified, original]) {
+        if (side.scheme !== "jj") {
+          singleEditorUri = side;
+          rev = resolveRev(side);
+          break;
+        }
+        let params: JJUriParams;
+        try {
+          params = getParams(side);
+        } catch {
+          // A malformed jj URI is not a diff we know how to toggle.
+          continue;
+        }
+        if ("deleted" in params) {
+          continue;
+        }
+        singleEditorUri = side;
+        rev = "diffOriginalRev" in params ? params.diffOriginalRev : "rev" in params ? params.rev : undefined;
+        break;
+      }
+
+      if (!singleEditorUri || !rev) {
         return;
       }
 
-      let originalParams: JJUriParams | undefined;
-      try {
-        originalParams = getParams(original);
-      } catch {
-        // A malformed jj URI is not a diff we know how to toggle.
-      }
-      if (!originalParams || !("diffOriginalRev" in originalParams)) {
-        return;
-      }
-
-      const rev = originalParams.diffOriginalRev;
-      const repo = state.workspaceSCM.getRepositoryFromUri(original);
+      const repo = state.workspaceSCM.getRepositoryFromUri(singleEditorUri);
       if (!repo) {
         return;
       }
       const titleSuffix = await resolveTitleSuffix(state, repo, rev);
-
-      // For a deletion diff the modified side is an empty "deleted" resource.
-      // Open the original side instead so the single editor shows the file's
-      // content and can be toggled back into a diff.
-      let singleEditorUri = modified;
-      if (modified.scheme === "jj") {
-        try {
-          if ("deleted" in getParams(modified)) {
-            singleEditorUri = original;
-          }
-        } catch {
-          // A malformed jj URI; fall back to opening the modified side.
-        }
-      }
 
       await vscode.commands.executeCommand(
         "vscode.open",
