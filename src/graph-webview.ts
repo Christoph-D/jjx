@@ -384,7 +384,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             ? `Are you sure you want to abandon change "${formatChangeIdShort(change.id)}"?\n\n→ ${truncated}`
             : "Are you sure you want to abandon this change?";
           await this.confirmAndExecute(prompt, "Abandon", "abandon change", () =>
-            repo.abandonRetryImmutable([message.changeId]),
+            repo.abandonRetryImmutable(message.changeId),
           );
           break;
         }
@@ -394,7 +394,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             "Abandon",
             "abandon changes",
             () =>
-              repo.abandonRetryImmutable(
+              repo.abandonRetryImmutableMultiple(
                 message.changeIds,
                 "Some of the selected changes are immutable, are you sure?",
               ),

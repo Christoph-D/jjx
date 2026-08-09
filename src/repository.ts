@@ -1054,13 +1054,23 @@ export class JJRepository {
     );
   }
 
-  async abandonRetryImmutable(revs: FullChangeId[], customMessage?: string) {
+  async abandonRetryImmutable(rev: FullChangeId, customMessage?: string) {
     return this.retryWithImmutable(
-      revs[0] ?? "@",
+      rev,
+      () => this.abandon([rev]),
+      () => this.abandon([rev], true),
+      customMessage,
+      "Abandon Immutable Change",
+    );
+  }
+
+  async abandonRetryImmutableMultiple(revs: FullChangeId[], customMessage?: string) {
+    return this.retryWithImmutable(
+      revs[0] ?? "@", // ignored because custom_message is set
       () => this.abandon(revs),
       () => this.abandon(revs, true),
       customMessage,
-      revs.length >= 2 ? "Abandon Immutable Changes" : "Abandon Immutable Change",
+      "Abandon Immutable Changes",
     );
   }
 
