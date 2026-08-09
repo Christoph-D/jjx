@@ -134,11 +134,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "newChildChange":
           await this.withRefresh("create new child change", () => repo.new(undefined, [message.changeId]));
           break;
-        case "selectChange":
-          this.selectedNodes = new Set(message.selectedNodes);
-          vscode.commands.executeCommand("setContext", "jjGraphView.nodesSelected", message.selectedNodes.length);
-          this._onDidChangeSelection.fire(this.resolveSelection(message.selectedNodes));
+        case "selectChange": {
+          // Elided ("~") nodes can never be selected.
+          const selectedIds = message.selectedNodes.filter((id) => this.findRegularChange(id as FullChangeId));
+          this.selectedNodes = new Set(selectedIds);
+          vscode.commands.executeCommand("setContext", "jjGraphView.nodesSelected", selectedIds.length);
+          this._onDidChangeSelection.fire(this.resolveSelection(selectedIds));
           break;
+        }
         case "moveBookmark":
           try {
             await repo.moveBookmark(message.bookmark, message.targetChangeId);
@@ -533,8 +536,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
    */
   private resolveSelection(selectedIds: string[]): GraphSelection[] {
     return selectedIds.flatMap((id) => {
-      const node = this.currentChanges.find((c) => getUniqueId(c) === id);
-      if (!node || node.branchType === "~") {
+      const node = this.findRegularChange(id as FullChangeId);
+      if (!node) {
         return [];
       }
       return { id: node.id, currentWorkingCopy: node.currentWorkingCopy };
