@@ -1,5 +1,21 @@
 # Change Log
 
+## 1.12.3
+
+### New Features
+
+- **Cancel in-flight push of bookmarks/tags** - While a bookmark or tag is being pushed (spinning indicator shown),
+  dragging the pill is disabled and its context menu is replaced with a single "Cancel Push" action. Cancelling kills
+  the running `jj`/`git` push child process.
+- **Cancel in-flight deletion of remote bookmarks/tags** - While a bookmark or tag is being deleted from a remote, the
+  remote-ref pill shows a "Deleting..." spinner and offers a "Cancel Deletion" action that aborts the running process.
+
+### Bug Fixes
+
+- (Only jj 0.44+) Track a tag on a remote before pushing it there, so pushing a tag to a second, untracked remote
+  succeeds
+- Show the spinning indicator when initiating a push from the bookmark/tag pill context menu
+
 ## 1.12.2
 
 ### Bug Fixes
