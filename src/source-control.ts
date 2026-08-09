@@ -6,7 +6,13 @@ import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
-import { formatChangeIdShort, formatChangeIdSuffix, formatDiffTitle, normalizePath } from "./utils";
+import {
+  formatChangeIdShort,
+  formatChangeIdSuffix,
+  formatDiffTitle,
+  formatWorkingCopySuffix,
+  normalizePath,
+} from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -703,7 +709,7 @@ class RepositorySourceControlManager {
       false,
     );
     this.workingCopyResourceGroup.resourceStates = buildResourceStates(this.status.fileStatuses, {
-      diffTitleSuffix: "(Working Copy)",
+      diffTitleSuffix: formatWorkingCopySuffix(),
       fileClickAction,
       conflictedFiles: this.status.conflictedFiles,
     });
@@ -1001,6 +1007,7 @@ function buildComparisonDiffResourceStates(
   const fromShort = fromIsWorkingCopy ? "@" : formatChangeIdShort(from);
   const toShort = toIsWorkingCopy ? "@" : formatChangeIdShort(to);
   const label = mode === "interdiff" ? "Interdiff" : "Diff";
+  const diffTitleSuffix = `(${label} ${fromShort} → ${toShort})`;
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);
     const makeSideUri = (side: "left" | "right"): vscode.Uri =>
@@ -1018,11 +1025,7 @@ function buildComparisonDiffResourceStates(
       command: {
         title: "Open",
         command: "vscode.diff",
-        arguments: [
-          leftUri,
-          rightUri,
-          formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, `${label} ${fromShort} → ${toShort}`),
-        ],
+        arguments: [leftUri, rightUri, formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, diffTitleSuffix)],
       },
     };
   });
@@ -1079,7 +1082,7 @@ function computeFallbackCommand(
         arguments: [
           beforeUri,
           toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true }),
-          `${fileStatus.file} ${diffTitleSuffix}`,
+          formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, diffTitleSuffix),
         ],
       };
     }

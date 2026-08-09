@@ -19,6 +19,7 @@ import {
   formatChangeIdShort,
   formatChangeIdSuffix,
   formatDiffTitle,
+  formatWorkingCopySuffix,
   fullChangeIdFromString,
   maxChangeIdPrefixLength,
   normalizePath,
@@ -191,7 +192,7 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
       toJJUri(uri, {
         rev: selectedChange,
       }),
-      `${path.basename(uri.fsPath)} ${formatChangeIdSuffix(selectedChangeId)}`,
+      formatDiffTitle(undefined, path.basename(uri.fsPath), formatChangeIdSuffix(selectedChangeId)),
     );
   } else {
     await vscode.commands.executeCommand(
@@ -267,7 +268,7 @@ async function openFileDiff(repo: JJRepository, filePath: string, changeId: stri
         ? vscode.Uri.file(filePath)
         : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
 
-  const diffTitleSuffix = changeId === "@" ? "(Working Copy)" : formatChangeIdSuffix(change.changeId);
+  const diffTitleSuffix = changeId === "@" ? formatWorkingCopySuffix() : formatChangeIdSuffix(change.changeId);
 
   await vscode.commands.executeCommand(
     "vscode.diff",

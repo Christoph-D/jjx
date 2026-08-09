@@ -1,4 +1,4 @@
-import { sep } from "path";
+import { basename, sep } from "path";
 
 import type { ChangeId, FullChangeId } from "./types";
 
@@ -27,7 +27,8 @@ export function filepathToFileset(filepath: string): string {
 }
 
 export function formatDiffTitle(renamedFrom: string | undefined, baseName: string, suffix: string): string {
-  return (renamedFrom ? `${renamedFrom} → ` : "") + `${baseName} ${suffix}`;
+  const fromName = renamedFrom ? basename(renamedFrom) : undefined;
+  return (fromName ? `${fromName} → ` : "") + `${baseName} ${suffix}`;
 }
 
 export function formatChangeIdShort(changeId: ChangeId): string {
@@ -37,6 +38,10 @@ export function formatChangeIdShort(changeId: ChangeId): string {
 
 export function formatChangeIdSuffix(changeId: ChangeId): string {
   return `(${formatChangeIdShort(changeId)})`;
+}
+
+export function formatWorkingCopySuffix(): string {
+  return "(Working Copy)";
 }
 
 export function maxChangeIdPrefixLength(changeIdShortests: string[]): number {
