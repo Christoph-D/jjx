@@ -1,12 +1,17 @@
 import { test, expect } from "./base-test";
 import { getParents } from "../test-repo";
+import { changeIdFromLogEntry, formatChangeIdShort, maxChangeIdPrefixLength } from "../../src/utils.js";
 
 test("abandon single change via context menu", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "Second commit");
   await testRepo.commitFile("c.txt", "content c", "C");
 
-  const changeB = (await testRepo.log()).find((e) => e.description.trim() === "Second commit")!;
+  const entries = await testRepo.log();
+  const changeB = entries.find((e) => e.description.trim() === "Second commit")!;
+  const changeBShort = formatChangeIdShort(
+    changeIdFromLogEntry(changeB, maxChangeIdPrefixLength(entries.map((e) => e.change_id_shortest))),
+  );
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
@@ -20,7 +25,7 @@ test("abandon single change via context menu", async ({ graphFrame, testRepo, wo
 
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText(`Are you sure you want to abandon change "${changeB.change_id_shortest}"?`);
+  await expect(dialog).toContainText(`Are you sure you want to abandon change "${changeBShort}"?`);
   await expect(dialog).toContainText("→ Second commit");
 
   await workbox.keyboard.press("Escape");
@@ -38,7 +43,7 @@ test("abandon single change via context menu", async ({ graphFrame, testRepo, wo
   await expect(abandonItem).toBeVisible();
   await abandonItem.click();
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText(`Are you sure you want to abandon change "${changeB.change_id_shortest}"?`);
+  await expect(dialog).toContainText(`Are you sure you want to abandon change "${changeBShort}"?`);
   await expect(dialog).toContainText("→ Second commit");
 
   await dialog.getByRole("button", { name: "Abandon" }).click();

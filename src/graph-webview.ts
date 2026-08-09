@@ -381,7 +381,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           const firstLine = fullDescription.split("\n")[0].trim() || "(no description set)";
           const truncated = firstLine.length > 120 ? firstLine.slice(0, 120) + "..." : firstLine;
           const prompt = change
-            ? `Are you sure you want to abandon change "${change.id.changeIdPrefix}"?\n\n→ ${truncated}`
+            ? `Are you sure you want to abandon change "${formatChangeIdShort(change.id)}"?\n\n→ ${truncated}`
             : "Are you sure you want to abandon this change?";
           await this.confirmAndExecute(prompt, "Abandon", "abandon change", () =>
             repo.abandonRetryImmutable([message.changeId]),

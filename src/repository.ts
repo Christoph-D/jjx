@@ -117,11 +117,12 @@ export class JJRepository {
       return await operation();
     } catch (e) {
       if (e instanceof ImmutableError) {
-        const choice = await vscode.window.showWarningMessage(
-          customMessage ?? `${rev} is immutable, are you sure?`,
-          { modal: true },
-          continueButtonText,
-        );
+        let message = customMessage;
+        if (message === undefined) {
+          const shortRev = await this.resolveRevSuffix(rev).catch(() => rev);
+          message = `Change "${shortRev}" is immutable, are you sure?`;
+        }
+        const choice = await vscode.window.showWarningMessage(message, { modal: true }, continueButtonText);
         if (!choice) {
           return undefined;
         }
