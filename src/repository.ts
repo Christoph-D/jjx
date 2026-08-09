@@ -897,6 +897,7 @@ export class JJRepository {
 
   async pushTagToRemote(tag: string, remote: string): Promise<void> {
     if (this.supportsTagTracking()) {
+      await this.jjCommand(["tag", "track", quoteJjName(tag), `--remote=${remote}`]);
       await this.jjCommand(["git", "push", "--tag", quoteJjName(tag), "--remote", remote], {
         timeout: TIMEOUTS.GIT_FETCH,
       });
@@ -913,12 +914,14 @@ export class JJRepository {
 
   /**
    * Deletes a tag from a remote. On jj 0.44+ this is the same push command as a
-   * normal push (a locally-deleted tag is removed from the remote on push). On
-   * older jj versions the tag is deleted directly via `git push --delete`.
+   * normal push (a locally-deleted tag is removed from the remote on push).
+   * On older jj versions the tag is deleted directly via `git push --delete`.
    */
   async deleteTagFromRemote(tag: string, remote: string): Promise<void> {
     if (this.supportsTagTracking()) {
-      await this.pushTagToRemote(tag, remote);
+      await this.jjCommand(["git", "push", "--tag", quoteJjName(tag), "--remote", remote], {
+        timeout: TIMEOUTS.GIT_FETCH,
+      });
       return;
     }
     const gitDir = await this.getGitDir();

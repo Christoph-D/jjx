@@ -42,15 +42,38 @@ test("push tag to all remotes via upload icon", async ({ graphFrame, testRepo })
   await expect(unsyncedPill).not.toBeVisible();
 });
 
-test("push tag to single remote via context menu", async ({ graphFrame, testRepo }) => {
+test("push tag to single remote and untracked second remote via context menu", async ({ graphFrame, testRepo }) => {
   test.slow();
-  const { remoteARepo, remoteBRepo, tagPill } = await setupRemotesWithTrackedTag(testRepo, graphFrame);
+  const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
+  const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
+  const remoteARepo = await newTestRepo(remoteAPath);
+  const remoteBRepo = await newTestRepo(remoteBPath);
 
-  const uploadIcon = tagPill.locator('[data-role="push-icon"]');
-  await expect(uploadIcon).toBeVisible();
-  await uploadIcon.click();
+  await testRepo.jjCommand(["git", "remote", "add", "remote-a", remoteAPath]);
+  await testRepo.jjCommand(["git", "remote", "add", "remote-b", remoteBPath]);
 
+  await testRepo.commitFile("test.txt", "content", "initial commit");
+  await testRepo.createTag("my-tag", "@-");
+
+  const tagPill = graphFrame.locator('[data-tag="my-tag"]');
+  await expect(tagPill).toBeVisible();
   const unsyncedPill = graphFrame.locator('[data-tag="my-tag"][data-unsynced]');
+
+  // Push to remote-a first (tracks the tag on remote-a only).
+  await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");
+  await expect(async () => {
+    expect(await remoteARepo.getTag("my-tag")).toBeDefined();
+  }).toPass();
+
+  // remote-b is still untracked. Pushing to it must succeed despite the tag
+  // already being tracked on remote-a (regression test for jj 0.44 refusing to
+  // create a new remote tag on an untracked remote).
+  await clickPillMenuItem(graphFrame, tagPill, "Push to remote-b");
+  await expect(async () => {
+    expect(await remoteBRepo.getTag("my-tag")).toBeDefined();
+  }).toPass();
+
+  // Both remotes are now tracked and in sync.
   await expect(unsyncedPill).not.toBeVisible();
 
   // Move the tag to a new commit, making it out-of-sync with the remotes again.
@@ -58,7 +81,6 @@ test("push tag to single remote via context menu", async ({ graphFrame, testRepo
   await testRepo.jjCommand(["tag", "set", "-r", "@-", "my-tag", "--allow-move"]);
 
   await expect(unsyncedPill).toBeVisible();
-  await expect(uploadIcon).toBeVisible();
 
   await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");
 
