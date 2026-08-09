@@ -998,8 +998,8 @@ function buildComparisonDiffResourceStates(
   },
 ): vscode.SourceControlResourceState[] {
   const { from, to, mode, fromIsWorkingCopy, toIsWorkingCopy } = options;
-  const fromShort = fromIsWorkingCopy ? "@" : formatChangeIdShort(from);
-  const toShort = toIsWorkingCopy ? "@" : formatChangeIdShort(to);
+  const fromShort = fromIsWorkingCopy ? formatWorkingCopyLabel() : formatChangeIdShort(from);
+  const toShort = toIsWorkingCopy ? formatWorkingCopyLabel() : formatChangeIdShort(to);
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);
     const makeSideUri = (side: "left" | "right"): vscode.Uri =>
