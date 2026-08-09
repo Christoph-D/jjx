@@ -1,6 +1,14 @@
 import { sep } from "path";
 
-import type { ChangeId } from "./types";
+import type { ChangeId, FullChangeId } from "./types";
+
+export function fullChangeIdFromString(value: string): FullChangeId {
+  return value as FullChangeId;
+}
+
+export function fullChangeId(changeId: string, changeOffset: string): FullChangeId {
+  return fullChangeIdFromString(changeOffset ? `${changeId}/${changeOffset}` : changeId);
+}
 
 export function escapeTomlString(value: string): string {
   return value

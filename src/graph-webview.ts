@@ -4,7 +4,14 @@ import type { JJRepository, LogEntry, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { showErrorMessage } from "./vscode-utils";
-import { changeIdAffixes, formatDiffTitle, formatRevSuffix, maxChangeIdPrefixLength } from "./utils";
+import {
+  changeIdAffixes,
+  formatDiffTitle,
+  formatRevSuffix,
+  fullChangeId,
+  fullChangeIdFromString,
+  maxChangeIdPrefixLength,
+} from "./utils";
 import type { ChangeId } from "./types";
 import { assignLanes } from "./lane-assigner";
 import type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
@@ -648,7 +655,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         }
       }
 
-      const changeIdsInGraph = new Set(changes.map((c) => c.id.changeId));
+      const changeIdsInGraph = new Set<string>(changes.map((c) => c.id.changeId));
       const previousSelectedNodes = this.selectedNodes;
       this.selectedNodes = new Set(Array.from(previousSelectedNodes).filter((id) => changeIdsInGraph.has(id)));
       // If any selected changes were removed (e.g. abandoned), notify listeners so the
@@ -789,7 +796,7 @@ function parseJJLogJson(
 
       return {
         id: {
-          changeId: entryUniqueId,
+          changeId: fullChangeIdFromString(entryUniqueId),
           changeIdPrefix: "",
           changeIdSuffix: "",
           changeOffset: null,
@@ -823,7 +830,7 @@ function parseJJLogJson(
 
     const showOffset = shouldShowOffset(entry);
     const changeOffset = showOffset ? entry.change_offset : null;
-    const uniqueChangeId = entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id;
+    const uniqueChangeId = fullChangeId(entry.change_id, entry.change_offset);
 
     let branchType: string | undefined;
     if (entry.current_working_copy) {

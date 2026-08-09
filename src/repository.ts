@@ -29,7 +29,14 @@ import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses 
 import { parseInterdiffSummary } from "./parse-interdiff-summary";
 import { logger } from "./logger";
 import { quoteJjName } from "./quote";
-import { changeIdAffixes, filepathToFileset, isWindows, maxChangeIdPrefixLength, pathEquals } from "./utils";
+import {
+  changeIdAffixes,
+  filepathToFileset,
+  fullChangeId,
+  isWindows,
+  maxChangeIdPrefixLength,
+  pathEquals,
+} from "./utils";
 import {
   getDiffToolConfigs,
   expectDiffToolRequest,
@@ -308,7 +315,7 @@ export class JJRepository {
 
     const workingCopy: Change = {
       changeId: {
-        changeId: entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
+        changeId: fullChangeId(entry.change_id, entry.change_offset),
         ...changeIdAffixes(entry.change_id, entry.change_id_shortest, maxPrefixLength),
         changeOffset: entry.divergent ? entry.change_offset || null : null,
       },
@@ -322,7 +329,7 @@ export class JJRepository {
 
     const parentChanges: Change[] = entry.parents.map((p) => ({
       changeId: {
-        changeId: p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
+        changeId: fullChangeId(p.change_id, p.change_offset),
         ...changeIdAffixes(p.change_id, p.change_id_shortest, maxPrefixLength),
         changeOffset: p.divergent ? p.change_offset || null : null,
       },
@@ -431,7 +438,7 @@ export class JJRepository {
       return {
         change: {
           changeId: {
-            changeId: entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
+            changeId: fullChangeId(entry.change_id, entry.change_offset),
             ...changeIdAffixes(entry.change_id, entry.change_id_shortest, maxPrefixLength),
             changeOffset: entry.divergent ? entry.change_offset || null : null,
           },

@@ -1,5 +1,7 @@
 export type FileStatusType = "A" | "M" | "D" | "R" | "C" | "X" | "?";
 
+export type FullChangeId = string & { readonly __brand: "FullChangeId" };
+
 export interface ChangeId {
   // Internal only: A full-length change ID.
   // This ID is meant to be used in jj commands

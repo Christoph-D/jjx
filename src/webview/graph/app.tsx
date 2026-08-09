@@ -48,7 +48,7 @@ export function App() {
       isJJNotFound.value = false;
       isNoRepoFound.value = false;
       isError.value = false;
-      const newChangeIds = new Set(message.changes.map((c) => c.id.changeId));
+      const newChangeIds = new Set<string>(message.changes.map((c) => c.id.changeId));
       const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(id)));
       selectedNodes.value = preserved;
       diffStatsCache.value = new Map();
