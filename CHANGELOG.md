@@ -1,5 +1,22 @@
 # Change Log
 
+## 1.12.2
+
+### Bug Fixes
+
+- **Clean short change IDs** - Render correctly computed short change IDs everywhere: graph, source control, editor
+  titles, quick-picks, and confirmation dialogs
+- **Diff editor titles** - Unify and improve diff editor titles
+- **Toggle Diff View** - Support toggling added-file diffs
+- Make the working copy side editable in from/to diffs
+- Ignore double-click on elided graph nodes
+
+### Internal
+
+- **Type-safe change IDs** - Replace raw `string` change IDs with proper types throughout the protocol, extension host,
+  and webview
+- Route extension↔webview messages through typed `postMessage` wrappers
+
 ## 1.12.1
 
 ### New Features
