@@ -62,7 +62,7 @@ export function getUniqueId(node: ChangeNode): string {
 
 export interface LaneNode {
   lane: number;
-  changeId: string;
+  changeId: FullChangeId;
   colorIndex: number;
   numLanesActiveVisually: number;
 }
@@ -71,8 +71,8 @@ interface LaneEdge {
   fromRow: number;
   toRow: number;
   lanePath: number[];
-  fromId: string;
-  toId: string;
+  fromId: FullChangeId;
+  toId: FullChangeId;
   colorIndex: number;
   extendsToBottom?: boolean;
 }

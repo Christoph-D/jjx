@@ -1,15 +1,15 @@
 import { useSignal, useSignalEffect } from "@preact/signals";
 import { currentChanges, currentGraph, changeIdHorizontalOffset, connectedHighlight } from "../signals";
 import { EDGE_EXTENSION } from "../types";
-import type { ChangeIdGraph } from "../../../graph-protocol";
+import type { ChangeIdGraph, FullChangeId } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
 import { cx } from "../utils";
 import styles from "./connection-lines.module.css";
 
 interface PathData {
   d: string;
-  fromId: string;
-  toId: string;
+  fromId: FullChangeId;
+  toId: FullChangeId;
   color: string;
 }
 

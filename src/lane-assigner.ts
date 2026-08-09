@@ -1,5 +1,6 @@
-import type { LogEntry, ParentRef } from "./types";
+import type { FullChangeId, LogEntry, ParentRef } from "./types";
 import type { ChangeIdGraph } from "./graph-protocol";
+import { fullChangeId } from "./utils";
 
 const colorRegistryLength = 5;
 
@@ -8,22 +9,22 @@ function rot(n: number, length: number): number {
 }
 
 interface LaneInfo {
-  targetId: string | null;
+  targetId: FullChangeId | null;
   colorIndex: number;
 }
 
-function getParentUniqueId(parent: ParentRef): string {
-  return parent.change_offset ? `${parent.change_id}/${parent.change_offset}` : parent.change_id;
+function getParentUniqueId(parent: ParentRef): FullChangeId {
+  return fullChangeId(parent.change_id, parent.change_offset);
 }
 
 interface NormalizedEntry {
-  changeId: string;
-  parentIds: string[];
+  changeId: FullChangeId;
+  parentIds: FullChangeId[];
 }
 
 function normalizeEntries(entries: LogEntry[]): NormalizedEntry[] {
   return entries.map((entry) => ({
-    changeId: entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
+    changeId: fullChangeId(entry.change_id, entry.change_offset),
     parentIds: entry.parents.map(getParentUniqueId),
   }));
 }
@@ -36,7 +37,7 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
   const nodeToRow: Record<string, number> = {};
 
   // We're working with a partial jj log, so some parent changes could be outside the visible set.
-  const visibleChangeIds = new Set<string>();
+  const visibleChangeIds = new Set<FullChangeId>();
   for (const norm of normalized) {
     visibleChangeIds.add(norm.changeId);
   }
@@ -105,7 +106,7 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
     }
 
     // Deduplicate: if multiple lanes target the same ID, keep only the first
-    const seenTargets = new Set<string>();
+    const seenTargets = new Set<FullChangeId>();
     for (let i = 0; i < lanes.length; i++) {
       const tid = lanes[i].targetId;
       if (tid !== null) {
