@@ -236,7 +236,7 @@ async function createChange(
 }
 
 async function openFileDiff(repo: JJRepository, filePath: string, changeId: string): Promise<void> {
-  const { fileStatuses } = await repo.show(changeId);
+  const { change, fileStatuses } = await repo.show(changeId);
   const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
 
   const beforeUri =
@@ -253,7 +253,7 @@ async function openFileDiff(repo: JJRepository, filePath: string, changeId: stri
         ? vscode.Uri.file(filePath)
         : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
 
-  const diffTitleSuffix = formatRevSuffix(changeId);
+  const diffTitleSuffix = changeId === "@" ? "(Working Copy)" : formatChangeIdSuffix(change.changeId);
 
   await vscode.commands.executeCommand(
     "vscode.diff",
