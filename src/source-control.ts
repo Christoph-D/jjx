@@ -680,7 +680,7 @@ class RepositorySourceControlManager {
   static getLabel(prefix: string, change: Change, showChangeId: boolean = true) {
     const parts: string[] = [prefix];
     if (showChangeId) {
-      parts.push(` [${formatChangeIdShort(change.changeId.changeId, change.changeId.changeOffset)}]`);
+      parts.push(` [${formatChangeIdShort(change.changeId)}]`);
     }
     if (change.description) {
       parts.push(` • ${change.description}`);

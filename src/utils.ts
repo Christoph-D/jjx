@@ -1,5 +1,7 @@
 import { sep } from "path";
 
+import type { ChangeId } from "./types";
+
 export function escapeTomlString(value: string): string {
   return value
     .replaceAll("\\", "\\\\")
@@ -24,9 +26,9 @@ export function formatDiffTitle(renamedFrom: string | undefined, baseName: strin
   return (renamedFrom ? `${renamedFrom} → ` : "") + `${baseName} ${suffix}`;
 }
 
-export function formatChangeIdShort(changeId: string, changeOffset: string | null): string {
-  const prefix = changeId.substring(0, 8);
-  return changeOffset ? `${prefix}/${changeOffset}` : prefix;
+export function formatChangeIdShort(changeId: ChangeId): string {
+  const short = changeId.changeIdPrefix + changeId.changeIdSuffix;
+  return changeId.changeOffset ? `${short}/${changeId.changeOffset}` : short;
 }
 
 export function maxChangeIdPrefixLength(changeIdShortests: string[]): number {
@@ -52,7 +54,11 @@ export function formatComparisonRev(
   isWorkingCopy: boolean,
   workingCopyLabel = "@",
 ): string {
-  return isWorkingCopy ? workingCopyLabel : formatChangeIdShort(changeId, changeOffset);
+  if (isWorkingCopy) {
+    return workingCopyLabel;
+  }
+  const prefix = changeId.substring(0, 8);
+  return changeOffset ? `${prefix}/${changeOffset}` : prefix;
 }
 
 const isMacintosh = process.platform === "darwin";

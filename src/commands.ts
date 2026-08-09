@@ -998,7 +998,7 @@ export function registerInitCommands(state: ExtensionState): void {
         const status = await repository.getStatus(true);
         for (const parent of status.parentChanges) {
           items.push({
-            label: `$(arrow-down) Parent: ${formatChangeIdShort(parent.changeId.changeId, null)}`,
+            label: `$(arrow-down) Parent: ${formatChangeIdShort(parent.changeId)}`,
             description: parent.description || "(no description)",
             alwaysShow: true,
             changeId: parent.changeId.changeId,
