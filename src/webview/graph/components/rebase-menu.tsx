@@ -1,6 +1,5 @@
 import { currentChanges, rebaseMenu, postMessage } from "../signals";
 import { Menu, MenuItem, MenuSeparator, Submenu, SubmenuItem } from "./menu-container";
-import { getUniqueId } from "../../../graph-protocol";
 
 function ImmutableIcon() {
   return (
@@ -24,7 +23,7 @@ export function RebaseMenu() {
 
   const { sourceId, targetId, targetChange } = state;
   const isImmutable = targetChange.branchType === "◆";
-  const sourceChange = currentChanges.value.find((c) => getUniqueId(c) === sourceId);
+  const sourceChange = currentChanges.value.find((c) => c.branchType !== "~" && c.id.changeId === sourceId);
   const isSourceImmutable = sourceChange?.branchType === "◆";
   const isTargetAlreadyParent = !!sourceChange?.parentChangeIds?.includes(targetId);
   const immutableIcon = isImmutable || isSourceImmutable ? <ImmutableIcon /> : null;

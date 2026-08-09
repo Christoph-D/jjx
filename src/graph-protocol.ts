@@ -56,8 +56,18 @@ export interface RegularChangeNode extends ChangeNodeBase {
 
 export type ChangeNode = ElidedChangeNode | RegularChangeNode;
 
-export function getUniqueId(node: ChangeNode): string {
-  return node.branchType === "~" ? node.fakeId : node.id.changeId;
+export type UniqueId = string & { readonly __brand: "UniqueId" };
+
+export function createUniqueId(value: string): UniqueId {
+  return value as UniqueId;
+}
+
+export function uniqueIdToString(id: UniqueId): string {
+  return id;
+}
+
+export function getUniqueId(node: ChangeNode): UniqueId {
+  return createUniqueId(node.branchType === "~" ? node.fakeId : node.id.changeId);
 }
 
 export interface LaneNode {
