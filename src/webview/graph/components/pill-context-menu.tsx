@@ -7,6 +7,23 @@ export function PillContextMenu() {
     return null;
   }
 
+  // While the ref is being pushed, the only available action is to cancel the push.
+  if (state.cancelPush) {
+    return (
+      <Menu id="pill-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
+        <MenuItem
+          action="cancelPush"
+          onClick={() => {
+            postMessage({ command: "cancelPush", refType: state.type, name: state.name });
+            pillContextMenu.value = null;
+          }}
+        >
+          Cancel Push
+        </MenuItem>
+      </Menu>
+    );
+  }
+
   const isBookmark = state.type === "bookmark";
   const isTag = state.type === "tag";
   // Don't show track/untrack for tags because tags are not supposed to move,

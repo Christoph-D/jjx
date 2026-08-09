@@ -102,6 +102,8 @@ interface PillContextMenuState {
   unsyncedRemotes?: string[];
   untrackedRemotes?: string[];
   pendingRemotes?: boolean;
+  /** When set, the ref is being pushed: show only a "Cancel Push" action. */
+  cancelPush?: boolean;
 }
 
 export const pillContextMenu = signal<PillContextMenuState | null>(null);

@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import type { JJRepository, LogEntry, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
+import { CancelledError } from "./process";
 import path from "path";
 import { showErrorMessage } from "./vscode-utils";
 import { changeIdAffixes, formatChangeIdShort, formatDiffTitle, fullChangeId, maxChangeIdPrefixLength } from "./utils";
@@ -192,7 +193,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               await this.refresh();
             }
           } catch (error: unknown) {
-            showErrorMessage("Failed to push bookmark", error);
+            if (!(error instanceof CancelledError)) {
+              showErrorMessage("Failed to push bookmark", error);
+            }
           } finally {
             this.postMessageToWebview({ command: "pushBookmarkDone", bookmark: message.bookmark });
           }
@@ -273,6 +276,16 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             });
           }
           break;
+        case "cancelPush": {
+          const cancelled = repo.cancelPush(message.refType, message.name);
+          if (cancelled) {
+            const kind = message.refType === "bookmark" ? "bookmark" : "tag";
+            vscode.window.showErrorMessage(
+              `Cancelled push of ${kind} "${message.name}". The push may already have succeeded. Please fetch from the remote to reconcile the state.`,
+            );
+          }
+          break;
+        }
         case "pushTagToRemote":
           await this.withRefresh("push tag", () => repo.pushTagToRemote(message.tag, message.remote));
           this.postMessageToWebview({ command: "pushTagDone", tag: message.tag });
@@ -286,7 +299,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               await this.refresh();
             }
           } catch (error: unknown) {
-            showErrorMessage("Failed to push tag", error);
+            if (!(error instanceof CancelledError)) {
+              showErrorMessage("Failed to push tag", error);
+            }
           } finally {
             this.postMessageToWebview({ command: "pushTagDone", tag: message.tag });
           }
@@ -578,6 +593,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       await fn();
       await this.refresh();
     } catch (error: unknown) {
+      // Cancellation is user-initiated ("Cancel Push"); the cancel handler reports it, so don't
+      // also surface a generic failure message.
+      if (error instanceof CancelledError) {
+        return;
+      }
       showErrorMessage(`Failed to ${errorLabel}`, error);
     }
   }

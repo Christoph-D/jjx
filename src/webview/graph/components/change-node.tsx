@@ -286,11 +286,21 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
             data-bookmark={b.name}
             data-unsynced={!b.synced && !b.conflict ? "" : undefined}
             data-conflicted={b.conflict ? "" : undefined}
-            draggable={true}
+            draggable={!pushingBookmarks.value.has(b.name)}
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
               closeAllMenus();
+              if (pushingBookmarks.value.has(b.name)) {
+                pillContextMenu.value = {
+                  type: "bookmark",
+                  name: b.name,
+                  pageX: e.pageX,
+                  pageY: e.pageY,
+                  cancelPush: true,
+                };
+                return;
+              }
               pillContextMenu.value = {
                 type: "bookmark",
                 name: b.name,
@@ -393,6 +403,16 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               e.preventDefault();
               e.stopPropagation();
               closeAllMenus();
+              if (pushingTags.value.has(t.name)) {
+                pillContextMenu.value = {
+                  type: "tag",
+                  name: t.name,
+                  pageX: e.pageX,
+                  pageY: e.pageY,
+                  cancelPush: true,
+                };
+                return;
+              }
               pillContextMenu.value = {
                 type: "tag",
                 name: t.name,

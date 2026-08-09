@@ -23,6 +23,7 @@ import {
   collectProcessOutput,
   type ProcessOutput,
   ProcessError,
+  CancelledError,
 } from "./process";
 import { parseRenamePaths } from "./parse-rename-paths";
 import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses } from "./parse-file-statuses";
@@ -88,6 +89,13 @@ export class JJRepository {
   private autoUpdateStaleAttempted = false;
   private _gitDirPromise: Promise<string> | undefined;
 
+  /**
+   * Cancellation sources for in-flight pushes, keyed by `<refType>:<name>`.
+   * Cancelling a source kills the running `jj git push`/`git push` child
+   * process for that ref (see collectProcessOutput's token handling).
+   */
+  private readonly pushCancellationSources = new Map<string, vscode.CancellationTokenSource>();
+
   constructor(
     public repositoryRoot: string,
     private jjPath: string,
@@ -100,6 +108,49 @@ export class JJRepository {
       this._gitDirPromise = this.jjCommandRead(["git", "root"]).then((buf) => buf.toString().trim());
     }
     return this._gitDirPromise;
+  }
+
+  private pushCancellationKey(refType: "bookmark" | "tag", name: string): string {
+    return `${refType}:${name}`;
+  }
+
+  /**
+   * Runs a push while registering a cancellation source for the ref so it can be
+   * aborted via {@link cancelPush}. Cancelling the source kills the in-flight
+   * `jj git push`/`git push` child process (see collectProcessOutput's token
+   * handling). Only the outermost push registers a source; callers that already
+   * hold a token (e.g. the multi-remote push loops) pass it through directly.
+   */
+  private async withPushCancellation<T>(
+    refType: "bookmark" | "tag",
+    name: string,
+    fn: (token: vscode.CancellationToken) => Promise<T>,
+  ): Promise<T> {
+    const source = new vscode.CancellationTokenSource();
+    const key = this.pushCancellationKey(refType, name);
+    this.pushCancellationSources.set(key, source);
+    try {
+      return await fn(source.token);
+    } finally {
+      // Only remove our source; a newer push for the same ref may have replaced it.
+      if (this.pushCancellationSources.get(key) === source) {
+        this.pushCancellationSources.delete(key);
+      }
+      source.dispose();
+    }
+  }
+
+  /**
+   * Cancels an in-flight push of the given ref by killing the running child
+   * process. Returns true if a push was found and cancelled.
+   */
+  cancelPush(refType: "bookmark" | "tag", name: string): boolean {
+    const source = this.pushCancellationSources.get(this.pushCancellationKey(refType, name));
+    if (!source) {
+      return false;
+    }
+    source.cancel();
+    return true;
   }
 
   private parseFileStatuses(diffFiles: DiffFileEntry[], conflictedPaths: string[] | undefined): ParsedFileStatuses {
@@ -791,19 +842,35 @@ export class JJRepository {
     if (remotes.length === 0) {
       return [];
     }
+    const pushedRemotes: string[] = [];
     const failedRemoteErrors: string[] = [];
-    for (const remote of remotes) {
-      try {
-        await this.pushBookmarkToRemote(bookmark, remote);
-      } catch (e) {
-        const reason = e instanceof ProcessError ? e.stderr : e instanceof Error ? e.message : String(e);
-        failedRemoteErrors.push(`${remote}: ${reason}`);
+    let cancelled = false;
+    await this.withPushCancellation("bookmark", bookmark, async (token) => {
+      for (const remote of remotes) {
+        if (token.isCancellationRequested) {
+          cancelled = true;
+          break;
+        }
+        try {
+          await this.pushBookmarkToRemote(bookmark, remote, token);
+          pushedRemotes.push(remote);
+        } catch (e) {
+          if (token.isCancellationRequested || e instanceof CancelledError) {
+            cancelled = true;
+            break;
+          }
+          const reason = e instanceof ProcessError ? e.stderr : e instanceof Error ? e.message : String(e);
+          failedRemoteErrors.push(`${remote}: ${reason}`);
+        }
       }
+    });
+    if (cancelled) {
+      throw new CancelledError();
     }
     if (failedRemoteErrors.length > 0) {
       throw new Error(`Failed to push bookmark "${bookmark}":\n${failedRemoteErrors.join("\n")}`);
     }
-    return remotes;
+    return pushedRemotes;
   }
 
   async getBookmarksWithUnsyncedNonGitRemotes(operationId?: string): Promise<Set<string>> {
@@ -871,10 +938,18 @@ export class JJRepository {
     await this.jjCommand(["bookmark", "untrack", quoteJjName(bookmark), `--remote=${remote}`]);
   }
 
-  async pushBookmarkToRemote(bookmark: string, remote: string): Promise<void> {
-    await this.jjCommand(["git", "push", "--bookmark", quoteJjName(bookmark), "--remote", remote], {
-      timeout: TIMEOUTS.GIT_FETCH,
-    });
+  async pushBookmarkToRemote(bookmark: string, remote: string, token?: vscode.CancellationToken): Promise<void> {
+    const run = (t: vscode.CancellationToken) =>
+      this.jjCommand(["git", "push", "--bookmark", quoteJjName(bookmark), "--remote", remote], {
+        token: t,
+        timeout: TIMEOUTS.GIT_FETCH,
+      });
+    if (token) {
+      // Caller (e.g. pushBookmark loop) owns the cancellation source.
+      await run(token);
+      return;
+    }
+    await this.withPushCancellation("bookmark", bookmark, run);
   }
 
   async deleteTag(tag: string) {
@@ -895,21 +970,36 @@ export class JJRepository {
     return !!this.jjVersion && versionAtLeast(this.jjVersion, JJ_VERSION_WITH_TAG_TRACKING);
   }
 
-  async pushTagToRemote(tag: string, remote: string): Promise<void> {
+  async pushTagToRemote(tag: string, remote: string, token?: vscode.CancellationToken): Promise<void> {
     if (this.supportsTagTracking()) {
-      await this.jjCommand(["tag", "track", quoteJjName(tag), `--remote=${remote}`]);
-      await this.jjCommand(["git", "push", "--tag", quoteJjName(tag), "--remote", remote], {
-        timeout: TIMEOUTS.GIT_FETCH,
-      });
+      const run = async (t: vscode.CancellationToken) => {
+        await this.jjCommand(["tag", "track", quoteJjName(tag), `--remote=${remote}`], { token: t });
+        await this.jjCommand(["git", "push", "--tag", quoteJjName(tag), "--remote", remote], {
+          token: t,
+          timeout: TIMEOUTS.GIT_FETCH,
+        });
+      };
+      if (token) {
+        await run(token);
+        return;
+      }
+      await this.withPushCancellation("tag", tag, run);
       return;
     }
     const gitDir = await this.getGitDir();
-    await collectProcessOutput(
-      spawn("git", ["push", remote, tag], {
-        cwd: this.repositoryRoot,
-        env: { ...process.env, GIT_DIR: gitDir },
-      }),
-    );
+    const run = (t: vscode.CancellationToken) =>
+      collectProcessOutput(
+        spawn("git", ["push", remote, tag], {
+          cwd: this.repositoryRoot,
+          env: { ...process.env, GIT_DIR: gitDir },
+        }),
+        t,
+      );
+    if (token) {
+      await run(token);
+      return;
+    }
+    await this.withPushCancellation("tag", tag, run);
   }
 
   /**
@@ -1036,19 +1126,35 @@ export class JJRepository {
     if (remotes.length === 0) {
       return [];
     }
+    const pushedRemotes: string[] = [];
     const failedRemoteErrors: string[] = [];
-    for (const remote of remotes) {
-      try {
-        await this.pushTagToRemote(tag, remote);
-      } catch (e) {
-        const reason = e instanceof ProcessError ? e.stderr : e instanceof Error ? e.message : String(e);
-        failedRemoteErrors.push(`${remote}: ${reason}`);
+    let cancelled = false;
+    await this.withPushCancellation("tag", tag, async (token) => {
+      for (const remote of remotes) {
+        if (token.isCancellationRequested) {
+          cancelled = true;
+          break;
+        }
+        try {
+          await this.pushTagToRemote(tag, remote, token);
+          pushedRemotes.push(remote);
+        } catch (e) {
+          if (token.isCancellationRequested || e instanceof CancelledError) {
+            cancelled = true;
+            break;
+          }
+          const reason = e instanceof ProcessError ? e.stderr : e instanceof Error ? e.message : String(e);
+          failedRemoteErrors.push(`${remote}: ${reason}`);
+        }
       }
+    });
+    if (cancelled) {
+      throw new CancelledError();
     }
     if (failedRemoteErrors.length > 0) {
       throw new Error(`Failed to push tag "${tag}":\n${failedRemoteErrors.join("\n")}`);
     }
-    return remotes;
+    return pushedRemotes;
   }
 
   async absorb(fromRev: string) {
