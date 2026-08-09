@@ -19,8 +19,16 @@ interface ChangedFile {
   conflict: boolean;
 }
 
-export interface ChangeNode {
+interface ChangeNodeBase {
   id: ChangeId;
+  parentChangeIds?: string[];
+}
+
+export interface ElidedChangeNode extends ChangeNodeBase {
+  branchType: "~";
+}
+
+export interface RegularChangeNode extends ChangeNodeBase {
   label: string;
   description: string;
   tooltip: string;
@@ -30,8 +38,7 @@ export interface ChangeNode {
   localTags: LogEntryLocalRef[];
   remoteTags: LogEntryRemoteRef[];
   workingCopies: string[];
-  parentChangeIds?: string[];
-  branchType?: string;
+  branchType: "@" | "◆" | "○";
   authorName: string;
   authorEmail: string;
   authorTimestamp: string;
@@ -42,6 +49,8 @@ export interface ChangeNode {
   elided?: number;
   changedFiles?: ChangedFile[];
 }
+
+export type ChangeNode = ElidedChangeNode | RegularChangeNode;
 
 export interface LaneNode {
   lane: number;

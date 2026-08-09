@@ -1,6 +1,6 @@
 import { signal } from "@preact/signals";
 import type { VSCodeAPI } from "./types";
-import type { ChangeNode, ChangeIdGraph, DiffStats } from "../../graph-protocol";
+import type { ChangeNode, ChangeIdGraph, DiffStats, RegularChangeNode } from "../../graph-protocol";
 
 declare function acquireVsCodeApi(): VSCodeAPI;
 
@@ -37,7 +37,7 @@ export const tooltipHideTimeout = signal<ReturnType<typeof setTimeout> | null>(n
 export const diffStatsPrefetchTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
 
 interface ContextMenuState {
-  change: ChangeNode;
+  change: RegularChangeNode;
   pageX: number;
   pageY: number;
   changeDoubleClickAction: string;
@@ -46,13 +46,13 @@ interface ContextMenuState {
 interface RebaseMenuState {
   sourceId: string;
   targetId: string;
-  targetChange: ChangeNode;
+  targetChange: RegularChangeNode;
   pageX: number;
   pageY: number;
 }
 
 interface TooltipState {
-  change: ChangeNode;
+  change: RegularChangeNode;
   pageX: number;
   pageY: number;
 }
@@ -99,7 +99,7 @@ interface RemoteRefContextMenuState {
   type: "bookmark" | "tag";
   name: string;
   remote: string;
-  change: ChangeNode;
+  change: RegularChangeNode;
   pageX: number;
   pageY: number;
   changeDoubleClickAction: string;

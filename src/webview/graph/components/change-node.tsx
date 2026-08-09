@@ -31,12 +31,12 @@ import {
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import type { LaneNode } from "../../../graph-protocol";
-import type { ChangeNode } from "../../../graph-protocol";
+import type { ChangeNode, RegularChangeNode } from "../../../graph-protocol";
 import { abbreviateName, cx, escapeInvisibleChars } from "../utils";
 import { clearAllTooltipTimers } from "../hooks/use-tooltip-timers";
 
-function shouldShowTooltip(changeId: string, branchType: string | undefined): boolean {
-  return changeId !== rootChangeId && branchType !== "~";
+function shouldShowTooltip(change: ChangeNode): change is RegularChangeNode {
+  return change.id.changeId !== rootChangeId && change.branchType !== "~";
 }
 
 function isMenuOpen(): boolean {
@@ -90,7 +90,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
   };
 
   const handleDoubleClick = () => {
-    if (change.currentWorkingCopy) {
+    if (change.branchType !== "~" && change.currentWorkingCopy) {
       if (changeDoubleClickAction.value !== "new" || change.isEmpty) {
         return;
       }
@@ -119,7 +119,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
     if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
     }
-    if (shouldShowTooltip(change.id.changeId, change.branchType) && isOverTooltipTarget(e)) {
+    if (shouldShowTooltip(change) && isOverTooltipTarget(e)) {
       startHoverTimers(change, e.pageX, e.pageY);
     }
   };
@@ -159,7 +159,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
   return (
     <ChangeNodeClass
       changeId={change.id.changeId}
-      currentWorkingCopy={change.currentWorkingCopy}
+      currentWorkingCopy={change.branchType !== "~" && change.currentWorkingCopy}
       isElided={isElided}
       modeClasses={modeClasses}
       data-change-id={change.id.changeId}
@@ -172,7 +172,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
       {...dragProps}
     >
       <div class={styles.changeIdLeft} data-role="change-id" ref={changeIdRef}>
-        {change.conflict && (
+        {change.branchType !== "~" && change.conflict && (
           <span class={styles.conflictIndicator} data-role="conflict-indicator">
             ✗
           </span>
@@ -181,7 +181,11 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
         <span class={styles.changeIdSuffix}>{change.id.changeIdSuffix}</span>
         {change.id.changeOffset && <span class={styles.changeIdOffset}>/{change.id.changeOffset}</span>}
       </div>
-      <MemoizedChangeNodeTextContent change={change} graphW={graphW} />
+      {change.branchType === "~" ? (
+        <ElidedTextContent graphW={graphW} />
+      ) : (
+        <MemoizedChangeNodeTextContent change={change} graphW={graphW} />
+      )}
     </ChangeNodeClass>
   );
 }
@@ -218,11 +222,28 @@ function ChangeNodeClass({
   );
 }
 
+const ElidedTextContent = memo(function ElidedTextContent({ graphW }: { graphW: number }) {
+  const style = graphStyle.value;
+  return (
+    <div
+      class={styles.textContent}
+      data-role="text-content"
+      style={{
+        "--graph-width": `${graphW}px`,
+        "--change-id-right-padding": `${CHANGE_ID_RIGHT_PADDING}px`,
+      }}
+    >
+      <div></div>
+      {style !== "compact" && <div class={styles.description}></div>}
+    </div>
+  );
+});
+
 const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
   change,
   graphW,
 }: {
-  change: ChangeNode;
+  change: RegularChangeNode;
   graphW: number;
 }) {
   const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
@@ -443,7 +464,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
   );
 });
 
-const ChangedFileList = memo(function ChangedFileList({ change }: { change: ChangeNode }) {
+const ChangedFileList = memo(function ChangedFileList({ change }: { change: RegularChangeNode }) {
   return (
     <div class={styles.changedFiles}>
       {change.changedFiles!.map((f) => (

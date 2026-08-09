@@ -55,7 +55,7 @@ export function App() {
       const activeTooltip = tooltip.value;
       if (activeTooltip) {
         const updatedChange = message.changes.find((c) => c.id.changeId === activeTooltip.change.id.changeId);
-        if (updatedChange) {
+        if (updatedChange && updatedChange.branchType !== "~") {
           tooltip.value = { ...activeTooltip, change: updatedChange };
           vscode.postMessage({ command: "fetchDiffStats", changeId: updatedChange.id.changeId });
         } else {

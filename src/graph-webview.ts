@@ -246,6 +246,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             const allRemotes = await repo.getRemotes();
             const tagRemotes = new Set<string>();
             for (const change of this.currentChanges) {
+              if (change.branchType === "~") {
+                continue;
+              }
               for (const rt of change.remoteTags) {
                 if (rt.name === message.tag) {
                   tagRemotes.add(rt.remote);
@@ -372,7 +375,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "abandonChange": {
           const change = this.currentChanges.find((c) => c.id.changeId === message.changeId);
-          const firstLine = change?.fullDescription.split("\n")[0].trim() || "(no description set)";
+          const fullDescription = change && change.branchType !== "~" ? change.fullDescription : "";
+          const firstLine = fullDescription.split("\n")[0].trim() || "(no description set)";
           const truncated = firstLine.length > 120 ? firstLine.slice(0, 120) + "..." : firstLine;
           const prompt = change
             ? `Are you sure you want to abandon change "${change.id.changeIdPrefix}"?\n\n→ ${truncated}`
@@ -513,7 +517,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   private resolveSelection(selectedIds: string[]): GraphSelection[] {
     return selectedIds.flatMap((id) => {
       const node = this.currentChanges.find((c) => c.id.changeId === id);
-      return node ? { id: node.id, currentWorkingCopy: node.currentWorkingCopy } : [];
+      return node ? { id: node.id, currentWorkingCopy: node.branchType !== "~" && node.currentWorkingCopy } : [];
     });
   }
 
@@ -616,6 +620,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
       const unsyncedBookmarks = new Set<string>();
       for (const change of changes) {
+        if (change.branchType === "~") {
+          continue;
+        }
         for (const b of change.localBookmarks) {
           if (!b.synced && !b.conflict) {
             unsyncedBookmarks.add(b.name);
@@ -625,6 +632,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       if (unsyncedBookmarks.size > 0) {
         const bookmarksWithPushTargets = await this.repository.getBookmarksWithUnsyncedNonGitRemotes(operationId);
         for (const change of changes) {
+          if (change.branchType === "~") {
+            continue;
+          }
           for (const b of change.localBookmarks) {
             if (!b.synced && !b.conflict) {
               b.showPushButton = bookmarksWithPushTargets.has(b.name);
@@ -637,6 +647,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       if (supportsTagTracking) {
         const unsyncedTags = new Set<string>();
         for (const change of changes) {
+          if (change.branchType === "~") {
+            continue;
+          }
           for (const t of change.localTags) {
             if (!t.synced && !t.conflict) {
               unsyncedTags.add(t.name);
@@ -646,6 +659,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         if (unsyncedTags.size > 0) {
           const tagsWithPushTargets = await this.repository.getTagsWithUnsyncedNonGitRemotes(operationId);
           for (const change of changes) {
+            if (change.branchType === "~") {
+              continue;
+            }
             for (const t of change.localTags) {
               if (!t.synced && !t.conflict) {
                 t.showPushButton = tagsWithPushTargets.has(t.name);
@@ -801,24 +817,8 @@ function parseJJLogJson(
           changeIdSuffix: "",
           changeOffset: null,
         },
-        label: "",
-        description: "",
-        tooltip: "",
-        currentWorkingCopy: false,
-        localBookmarks: [],
-        remoteBookmarks: [],
-        localTags: [],
-        remoteTags: [],
-        workingCopies: [],
         parentChangeIds: uniqueParentIds,
-        branchType: "~",
-        authorName: "",
-        authorEmail: "",
-        authorTimestamp: "",
-        fullDescription: "",
-        mine: false,
-        conflict: false,
-        isEmpty: true,
+        branchType: "~" as const,
       };
     }
 
@@ -832,7 +832,7 @@ function parseJJLogJson(
     const changeOffset = showOffset ? entry.change_offset : null;
     const uniqueChangeId = fullChangeId(entry.change_id, entry.change_offset);
 
-    let branchType: string | undefined;
+    let branchType: "@" | "◆" | "○";
     if (entry.current_working_copy) {
       branchType = "@";
     } else if (entry.immutable) {
