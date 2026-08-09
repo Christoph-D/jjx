@@ -46,7 +46,7 @@ export function registerAnnotations(state: ExtensionState): void {
         lastUniqueChangeIds = uniqueChangeIdsKey;
         const showResults = await repository.showAll(uniqueChangeIds);
         cachedChanges = new Map<string, ChangeWithDetails>(
-          showResults.map((result) => [result.change.changeId, result.change]),
+          showResults.map((result) => [result.change.changeId.changeId, result.change]),
         );
       }
       if (annotateInfo && annotateInfo.uri === editor.document.uri && activeEditorUri === editor.document.uri) {

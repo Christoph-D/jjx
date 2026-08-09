@@ -4,7 +4,7 @@ import fs from "fs";
 import { provideOriginalResource } from "./source-control";
 import { resolveRealpath, type JJRepository } from "./repository";
 import type { ExtensionState } from "./extension-state";
-import type { FileStatus } from "./types";
+import type { ChangeId, FileStatus } from "./types";
 import { OperationTreeItem } from "./operation-log-tree-view";
 import { getParams, isComparisonDiffUri, resolveRev, toJJUri, type JJUriParams } from "./uri";
 import {
@@ -83,7 +83,7 @@ function getRequiredRepoFromGroup(state: ExtensionState, resourceGroup: vscode.S
   return repository;
 }
 
-async function selectParentChange(repository: JJRepository): Promise<{ changeId: string } | undefined> {
+async function selectParentChange(repository: JJRepository): Promise<{ changeId: ChangeId } | undefined> {
   const status = await repository.getStatus(true);
 
   if (status.parentChanges.length === 0) {
@@ -95,7 +95,7 @@ async function selectParentChange(repository: JJRepository): Promise<{ changeId:
   }
 
   const parentOptions = status.parentChanges.map((parent) => ({
-    label: parent.changeId,
+    label: parent.changeId.changeId,
     description: parent.description || "(no description)",
     parent,
   }));
@@ -565,7 +565,7 @@ export function registerInitCommands(state: ExtensionState): void {
 
       await repository.squashRetryImmutable({
         fromRev: "@",
-        toRev: destinationParentChange.changeId,
+        toRev: destinationParentChange.changeId.changeId,
         filepaths: resourceStates.map((rs) => resolveRealpath(rs.resourceUri.fsPath)),
       });
     },
@@ -584,7 +584,7 @@ export function registerInitCommands(state: ExtensionState): void {
       const repository = getRequiredRepoFromGroup(state, resourceGroup);
       const status = await repository.getStatus(true);
 
-      const parentChange = status.parentChanges.find((change) => change.changeId === resourceGroup.id);
+      const parentChange = status.parentChanges.find((change) => change.changeId.changeId === resourceGroup.id);
       if (parentChange === undefined) {
         throw new Error("Parent change we're squashing from was not found in status");
       }
@@ -627,7 +627,7 @@ export function registerInitCommands(state: ExtensionState): void {
 
       await repository.squashRetryImmutable({
         fromRev: "@",
-        toRev: destinationParentChange.changeId,
+        toRev: destinationParentChange.changeId.changeId,
       });
     },
     { errorPrefix: "Failed to squash" },
@@ -644,7 +644,7 @@ export function registerInitCommands(state: ExtensionState): void {
       const repository = getRequiredRepoFromGroup(state, resourceGroup);
       const status = await repository.getStatus(true);
 
-      const parentChange = status.parentChanges.find((change) => change.changeId === resourceGroup.id);
+      const parentChange = status.parentChanges.find((change) => change.changeId.changeId === resourceGroup.id);
       if (parentChange === undefined) {
         throw new Error("Parent change we're squashing from was not found in status");
       }
@@ -998,10 +998,10 @@ export function registerInitCommands(state: ExtensionState): void {
         const status = await repository.getStatus(true);
         for (const parent of status.parentChanges) {
           items.push({
-            label: `$(arrow-down) Parent: ${parent.changeId.substring(0, 8)}`,
+            label: `$(arrow-down) Parent: ${parent.changeId.changeId.substring(0, 8)}`,
             description: parent.description || "(no description)",
             alwaysShow: true,
-            changeId: parent.changeId,
+            changeId: parent.changeId.changeId,
           });
         }
 

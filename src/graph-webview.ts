@@ -110,7 +110,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               return;
             }
             const status = await repo.getStatus(true);
-            if (message.changeId === status.workingCopy.changeId) {
+            if (message.changeId === status.workingCopy.changeId.changeId) {
               return;
             }
             await repo.editRetryImmutable(message.changeId);

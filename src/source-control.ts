@@ -657,7 +657,7 @@ class RepositorySourceControlManager {
     const parentShowPromises = status.parentChanges.map(async (parentChange) => {
       const rev = getRevFromChange(parentChange);
       const showResult = await this.repository.show(rev, token, operationId);
-      return { changeId: parentChange.changeId, showResult };
+      return { changeId: parentChange.changeId.changeId, showResult };
     });
 
     const parentShowResultsArray = await Promise.all(parentShowPromises);
@@ -682,9 +682,9 @@ class RepositorySourceControlManager {
     const parts: string[] = [prefix];
     if (showChangeId) {
       const changeIdDisplay =
-        change.divergent && change.changeOffset
-          ? `${change.changeId.substring(0, 8)}/${change.changeOffset}`
-          : change.changeId.substring(0, 8);
+        change.divergent && change.changeId.changeOffset
+          ? `${change.changeId.changeId.substring(0, 8)}/${change.changeId.changeOffset}`
+          : change.changeId.changeId.substring(0, 8);
       parts.push(` [${changeIdDisplay}]`);
     }
     if (change.description) {
@@ -719,7 +719,7 @@ class RepositorySourceControlManager {
     this.untrackedResourceGroup.resourceStates = buildUntrackedResourceStates(this.status.untrackedFiles);
 
     const showParentChangeId = this.status.parentChanges.length > 1;
-    const desiredParentIds = this.status.parentChanges.map((change) => change.changeId);
+    const desiredParentIds = this.status.parentChanges.map((change) => change.changeId.changeId);
     const currentParentIds = this.parentResourceGroups.map((group) => group.id);
     const parentOrderMatches =
       currentParentIds.length === desiredParentIds.length &&
@@ -736,10 +736,12 @@ class RepositorySourceControlManager {
 
     let newParentCreated = false;
     for (const parentChange of this.status.parentChanges) {
-      let parentChangeResourceGroup = this.parentResourceGroups.find((group) => group.id === parentChange.changeId);
+      let parentChangeResourceGroup = this.parentResourceGroups.find(
+        (group) => group.id === parentChange.changeId.changeId,
+      );
       if (!parentChangeResourceGroup) {
         parentChangeResourceGroup = this.sourceControl.createResourceGroup(
-          parentChange.changeId,
+          parentChange.changeId.changeId,
           RepositorySourceControlManager.getLabel("Parent Commit", parentChange, showParentChangeId),
         );
         this.parentResourceGroups.push(parentChangeResourceGroup);
@@ -752,13 +754,13 @@ class RepositorySourceControlManager {
         );
       }
 
-      const showResult = this.parentShowResults.get(parentChange.changeId);
+      const showResult = this.parentShowResults.get(parentChange.changeId.changeId);
       if (showResult) {
         parentChangeResourceGroup.resourceStates = buildResourceStates(showResult.fileStatuses, {
-          changeId: parentChange.changeId,
-          diffTitleSuffix: `(${parentChange.changeId.substring(0, 8)})`,
+          changeId: parentChange.changeId.changeId,
+          diffTitleSuffix: `(${parentChange.changeId.changeId.substring(0, 8)})`,
           fileClickAction,
-          conflictedFiles: this.conflictedFilesByChange.get(parentChange.changeId),
+          conflictedFiles: this.conflictedFilesByChange.get(parentChange.changeId.changeId),
         });
       }
     }
@@ -775,8 +777,8 @@ class RepositorySourceControlManager {
     if (this.selectedCommitShowResult) {
       const changeId = getRevFromChange(this.selectedCommitShowResult.change);
       this.selectedCommitChangeId = changeId;
-      const isParent = this.status.parentChanges.some((p) => p.changeId === changeId);
-      const isWorkingCopy = this.status.workingCopy.changeId === changeId;
+      const isParent = this.status.parentChanges.some((p) => p.changeId.changeId === changeId);
+      const isWorkingCopy = this.status.workingCopy.changeId.changeId === changeId;
       if (isParent || isWorkingCopy) {
         this.selectedCommitResourceGroup?.dispose();
         this.selectedCommitResourceGroup = undefined;
@@ -838,7 +840,7 @@ class RepositorySourceControlManager {
     const combinedFileStatusesByChange = new Map(this.fileStatusesByChange);
     if (this.selectedCommitShowResult && this.selectedCommitChangeId) {
       combinedFileStatusesByChange.set(
-        this.selectedCommitShowResult.change.changeId,
+        this.selectedCommitShowResult.change.changeId.changeId,
         this.selectedCommitShowResult.fileStatuses,
       );
     }
@@ -863,8 +865,8 @@ class RepositorySourceControlManager {
     if (
       !changeId ||
       (this.status &&
-        (this.status.workingCopy.changeId === changeId ||
-          this.status.parentChanges.some((p) => p.changeId === changeId)))
+        (this.status.workingCopy.changeId.changeId === changeId ||
+          this.status.parentChanges.some((p) => p.changeId.changeId === changeId)))
     ) {
       this.selectedCommitShowResult = undefined;
     } else {

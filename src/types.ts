@@ -15,21 +15,20 @@ export type FileStatus = {
 };
 
 export interface Change {
-  changeId: string;
+  changeId: ChangeId;
   commitId: string;
   bookmarks?: string[];
   description: string;
   isEmpty: boolean;
   isConflict: boolean;
   divergent?: boolean;
-  changeOffset?: string;
 }
 
 export function getRevFromChange(change: Change): string {
-  if (change.divergent && change.changeOffset) {
-    return `${change.changeId}/${change.changeOffset}`;
+  if (change.divergent && change.changeId.changeOffset) {
+    return `${change.changeId.changeId}/${change.changeId.changeOffset}`;
   }
-  return change.changeId;
+  return change.changeId.changeId;
 }
 
 export interface ChangeWithDetails extends Change {

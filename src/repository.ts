@@ -47,6 +47,7 @@ import type {
   RepositoryStatus,
   Show,
   Change,
+  ChangeId,
   ChangeWithDetails,
   LogEntry,
   LogEntryLocalRef,
@@ -62,6 +63,7 @@ export type {
   RepositoryStatus,
   Show,
   Change,
+  ChangeId,
   ChangeWithDetails,
   LogEntry,
   LogEntryLocalRef,
@@ -298,25 +300,33 @@ export class JJRepository {
     const untrackedFiles = await this.getUntrackedFiles(token);
 
     const workingCopy: Change = {
-      changeId: entry.change_id,
+      changeId: {
+        changeId: entry.change_id,
+        changeIdPrefix: "",
+        changeIdSuffix: "",
+        changeOffset: entry.change_offset || null,
+      },
       commitId: entry.commit_id,
       description: entry.description,
       isEmpty: entry.empty,
       isConflict: entry.conflict,
       bookmarks: entry.local_bookmarks,
       divergent: entry.divergent,
-      changeOffset: entry.change_offset || undefined,
     };
 
     const parentChanges: Change[] = entry.parents.map((p) => ({
-      changeId: p.change_id,
+      changeId: {
+        changeId: p.change_id,
+        changeIdPrefix: "",
+        changeIdSuffix: "",
+        changeOffset: p.change_offset || null,
+      },
       commitId: p.commit_id,
       description: p.description,
       isEmpty: p.empty,
       isConflict: p.conflict,
       bookmarks: p.local_bookmarks,
       divergent: p.divergent,
-      changeOffset: p.change_offset || undefined,
     }));
 
     const status: RepositoryStatus = {
@@ -410,7 +420,12 @@ export class JJRepository {
 
       results.push({
         change: {
-          changeId: entry.change_id,
+          changeId: {
+            changeId: entry.change_id,
+            changeIdPrefix: "",
+            changeIdSuffix: "",
+            changeOffset: entry.change_offset || null,
+          },
           commitId: entry.commit_id,
           description: entry.description,
           author: {
@@ -421,7 +436,6 @@ export class JJRepository {
           isEmpty: entry.empty,
           isConflict: entry.conflict,
           divergent: entry.divergent,
-          changeOffset: entry.change_offset || undefined,
         },
         fileStatuses,
         conflictedFiles,
