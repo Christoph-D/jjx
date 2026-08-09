@@ -604,7 +604,7 @@ export function registerInitCommands(state: ExtensionState): void {
         return;
       }
 
-      await repository.restoreRetryImmutable(resourceGroup.id, paths);
+      await repository.restoreRetryImmutable(resourceGroup.id as FullChangeId | "@", paths);
     },
     { errorPrefix: "Failed to restore" },
   );
@@ -648,7 +648,7 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       await repository.squashRetryImmutable({
-        fromRev: resourceGroup.id,
+        fromRev: resourceGroup.id as FullChangeId | "@",
         toRev: "@",
         filepaths: resourceStates.map((rs) => resolveRealpath(rs.resourceUri.fsPath)),
       });
@@ -664,7 +664,7 @@ export function registerInitCommands(state: ExtensionState): void {
       const repository = getRequiredRepoFromGroup(state, resourceGroup);
 
       const selectedCommitChangeId = state.workspaceSCM.getSelectedCommitChangeId(resourceGroup);
-      await repository.describeRetryImmutable(selectedCommitChangeId ?? resourceGroup.id);
+      await repository.describeRetryImmutable((selectedCommitChangeId ?? resourceGroup.id) as FullChangeId | "@");
       if (selectedCommitChangeId && scm) {
         await scm.setSelectedCommit(selectedCommitChangeId);
       }
@@ -708,7 +708,7 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       await repository.squashRetryImmutable({
-        fromRev: resourceGroup.id,
+        fromRev: resourceGroup.id as FullChangeId | "@",
         toRev: "@",
       });
     },
@@ -732,7 +732,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (confirm !== "Discard") {
         return;
       }
-      await repository.restoreRetryImmutable(resourceGroup.id);
+      await repository.restoreRetryImmutable(resourceGroup.id as FullChangeId | "@");
     },
     { errorPrefix: "Failed to restore" },
   );
@@ -742,7 +742,7 @@ export function registerInitCommands(state: ExtensionState): void {
     "jj.editResourceGroup",
     async (resourceGroup: vscode.SourceControlResourceGroup) => {
       const repository = getRequiredRepoFromGroup(state, resourceGroup);
-      await repository.editRetryImmutable(resourceGroup.id);
+      await repository.editRetryImmutable(resourceGroup.id as FullChangeId | "@");
     },
     { errorPrefix: "Failed to switch to change" },
   );
@@ -1073,7 +1073,7 @@ export function registerInitCommands(state: ExtensionState): void {
           return;
         }
 
-        const destinationRev = selected.changeId;
+        const destinationRev = selected.changeId as FullChangeId;
 
         async function computeAndSquashSelectedDiff(
           repository: JJRepository,

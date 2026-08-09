@@ -107,7 +107,7 @@ export class JJRepository {
   }
 
   private async retryWithImmutable<T>(
-    rev: string,
+    rev: FullChangeId | "@",
     operation: () => Promise<T>,
     retryOperation: () => Promise<T>,
     customMessage?: string,
@@ -464,7 +464,7 @@ export class JJRepository {
     return this.jjCommandRead(["file", "show", "--revision", rev, filepathToFileset(relativePath)]);
   }
 
-  async describeRetryImmutable(rev: string, message?: string) {
+  async describeRetryImmutable(rev: FullChangeId | "@", message?: string) {
     return this.withEditorRecovery((sessionId) =>
       this.retryWithImmutable(
         rev,
@@ -476,7 +476,7 @@ export class JJRepository {
     );
   }
 
-  private async describe(rev: string, message?: string, ignoreImmutable = false, sessionId?: string) {
+  private async describe(rev: FullChangeId | "@", message?: string, ignoreImmutable = false, sessionId?: string) {
     return (
       await this.jjCommand(
         ["describe", ...(message ? ["-m", message] : []), rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])],
@@ -514,8 +514,8 @@ export class JJRepository {
     message,
     filepaths,
   }: {
-    fromRev: string;
-    toRev: string;
+    fromRev: FullChangeId | "@";
+    toRev: FullChangeId | "@";
     message?: string;
     filepaths?: string[];
   }) {
@@ -548,8 +548,8 @@ export class JJRepository {
     filepaths,
     ignoreImmutable = false,
   }: {
-    fromRev: string;
-    toRev: string;
+    fromRev: FullChangeId | "@";
+    toRev: FullChangeId | "@";
     message?: string;
     filepaths?: string[];
     ignoreImmutable?: boolean;
@@ -581,8 +581,8 @@ export class JJRepository {
     filepath,
     content,
   }: {
-    fromRev: string;
-    toRev: string;
+    fromRev: FullChangeId | "@";
+    toRev: FullChangeId;
     filepath: string;
     content: string;
   }) {
@@ -624,8 +624,8 @@ export class JJRepository {
     content,
     ignoreImmutable = false,
   }: {
-    fromRev: string;
-    toRev: string;
+    fromRev: FullChangeId | "@";
+    toRev: FullChangeId;
     filepath: string;
     content: string;
     ignoreImmutable?: boolean;
@@ -749,7 +749,7 @@ export class JJRepository {
     };
   }
 
-  async editRetryImmutable(rev: string) {
+  async editRetryImmutable(rev: FullChangeId | "@") {
     return this.retryWithImmutable(
       rev,
       () => this.edit(rev),
@@ -759,7 +759,7 @@ export class JJRepository {
     );
   }
 
-  private async edit(rev: string, ignoreImmutable = false) {
+  private async edit(rev: FullChangeId | "@", ignoreImmutable = false) {
     return this.jjCommand(["edit", "-r", rev, ...(ignoreImmutable ? ["--ignore-immutable"] : [])]);
   }
 
@@ -1054,10 +1054,9 @@ export class JJRepository {
     );
   }
 
-  async abandonRetryImmutable(revs: string[], customMessage?: string) {
-    const revset = revs.join("|");
+  async abandonRetryImmutable(revs: FullChangeId[], customMessage?: string) {
     return this.retryWithImmutable(
-      revset,
+      revs[0] ?? "@",
       () => this.abandon(revs),
       () => this.abandon(revs, true),
       customMessage,
@@ -1098,14 +1097,14 @@ export class JJRepository {
     }
   }
 
-  private async abandon(revs: string[], ignoreImmutable = false) {
+  private async abandon(revs: FullChangeId[], ignoreImmutable = false) {
     const revset = revs.join("|");
     return this.jjCommand(["abandon", "-r", revset, ...(ignoreImmutable ? ["--ignore-immutable"] : [])]);
   }
 
   private async rebase(
-    source: string,
-    destination: string,
+    source: FullChangeId,
+    destination: FullChangeId,
     mode: "onto" | "after" | "before",
     withDescendants = false,
     ignoreImmutable = false,
@@ -1123,8 +1122,8 @@ export class JJRepository {
   }
 
   async rebaseRetryImmutable(
-    source: string,
-    destination: string,
+    source: FullChangeId,
+    destination: FullChangeId,
     mode: "onto" | "after" | "before",
     withDescendants = false,
   ) {
@@ -1137,7 +1136,7 @@ export class JJRepository {
     );
   }
 
-  private async rebaseAddParent(source: string, destination: string, ignoreImmutable = false) {
+  private async rebaseAddParent(source: FullChangeId, destination: FullChangeId, ignoreImmutable = false) {
     return this.jjCommand([
       "rebase",
       "--source",
@@ -1150,7 +1149,7 @@ export class JJRepository {
     ]);
   }
 
-  async rebaseAddParentRetryImmutable(source: string, destination: string) {
+  async rebaseAddParentRetryImmutable(source: FullChangeId, destination: FullChangeId) {
     return this.retryWithImmutable(
       source,
       () => this.rebaseAddParent(source, destination),
@@ -1160,7 +1159,7 @@ export class JJRepository {
     );
   }
 
-  private async rebaseRemoveParent(source: string, target: string, ignoreImmutable = false) {
+  private async rebaseRemoveParent(source: FullChangeId, target: FullChangeId, ignoreImmutable = false) {
     return this.jjCommand([
       "rebase",
       "--source",
@@ -1171,7 +1170,7 @@ export class JJRepository {
     ]);
   }
 
-  async rebaseRemoveParentRetryImmutable(source: string, target: string) {
+  async rebaseRemoveParentRetryImmutable(source: FullChangeId, target: FullChangeId) {
     return this.retryWithImmutable(
       source,
       () => this.rebaseRemoveParent(source, target),
@@ -1182,8 +1181,8 @@ export class JJRepository {
   }
 
   private async duplicate(
-    source: string,
-    destination: string,
+    source: FullChangeId,
+    destination: FullChangeId,
     mode: "onto" | "after" | "before",
     ignoreImmutable = false,
   ) {
@@ -1198,7 +1197,7 @@ export class JJRepository {
     ]);
   }
 
-  async duplicateRetryImmutable(source: string, destination: string, mode: "onto" | "after" | "before") {
+  async duplicateRetryImmutable(source: FullChangeId, destination: FullChangeId, mode: "onto" | "after" | "before") {
     return this.retryWithImmutable(
       source,
       () => this.duplicate(source, destination, mode),
@@ -1209,8 +1208,8 @@ export class JJRepository {
   }
 
   private async revert(
-    source: string,
-    destination: string,
+    source: FullChangeId,
+    destination: FullChangeId,
     mode: "onto" | "after" | "before",
     ignoreImmutable = false,
   ) {
@@ -1225,7 +1224,7 @@ export class JJRepository {
     ]);
   }
 
-  async revertRetryImmutable(source: string, destination: string, mode: "onto" | "after" | "before") {
+  async revertRetryImmutable(source: FullChangeId, destination: FullChangeId, mode: "onto" | "after" | "before") {
     return this.retryWithImmutable(
       source,
       () => this.revert(source, destination, mode),
@@ -1235,7 +1234,7 @@ export class JJRepository {
     );
   }
 
-  async restoreRetryImmutable(rev?: string, filepaths?: string[]) {
+  async restoreRetryImmutable(rev?: FullChangeId | "@", filepaths?: string[]) {
     return this.retryWithImmutable(
       rev ?? "@",
       () => this.restore(rev, filepaths),
@@ -1245,7 +1244,7 @@ export class JJRepository {
     );
   }
 
-  private async restore(rev?: string, filepaths?: string[], ignoreImmutable = false) {
+  private async restore(rev?: FullChangeId | "@", filepaths?: string[], ignoreImmutable = false) {
     return this.jjCommand([
       "restore",
       "--changes-in",
