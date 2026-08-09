@@ -523,6 +523,20 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Returns the {@link ChangeId} (with precomputed UI affixes) for a change
+   * currently loaded in the graph, so callers can format a title suffix without
+   * spawning a jj process. Returns `undefined` if the graph is showing a
+   * different repository or the change isn't among the loaded nodes; callers
+   * should then fall back to {@link JJRepository.resolveRevSuffix}.
+   */
+  findChangeId(changeId: FullChangeId, repositoryRoot: string): ChangeId | undefined {
+    if (this.repository?.repositoryRoot !== repositoryRoot) {
+      return undefined;
+    }
+    return this.findRegularChange(changeId)?.id;
+  }
+
+  /**
    * Maps selected change IDs to {@link GraphSelection} entries, attaching the
    * working-copy flag from the rendered graph nodes so listeners can detect the
    * working copy without comparing change IDs.

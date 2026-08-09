@@ -20,6 +20,7 @@ import {
   formatChangeIdShort,
   formatChangeIdSuffix,
   formatDiffTitle,
+  fullChangeIdFromString,
   maxChangeIdPrefixLength,
   normalizePath,
   pathEquals,
@@ -234,6 +235,21 @@ async function createChange(
   sourceControl.inputBox.value = "";
 }
 
+/**
+ * Resolves a rev to a title suffix (e.g. "(xyzk)") without spawning a jj
+ * process when the change is already loaded in the graph webview or when it's "@".
+ * Falls back to {@link JJRepository.resolveRevSuffix} (which runs `jj log`) on a miss.
+ */
+async function resolveTitleSuffix(state: ExtensionState, repo: JJRepository, rev: string): Promise<string> {
+  if (rev !== "@") {
+    const changeId = state.graphWebview?.findChangeId(fullChangeIdFromString(rev), repo.repositoryRoot);
+    if (changeId) {
+      return formatChangeIdSuffix(changeId);
+    }
+  }
+  return repo.resolveRevSuffix(rev);
+}
+
 async function openFileDiff(repo: JJRepository, filePath: string, changeId: string): Promise<void> {
   const { change, fileStatuses } = await repo.show(changeId);
   const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
@@ -434,7 +450,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repo) {
         throw new Error("Repository not found");
       }
-      const titleSuffix = await repo.resolveRevSuffix(rev);
+      const titleSuffix = await resolveTitleSuffix(state, repo, rev);
       await vscode.commands.executeCommand("vscode.open", uri, {}, `${path.basename(uri.fsPath)} ${titleSuffix}`);
     },
     { errorPrefix: "Failed to open file" },
@@ -495,7 +511,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repo) {
         return;
       }
-      const titleSuffix = await repo.resolveRevSuffix(rev);
+      const titleSuffix = await resolveTitleSuffix(state, repo, rev);
       await vscode.commands.executeCommand(
         "vscode.open",
         modified,
