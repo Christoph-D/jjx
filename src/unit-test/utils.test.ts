@@ -23,7 +23,7 @@ describe("formatDiffTitle Test Suite", () => {
 
   it("supports a custom label such as Interdiff", () => {
     assert.equal(
-      formatDiffTitle(undefined, "new.ts", "rev-a", "rev-b", "Interdiff"),
+      formatDiffTitle(undefined, "new.ts", "rev-a", "rev-b", "interdiff"),
       "new.ts (Interdiff rev-a → rev-b)",
     );
   });

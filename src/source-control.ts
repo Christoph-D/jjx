@@ -1000,7 +1000,6 @@ function buildComparisonDiffResourceStates(
   const { from, to, mode, fromIsWorkingCopy, toIsWorkingCopy } = options;
   const fromShort = fromIsWorkingCopy ? "@" : formatChangeIdShort(from);
   const toShort = toIsWorkingCopy ? "@" : formatChangeIdShort(to);
-  const label = mode === "interdiff" ? "Interdiff" : "Diff";
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);
     const makeSideUri = (side: "left" | "right"): vscode.Uri =>
@@ -1021,7 +1020,7 @@ function buildComparisonDiffResourceStates(
         arguments: [
           leftUri,
           rightUri,
-          formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, fromShort, toShort, label),
+          formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, fromShort, toShort, mode),
         ],
       },
     };

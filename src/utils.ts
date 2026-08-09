@@ -31,8 +31,9 @@ export function formatDiffTitle(
   baseName: string,
   from: string | undefined,
   to: string,
-  label = "Diff",
+  mode: "diff" | "interdiff" = "diff",
 ): string {
+  const label = mode === "interdiff" ? "Interdiff" : "Diff";
   const fromName = renamedFrom ? basename(renamedFrom) : undefined;
   const diffPart = from === undefined ? `${label} → ${to}` : `${label} ${from} → ${to}`;
   return (fromName ? `${fromName} → ` : "") + `${baseName} (${diffPart})`;
