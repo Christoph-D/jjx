@@ -12,7 +12,7 @@ import { registerPreInitCommands, registerInitCommands } from "./commands";
 import { registerAnnotations } from "./annotations";
 import { createPolling, initInfrastructure } from "./polling";
 import { registerColocatedCheck } from "./colocated-check";
-import { isComparisonDiffUri } from "./uri";
+import { isComparisonDiffUri, isDeletedDiffUri } from "./uri";
 import { getActiveTextEditorDiff } from "./vscode-utils";
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -72,6 +72,11 @@ export async function activate(context: vscode.ExtensionContext) {
     const isComparisonDiff =
       !!diffInput && (isComparisonDiffUri(diffInput.original) || isComparisonDiffUri(diffInput.modified));
     void vscode.commands.executeCommand("setContext", "jj.comparisonDiffActive", isComparisonDiff);
+
+    // The modified side of a deletion diff is an empty "deleted" resource, so
+    // toggling to a single editor is not possible. Hide the toggle button.
+    const isDeletedDiff = !!diffInput && isDeletedDiffUri(diffInput.modified);
+    void vscode.commands.executeCommand("setContext", "jj.diffModifiedDeleted", isDeletedDiff);
   };
   updateInterdiffContext();
   context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateInterdiffContext));

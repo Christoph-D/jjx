@@ -495,30 +495,28 @@ export function registerInitCommands(state: ExtensionState): void {
 
       // A diff from the SCM view pairs a `jj://` resource holding the change's
       // original content (`diffOriginalRev`) with either a `jj://` resource
-      // pinned to the change (`rev`), a `file://` working-copy file, or an
-      // empty "deleted" resource. Pick the side that holds real file content
-      // for the single editor.
+      // pinned to the change (`rev`) or a `file://` working-copy file. Toggle
+      // by opening the modified side as a single editor. The modified side of
+      // a deletion diff is an empty "deleted" resource, which cannot be toggled
+      // (the button is hidden for those diffs).
       let singleEditorUri: vscode.Uri | undefined;
       let rev: string | undefined;
-      for (const side of [modified, original]) {
-        if (side.scheme !== "jj") {
-          singleEditorUri = side;
-          rev = resolveRev(side);
-          break;
-        }
+      if (modified.scheme !== "jj") {
+        singleEditorUri = modified;
+        rev = resolveRev(modified);
+      } else {
         let params: JJUriParams;
         try {
-          params = getParams(side);
+          params = getParams(modified);
         } catch {
           // A malformed jj URI is not a diff we know how to toggle.
-          continue;
+          return;
         }
         if ("deleted" in params) {
-          continue;
+          return;
         }
-        singleEditorUri = side;
+        singleEditorUri = modified;
         rev = "diffOriginalRev" in params ? params.diffOriginalRev : "rev" in params ? params.rev : undefined;
-        break;
       }
 
       if (!singleEditorUri || !rev) {

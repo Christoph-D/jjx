@@ -317,7 +317,7 @@
         },
         {
           "command": "jj.toggleDiffView",
-          "when": "jj.reposExist && !jj.comparisonDiffActive",
+          "when": "jj.reposExist && !jj.comparisonDiffActive && !jj.diffModifiedDeleted",
           "group": "navigation@1"
         },
         {

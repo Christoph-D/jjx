@@ -128,3 +128,19 @@ export function isComparisonDiffUri(uri: Uri): boolean {
     return false;
   }
 }
+
+/**
+ * Returns true when the URI is the empty "deleted" resource used for the side
+ * of a diff whose file was removed.
+ */
+export function isDeletedDiffUri(uri: Uri): boolean {
+  if (uri.scheme !== "jj" || uri.query === "") {
+    return false;
+  }
+  try {
+    const params = getParams(uri);
+    return "deleted" in params;
+  } catch {
+    return false;
+  }
+}

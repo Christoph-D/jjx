@@ -155,14 +155,11 @@ test("toggle diff view switches between file and diff editors", async ({ graphFr
   const deletedItems = scmView.getByRole("treeitem", { name: /deleted\.txt/ });
   await expect(deletedItems).toHaveCount(1);
 
-  // Open the deletion diff, then toggle to a single editor showing the
-  // pre-deletion content instead of an empty "deleted" resource.
+  // The deletion diff's modified side is an empty "deleted" resource, so it
+  // can't be toggled to a single editor. The toggle command leaves the diff in
+  // place (and the toggle button is hidden for this diff).
   await deletedItems.first().click();
   await expectDiff("KEEP ME", "");
-  await runCommand(workbox, "Toggle Diff View");
-  await expectFile("KEEP ME");
-
-  // Toggle back to the deletion diff without an "Original resource not found" error.
   await runCommand(workbox, "Toggle Diff View");
   await expectDiff("KEEP ME", "");
 
