@@ -23,7 +23,7 @@ export function postMessage(message: WebviewToExtensionMessage): void {
 
 export const currentChanges = signal<ChangeNode[]>([]);
 export const currentGraph = signal<ChangeIdGraph | null>(null);
-export const selectedNodes = signal<Set<string>>(new Set());
+export const selectedNodes = signal<Set<FullChangeId>>(new Set());
 export const isDragging = signal(false);
 export const dragStartChangeId = signal<string | null>(null);
 export const dragBookmarkName = signal<string | null>(null);

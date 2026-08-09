@@ -43,7 +43,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
   public panel?: vscode.WebviewView;
   public repository: JJRepository | undefined;
-  public selectedNodes: Set<string> = new Set();
+  public selectedNodes: Set<FullChangeId> = new Set();
   private currentChanges: ChangeNode[] = [];
   private elideOverride: boolean | null = null;
 
@@ -136,7 +136,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "selectChange": {
           // Elided ("~") nodes can never be selected.
-          const selectedIds = message.selectedNodes.filter((id) => this.findRegularChange(id as FullChangeId));
+          const selectedIds = message.selectedNodes.filter((id) => this.findRegularChange(id));
           this.selectedNodes = new Set(selectedIds);
           vscode.commands.executeCommand("setContext", "jjGraphView.nodesSelected", selectedIds.length);
           this._onDidChangeSelection.fire(this.resolveSelection(selectedIds));
@@ -534,9 +534,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
    * working-copy flag from the rendered graph nodes so listeners can detect the
    * working copy without comparing change IDs.
    */
-  private resolveSelection(selectedIds: string[]): GraphSelection[] {
+  private resolveSelection(selectedIds: FullChangeId[]): GraphSelection[] {
     return selectedIds.flatMap((id) => {
-      const node = this.findRegularChange(id as FullChangeId);
+      const node = this.findRegularChange(id);
       if (!node) {
         return [];
       }
@@ -698,7 +698,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         }
       }
 
-      const changeIdsInGraph = new Set<string>(changes.map((c) => getUniqueId(c)));
+      const changeIdsInGraph = new Set<FullChangeId>(
+        changes.filter((c): c is RegularChangeNode => c.branchType !== "~").map((c) => c.id.changeId),
+      );
       const previousSelectedNodes = this.selectedNodes;
       this.selectedNodes = new Set(Array.from(previousSelectedNodes).filter((id) => changeIdsInGraph.has(id)));
       // If any selected changes were removed (e.g. abandoned), notify listeners so the

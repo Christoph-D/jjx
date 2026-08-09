@@ -112,7 +112,7 @@ export function NodeCircles() {
             key={getUniqueId(change)}
             class={cx(
               styles.nodeCircle,
-              selectedNodes.value.has(getUniqueId(change)) && styles.selected,
+              change.branchType !== "~" && selectedNodes.value.has(change.id.changeId) && styles.selected,
               hoveredChangeId.value === getUniqueId(change) && styles.hovered,
               highlight && !highlight.connectedIds.has(getUniqueId(change)) && styles.dimmed,
             )}

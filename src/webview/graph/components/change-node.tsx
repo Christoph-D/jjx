@@ -70,16 +70,17 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
       return;
     }
 
+    const changeId = change.id.changeId;
     const newSelected = new Set(selectedNodes.value);
     if (e.shiftKey) {
-      if (newSelected.has(getUniqueId(change))) {
-        newSelected.delete(getUniqueId(change));
+      if (newSelected.has(changeId)) {
+        newSelected.delete(changeId);
       } else {
-        newSelected.add(getUniqueId(change));
+        newSelected.add(changeId);
       }
     } else {
       newSelected.clear();
-      newSelected.add(getUniqueId(change));
+      newSelected.add(changeId);
     }
     selectedNodes.value = newSelected;
     postMessage({
@@ -166,6 +167,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
       changeId={changeUniqueId}
       currentWorkingCopy={change.branchType !== "~" && change.currentWorkingCopy}
       isElided={isElided}
+      selected={change.branchType !== "~" && selectedNodes.value.has(change.id.changeId)}
       modeClasses={modeClasses}
       data-change-id={changeUniqueId}
       onClick={handleClick}
@@ -203,6 +205,7 @@ function ChangeNodeClass({
   changeId,
   currentWorkingCopy,
   isElided,
+  selected,
   modeClasses,
   children,
   ...rest
@@ -210,6 +213,7 @@ function ChangeNodeClass({
   changeId: string;
   currentWorkingCopy: boolean;
   isElided: boolean;
+  selected: boolean;
   modeClasses: string;
   children?: preact.ComponentChildren;
 } & HTMLAttributes<HTMLDivElement>) {
@@ -219,11 +223,11 @@ function ChangeNodeClass({
         styles.changeNode,
         currentWorkingCopy && styles.workingCopy,
         isElided && styles.elidedNode,
-        selectedNodes.value.has(changeId) && styles.selected,
+        selected && styles.selected,
         dropTargetId.value === changeId && styles.dropTarget,
         modeClasses,
       )}
-      data-selected={selectedNodes.value.has(changeId) ? "" : undefined}
+      data-selected={selected ? "" : undefined}
       {...rest}
     >
       {children}

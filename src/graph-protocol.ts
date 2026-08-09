@@ -104,7 +104,7 @@ export type WebviewToExtensionMessage =
   | { command: "editChange"; changeId: FullChangeId }
   | { command: "editChangeDirect"; changeId: FullChangeId }
   | { command: "newChildChange"; changeId: FullChangeId }
-  | { command: "selectChange"; selectedNodes: string[] }
+  | { command: "selectChange"; selectedNodes: FullChangeId[] }
   | { command: "moveBookmark"; bookmark: string; targetChangeId: FullChangeId }
   | { command: "createBookmark"; targetChangeId: FullChangeId }
   | { command: "createTag"; targetChangeId: FullChangeId }
@@ -128,7 +128,7 @@ export type WebviewToExtensionMessage =
   | { command: "describeChange"; changeId: FullChangeId }
   | { command: "absorbChange"; changeId: FullChangeId }
   | { command: "abandonChange"; changeId: FullChangeId }
-  | { command: "abandonChanges"; changeIds: string[] }
+  | { command: "abandonChanges"; changeIds: FullChangeId[] }
   | { command: "rebaseOnto"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
   | { command: "rebaseAfter"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
   | { command: "rebaseBefore"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
