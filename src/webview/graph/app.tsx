@@ -39,13 +39,7 @@ import { NoRepoFoundState } from "./components/no-repo-found-state";
 import { ErrorState } from "./components/error-state";
 import { ErrorBoundary } from "./components/error-boundary";
 import type { PendingGraphUpdate } from "./signals";
-import {
-  createUniqueId,
-  getUniqueId,
-  RegularChangeNode,
-  UniqueId,
-  type ExtensionToWebviewMessage,
-} from "../../graph-protocol";
+import { RegularChangeNode, type ExtensionToWebviewMessage } from "../../graph-protocol";
 
 export function App() {
   useEffect(() => {
@@ -54,8 +48,8 @@ export function App() {
       isJJNotFound.value = false;
       isNoRepoFound.value = false;
       isError.value = false;
-      const newChangeIds = new Set<UniqueId>(message.changes.map((c) => getUniqueId(c)));
-      const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(createUniqueId(id))));
+      const newChangeIds = new Set(message.changes.filter((c) => c.branchType !== "~").map((c) => c.id.changeId));
+      const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(id)));
       selectedNodes.value = preserved;
       diffStatsCache.value = new Map();
       const activeTooltip = tooltip.value;

@@ -103,7 +103,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
 
   const handleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
-    if (getUniqueId(change) === rootChangeId || isElided) {
+    if (isElided || change.id.changeId === rootChangeId) {
       return;
     }
     clearHoverTimers();
