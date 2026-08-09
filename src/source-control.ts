@@ -14,7 +14,6 @@ import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
 import { StaleWorkingCopyError } from "./errors";
 import type { FileStatus, RepositoryStatus, Show, Change } from "./types";
-import { getRevFromChange } from "./types";
 import { TIMEOUTS, MINIMUM_JJ_VERSION, type JJVersion } from "./constants";
 
 const checkedJjVersions = new Map<string, JJVersion | undefined>();
@@ -655,7 +654,7 @@ class RepositorySourceControlManager {
     }
 
     const parentShowPromises = status.parentChanges.map(async (parentChange) => {
-      const rev = getRevFromChange(parentChange);
+      const rev = parentChange.changeId.changeId;
       const showResult = await this.repository.show(rev, token, operationId);
       return { changeId: parentChange.changeId.changeId, showResult };
     });
@@ -771,7 +770,7 @@ class RepositorySourceControlManager {
     }
 
     if (this.selectedCommitShowResult) {
-      const changeId = getRevFromChange(this.selectedCommitShowResult.change);
+      const changeId = this.selectedCommitShowResult.change.changeId.changeId;
       this.selectedCommitChangeId = changeId;
       const isParent = this.status.parentChanges.some((p) => p.changeId.changeId === changeId);
       const isWorkingCopy = this.status.workingCopy.changeId.changeId === changeId;

@@ -24,10 +24,6 @@ export interface Change {
   divergent?: boolean;
 }
 
-export function getRevFromChange(change: Change): string {
-  return change.changeId.changeId;
-}
-
 export interface ChangeWithDetails extends Change {
   author: {
     name: string;
