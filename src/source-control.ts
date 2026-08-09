@@ -6,7 +6,7 @@ import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
-import { formatChangeIdShort, formatDiffTitle, formatWorkingCopyLabel, normalizePath } from "./utils";
+import { formatChangeIdShort, formatDiffTitle, formatWorkingCopyTitle, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -703,7 +703,7 @@ class RepositorySourceControlManager {
       false,
     );
     this.workingCopyResourceGroup.resourceStates = buildResourceStates(this.status.fileStatuses, {
-      toRev: formatWorkingCopyLabel(),
+      toRev: formatWorkingCopyTitle(),
       fileClickAction,
       conflictedFiles: this.status.conflictedFiles,
     });
@@ -998,8 +998,8 @@ function buildComparisonDiffResourceStates(
   },
 ): vscode.SourceControlResourceState[] {
   const { from, to, mode, fromIsWorkingCopy, toIsWorkingCopy } = options;
-  const fromShort = fromIsWorkingCopy ? formatWorkingCopyLabel() : formatChangeIdShort(from);
-  const toShort = toIsWorkingCopy ? formatWorkingCopyLabel() : formatChangeIdShort(to);
+  const fromShort = fromIsWorkingCopy ? formatWorkingCopyTitle() : formatChangeIdShort(from);
+  const toShort = toIsWorkingCopy ? formatWorkingCopyTitle() : formatChangeIdShort(to);
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);
     const makeSideUri = (side: "left" | "right"): vscode.Uri =>

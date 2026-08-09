@@ -33,7 +33,7 @@ import {
   changeIdFromLogEntry,
   filepathToFileset,
   formatChangeIdShort,
-  formatWorkingCopyLabel,
+  formatWorkingCopyTitle,
   isWindows,
   maxChangeIdPrefixLength,
   pathEquals,
@@ -387,7 +387,7 @@ export class JJRepository {
 
   async resolveRevSuffix(rev: string): Promise<string> {
     if (rev === "@") {
-      return formatWorkingCopyLabel();
+      return formatWorkingCopyTitle();
     }
     const { change } = await this.show(rev);
     return formatChangeIdShort(change.changeId);

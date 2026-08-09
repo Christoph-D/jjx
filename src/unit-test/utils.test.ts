@@ -1,7 +1,13 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { formatAtRevTitle, formatChangeIdShort, formatDiffTitle, formatWorkingCopyLabel } from "../utils";
+import {
+  formatAtRevTitle,
+  formatChangeIdShort,
+  formatDiffTitle,
+  formatWorkingCopyLabel,
+  formatWorkingCopyTitle,
+} from "../utils";
 import type { FullChangeId } from "../types";
 
 describe("formatDiffTitle Test Suite", () => {
@@ -38,6 +44,10 @@ describe("formatAtRevTitle Test Suite", () => {
 describe("Rev Label Test Suite", () => {
   it("formats the working copy label", () => {
     assert.equal(formatWorkingCopyLabel(), "Working Copy");
+  });
+
+  it("formats the working copy title", () => {
+    assert.equal(formatWorkingCopyTitle(), "@");
   });
 
   it("formats a change ID label", () => {

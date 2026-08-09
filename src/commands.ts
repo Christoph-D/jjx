@@ -19,7 +19,7 @@ import {
   formatAtRevTitle,
   formatChangeIdShort,
   formatDiffTitle,
-  formatWorkingCopyLabel,
+  formatWorkingCopyTitle,
   fullChangeIdFromString,
   maxChangeIdPrefixLength,
   normalizePath,
@@ -236,8 +236,9 @@ async function createChange(
 }
 
 /**
- * Resolves a rev to a display label (e.g. "xyzk" or "Working Copy") without spawning a
- * jj process when the change is already loaded in the graph webview or when it's "@".
+ * Resolves a rev to a display label (e.g. "xyzk" or "@") meant to be used in an editor title
+ * without spawning a jj process when the change is already loaded in the graph webview or
+ * when it's "@".
  * Falls back to {@link JJRepository.resolveRevSuffix} (which runs `jj log`) on a miss.
  */
 async function resolveDisplayTitle(state: ExtensionState, repo: JJRepository, rev: string): Promise<string> {
@@ -268,7 +269,7 @@ async function openFileDiff(repo: JJRepository, filePath: string, changeId: Full
         ? vscode.Uri.file(filePath)
         : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
 
-  const toRev = changeId === "@" ? formatWorkingCopyLabel() : formatChangeIdShort(change.changeId);
+  const toRev = changeId === "@" ? formatWorkingCopyTitle() : formatChangeIdShort(change.changeId);
 
   await vscode.commands.executeCommand(
     "vscode.diff",

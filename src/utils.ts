@@ -48,8 +48,14 @@ export function formatChangeIdShort(changeId: ChangeId): string {
   return changeId.changeOffset ? `${short}/${changeId.changeOffset}` : short;
 }
 
+// A readable label for the SCM view.
 export function formatWorkingCopyLabel(): string {
   return "Working Copy";
+}
+
+// Short label for editor window titles which are more space-constrained.
+export function formatWorkingCopyTitle(): string {
+  return "@";
 }
 
 export function maxChangeIdPrefixLength(changeIdShortests: string[]): number {
