@@ -1,4 +1,4 @@
-import { remoteRefContextMenu, supportsTagTracking, postMessage } from "../signals";
+import { remoteRefContextMenu, supportsTagTracking, postMessage, pushingBookmarks, pushingTags } from "../signals";
 import { Menu, MenuItem } from "./menu-container";
 
 export function RemoteRefContextMenu() {
@@ -84,6 +84,10 @@ export function RemoteRefContextMenu() {
       <MenuItem
         action="pushRemoteRef"
         onClick={() => {
+          const pushing = state.type === "bookmark" ? pushingBookmarks : pushingTags;
+          const newSet = new Set(pushing.value);
+          newSet.add(state.name);
+          pushing.value = newSet;
           postMessage({
             command: "pushRemoteRef",
             refType: state.type,

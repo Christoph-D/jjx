@@ -220,6 +220,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "pushBookmarkToRemote":
           await this.withRefresh("push bookmark", () => repo.pushBookmarkToRemote(message.bookmark, message.remote));
+          this.postMessageToWebview({ command: "pushBookmarkDone", bookmark: message.bookmark });
           break;
         case "trackBookmark":
           await this.withRefresh("track bookmark", () => repo.trackBookmark(message.bookmark, message.remote));
@@ -274,6 +275,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "pushTagToRemote":
           await this.withRefresh("push tag", () => repo.pushTagToRemote(message.tag, message.remote));
+          this.postMessageToWebview({ command: "pushTagDone", tag: message.tag });
           break;
         case "pushTag":
           try {
@@ -345,6 +347,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               ? repo.pushBookmarkToRemote(message.name, message.remote)
               : repo.pushTagToRemote(message.name, message.remote),
           );
+          if (message.refType === "bookmark") {
+            this.postMessageToWebview({ command: "pushBookmarkDone", bookmark: message.name });
+          } else {
+            this.postMessageToWebview({ command: "pushTagDone", tag: message.name });
+          }
           break;
         case "deleteRemoteRef": {
           const refKind = message.refType === "bookmark" ? "bookmark" : "tag";

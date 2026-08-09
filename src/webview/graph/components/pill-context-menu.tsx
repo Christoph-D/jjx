@@ -1,4 +1,4 @@
-import { pillContextMenu, postMessage } from "../signals";
+import { pillContextMenu, postMessage, pushingBookmarks, pushingTags } from "../signals";
 import { Menu, MenuItem, MenuSeparator } from "./menu-container";
 
 export function PillContextMenu() {
@@ -31,6 +31,9 @@ export function PillContextMenu() {
             key={`push-${remote}`}
             action="pushTag"
             onClick={() => {
+              const newSet = new Set(pushingTags.value);
+              newSet.add(state.name);
+              pushingTags.value = newSet;
               postMessage({ command: "pushTagToRemote", tag: state.name, remote });
               pillContextMenu.value = null;
             }}
@@ -44,6 +47,9 @@ export function PillContextMenu() {
             key={`push-${remote}`}
             action="pushBookmark"
             onClick={() => {
+              const newSet = new Set(pushingBookmarks.value);
+              newSet.add(state.name);
+              pushingBookmarks.value = newSet;
               postMessage({ command: "pushBookmarkToRemote", bookmark: state.name, remote });
               pillContextMenu.value = null;
             }}

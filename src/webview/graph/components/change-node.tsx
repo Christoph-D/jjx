@@ -406,10 +406,8 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
               });
             }}
           >
-            {supportsTagTracking.value &&
-              !t.synced &&
-              !t.conflict &&
-              t.showPushButton !== false &&
+            {(pushingTags.value.has(t.name) ||
+              (supportsTagTracking.value && !t.synced && !t.conflict && t.showPushButton !== false)) &&
               (pushingTags.value.has(t.name) ? (
                 <BookmarkPushIcon pushing={true} title="Pushing..." />
               ) : (
