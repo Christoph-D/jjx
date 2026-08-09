@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
-import { provideOriginalResource } from "./source-control";
 import { resolveRealpath, type JJRepository } from "./repository";
 import type { ExtensionState } from "./extension-state";
 import type { ChangeId, FileStatus } from "./types";
@@ -468,21 +467,23 @@ export function registerInitCommands(state: ExtensionState): void {
           return;
         }
 
-        const originalUri = provideOriginalResource(uri);
-        if (!originalUri) {
+        // The active single editor may hold either side of a change: a
+        // working-copy `file://` editor, a `jj://` editor pinned to a revision
+        // (`rev`), or a `jj://` editor showing a change's original content
+        // (`diffOriginalRev`, e.g. after toggling a deletion diff). Any of these
+        // resolves to a revision we can diff against; only a stateless resource
+        // such as an empty "deleted" resource cannot, and yields `undefined`.
+        const rev = resolveRev(uri, { excludeSpecial: true });
+        if (!rev) {
           throw new Error("Original resource not found");
         }
-        const params = getParams(originalUri);
-        if (!("diffOriginalRev" in params)) {
-          throw new Error("Original resource does not have a diffOriginalRev. This is a bug.");
-        }
 
-        const repo = state.workspaceSCM.getRepositoryFromUri(originalUri);
+        const repo = state.workspaceSCM.getRepositoryFromUri(uri);
         if (!repo) {
           throw new Error("Repository could not be found with given URI.");
         }
 
-        await openFileDiff(repo, originalUri.fsPath, params.diffOriginalRev);
+        await openFileDiff(repo, uri.fsPath, rev);
         return;
       }
 
@@ -512,11 +513,26 @@ export function registerInitCommands(state: ExtensionState): void {
         return;
       }
       const titleSuffix = await resolveTitleSuffix(state, repo, rev);
+
+      // For a deletion diff the modified side is an empty "deleted" resource.
+      // Open the original side instead so the single editor shows the file's
+      // content and can be toggled back into a diff.
+      let singleEditorUri = modified;
+      if (modified.scheme === "jj") {
+        try {
+          if ("deleted" in getParams(modified)) {
+            singleEditorUri = original;
+          }
+        } catch {
+          // A malformed jj URI; fall back to opening the modified side.
+        }
+      }
+
       await vscode.commands.executeCommand(
         "vscode.open",
-        modified,
+        singleEditorUri,
         {},
-        `${path.basename(modified.fsPath)} ${titleSuffix}`,
+        `${path.basename(singleEditorUri.fsPath)} ${titleSuffix}`,
       );
     },
     { errorPrefix: "Failed to toggle diff view" },

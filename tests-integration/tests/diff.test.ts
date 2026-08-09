@@ -134,3 +134,41 @@ test("toggle diff view switches between file and diff editors", async ({ graphFr
   await runCommand(workbox, "Toggle Diff View");
   await expectDiff("SECOND", "THIRD");
 });
+
+test("toggle diff view on a deleted file in a parent commit", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("doomed.txt", "KEEP ME", "Create file");
+  await testRepo.deleteFile("doomed.txt");
+  await testRepo.commit("Delete file");
+
+  await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
+  const scmView = await waitForSCMView(workbox, [], ["doomed.txt"]);
+
+  const diffEditor = workbox.locator(".editor-instance");
+  const originalPane = diffEditor.locator(".editor.original .view-lines");
+  const modifiedPane = diffEditor.locator(".editor.modified .view-lines");
+
+  const expectDiff = async (left: string) => {
+    await expect(modifiedPane).toBeVisible();
+    await expect(originalPane.getByText(left, { exact: true })).toBeVisible();
+    await expect(modifiedPane).toHaveText(/^\s*$/);
+  };
+
+  const expectFile = async (content: string) => {
+    await expect(modifiedPane).toBeHidden();
+    await expect(diffEditor.locator(".monaco-editor .view-lines").getByText(content, { exact: true })).toBeVisible();
+  };
+
+  const doomedItems = scmView.getByRole("treeitem", { name: /doomed\.txt/ });
+  await expect(doomedItems).toHaveCount(1);
+
+  // Open the deletion diff, then toggle to a single editor showing the
+  // pre-deletion content instead of an empty "deleted" resource.
+  await doomedItems.first().click();
+  await expectDiff("KEEP ME");
+  await runCommand(workbox, "Toggle Diff View");
+  await expectFile("KEEP ME");
+
+  // Toggle back to the deletion diff without an "Original resource not found" error.
+  await runCommand(workbox, "Toggle Diff View");
+  await expectDiff("KEEP ME");
+});
