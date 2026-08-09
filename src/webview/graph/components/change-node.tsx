@@ -73,14 +73,14 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
 
     const newSelected = new Set(selectedNodes.value);
     if (e.shiftKey) {
-      if (newSelected.has(change.changeId)) {
-        newSelected.delete(change.changeId);
+      if (newSelected.has(change.id.changeId)) {
+        newSelected.delete(change.id.changeId);
       } else {
-        newSelected.add(change.changeId);
+        newSelected.add(change.id.changeId);
       }
     } else {
       newSelected.clear();
-      newSelected.add(change.changeId);
+      newSelected.add(change.id.changeId);
     }
     selectedNodes.value = newSelected;
     vscode.postMessage({
@@ -95,12 +95,12 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
         return;
       }
     }
-    vscode.postMessage({ command: "editChange", changeId: change.changeId });
+    vscode.postMessage({ command: "editChange", changeId: change.id.changeId });
   };
 
   const handleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
-    if (change.changeId === rootChangeId || isElided) {
+    if (change.id.changeId === rootChangeId || isElided) {
       return;
     }
     clearHoverTimers();
@@ -119,7 +119,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
     if (isDragging.value || isMenuOpen() || !showTooltips.value) {
       return;
     }
-    if (shouldShowTooltip(change.changeId, change.branchType) && isOverTooltipTarget(e)) {
+    if (shouldShowTooltip(change.id.changeId, change.branchType) && isOverTooltipTarget(e)) {
       startHoverTimers(change, e.pageX, e.pageY);
     }
   };
@@ -128,16 +128,16 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
     if (!isDragging.value) {
       const childIds: string[] = [];
       for (const c of currentChanges.value) {
-        if (c.parentChangeIds?.includes(change.changeId)) {
-          childIds.push(c.changeId);
+        if (c.parentChangeIds?.includes(change.id.changeId)) {
+          childIds.push(c.id.changeId);
         }
       }
       connectedHighlight.value = {
-        focalId: change.changeId,
-        connectedIds: new Set([change.changeId, ...(change.parentChangeIds ?? []), ...childIds]),
+        focalId: change.id.changeId,
+        connectedIds: new Set([change.id.changeId, ...(change.parentChangeIds ?? []), ...childIds]),
       };
     }
-    hoveredChangeId.value = change.changeId;
+    hoveredChangeId.value = change.id.changeId;
     tryStartTooltip(e);
   };
 
@@ -158,11 +158,11 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
 
   return (
     <ChangeNodeClass
-      changeId={change.changeId}
+      changeId={change.id.changeId}
       currentWorkingCopy={change.currentWorkingCopy}
       isElided={isElided}
       modeClasses={modeClasses}
-      data-change-id={change.changeId}
+      data-change-id={change.id.changeId}
       onClick={handleClick}
       onDblClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
@@ -177,9 +177,9 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
             ✗
           </span>
         )}
-        <span class={styles.changeIdPrefix}>{change.changeIdPrefix}</span>
-        <span class={styles.changeIdSuffix}>{change.changeIdSuffix}</span>
-        {change.changeOffset && <span class={styles.changeIdOffset}>/{change.changeOffset}</span>}
+        <span class={styles.changeIdPrefix}>{change.id.changeIdPrefix}</span>
+        <span class={styles.changeIdSuffix}>{change.id.changeIdSuffix}</span>
+        {change.id.changeOffset && <span class={styles.changeIdOffset}>/{change.id.changeOffset}</span>}
       </div>
       <MemoizedChangeNodeTextContent change={change} graphW={graphW} />
     </ChangeNodeClass>
@@ -458,7 +458,7 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Chan
             e.stopPropagation();
             vscode.postMessage({
               command: "openFileDiff",
-              changeId: change.changeId,
+              changeId: change.id.changeId,
               path: f.path,
               status: f.type,
               ...(f.renamedFrom ? { renamedFrom: f.renamedFrom } : {}),

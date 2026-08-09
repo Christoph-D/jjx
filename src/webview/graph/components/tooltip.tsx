@@ -41,7 +41,7 @@ export function Tooltip() {
       const offset = 15;
 
       const changeIdEl = document.querySelector(
-        `#nodes > [data-change-id="${state.change.changeId}"] [data-role="change-id"]`,
+        `#nodes > [data-change-id="${state.change.id.changeId}"] [data-role="change-id"]`,
       );
       const minLeft = changeIdEl ? changeIdEl.getBoundingClientRect().right + CHANGE_ID_RIGHT_PADDING : 10;
 
@@ -72,7 +72,7 @@ export function Tooltip() {
   }
 
   const { change } = state;
-  const stats = diffStatsCache.value.get(change.changeId);
+  const stats = diffStatsCache.value.get(change.id.changeId);
 
   return (
     <div id="tooltip" class={styles.tooltip} ref={ref} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>

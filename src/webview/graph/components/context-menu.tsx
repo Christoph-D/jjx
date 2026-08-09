@@ -11,7 +11,7 @@ export function ContextMenu() {
   const isImmutable = change.branchType === "◆";
 
   return (
-    <Menu id="context-menu" state={state} onClick={(e) => e.stopPropagation()} data-change-id={change.changeId}>
+    <Menu id="context-menu" state={state} onClick={(e) => e.stopPropagation()} data-change-id={change.id.changeId}>
       {!change.currentWorkingCopy && (
         <MenuItem
           action="edit"
@@ -19,7 +19,7 @@ export function ContextMenu() {
             state.changeDoubleClickAction === "new" ? "Create and Edit a New Empty Change on Top" : "Edit This Change"
           }
           onClick={() => {
-            vscode.postMessage({ command: "editChangeDirect", changeId: change.changeId });
+            vscode.postMessage({ command: "editChangeDirect", changeId: change.id.changeId });
             contextMenu.value = null;
           }}
         >
@@ -30,7 +30,7 @@ export function ContextMenu() {
         action="newChild"
         title="Create a New Child Change"
         onClick={() => {
-          vscode.postMessage({ command: "newChildChange", changeId: change.changeId });
+          vscode.postMessage({ command: "newChildChange", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -40,7 +40,7 @@ export function ContextMenu() {
       <MenuItem
         action="describe"
         onClick={() => {
-          vscode.postMessage({ command: "describeChange", changeId: change.changeId });
+          vscode.postMessage({ command: "describeChange", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -50,7 +50,7 @@ export function ContextMenu() {
       <MenuItem
         action="createBookmark"
         onClick={() => {
-          vscode.postMessage({ command: "createBookmark", targetChangeId: change.changeId });
+          vscode.postMessage({ command: "createBookmark", targetChangeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -59,7 +59,7 @@ export function ContextMenu() {
       <MenuItem
         action="createTag"
         onClick={() => {
-          vscode.postMessage({ command: "createTag", targetChangeId: change.changeId });
+          vscode.postMessage({ command: "createTag", targetChangeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -69,7 +69,7 @@ export function ContextMenu() {
       <MenuItem
         action="copyUrl"
         onClick={() => {
-          vscode.postMessage({ command: "copyUrl", changeId: change.changeId });
+          vscode.postMessage({ command: "copyUrl", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -78,7 +78,7 @@ export function ContextMenu() {
       <MenuItem
         action="copyId"
         onClick={() => {
-          navigator.clipboard.writeText(change.changeId);
+          navigator.clipboard.writeText(change.id.changeId);
           contextMenu.value = null;
         }}
       >
@@ -88,7 +88,7 @@ export function ContextMenu() {
       <MenuItem
         action="absorb"
         onClick={() => {
-          vscode.postMessage({ command: "absorbChange", changeId: change.changeId });
+          vscode.postMessage({ command: "absorbChange", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -97,13 +97,13 @@ export function ContextMenu() {
       <MenuItem
         action="abandon"
         onClick={() => {
-          vscode.postMessage({ command: "abandonChange", changeId: change.changeId, immutable: isImmutable });
+          vscode.postMessage({ command: "abandonChange", changeId: change.id.changeId, immutable: isImmutable });
           contextMenu.value = null;
         }}
       >
         Abandon Change
       </MenuItem>
-      {selectedNodes.value.size > 1 && selectedNodes.value.has(change.changeId) && (
+      {selectedNodes.value.size > 1 && selectedNodes.value.has(change.id.changeId) && (
         <MenuItem
           action="abandonSelected"
           onClick={() => {

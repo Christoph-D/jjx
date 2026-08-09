@@ -109,14 +109,14 @@ export function NodeCircles() {
         const pos = nodePositions.value[i];
         return (
           <g
-            key={change.changeId}
+            key={change.id.changeId}
             class={cx(
               styles.nodeCircle,
-              selectedNodes.value.has(change.changeId) && styles.selected,
-              hoveredChangeId.value === change.changeId && styles.hovered,
-              highlight && !highlight.connectedIds.has(change.changeId) && styles.dimmed,
+              selectedNodes.value.has(change.id.changeId) && styles.selected,
+              hoveredChangeId.value === change.id.changeId && styles.hovered,
+              highlight && !highlight.connectedIds.has(change.id.changeId) && styles.dimmed,
             )}
-            data-change-id={change.changeId}
+            data-change-id={change.id.changeId}
             style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}
             transform={pos ? `translate(${pos.x}, ${pos.y})` : undefined}
           >

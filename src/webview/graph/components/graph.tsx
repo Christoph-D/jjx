@@ -52,7 +52,7 @@ export function Graph() {
           const nodeData = graph?.nodes[index];
           return (
             <ChangeNodeRow
-              key={change.changeId}
+              key={change.id.changeId}
               change={change}
               index={index}
               nodeData={nodeData ?? null}

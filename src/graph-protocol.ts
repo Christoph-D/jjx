@@ -1,4 +1,4 @@
-import type { FileStatusType } from "./types";
+import type { ChangeId, FileStatusType } from "./types";
 
 export interface LogEntryLocalRef {
   name: string;
@@ -20,10 +20,7 @@ interface ChangedFile {
 }
 
 export interface ChangeNode {
-  changeId: string;
-  changeIdPrefix: string;
-  changeIdSuffix: string;
-  changeOffset: string | null;
+  id: ChangeId;
   label: string;
   description: string;
   tooltip: string;

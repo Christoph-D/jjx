@@ -364,11 +364,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           });
           break;
         case "abandonChange": {
-          const change = this.currentChanges.find((c) => c.changeId === message.changeId);
+          const change = this.currentChanges.find((c) => c.id.changeId === message.changeId);
           const firstLine = change?.fullDescription.split("\n")[0].trim() || "(no description set)";
           const truncated = firstLine.length > 120 ? firstLine.slice(0, 120) + "..." : firstLine;
           const prompt = change
-            ? `Are you sure you want to abandon change "${change.changeIdPrefix}"?\n\n→ ${truncated}`
+            ? `Are you sure you want to abandon change "${change.id.changeIdPrefix}"?\n\n→ ${truncated}`
             : "Are you sure you want to abandon this change?";
           await this.confirmAndExecute(prompt, "Abandon", "abandon change", () =>
             repo.abandonRetryImmutable([message.changeId]),
@@ -505,11 +505,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
    */
   private resolveSelection(selectedIds: string[]): GraphSelection[] {
     return selectedIds.map((id) => {
-      const node = this.currentChanges.find((c) => c.changeId === id);
+      const node = this.currentChanges.find((c) => c.id.changeId === id);
       return {
         changeId: id,
         currentWorkingCopy: node?.currentWorkingCopy ?? false,
-        changeOffset: node?.changeOffset ?? null,
+        changeOffset: node?.id.changeOffset ?? null,
       };
     });
   }
@@ -652,7 +652,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         }
       }
 
-      const changeIdsInGraph = new Set(changes.map((c) => c.changeId));
+      const changeIdsInGraph = new Set(changes.map((c) => c.id.changeId));
       const previousSelectedNodes = this.selectedNodes;
       this.selectedNodes = new Set(Array.from(previousSelectedNodes).filter((id) => changeIdsInGraph.has(id)));
       // If any selected changes were removed (e.g. abandoned), notify listeners so the
@@ -726,7 +726,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     if (a.length !== b.length) {
       return false;
     }
-    return a.every((nodeA, index) => nodeA.changeId === b[index].changeId);
+    return a.every((nodeA, index) => nodeA.id.changeId === b[index].id.changeId);
   }
 
   dispose() {
@@ -792,10 +792,12 @@ function parseJJLogJson(
       );
 
       return {
-        changeId: entryUniqueId,
-        changeIdPrefix: "",
-        changeIdSuffix: "",
-        changeOffset: null,
+        id: {
+          changeId: entryUniqueId,
+          changeIdPrefix: "",
+          changeIdSuffix: "",
+          changeOffset: null,
+        },
         label: "",
         description: "",
         tooltip: "",
@@ -863,10 +865,12 @@ function parseJJLogJson(
         : undefined;
 
     return {
-      changeId: uniqueChangeId,
-      changeIdPrefix: changeIdShortest,
-      changeIdSuffix: changeIdSuffix,
-      changeOffset: changeOffset,
+      id: {
+        changeId: uniqueChangeId,
+        changeIdPrefix: changeIdShortest,
+        changeIdSuffix: changeIdSuffix,
+        changeOffset: changeOffset,
+      },
       label: formattedLine,
       description: formattedDescription,
       tooltip: entry.change_id,

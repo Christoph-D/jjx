@@ -23,7 +23,7 @@ export function RebaseMenu() {
 
   const { sourceId, targetId, targetChange } = state;
   const isImmutable = targetChange.branchType === "◆";
-  const sourceChange = currentChanges.value.find((c) => c.changeId === sourceId);
+  const sourceChange = currentChanges.value.find((c) => c.id.changeId === sourceId);
   const isSourceImmutable = sourceChange?.branchType === "◆";
   const isTargetAlreadyParent = !!sourceChange?.parentChangeIds?.includes(targetId);
   const immutableIcon = isImmutable || isSourceImmutable ? <ImmutableIcon /> : null;

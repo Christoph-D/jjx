@@ -1,5 +1,12 @@
 export type FileStatusType = "A" | "M" | "D" | "R" | "C" | "X" | "?";
 
+export interface ChangeId {
+  changeId: string;
+  changeIdPrefix: string;
+  changeIdSuffix: string;
+  changeOffset: string | null;
+}
+
 export type FileStatus = {
   type: FileStatusType;
   file: string;

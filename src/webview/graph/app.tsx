@@ -48,16 +48,16 @@ export function App() {
       isJJNotFound.value = false;
       isNoRepoFound.value = false;
       isError.value = false;
-      const newChangeIds = new Set(message.changes.map((c) => c.changeId));
+      const newChangeIds = new Set(message.changes.map((c) => c.id.changeId));
       const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(id)));
       selectedNodes.value = preserved;
       diffStatsCache.value = new Map();
       const activeTooltip = tooltip.value;
       if (activeTooltip) {
-        const updatedChange = message.changes.find((c) => c.changeId === activeTooltip.change.changeId);
+        const updatedChange = message.changes.find((c) => c.id.changeId === activeTooltip.change.id.changeId);
         if (updatedChange) {
           tooltip.value = { ...activeTooltip, change: updatedChange };
-          vscode.postMessage({ command: "fetchDiffStats", changeId: updatedChange.changeId });
+          vscode.postMessage({ command: "fetchDiffStats", changeId: updatedChange.id.changeId });
         } else {
           tooltip.value = null;
         }
@@ -109,7 +109,7 @@ export function App() {
           newCache.set(message.changeId, message.stats);
           diffStatsCache.value = newCache;
           const state = tooltip.value;
-          if (state && state.change.changeId === message.changeId) {
+          if (state && state.change.id.changeId === message.changeId) {
             tooltip.value = { ...state };
           }
           break;

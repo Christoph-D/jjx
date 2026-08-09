@@ -17,7 +17,7 @@ import dragGhostStyles from "../components/drag-ghost.module.css";
 
 export function useDragDrop(change: ChangeNode) {
   const isElided = change.branchType === "~";
-  const isRoot = change.changeId === rootChangeId;
+  const isRoot = change.id.changeId === rootChangeId;
   const { clearAllTimers } = useTooltipTimers();
 
   if (isElided) {
@@ -34,11 +34,11 @@ export function useDragDrop(change: ChangeNode) {
             return;
           }
           dragBookmarkName.value = null;
-          dragStartChangeId.value = change.changeId;
+          dragStartChangeId.value = change.id.changeId;
           isDragging.value = true;
           clearAllTimers();
           tooltip.value = null;
-          e.dataTransfer!.setData("text/plain", change.changeId);
+          e.dataTransfer!.setData("text/plain", change.id.changeId);
           e.dataTransfer!.effectAllowed = "move";
 
           const ghost = document.createElement("div");
@@ -51,16 +51,16 @@ export function useDragDrop(change: ChangeNode) {
           }
           const prefix = document.createElement("span");
           prefix.className = changeNodeStyles.changeIdPrefix;
-          prefix.textContent = change.changeIdPrefix;
+          prefix.textContent = change.id.changeIdPrefix;
           ghost.appendChild(prefix);
           const suffix = document.createElement("span");
           suffix.className = changeNodeStyles.changeIdSuffix;
-          suffix.textContent = change.changeIdSuffix;
+          suffix.textContent = change.id.changeIdSuffix;
           ghost.appendChild(suffix);
-          if (change.changeOffset) {
+          if (change.id.changeOffset) {
             const offset = document.createElement("span");
             offset.className = changeNodeStyles.changeIdOffset;
-            offset.textContent = `/${change.changeOffset}`;
+            offset.textContent = `/${change.id.changeOffset}`;
             ghost.appendChild(offset);
           }
           if (change.label) {
@@ -94,10 +94,10 @@ export function useDragDrop(change: ChangeNode) {
       if (!dragBookmarkName.value && !dragStartChangeId.value) {
         return;
       }
-      if (dragStartChangeId.value && change.changeId === dragStartChangeId.value) {
+      if (dragStartChangeId.value && change.id.changeId === dragStartChangeId.value) {
         return;
       }
-      dropTargetId.value = change.changeId;
+      dropTargetId.value = change.id.changeId;
     },
     onDragLeave: (e: DragEvent) => {
       const relatedTarget = e.relatedTarget as HTMLElement | null;
@@ -124,13 +124,13 @@ export function useDragDrop(change: ChangeNode) {
         vscode.postMessage({
           command: "moveBookmark",
           bookmark: bookmarkName,
-          targetChangeId: change.changeId,
+          targetChangeId: change.id.changeId,
         });
         return;
       }
 
       const sourceId = e.dataTransfer!.getData("text/plain");
-      const targetId = change.changeId;
+      const targetId = change.id.changeId;
       if (!sourceId || !targetId || sourceId === targetId) {
         return;
       }
