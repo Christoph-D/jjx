@@ -15,7 +15,7 @@ import {
   type LineChange,
 } from "./diff-utils";
 import { getActiveTextEditorDiff, showErrorMessage } from "./vscode-utils";
-import { formatDiffTitle, formatRevSuffix, normalizePath, pathEquals } from "./utils";
+import { formatChangeIdShort, formatDiffTitle, formatRevSuffix, normalizePath, pathEquals } from "./utils";
 import { getMergeEditorConfigs } from "./jj-editor";
 import { handleJJCommand } from "./process";
 
@@ -175,7 +175,7 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
       toJJUri(uri, {
         rev: selectedChange,
       }),
-      `${path.basename(uri.fsPath)} (${selectedChange.substring(0, 8)})`,
+      `${path.basename(uri.fsPath)} ${formatRevSuffix(selectedChange)}`,
     );
   } else {
     await vscode.commands.executeCommand(
@@ -184,7 +184,7 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
         rev: selectedChange,
       }),
       {},
-      `${path.basename(uri.fsPath)} (${selectedChange.substring(0, 8)})`,
+      `${path.basename(uri.fsPath)} ${formatRevSuffix(selectedChange)}`,
     );
   }
 }
@@ -998,7 +998,7 @@ export function registerInitCommands(state: ExtensionState): void {
         const status = await repository.getStatus(true);
         for (const parent of status.parentChanges) {
           items.push({
-            label: `$(arrow-down) Parent: ${parent.changeId.changeId.substring(0, 8)}`,
+            label: `$(arrow-down) Parent: ${formatChangeIdShort(parent.changeId.changeId, null)}`,
             description: parent.description || "(no description)",
             alwaysShow: true,
             changeId: parent.changeId.changeId,
