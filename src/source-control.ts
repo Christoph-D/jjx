@@ -6,13 +6,7 @@ import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
-import {
-  formatChangeIdShort,
-  formatChangeIdSuffix,
-  formatDiffTitle,
-  formatWorkingCopySuffix,
-  normalizePath,
-} from "./utils";
+import { formatChangeIdShort, formatDiffTitle, formatWorkingCopyLabel, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -709,7 +703,7 @@ class RepositorySourceControlManager {
       false,
     );
     this.workingCopyResourceGroup.resourceStates = buildResourceStates(this.status.fileStatuses, {
-      diffTitleSuffix: formatWorkingCopySuffix(),
+      toRev: formatWorkingCopyLabel(),
       fileClickAction,
       conflictedFiles: this.status.conflictedFiles,
     });
@@ -757,7 +751,7 @@ class RepositorySourceControlManager {
       if (showResult) {
         parentChangeResourceGroup.resourceStates = buildResourceStates(showResult.fileStatuses, {
           changeId: parentChange.changeId.changeId,
-          diffTitleSuffix: formatChangeIdSuffix(parentChange.changeId),
+          toRev: formatChangeIdShort(parentChange.changeId),
           fileClickAction,
           conflictedFiles: this.conflictedFilesByChange.get(parentChange.changeId.changeId),
         });
@@ -794,7 +788,7 @@ class RepositorySourceControlManager {
           this.selectedCommitShowResult.fileStatuses,
           {
             changeId,
-            diffTitleSuffix: formatChangeIdSuffix(this.selectedCommitShowResult.change.changeId),
+            toRev: formatChangeIdShort(this.selectedCommitShowResult.change.changeId),
             fileClickAction,
             conflictedFiles: this.conflictedFilesByChange.get(changeId),
           },
@@ -937,12 +931,12 @@ function buildResourceStates(
   fileStatuses: FileStatus[],
   options: {
     changeId?: string;
-    diffTitleSuffix: string;
+    toRev: string;
     fileClickAction: "diff" | "at-revision" | "working-copy";
     conflictedFiles: Set<string> | undefined;
   },
 ): vscode.SourceControlResourceState[] {
-  const { changeId, diffTitleSuffix, fileClickAction, conflictedFiles } = options;
+  const { changeId, toRev, fileClickAction, conflictedFiles } = options;
   const diffOriginalRev = changeId ?? "@";
 
   return fileStatuses.map((fileStatus) => {
@@ -966,7 +960,7 @@ function buildResourceStates(
         fileStatus,
         beforeUri,
         afterUri,
-        diffTitleSuffix,
+        toRev,
         fileClickAction,
         workingCopyUri,
         isConflicted,
@@ -1007,7 +1001,6 @@ function buildComparisonDiffResourceStates(
   const fromShort = fromIsWorkingCopy ? "@" : formatChangeIdShort(from);
   const toShort = toIsWorkingCopy ? "@" : formatChangeIdShort(to);
   const label = mode === "interdiff" ? "Interdiff" : "Diff";
-  const diffTitleSuffix = `(${label} ${fromShort} → ${toShort})`;
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);
     const makeSideUri = (side: "left" | "right"): vscode.Uri =>
@@ -1025,7 +1018,11 @@ function buildComparisonDiffResourceStates(
       command: {
         title: "Open",
         command: "vscode.diff",
-        arguments: [leftUri, rightUri, formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, diffTitleSuffix)],
+        arguments: [
+          leftUri,
+          rightUri,
+          formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, fromShort, toShort, label),
+        ],
       },
     };
   });
@@ -1035,7 +1032,7 @@ function getResourceStateCommand(
   fileStatus: FileStatus,
   beforeUri: vscode.Uri,
   afterUri: vscode.Uri,
-  diffTitleSuffix: string,
+  toRev: string,
   fileClickAction: "diff" | "at-revision" | "working-copy",
   workingCopyUri: vscode.Uri,
   isConflicted: boolean,
@@ -1048,14 +1045,7 @@ function getResourceStateCommand(
       arguments: [workingCopyUri, changeId],
     };
   }
-  const fallback = computeFallbackCommand(
-    fileStatus,
-    beforeUri,
-    afterUri,
-    diffTitleSuffix,
-    fileClickAction,
-    workingCopyUri,
-  );
+  const fallback = computeFallbackCommand(fileStatus, beforeUri, afterUri, toRev, fileClickAction, workingCopyUri);
   if (changeId === undefined) {
     return {
       title: isConflicted ? "Resolve Conflict" : fallback.title,
@@ -1070,7 +1060,7 @@ function computeFallbackCommand(
   fileStatus: FileStatus,
   beforeUri: vscode.Uri,
   afterUri: vscode.Uri,
-  diffTitleSuffix: string,
+  toRev: string,
   fileClickAction: "diff" | "at-revision" | "working-copy",
   workingCopyUri: vscode.Uri,
 ): vscode.Command {
@@ -1082,7 +1072,7 @@ function computeFallbackCommand(
         arguments: [
           beforeUri,
           toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true }),
-          formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, diffTitleSuffix),
+          formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, undefined, toRev),
         ],
       };
     }
@@ -1109,6 +1099,6 @@ function computeFallbackCommand(
   return {
     title: "Open",
     command: "vscode.diff",
-    arguments: [beforeUri, afterUri, formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, diffTitleSuffix)],
+    arguments: [beforeUri, afterUri, formatDiffTitle(fileStatus.renamedFrom, fileStatus.file, undefined, toRev)],
   };
 }

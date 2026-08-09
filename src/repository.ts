@@ -32,8 +32,8 @@ import { quoteJjName } from "./quote";
 import {
   changeIdFromLogEntry,
   filepathToFileset,
-  formatChangeIdSuffix,
-  formatWorkingCopySuffix,
+  formatChangeIdShort,
+  formatWorkingCopyLabel,
   isWindows,
   maxChangeIdPrefixLength,
   pathEquals,
@@ -386,10 +386,10 @@ export class JJRepository {
 
   async resolveRevSuffix(rev: string): Promise<string> {
     if (rev === "@") {
-      return formatWorkingCopySuffix();
+      return formatWorkingCopyLabel();
     }
     const { change } = await this.show(rev);
-    return formatChangeIdSuffix(change.changeId);
+    return formatChangeIdShort(change.changeId);
   }
 
   async showAll(revsets: string[], token?: vscode.CancellationToken, operationId?: string) {

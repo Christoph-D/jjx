@@ -26,9 +26,20 @@ export function filepathToFileset(filepath: string): string {
   return `file:"${escaped}"`;
 }
 
-export function formatDiffTitle(renamedFrom: string | undefined, baseName: string, suffix: string): string {
+export function formatDiffTitle(
+  renamedFrom: string | undefined,
+  baseName: string,
+  from: string | undefined,
+  to: string,
+  label = "Diff",
+): string {
   const fromName = renamedFrom ? basename(renamedFrom) : undefined;
-  return (fromName ? `${fromName} → ` : "") + `${baseName} ${suffix}`;
+  const diffPart = from === undefined ? `${label} → ${to}` : `${label} ${from} → ${to}`;
+  return (fromName ? `${fromName} → ` : "") + `${baseName} (${diffPart})`;
+}
+
+export function formatAtRevTitle(baseName: string, rev: string): string {
+  return `${baseName} (${rev})`;
 }
 
 export function formatChangeIdShort(changeId: ChangeId): string {
@@ -36,12 +47,8 @@ export function formatChangeIdShort(changeId: ChangeId): string {
   return changeId.changeOffset ? `${short}/${changeId.changeOffset}` : short;
 }
 
-export function formatChangeIdSuffix(changeId: ChangeId): string {
-  return `(${formatChangeIdShort(changeId)})`;
-}
-
-export function formatWorkingCopySuffix(): string {
-  return "(Working Copy)";
+export function formatWorkingCopyLabel(): string {
+  return "Working Copy";
 }
 
 export function maxChangeIdPrefixLength(changeIdShortests: string[]): number {

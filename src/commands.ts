@@ -16,10 +16,10 @@ import {
 import { getActiveTextEditorDiff, showErrorMessage } from "./vscode-utils";
 import {
   changeIdFromLogEntry,
+  formatAtRevTitle,
   formatChangeIdShort,
-  formatChangeIdSuffix,
   formatDiffTitle,
-  formatWorkingCopySuffix,
+  formatWorkingCopyLabel,
   fullChangeIdFromString,
   maxChangeIdPrefixLength,
   normalizePath,
@@ -192,7 +192,7 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
       toJJUri(uri, {
         rev: selectedChange,
       }),
-      formatDiffTitle(undefined, path.basename(uri.fsPath), formatChangeIdSuffix(selectedChangeId)),
+      formatDiffTitle(undefined, path.basename(uri.fsPath), undefined, formatChangeIdShort(selectedChangeId)),
     );
   } else {
     await vscode.commands.executeCommand(
@@ -201,7 +201,7 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
         rev: selectedChange,
       }),
       {},
-      `${path.basename(uri.fsPath)} ${formatChangeIdSuffix(selectedChangeId)}`,
+      formatAtRevTitle(path.basename(uri.fsPath), formatChangeIdShort(selectedChangeId)),
     );
   }
 }
@@ -236,15 +236,15 @@ async function createChange(
 }
 
 /**
- * Resolves a rev to a title suffix (e.g. "(xyzk)") without spawning a jj
- * process when the change is already loaded in the graph webview or when it's "@".
+ * Resolves a rev to a display label (e.g. "xyzk" or "Working Copy") without spawning a
+ * jj process when the change is already loaded in the graph webview or when it's "@".
  * Falls back to {@link JJRepository.resolveRevSuffix} (which runs `jj log`) on a miss.
  */
-async function resolveTitleSuffix(state: ExtensionState, repo: JJRepository, rev: string): Promise<string> {
+async function resolveDisplayTitle(state: ExtensionState, repo: JJRepository, rev: string): Promise<string> {
   if (rev !== "@") {
     const changeId = state.graphWebview?.findChangeId(fullChangeIdFromString(rev), repo.repositoryRoot);
     if (changeId) {
-      return formatChangeIdSuffix(changeId);
+      return formatChangeIdShort(changeId);
     }
   }
   return repo.resolveRevSuffix(rev);
@@ -268,13 +268,13 @@ async function openFileDiff(repo: JJRepository, filePath: string, changeId: stri
         ? vscode.Uri.file(filePath)
         : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
 
-  const diffTitleSuffix = changeId === "@" ? formatWorkingCopySuffix() : formatChangeIdSuffix(change.changeId);
+  const toRev = changeId === "@" ? formatWorkingCopyLabel() : formatChangeIdShort(change.changeId);
 
   await vscode.commands.executeCommand(
     "vscode.diff",
     beforeUri,
     afterUri,
-    formatDiffTitle(fileStatus?.renamedFrom, path.basename(filePath), diffTitleSuffix),
+    formatDiffTitle(fileStatus?.renamedFrom, path.basename(filePath), undefined, toRev),
   );
 }
 
@@ -450,8 +450,13 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repo) {
         throw new Error("Repository not found");
       }
-      const titleSuffix = await resolveTitleSuffix(state, repo, rev);
-      await vscode.commands.executeCommand("vscode.open", uri, {}, `${path.basename(uri.fsPath)} ${titleSuffix}`);
+      const revForDisplay = await resolveDisplayTitle(state, repo, rev);
+      await vscode.commands.executeCommand(
+        "vscode.open",
+        uri,
+        {},
+        formatAtRevTitle(path.basename(uri.fsPath), revForDisplay),
+      );
     },
     { errorPrefix: "Failed to open file" },
   );
@@ -524,13 +529,13 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repo) {
         return;
       }
-      const titleSuffix = await resolveTitleSuffix(state, repo, rev);
+      const revForDisplay = await resolveDisplayTitle(state, repo, rev);
 
       await vscode.commands.executeCommand(
         "vscode.open",
         singleEditorUri,
         {},
-        `${path.basename(singleEditorUri.fsPath)} ${titleSuffix}`,
+        formatAtRevTitle(path.basename(singleEditorUri.fsPath), revForDisplay),
       );
     },
     { errorPrefix: "Failed to toggle diff view" },

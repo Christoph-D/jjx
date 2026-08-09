@@ -4,7 +4,7 @@ import type { JJRepository, LogEntry, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { showErrorMessage } from "./vscode-utils";
-import { changeIdAffixes, formatChangeIdSuffix, formatDiffTitle, fullChangeId, maxChangeIdPrefixLength } from "./utils";
+import { changeIdAffixes, formatChangeIdShort, formatDiffTitle, fullChangeId, maxChangeIdPrefixLength } from "./utils";
 import type { ChangeId, FullChangeId } from "./types";
 import { assignLanes } from "./lane-assigner";
 import {
@@ -493,8 +493,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           const beforeUri = toJJUri(fileUri, beforeParams);
           const afterUri = toJJUri(fileUri, afterParams);
           const node = this.findRegularChange(changeId);
-          const diffTitleSuffix = node ? formatChangeIdSuffix(node.id) : await repo.resolveRevSuffix(changeId);
-          const title = formatDiffTitle(renamedFrom, path.basename(relPath), diffTitleSuffix);
+          const toRev = node ? formatChangeIdShort(node.id) : await repo.resolveRevSuffix(changeId);
+          const title = formatDiffTitle(renamedFrom, path.basename(relPath), undefined, toRev);
           try {
             await vscode.commands.executeCommand("vscode.diff", beforeUri, afterUri, title);
           } catch (error: unknown) {
