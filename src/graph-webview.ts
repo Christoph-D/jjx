@@ -84,7 +84,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       const msg: ExtensionToWebviewMessage = this.jjBinaryNotFound
         ? { command: "showJJNotFoundState" }
         : { command: "showNoRepoFoundState" };
-      webviewView.webview.postMessage(msg);
+      this.postMessageToWebview(msg);
     }
 
     webviewView.webview.onDidReceiveMessage(async (message: Message) => {
@@ -190,13 +190,13 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           } catch (error: unknown) {
             showErrorMessage("Failed to push bookmark", error);
           } finally {
-            this.panel?.webview.postMessage({ command: "pushBookmarkDone", bookmark: message.bookmark });
+            this.postMessageToWebview({ command: "pushBookmarkDone", bookmark: message.bookmark });
           }
           break;
         case "getBookmarkTrackingRemotes":
           try {
             const info = await repo.getBookmarkTrackingInfo(message.bookmark);
-            this.panel?.webview.postMessage({
+            this.postMessageToWebview({
               command: "bookmarkTrackingRemotesResponse",
               bookmark: message.bookmark,
               remotes: info.trackedRemotes,
@@ -205,7 +205,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             });
           } catch (error: unknown) {
             showErrorMessage("Failed to get bookmark tracking remotes", error);
-            this.panel?.webview.postMessage({
+            this.postMessageToWebview({
               command: "bookmarkTrackingRemotesResponse",
               bookmark: message.bookmark,
               remotes: [],
@@ -254,14 +254,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               }
             }
             const pushRemotes = allRemotes.filter((r) => !tagRemotes.has(r));
-            this.panel?.webview.postMessage({
+            this.postMessageToWebview({
               command: "tagPushRemotesResponse",
               tag: message.tag,
               pushRemotes,
             });
           } catch (error: unknown) {
             showErrorMessage("Failed to get tag push remotes", error);
-            this.panel?.webview.postMessage({
+            this.postMessageToWebview({
               command: "tagPushRemotesResponse",
               tag: message.tag,
               pushRemotes: [],
@@ -282,20 +282,20 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           } catch (error: unknown) {
             showErrorMessage("Failed to push tag", error);
           } finally {
-            this.panel?.webview.postMessage({ command: "pushTagDone", tag: message.tag });
+            this.postMessageToWebview({ command: "pushTagDone", tag: message.tag });
           }
           break;
         case "getTagTrackingRemotes":
           try {
             const info = await repo.getTagTrackingInfo(message.tag);
-            this.panel?.webview.postMessage({
+            this.postMessageToWebview({
               command: "tagTrackingRemotesResponse",
               tag: message.tag,
               remotes: info.pushRemotes,
             });
           } catch (error: unknown) {
             showErrorMessage("Failed to get tag tracking remotes", error);
-            this.panel?.webview.postMessage({
+            this.postMessageToWebview({
               command: "tagTrackingRemotesResponse",
               tag: message.tag,
               remotes: [],
@@ -311,7 +311,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "getRemoteRefStatus":
           try {
             const status = await repo.getRemoteRefStatus(message.refType, message.name, message.remote);
-            this.panel?.webview.postMessage({
+            this.postMessageToWebview({
               command: "remoteRefStatusResponse",
               refType: message.refType,
               name: message.name,
@@ -323,7 +323,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             });
           } catch (error: unknown) {
             showErrorMessage("Failed to get remote ref status", error);
-            this.panel?.webview.postMessage({
+            this.postMessageToWebview({
               command: "remoteRefStatusResponse",
               refType: message.refType,
               name: message.name,
@@ -462,7 +462,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
               changeId: message.changeId,
               stats,
             };
-            this.panel?.webview.postMessage(response);
+            this.postMessageToWebview(response);
           } catch {
             // Silently ignore - tooltip simply won't show diff stats
           }
@@ -521,6 +521,10 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       }
       return { id: node.id, currentWorkingCopy: node.currentWorkingCopy };
     });
+  }
+
+  private postMessageToWebview(message: ExtensionToWebviewMessage): Thenable<boolean | undefined> | undefined {
+    return this.panel?.webview.postMessage(message);
   }
 
   public async setSelectedRepository(repo: JJRepository) {
@@ -698,7 +702,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         showChangedFiles,
         supportsTagTracking,
       };
-      this.panel.webview.postMessage(msg);
+      this.postMessageToWebview(msg);
       try {
         await this.repository.getStatus(false, undefined, operationId);
       } catch {
@@ -714,11 +718,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         const msg: ExtensionToWebviewMessage = {
           command: "showStaleState",
         };
-        this.panel.webview.postMessage(msg);
+        this.postMessageToWebview(msg);
         return;
       }
       logger.error(`Failed to refresh graph: ${error instanceof Error ? error.message : String(error)}`);
-      this.panel.webview.postMessage({ command: "showErrorState" });
+      this.postMessageToWebview({ command: "showErrorState" });
     }
   }
 
