@@ -56,6 +56,17 @@ export function changeIdAffixes(
   };
 }
 
+export function changeIdFromLogEntry(
+  entry: { change_id: string; change_id_shortest: string; change_offset: string; divergent: boolean },
+  maxPrefixLength: number,
+): ChangeId {
+  return {
+    changeId: fullChangeId(entry.change_id, entry.change_offset),
+    ...changeIdAffixes(entry.change_id, entry.change_id_shortest, maxPrefixLength),
+    changeOffset: entry.divergent ? entry.change_offset || null : null,
+  };
+}
+
 const isMacintosh = process.platform === "darwin";
 export const isWindows = process.platform === "win32";
 

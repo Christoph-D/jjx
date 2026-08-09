@@ -29,14 +29,7 @@ import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses 
 import { parseInterdiffSummary } from "./parse-interdiff-summary";
 import { logger } from "./logger";
 import { quoteJjName } from "./quote";
-import {
-  changeIdAffixes,
-  filepathToFileset,
-  fullChangeId,
-  isWindows,
-  maxChangeIdPrefixLength,
-  pathEquals,
-} from "./utils";
+import { changeIdFromLogEntry, filepathToFileset, isWindows, maxChangeIdPrefixLength, pathEquals } from "./utils";
 import {
   getDiffToolConfigs,
   expectDiffToolRequest,
@@ -314,11 +307,7 @@ export class JJRepository {
     ]);
 
     const workingCopy: Change = {
-      changeId: {
-        changeId: fullChangeId(entry.change_id, entry.change_offset),
-        ...changeIdAffixes(entry.change_id, entry.change_id_shortest, maxPrefixLength),
-        changeOffset: entry.divergent ? entry.change_offset || null : null,
-      },
+      changeId: changeIdFromLogEntry(entry, maxPrefixLength),
       commitId: entry.commit_id,
       description: entry.description,
       isEmpty: entry.empty,
@@ -328,11 +317,7 @@ export class JJRepository {
     };
 
     const parentChanges: Change[] = entry.parents.map((p) => ({
-      changeId: {
-        changeId: fullChangeId(p.change_id, p.change_offset),
-        ...changeIdAffixes(p.change_id, p.change_id_shortest, maxPrefixLength),
-        changeOffset: p.divergent ? p.change_offset || null : null,
-      },
+      changeId: changeIdFromLogEntry(p, maxPrefixLength),
       commitId: p.commit_id,
       description: p.description,
       isEmpty: p.empty,
@@ -437,11 +422,7 @@ export class JJRepository {
 
       return {
         change: {
-          changeId: {
-            changeId: fullChangeId(entry.change_id, entry.change_offset),
-            ...changeIdAffixes(entry.change_id, entry.change_id_shortest, maxPrefixLength),
-            changeOffset: entry.divergent ? entry.change_offset || null : null,
-          },
+          changeId: changeIdFromLogEntry(entry, maxPrefixLength),
           commitId: entry.commit_id,
           description: entry.description,
           author: {

@@ -15,7 +15,15 @@ import {
   type LineChange,
 } from "./diff-utils";
 import { getActiveTextEditorDiff, showErrorMessage } from "./vscode-utils";
-import { formatChangeIdShort, formatDiffTitle, formatRevSuffix, normalizePath, pathEquals } from "./utils";
+import {
+  changeIdFromLogEntry,
+  formatChangeIdShort,
+  formatDiffTitle,
+  formatRevSuffix,
+  maxChangeIdPrefixLength,
+  normalizePath,
+  pathEquals,
+} from "./utils";
 import { getMergeEditorConfigs } from "./jj-editor";
 import { handleJJCommand } from "./process";
 
@@ -149,8 +157,9 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
   if (changes.length === 1) {
     selectedChange = changes[0].change_id;
   } else {
+    const maxPrefixLength = maxChangeIdPrefixLength(changes.map((e) => e.change_id_shortest));
     const items = changes.map((entry) => ({
-      label: `$(${arrow}) ${direction}: ${entry.change_id_short}`,
+      label: `$(${arrow}) ${direction}: ${formatChangeIdShort(changeIdFromLogEntry(entry, maxPrefixLength))}`,
       description: entry.description || "(no description)",
       alwaysShow: true,
       changeId: entry.change_id,
@@ -983,9 +992,10 @@ export function registerInitCommands(state: ExtensionState): void {
         try {
           const childChanges = await repository.log("@+");
 
+          const childMaxPrefixLength = maxChangeIdPrefixLength(childChanges.map((e) => e.change_id_shortest));
           items.push(
             ...childChanges.map((entry) => ({
-              label: `$(arrow-up) Child: ${entry.change_id_short}`,
+              label: `$(arrow-up) Child: ${formatChangeIdShort(changeIdFromLogEntry(entry, childMaxPrefixLength))}`,
               description: entry.description || "(no description)",
               alwaysShow: true,
               changeId: entry.change_id,
