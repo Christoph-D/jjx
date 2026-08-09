@@ -1,9 +1,24 @@
 export type FileStatusType = "A" | "M" | "D" | "R" | "C" | "X" | "?";
 
 export interface ChangeId {
-  changeId: string;
+  // Internal only: A full-length change ID.
+  // This ID is meant to be used in jj commands
+  // and to identify a change across different parts of the extension.
+  // It is not meant to be human-readable; it's too long.
+  // The format is <changeid>/<offset> or <changeid> without
+  // an offset, depending on whether jj provides an offset.
+  // An offset may be present here even if changeOffset is null.
+  changeId: FullChangeId;
+
+  // UI only: The shortest unique change ID. Can be shown to the user.
   changeIdPrefix: string;
+
+  // UI Only: Optional suffix to get multiple change IDs to the
+  // same visual length. If used, must be appended to changeIdPrefix.
   changeIdSuffix: string;
+
+  // UI only: If present, the offset must be appended when showing
+  // this change ID to the user because the change is divergent.
   changeOffset: string | null;
 }
 
