@@ -838,8 +838,8 @@ class RepositorySourceControlManager {
     if (this.diffSelection && this.diffFileStatuses) {
       combinedFileStatusesByChange.set(
         this.diffMode === "interdiff"
-          ? interdiffKey(this.diffSelection.from.changeId, this.diffSelection.to.changeId)
-          : diffKey(this.diffSelection.from.changeId, this.diffSelection.to.changeId),
+          ? interdiffKey(this.diffSelection.from, this.diffSelection.to)
+          : diffKey(this.diffSelection.from, this.diffSelection.to),
         this.diffFileStatuses,
       );
     }

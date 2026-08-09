@@ -31,10 +31,6 @@ export function formatChangeIdShort(changeId: ChangeId): string {
   return changeId.changeOffset ? `${short}/${changeId.changeOffset}` : short;
 }
 
-export function changeIdFromString(changeId: string): ChangeId {
-  return { changeId, changeIdPrefix: "", changeIdSuffix: "", changeOffset: null };
-}
-
 export function maxChangeIdPrefixLength(changeIdShortests: string[]): number {
   return Math.max(4, ...changeIdShortests.map((s) => s.length));
 }

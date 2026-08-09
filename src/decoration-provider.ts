@@ -1,14 +1,14 @@
 import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, ThemeColor } from "vscode";
-import { FileStatus, FileStatusType } from "./types";
+import { ChangeId, FileStatus, FileStatusType } from "./types";
 import { resolveRev, toJJUri, getParams, type JJUriParams } from "./uri";
-import { changeIdFromString, normalizePath } from "./utils";
+import { normalizePath } from "./utils";
 
-export function interdiffKey(from: string, to: string): string {
-  return `interdiff:${from}..${to}`;
+export function interdiffKey(from: ChangeId, to: ChangeId): string {
+  return `interdiff:${JSON.stringify([from, to])}`;
 }
 
-export function diffKey(from: string, to: string): string {
-  return `diff:${from}..${to}`;
+export function diffKey(from: ChangeId, to: ChangeId): string {
+  return `diff:${JSON.stringify([from, to])}`;
 }
 
 const colorOfType = (type: FileStatusType) => {
@@ -196,12 +196,10 @@ export class JJDecorationProvider implements FileDecorationProvider {
         return undefined;
       }
       if ("interdiffFrom" in params) {
-        return this.decorations.get(
-          getKey(uri.fsPath, interdiffKey(params.interdiffFrom.changeId, params.interdiffTo.changeId)),
-        );
+        return this.decorations.get(getKey(uri.fsPath, interdiffKey(params.interdiffFrom, params.interdiffTo)));
       }
       if ("diffFrom" in params) {
-        return this.decorations.get(getKey(uri.fsPath, diffKey(params.diffFrom.changeId, params.diffTo.changeId)));
+        return this.decorations.get(getKey(uri.fsPath, diffKey(params.diffFrom, params.diffTo)));
       }
     }
     const rev = resolveRev(uri, { diffOriginalRevBehavior: "exclude", excludeSpecial: true });
@@ -258,14 +256,11 @@ export class JJDecorationProvider implements FileDecorationProvider {
       if (comparison) {
         // Two-revision comparison (interdiff or from/to diff) resource states are keyed by
         // {from, to, side}, so emit those URIs (rather than a synthetic {rev}) so VS Code
-        // refreshes their badges. The decoration key only preserves the canonical change ID,
-        // so the affixes are rebuilt as empty here.
-        const from = changeIdFromString(comparison.from);
-        const to = changeIdFromString(comparison.to);
+        // refreshes their badges.
         const sideParams =
           comparison.kind === "interdiff"
-            ? { interdiffFrom: from, interdiffTo: to, side: "right" as const }
-            : { diffFrom: from, diffTo: to, side: "right" as const };
+            ? { interdiffFrom: comparison.from, interdiffTo: comparison.to, side: "right" as const }
+            : { diffFrom: comparison.from, diffTo: comparison.to, side: "right" as const };
         changedUris.push(toJJUri(Uri.file(fsPath), sideParams));
       } else {
         changedUris.push(toJJUri(Uri.file(fsPath), { rev }));
@@ -290,21 +285,13 @@ function parseKey(key: string) {
   return JSON.parse(key) as { fsPath: string; rev: string };
 }
 
-function parseComparisonRev(rev: string): { from: string; to: string; kind: "diff" | "interdiff" } | undefined {
+function parseComparisonRev(rev: string): { from: ChangeId; to: ChangeId; kind: "diff" | "interdiff" } | undefined {
   for (const kind of ["interdiff", "diff"] as const) {
     const prefix = `${kind}:`;
-    if (!rev.startsWith(prefix)) {
-      continue;
+    if (rev.startsWith(prefix)) {
+      const [from, to] = JSON.parse(rev.slice(prefix.length)) as ChangeId[];
+      return { from, to, kind };
     }
-    const sep = rev.indexOf("..", prefix.length);
-    if (sep === -1) {
-      return undefined;
-    }
-    return {
-      from: rev.slice(prefix.length, sep),
-      to: rev.slice(sep + 2),
-      kind,
-    };
   }
   return undefined;
 }
