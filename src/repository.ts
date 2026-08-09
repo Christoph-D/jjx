@@ -29,7 +29,14 @@ import { parseFileStatuses, type ParsedFileStatuses, parseUntrackedFileStatuses 
 import { parseInterdiffSummary } from "./parse-interdiff-summary";
 import { logger } from "./logger";
 import { quoteJjName } from "./quote";
-import { changeIdFromLogEntry, filepathToFileset, isWindows, maxChangeIdPrefixLength, pathEquals } from "./utils";
+import {
+  changeIdFromLogEntry,
+  filepathToFileset,
+  formatChangeIdSuffix,
+  isWindows,
+  maxChangeIdPrefixLength,
+  pathEquals,
+} from "./utils";
 import {
   getDiffToolConfigs,
   expectDiffToolRequest,
@@ -374,6 +381,14 @@ export class JJRepository {
       throw new Error("No results found for the given revision.");
     }
     return results[0];
+  }
+
+  async resolveRevSuffix(rev: string): Promise<string> {
+    if (rev === "@") {
+      return "(Working Copy)";
+    }
+    const { change } = await this.show(rev);
+    return formatChangeIdSuffix(change.changeId);
   }
 
   async showAll(revsets: string[], token?: vscode.CancellationToken, operationId?: string) {

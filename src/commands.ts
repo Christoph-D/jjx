@@ -20,7 +20,6 @@ import {
   formatChangeIdShort,
   formatChangeIdSuffix,
   formatDiffTitle,
-  formatRevSuffix,
   maxChangeIdPrefixLength,
   normalizePath,
   pathEquals,
@@ -431,7 +430,11 @@ export function registerInitCommands(state: ExtensionState): void {
     async (resourceState: vscode.SourceControlResourceState) => {
       const uri = resourceState.resourceUri;
       const rev = resolveRev(uri) ?? "@";
-      const titleSuffix = formatRevSuffix(rev);
+      const repo = state.workspaceSCM.getRepositoryFromUri(uri);
+      if (!repo) {
+        throw new Error("Repository not found");
+      }
+      const titleSuffix = await repo.resolveRevSuffix(rev);
       await vscode.commands.executeCommand("vscode.open", uri, {}, `${path.basename(uri.fsPath)} ${titleSuffix}`);
     },
     { errorPrefix: "Failed to open file" },
@@ -488,7 +491,11 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       const rev = originalParams.diffOriginalRev;
-      const titleSuffix = formatRevSuffix(rev);
+      const repo = state.workspaceSCM.getRepositoryFromUri(original);
+      if (!repo) {
+        return;
+      }
+      const titleSuffix = await repo.resolveRevSuffix(rev);
       await vscode.commands.executeCommand(
         "vscode.open",
         modified,
