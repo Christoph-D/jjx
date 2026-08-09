@@ -17,6 +17,8 @@ import {
   pendingGraphUpdate,
   pushingBookmarks,
   pushingTags,
+  deletingBookmarks,
+  deletingTags,
   supportsTagTracking,
   postMessage,
   diffStatsCache,
@@ -163,6 +165,13 @@ export function App() {
           const newSet = new Set(pushingTags.value);
           newSet.delete(message.tag);
           pushingTags.value = newSet;
+          break;
+        }
+        case "deleteRemoteRefDone": {
+          const set = message.refType === "bookmark" ? deletingBookmarks : deletingTags;
+          const newSet = new Set(set.value);
+          newSet.delete(message.name);
+          set.value = newSet;
           break;
         }
         case "remoteRefStatusResponse": {

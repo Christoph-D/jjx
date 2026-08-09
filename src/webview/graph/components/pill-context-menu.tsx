@@ -14,7 +14,7 @@ export function PillContextMenu() {
         <MenuItem
           action="cancelPush"
           onClick={() => {
-            postMessage({ command: "cancelPush", refType: state.type, name: state.name });
+            postMessage({ command: "cancelRemoteRefOperation", refType: state.type, name: state.name });
             pillContextMenu.value = null;
           }}
         >

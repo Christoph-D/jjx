@@ -276,12 +276,13 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             });
           }
           break;
-        case "cancelPush": {
-          const cancelled = repo.cancelPush(message.refType, message.name);
-          if (cancelled) {
+        case "cancelRemoteRefOperation": {
+          const operation = repo.cancelRefOperation(message.refType, message.name);
+          if (operation) {
             const kind = message.refType === "bookmark" ? "bookmark" : "tag";
+            const noun = operation === "push" ? "push" : "deletion";
             vscode.window.showErrorMessage(
-              `Cancelled push of ${kind} "${message.name}". The push may already have succeeded. Please fetch from the remote to reconcile the state.`,
+              `Cancelled ${noun} of ${kind} "${message.name}". The ${noun} may already have succeeded. Please fetch from the remote to reconcile the state.`,
             );
           }
           break;
@@ -370,15 +371,23 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "deleteRemoteRef": {
           const refKind = message.refType === "bookmark" ? "bookmark" : "tag";
-          await this.confirmAndExecute(
-            `Are you sure you want to delete the ${refKind} "${message.name}" from "${message.remote}"?\n\n!!! This deletes the ${refKind} from the remote !!!`,
-            `Delete from ${message.remote}`,
-            `delete ${refKind} from remote`,
-            () =>
-              message.refType === "bookmark"
-                ? repo.pushBookmarkToRemote(message.name, message.remote)
-                : repo.deleteTagFromRemote(message.name, message.remote),
-          );
+          try {
+            await this.confirmAndExecute(
+              `Are you sure you want to delete the ${refKind} "${message.name}" from "${message.remote}"?\n\n!!! This deletes the ${refKind} from the remote !!!`,
+              `Delete from ${message.remote}`,
+              `delete ${refKind} from remote`,
+              () =>
+                message.refType === "bookmark"
+                  ? repo.deleteBookmarkFromRemote(message.name, message.remote)
+                  : repo.deleteTagFromRemote(message.name, message.remote),
+            );
+          } finally {
+            this.postMessageToWebview({
+              command: "deleteRemoteRefDone",
+              refType: message.refType,
+              name: message.name,
+            });
+          }
           break;
         }
         case "restoreRemoteRef":
@@ -593,8 +602,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       await fn();
       await this.refresh();
     } catch (error: unknown) {
-      // Cancellation is user-initiated ("Cancel Push"); the cancel handler reports it, so don't
-      // also surface a generic failure message.
+      // Cancellation is user-initiated. The cancel handler reports it,
+      // so don't also surface a generic failure message.
       if (error instanceof CancelledError) {
         return;
       }

@@ -24,6 +24,8 @@ import {
   closeAllMenus,
   pushingBookmarks,
   pushingTags,
+  deletingBookmarks,
+  deletingTags,
   supportsTagTracking,
   hoveredChangeId,
   currentChanges,
@@ -369,6 +371,19 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                       e.preventDefault();
                       e.stopPropagation();
                       closeAllMenus();
+                      if (deletingBookmarks.value.has(b.name)) {
+                        remoteRefContextMenu.value = {
+                          type: "bookmark",
+                          name: b.name,
+                          remote: b.remote,
+                          change,
+                          pageX: e.pageX,
+                          pageY: e.pageY,
+                          changeDoubleClickAction: changeDoubleClickAction.value,
+                          cancelDelete: true,
+                        };
+                        return;
+                      }
                       remoteRefContextMenu.value = {
                         type: "bookmark",
                         name: b.name,
@@ -388,6 +403,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                     }
               }
             >
+              {deletingBookmarks.value.has(b.name) && <BookmarkPushIcon pushing={true} title="Deleting..." />}
               {abbreviateName(b.name)}@{b.remote}
             </RemoteBookmarkPill>
           ))}
@@ -460,6 +476,19 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                       e.preventDefault();
                       e.stopPropagation();
                       closeAllMenus();
+                      if (deletingTags.value.has(t.name)) {
+                        remoteRefContextMenu.value = {
+                          type: "tag",
+                          name: t.name,
+                          remote: t.remote,
+                          change,
+                          pageX: e.pageX,
+                          pageY: e.pageY,
+                          changeDoubleClickAction: changeDoubleClickAction.value,
+                          cancelDelete: true,
+                        };
+                        return;
+                      }
                       remoteRefContextMenu.value = {
                         type: "tag",
                         name: t.name,
@@ -479,6 +508,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                     }
               }
             >
+              {deletingTags.value.has(t.name) && <BookmarkPushIcon pushing={true} title="Deleting..." />}
               {abbreviateName(t.name)}@{t.remote}
             </RemoteTagPill>
           ))}

@@ -1,10 +1,35 @@
-import { remoteRefContextMenu, supportsTagTracking, postMessage, pushingBookmarks, pushingTags } from "../signals";
+import {
+  remoteRefContextMenu,
+  supportsTagTracking,
+  postMessage,
+  pushingBookmarks,
+  pushingTags,
+  deletingBookmarks,
+  deletingTags,
+} from "../signals";
 import { Menu, MenuItem } from "./menu-container";
 
 export function RemoteRefContextMenu() {
   const state = remoteRefContextMenu.value;
   if (!state || state.pendingStatus) {
     return null;
+  }
+
+  // While the ref is being deleted from the remote, the only available action is to cancel.
+  if (state.cancelDelete) {
+    return (
+      <Menu id="remote-ref-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
+        <MenuItem
+          action="cancelRemoteRefOperation"
+          onClick={() => {
+            postMessage({ command: "cancelRemoteRefOperation", refType: state.type, name: state.name });
+            remoteRefContextMenu.value = null;
+          }}
+        >
+          Cancel Deletion
+        </MenuItem>
+      </Menu>
+    );
   }
 
   if (state.action === "delete") {
@@ -16,6 +41,10 @@ export function RemoteRefContextMenu() {
         <MenuItem
           action="deleteRemoteRef"
           onClick={() => {
+            const deleting = state.type === "bookmark" ? deletingBookmarks : deletingTags;
+            const newSet = new Set(deleting.value);
+            newSet.add(state.name);
+            deleting.value = newSet;
             postMessage({
               command: "deleteRemoteRef",
               refType: state.type,

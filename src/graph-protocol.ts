@@ -121,7 +121,7 @@ export type WebviewToExtensionMessage =
   | { command: "trackTag"; tag: string; remote: string }
   | { command: "untrackTag"; tag: string; remote: string }
   | { command: "pushTag"; tag: string }
-  | { command: "cancelPush"; refType: "bookmark" | "tag"; name: string }
+  | { command: "cancelRemoteRefOperation"; refType: "bookmark" | "tag"; name: string }
   | { command: "getRemoteRefStatus"; refType: "bookmark" | "tag"; name: string; remote: string }
   | { command: "pushRemoteRef"; refType: "bookmark" | "tag"; name: string; remote: string }
   | { command: "deleteRemoteRef"; refType: "bookmark" | "tag"; name: string; remote: string }
@@ -183,6 +183,7 @@ export type ExtensionToWebviewMessage =
   | { command: "pushBookmarkDone"; bookmark: string }
   | { command: "tagTrackingRemotesResponse"; tag: string; remotes: string[] }
   | { command: "pushTagDone"; tag: string }
+  | { command: "deleteRemoteRefDone"; refType: "bookmark" | "tag"; name: string }
   | {
       command: "remoteRefStatusResponse";
       refType: "bookmark" | "tag";

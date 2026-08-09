@@ -118,6 +118,8 @@ interface RemoteRefContextMenuState {
   changeDoubleClickAction: string;
   pendingStatus?: boolean;
   action?: "delete" | "push" | "track";
+  /** When set, the ref is being deleted from the remote: show only a "Cancel Deletion" action. */
+  cancelDelete?: boolean;
 }
 
 export const remoteRefContextMenu = signal<RemoteRefContextMenuState | null>(null);
@@ -126,6 +128,8 @@ export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);
 
 export const pushingBookmarks = signal<Set<string>>(new Set());
 export const pushingTags = signal<Set<string>>(new Set());
+export const deletingBookmarks = signal<Set<string>>(new Set());
+export const deletingTags = signal<Set<string>>(new Set());
 
 export function closeAllMenus() {
   contextMenu.value = null;

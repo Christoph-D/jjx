@@ -90,11 +90,13 @@ export class JJRepository {
   private _gitDirPromise: Promise<string> | undefined;
 
   /**
-   * Cancellation sources for in-flight pushes, keyed by `<refType>:<name>`.
-   * Cancelling a source kills the running `jj git push`/`git push` child
-   * process for that ref (see collectProcessOutput's token handling).
+   * Cancellation sources for in-flight remote ref operations,
+   * keyed by `<refType>:<name>`.
    */
-  private readonly pushCancellationSources = new Map<string, vscode.CancellationTokenSource>();
+  private readonly refCancellationSources = new Map<
+    string,
+    { source: vscode.CancellationTokenSource; operation: "push" | "delete" }
+  >();
 
   constructor(
     public repositoryRoot: string,
@@ -110,47 +112,51 @@ export class JJRepository {
     return this._gitDirPromise;
   }
 
-  private pushCancellationKey(refType: "bookmark" | "tag", name: string): string {
+  private refCancellationKey(refType: "bookmark" | "tag", name: string): string {
     return `${refType}:${name}`;
   }
 
   /**
-   * Runs a push while registering a cancellation source for the ref so it can be
-   * aborted via {@link cancelPush}. Cancelling the source kills the in-flight
+   * Runs a remote ref operation while registering a
+   * cancellation source for the ref so it can be aborted via
+   * {@link cancelRefOperation}. Cancelling the source kills the in-flight
    * `jj git push`/`git push` child process (see collectProcessOutput's token
-   * handling). Only the outermost push registers a source; callers that already
-   * hold a token (e.g. the multi-remote push loops) pass it through directly.
+   * handling). Only the outermost operation registers a source; callers that
+   * already hold a token (e.g. the multi-remote push loops) pass it through
+   * directly.
    */
-  private async withPushCancellation<T>(
+  private async withRefCancellation<T>(
     refType: "bookmark" | "tag",
     name: string,
+    operation: "push" | "delete",
     fn: (token: vscode.CancellationToken) => Promise<T>,
   ): Promise<T> {
     const source = new vscode.CancellationTokenSource();
-    const key = this.pushCancellationKey(refType, name);
-    this.pushCancellationSources.set(key, source);
+    const key = this.refCancellationKey(refType, name);
+    this.refCancellationSources.set(key, { source, operation });
     try {
       return await fn(source.token);
     } finally {
-      // Only remove our source; a newer push for the same ref may have replaced it.
-      if (this.pushCancellationSources.get(key) === source) {
-        this.pushCancellationSources.delete(key);
+      // Only remove our source; a newer operation for the same ref may have replaced it.
+      if (this.refCancellationSources.get(key)?.source === source) {
+        this.refCancellationSources.delete(key);
       }
       source.dispose();
     }
   }
 
   /**
-   * Cancels an in-flight push of the given ref by killing the running child
-   * process. Returns true if a push was found and cancelled.
+   * Cancels an in-flight remote ref operation of the given ref by killing the
+   * running child process. Returns the operation kind if one was found and
+   * cancelled, otherwise null.
    */
-  cancelPush(refType: "bookmark" | "tag", name: string): boolean {
-    const source = this.pushCancellationSources.get(this.pushCancellationKey(refType, name));
-    if (!source) {
-      return false;
+  cancelRefOperation(refType: "bookmark" | "tag", name: string): "push" | "delete" | null {
+    const entry = this.refCancellationSources.get(this.refCancellationKey(refType, name));
+    if (!entry) {
+      return null;
     }
-    source.cancel();
-    return true;
+    entry.source.cancel();
+    return entry.operation;
   }
 
   private parseFileStatuses(diffFiles: DiffFileEntry[], conflictedPaths: string[] | undefined): ParsedFileStatuses {
@@ -845,7 +851,7 @@ export class JJRepository {
     const pushedRemotes: string[] = [];
     const failedRemoteErrors: string[] = [];
     let cancelled = false;
-    await this.withPushCancellation("bookmark", bookmark, async (token) => {
+    await this.withRefCancellation("bookmark", bookmark, "push", async (token) => {
       for (const remote of remotes) {
         if (token.isCancellationRequested) {
           cancelled = true;
@@ -949,7 +955,24 @@ export class JJRepository {
       await run(token);
       return;
     }
-    await this.withPushCancellation("bookmark", bookmark, run);
+    await this.withRefCancellation("bookmark", bookmark, "push", run);
+  }
+
+  /**
+   * Deletes a bookmark from a remote.
+   * Expects the local bookmark to already be gone.
+   */
+  async deleteBookmarkFromRemote(bookmark: string, remote: string, token?: vscode.CancellationToken): Promise<void> {
+    const run = (t: vscode.CancellationToken) =>
+      this.jjCommand(["git", "push", "--bookmark", quoteJjName(bookmark), "--remote", remote], {
+        token: t,
+        timeout: TIMEOUTS.GIT_FETCH,
+      });
+    if (token) {
+      await run(token);
+      return;
+    }
+    await this.withRefCancellation("bookmark", bookmark, "delete", run);
   }
 
   async deleteTag(tag: string) {
@@ -983,7 +1006,7 @@ export class JJRepository {
         await run(token);
         return;
       }
-      await this.withPushCancellation("tag", tag, run);
+      await this.withRefCancellation("tag", tag, "push", run);
       return;
     }
     const gitDir = await this.getGitDir();
@@ -999,7 +1022,7 @@ export class JJRepository {
       await run(token);
       return;
     }
-    await this.withPushCancellation("tag", tag, run);
+    await this.withRefCancellation("tag", tag, "push", run);
   }
 
   /**
@@ -1007,20 +1030,29 @@ export class JJRepository {
    * normal push (a locally-deleted tag is removed from the remote on push).
    * On older jj versions the tag is deleted directly via `git push --delete`.
    */
-  async deleteTagFromRemote(tag: string, remote: string): Promise<void> {
-    if (this.supportsTagTracking()) {
-      await this.jjCommand(["git", "push", "--tag", quoteJjName(tag), "--remote", remote], {
-        timeout: TIMEOUTS.GIT_FETCH,
-      });
+  async deleteTagFromRemote(tag: string, remote: string, token?: vscode.CancellationToken): Promise<void> {
+    const run = async (t: vscode.CancellationToken) => {
+      if (this.supportsTagTracking()) {
+        await this.jjCommand(["git", "push", "--tag", quoteJjName(tag), "--remote", remote], {
+          token: t,
+          timeout: TIMEOUTS.GIT_FETCH,
+        });
+        return;
+      }
+      const gitDir = await this.getGitDir();
+      await collectProcessOutput(
+        spawn("git", ["push", "--delete", remote, tag], {
+          cwd: this.repositoryRoot,
+          env: { ...process.env, GIT_DIR: gitDir },
+        }),
+        t,
+      );
+    };
+    if (token) {
+      await run(token);
       return;
     }
-    const gitDir = await this.getGitDir();
-    await collectProcessOutput(
-      spawn("git", ["push", "--delete", remote, tag], {
-        cwd: this.repositoryRoot,
-        env: { ...process.env, GIT_DIR: gitDir },
-      }),
-    );
+    await this.withRefCancellation("tag", tag, "delete", run);
   }
 
   /**
@@ -1129,7 +1161,7 @@ export class JJRepository {
     const pushedRemotes: string[] = [];
     const failedRemoteErrors: string[] = [];
     let cancelled = false;
-    await this.withPushCancellation("tag", tag, async (token) => {
+    await this.withRefCancellation("tag", tag, "push", async (token) => {
       for (const remote of remotes) {
         if (token.isCancellationRequested) {
           cancelled = true;
