@@ -15,7 +15,7 @@ import {
   justFinishedDrag,
   dropTargetId,
   graphStyle,
-  vscode,
+  postMessage,
   showTooltips,
   showChangedFiles,
   dragBookmarkName,
@@ -82,7 +82,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
       newSelected.add(getUniqueId(change));
     }
     selectedNodes.value = newSelected;
-    vscode.postMessage({
+    postMessage({
       command: "selectChange",
       selectedNodes: Array.from(newSelected),
     });
@@ -97,7 +97,7 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
         return;
       }
     }
-    vscode.postMessage({ command: "editChange", changeId: getUniqueId(change) });
+    postMessage({ command: "editChange", changeId: change.id.changeId });
   };
 
   const handleContextMenu = (e: MouseEvent) => {
@@ -295,7 +295,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                 synced: b.synced,
                 pendingRemotes: true,
               };
-              vscode.postMessage({ command: "getBookmarkTrackingRemotes", bookmark: b.name });
+              postMessage({ command: "getBookmarkTrackingRemotes", bookmark: b.name });
             }}
             onDragStart={(e) => {
               e.stopPropagation();
@@ -333,7 +333,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                     const newSet = new Set(pushingBookmarks.value);
                     newSet.add(b.name);
                     pushingBookmarks.value = newSet;
-                    vscode.postMessage({ command: "pushBookmark", bookmark: b.name });
+                    postMessage({ command: "pushBookmark", bookmark: b.name });
                   }}
                 />
               ))}
@@ -365,7 +365,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                         changeDoubleClickAction: changeDoubleClickAction.value,
                         pendingStatus: true,
                       };
-                      vscode.postMessage({
+                      postMessage({
                         command: "getRemoteRefStatus",
                         refType: "bookmark",
                         name: b.name,
@@ -396,7 +396,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                 pageY: e.pageY,
                 pendingRemotes: true,
               };
-              vscode.postMessage({
+              postMessage({
                 command: supportsTagTracking.value ? "getTagTrackingRemotes" : "getTagPushRemotes",
                 tag: t.name,
               });
@@ -416,7 +416,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                     const newSet = new Set(pushingTags.value);
                     newSet.add(t.name);
                     pushingTags.value = newSet;
-                    vscode.postMessage({ command: "pushTag", tag: t.name });
+                    postMessage({ command: "pushTag", tag: t.name });
                   }}
                 />
               ))}
@@ -448,7 +448,7 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
                         changeDoubleClickAction: changeDoubleClickAction.value,
                         pendingStatus: true,
                       };
-                      vscode.postMessage({
+                      postMessage({
                         command: "getRemoteRefStatus",
                         refType: "tag",
                         name: t.name,
@@ -486,7 +486,7 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Regu
           data-status={f.type.toLowerCase()}
           onClick={(e) => {
             e.stopPropagation();
-            vscode.postMessage({
+            postMessage({
               command: "openFileDiff",
               changeId: change.id.changeId,
               path: f.path,

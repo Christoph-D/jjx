@@ -1,4 +1,4 @@
-import { contextMenu, selectedNodes, vscode } from "../signals";
+import { contextMenu, selectedNodes, postMessage } from "../signals";
 import { Menu, MenuItem, MenuSeparator } from "./menu-container";
 
 export function ContextMenu() {
@@ -8,7 +8,6 @@ export function ContextMenu() {
   }
 
   const { change } = state;
-  const isImmutable = change.branchType === "◆";
 
   return (
     <Menu id="context-menu" state={state} onClick={(e) => e.stopPropagation()} data-change-id={change.id.changeId}>
@@ -19,7 +18,7 @@ export function ContextMenu() {
             state.changeDoubleClickAction === "new" ? "Create and Edit a New Empty Change on Top" : "Edit This Change"
           }
           onClick={() => {
-            vscode.postMessage({ command: "editChangeDirect", changeId: change.id.changeId });
+            postMessage({ command: "editChangeDirect", changeId: change.id.changeId });
             contextMenu.value = null;
           }}
         >
@@ -30,7 +29,7 @@ export function ContextMenu() {
         action="newChild"
         title="Create a New Child Change"
         onClick={() => {
-          vscode.postMessage({ command: "newChildChange", changeId: change.id.changeId });
+          postMessage({ command: "newChildChange", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -40,7 +39,7 @@ export function ContextMenu() {
       <MenuItem
         action="describe"
         onClick={() => {
-          vscode.postMessage({ command: "describeChange", changeId: change.id.changeId });
+          postMessage({ command: "describeChange", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -50,7 +49,7 @@ export function ContextMenu() {
       <MenuItem
         action="createBookmark"
         onClick={() => {
-          vscode.postMessage({ command: "createBookmark", targetChangeId: change.id.changeId });
+          postMessage({ command: "createBookmark", targetChangeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -59,7 +58,7 @@ export function ContextMenu() {
       <MenuItem
         action="createTag"
         onClick={() => {
-          vscode.postMessage({ command: "createTag", targetChangeId: change.id.changeId });
+          postMessage({ command: "createTag", targetChangeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -69,7 +68,7 @@ export function ContextMenu() {
       <MenuItem
         action="copyUrl"
         onClick={() => {
-          vscode.postMessage({ command: "copyUrl", changeId: change.id.changeId });
+          postMessage({ command: "copyUrl", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -88,7 +87,7 @@ export function ContextMenu() {
       <MenuItem
         action="absorb"
         onClick={() => {
-          vscode.postMessage({ command: "absorbChange", changeId: change.id.changeId });
+          postMessage({ command: "absorbChange", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -97,7 +96,7 @@ export function ContextMenu() {
       <MenuItem
         action="abandon"
         onClick={() => {
-          vscode.postMessage({ command: "abandonChange", changeId: change.id.changeId, immutable: isImmutable });
+          postMessage({ command: "abandonChange", changeId: change.id.changeId });
           contextMenu.value = null;
         }}
       >
@@ -107,7 +106,7 @@ export function ContextMenu() {
         <MenuItem
           action="abandonSelected"
           onClick={() => {
-            vscode.postMessage({ command: "abandonChanges", changeIds: Array.from(selectedNodes.value) });
+            postMessage({ command: "abandonChanges", changeIds: Array.from(selectedNodes.value) });
             contextMenu.value = null;
           }}
         >

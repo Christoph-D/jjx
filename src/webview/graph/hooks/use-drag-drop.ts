@@ -6,12 +6,12 @@ import {
   rebaseMenu,
   tooltip,
   dragBookmarkName,
-  vscode,
+  postMessage,
   closeAllMenus,
 } from "../signals";
 import { useTooltipTimers } from "./use-tooltip-timers";
 import { rootChangeId } from "../types";
-import type { ChangeNode } from "../../../graph-protocol";
+import type { ChangeNode, FullChangeId } from "../../../graph-protocol";
 import changeNodeStyles from "../components/change-node.module.css";
 import dragGhostStyles from "../components/drag-ghost.module.css";
 
@@ -119,7 +119,7 @@ export function useDragDrop(change: ChangeNode) {
         setTimeout(() => {
           justFinishedDrag.value = false;
         }, 100);
-        vscode.postMessage({
+        postMessage({
           command: "moveBookmark",
           bookmark: bookmarkName,
           targetChangeId: change.id.changeId,
@@ -127,7 +127,7 @@ export function useDragDrop(change: ChangeNode) {
         return;
       }
 
-      const sourceId = e.dataTransfer!.getData("text/plain");
+      const sourceId = e.dataTransfer!.getData("text/plain") as FullChangeId;
       const targetId = change.id.changeId;
       if (!sourceId || !targetId || sourceId === targetId) {
         return;

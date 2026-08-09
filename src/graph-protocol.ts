@@ -1,5 +1,7 @@
 import type { ChangeId, FileStatusType, FullChangeId } from "./types";
 
+export type { FullChangeId };
+
 export interface LogEntryLocalRef {
   name: string;
   synced: boolean;

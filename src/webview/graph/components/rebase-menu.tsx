@@ -1,4 +1,4 @@
-import { currentChanges, rebaseMenu, vscode } from "../signals";
+import { currentChanges, rebaseMenu, postMessage } from "../signals";
 import { Menu, MenuItem, MenuSeparator, Submenu, SubmenuItem } from "./menu-container";
 import { getUniqueId } from "../../../graph-protocol";
 
@@ -34,8 +34,23 @@ export function RebaseMenu() {
   const afterImmutableIcon = hasImmutableChild || isSourceImmutable ? <ImmutableIcon /> : null;
   const sourceImmutableIcon = isSourceImmutable ? <ImmutableIcon /> : null;
 
-  const sendCommand = (command: string, withDescendants = false) => {
-    vscode.postMessage({ command, changeId: sourceId, targetChangeId: targetId, withDescendants });
+  const sendCommand = (
+    command:
+      | "rebaseOnto"
+      | "rebaseAfter"
+      | "rebaseBefore"
+      | "rebaseAddParent"
+      | "rebaseRemoveParent"
+      | "squashInto"
+      | "duplicateOnto"
+      | "duplicateAfter"
+      | "duplicateBefore"
+      | "revertOnto"
+      | "revertAfter"
+      | "revertBefore",
+    withDescendants = false,
+  ) => {
+    postMessage({ command, changeId: sourceId, targetChangeId: targetId, withDescendants });
     rebaseMenu.value = null;
   };
 

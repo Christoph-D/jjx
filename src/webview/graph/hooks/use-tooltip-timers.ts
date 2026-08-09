@@ -3,7 +3,7 @@ import {
   tooltipHideTimeout,
   diffStatsPrefetchTimeout,
   tooltip,
-  vscode,
+  postMessage,
   diffStatsCache,
 } from "../signals";
 import type { RegularChangeNode } from "../../../graph-protocol";
@@ -31,7 +31,7 @@ export function useTooltipTimers() {
   const startHoverTimers = (change: RegularChangeNode, pageX: number, pageY: number) => {
     if (!diffStatsCache.value.has(change.id.changeId)) {
       diffStatsPrefetchTimeout.value = setTimeout(() => {
-        vscode.postMessage({ command: "fetchDiffStats", changeId: change.id.changeId });
+        postMessage({ command: "fetchDiffStats", changeId: change.id.changeId });
       }, DIFF_STATS_PREFETCH_DELAY_MS);
     }
     tooltipTimeout.value = setTimeout(() => {

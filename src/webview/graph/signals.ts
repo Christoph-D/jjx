@@ -1,6 +1,13 @@
 import { signal } from "@preact/signals";
 import type { VSCodeAPI } from "./types";
-import type { ChangeNode, ChangeIdGraph, DiffStats, RegularChangeNode } from "../../graph-protocol";
+import type {
+  ChangeNode,
+  ChangeIdGraph,
+  DiffStats,
+  RegularChangeNode,
+  WebviewToExtensionMessage,
+  FullChangeId,
+} from "../../graph-protocol";
 
 declare function acquireVsCodeApi(): VSCodeAPI;
 
@@ -8,6 +15,10 @@ export let vscode: VSCodeAPI;
 
 export function initVsCodeApi() {
   vscode = acquireVsCodeApi();
+}
+
+export function postMessage(message: WebviewToExtensionMessage): void {
+  vscode.postMessage(message);
 }
 
 export const currentChanges = signal<ChangeNode[]>([]);
@@ -44,8 +55,8 @@ interface ContextMenuState {
 }
 
 interface RebaseMenuState {
-  sourceId: string;
-  targetId: string;
+  sourceId: FullChangeId;
+  targetId: FullChangeId;
   targetChange: RegularChangeNode;
   pageX: number;
   pageY: number;

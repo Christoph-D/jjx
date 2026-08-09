@@ -1,4 +1,4 @@
-import { remoteRefContextMenu, supportsTagTracking, vscode } from "../signals";
+import { remoteRefContextMenu, supportsTagTracking, postMessage } from "../signals";
 import { Menu, MenuItem } from "./menu-container";
 
 export function RemoteRefContextMenu() {
@@ -16,7 +16,7 @@ export function RemoteRefContextMenu() {
         <MenuItem
           action="deleteRemoteRef"
           onClick={() => {
-            vscode.postMessage({
+            postMessage({
               command: "deleteRemoteRef",
               refType: state.type,
               name: state.name,
@@ -30,7 +30,7 @@ export function RemoteRefContextMenu() {
         <MenuItem
           action="restoreRemoteRef"
           onClick={() => {
-            vscode.postMessage({
+            postMessage({
               command: "restoreRemoteRef",
               refType: state.type,
               name: state.name,
@@ -59,17 +59,16 @@ export function RemoteRefContextMenu() {
       );
     }
     const label = isBookmark ? "Track Bookmark" : "Track Tag";
-    const refKey = isBookmark ? "bookmark" : "tag";
     return (
       <Menu id="remote-ref-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
         <MenuItem
           action="trackRemoteRef"
           onClick={() => {
-            vscode.postMessage({
-              command: isBookmark ? "trackBookmark" : "trackTag",
-              [refKey]: state.name,
-              remote: state.remote,
-            });
+            if (isBookmark) {
+              postMessage({ command: "trackBookmark", bookmark: state.name, remote: state.remote });
+            } else {
+              postMessage({ command: "trackTag", tag: state.name, remote: state.remote });
+            }
             remoteRefContextMenu.value = null;
           }}
         >
@@ -85,7 +84,7 @@ export function RemoteRefContextMenu() {
       <MenuItem
         action="pushRemoteRef"
         onClick={() => {
-          vscode.postMessage({
+          postMessage({
             command: "pushRemoteRef",
             refType: state.type,
             name: state.name,

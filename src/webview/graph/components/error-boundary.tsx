@@ -1,5 +1,5 @@
 import { Component, type ComponentChildren } from "preact";
-import { vscode } from "../signals";
+import { postMessage } from "../signals";
 import { StateActionButton, StateDescription, StateDisplay } from "./state-display";
 
 interface ErrorBoundaryProps {
@@ -18,7 +18,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, _info: unknown) {
-    vscode.postMessage({
+    postMessage({
       command: "reportError",
       message: error.message,
       stack: error.stack,

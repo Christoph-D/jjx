@@ -18,7 +18,7 @@ import {
   pushingBookmarks,
   pushingTags,
   supportsTagTracking,
-  vscode,
+  postMessage,
   diffStatsCache,
   tooltip,
   showTooltips,
@@ -57,7 +57,7 @@ export function App() {
         const updatedChange = message.changes.find((c) => getUniqueId(c) === activeTooltip.change.id.changeId);
         if (updatedChange && updatedChange.branchType !== "~") {
           tooltip.value = { ...activeTooltip, change: updatedChange };
-          vscode.postMessage({ command: "fetchDiffStats", changeId: updatedChange.id.changeId });
+          postMessage({ command: "fetchDiffStats", changeId: updatedChange.id.changeId });
         } else {
           tooltip.value = null;
         }
@@ -201,7 +201,7 @@ export function App() {
       }, 100);
     });
 
-    vscode.postMessage({ command: "webviewReady" });
+    postMessage({ command: "webviewReady" });
   }, []);
 
   return (
