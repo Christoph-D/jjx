@@ -25,9 +25,6 @@ export interface Change {
 }
 
 export function getRevFromChange(change: Change): string {
-  if (change.divergent && change.changeId.changeOffset) {
-    return `${change.changeId.changeId}/${change.changeId.changeOffset}`;
-  }
   return change.changeId.changeId;
 }
 

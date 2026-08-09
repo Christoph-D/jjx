@@ -301,10 +301,10 @@ export class JJRepository {
 
     const workingCopy: Change = {
       changeId: {
-        changeId: entry.change_id,
+        changeId: entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
         changeIdPrefix: "",
         changeIdSuffix: "",
-        changeOffset: entry.change_offset || null,
+        changeOffset: entry.divergent ? entry.change_offset || null : null,
       },
       commitId: entry.commit_id,
       description: entry.description,
@@ -316,10 +316,10 @@ export class JJRepository {
 
     const parentChanges: Change[] = entry.parents.map((p) => ({
       changeId: {
-        changeId: p.change_id,
+        changeId: p.change_offset ? `${p.change_id}/${p.change_offset}` : p.change_id,
         changeIdPrefix: "",
         changeIdSuffix: "",
-        changeOffset: p.change_offset || null,
+        changeOffset: p.divergent ? p.change_offset || null : null,
       },
       commitId: p.commit_id,
       description: p.description,
@@ -421,10 +421,10 @@ export class JJRepository {
       results.push({
         change: {
           changeId: {
-            changeId: entry.change_id,
+            changeId: entry.change_offset ? `${entry.change_id}/${entry.change_offset}` : entry.change_id,
             changeIdPrefix: "",
             changeIdSuffix: "",
-            changeOffset: entry.change_offset || null,
+            changeOffset: entry.divergent ? entry.change_offset || null : null,
           },
           commitId: entry.commit_id,
           description: entry.description,
@@ -1333,7 +1333,15 @@ export class JJRepository {
     const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
     const output = (
       await this.jjCommandRead(
-        ["file", "annotate", "-r", rev, "-T", 'self.commit().change_id() ++ "\\n"', relativePath],
+        [
+          "file",
+          "annotate",
+          "-r",
+          rev,
+          "-T",
+          'self.commit().change_id() ++ if(self.commit().change_offset(), "/" ++ self.commit().change_offset(), "") ++ "\\n"',
+          relativePath,
+        ],
         { timeout: TIMEOUTS.ANNOTATE },
       )
     ).toString();

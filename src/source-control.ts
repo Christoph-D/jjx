@@ -6,7 +6,7 @@ import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
-import { formatComparisonRev, formatDiffTitle, normalizePath } from "./utils";
+import { formatChangeIdShort, formatComparisonRev, formatDiffTitle, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -681,11 +681,7 @@ class RepositorySourceControlManager {
   static getLabel(prefix: string, change: Change, showChangeId: boolean = true) {
     const parts: string[] = [prefix];
     if (showChangeId) {
-      const changeIdDisplay =
-        change.divergent && change.changeId.changeOffset
-          ? `${change.changeId.changeId.substring(0, 8)}/${change.changeId.changeOffset}`
-          : change.changeId.changeId.substring(0, 8);
-      parts.push(` [${changeIdDisplay}]`);
+      parts.push(` [${formatChangeIdShort(change.changeId.changeId, change.changeId.changeOffset)}]`);
     }
     if (change.description) {
       parts.push(` • ${change.description}`);
