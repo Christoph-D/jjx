@@ -13,7 +13,7 @@ import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
 import { extensionDir } from "./config";
 import { JJRepository } from "./repository";
 import { StaleWorkingCopyError } from "./errors";
-import type { FileStatus, RepositoryStatus, Show, Change } from "./types";
+import type { ChangeId, FileStatus, RepositoryStatus, Show, Change } from "./types";
 import { TIMEOUTS, MINIMUM_JJ_VERSION, type JJVersion } from "./constants";
 
 const checkedJjVersions = new Map<string, JJVersion | undefined>();
@@ -403,12 +403,10 @@ export type ForceRefresh = "force" | "if-changed";
 
 // A from/to comparison selection in the SCM view.
 interface DiffSelection {
-  from: string;
-  to: string;
+  from: ChangeId;
+  to: ChangeId;
   fromIsWorkingCopy: boolean;
   toIsWorkingCopy: boolean;
-  fromChangeOffset: string | null;
-  toChangeOffset: string | null;
 }
 
 class RepositorySourceControlManager {
@@ -803,7 +801,7 @@ class RepositorySourceControlManager {
     }
 
     if (this.diffSelection && this.diffFileStatuses) {
-      const { from, to, fromIsWorkingCopy, toIsWorkingCopy, fromChangeOffset, toChangeOffset } = this.diffSelection;
+      const { from, to, fromIsWorkingCopy, toIsWorkingCopy } = this.diffSelection;
       // The resource group id encodes the current mode ("diff" vs "interdiff") so the
       // per-group inline quick actions (View Interdiff / View Regular Diff) and resource-state
       // context menus can target the right section. Recreate the group when the mode changes.
@@ -814,8 +812,8 @@ class RepositorySourceControlManager {
       if (!this.diffResourceGroup) {
         this.diffResourceGroup = this.sourceControl.createResourceGroup(this.diffMode, "");
       }
-      const fromShort = formatComparisonRev(from, fromChangeOffset, fromIsWorkingCopy, "Working Copy");
-      const toShort = formatComparisonRev(to, toChangeOffset, toIsWorkingCopy, "Working Copy");
+      const fromShort = formatComparisonRev(from, fromIsWorkingCopy, "Working Copy");
+      const toShort = formatComparisonRev(to, toIsWorkingCopy, "Working Copy");
       this.diffResourceGroup.label =
         this.diffMode === "interdiff" ? `Interdiff ${fromShort} → ${toShort}` : `Diff ${fromShort} → ${toShort}`;
       this.diffResourceGroup.resourceStates = buildComparisonDiffResourceStates(this.diffFileStatuses, {
@@ -824,8 +822,6 @@ class RepositorySourceControlManager {
         mode: this.diffMode,
         fromIsWorkingCopy,
         toIsWorkingCopy,
-        fromChangeOffset,
-        toChangeOffset,
       });
     } else {
       this.diffResourceGroup?.dispose();
@@ -842,8 +838,8 @@ class RepositorySourceControlManager {
     if (this.diffSelection && this.diffFileStatuses) {
       combinedFileStatusesByChange.set(
         this.diffMode === "interdiff"
-          ? interdiffKey(this.diffSelection.from, this.diffSelection.to)
-          : diffKey(this.diffSelection.from, this.diffSelection.to),
+          ? interdiffKey(this.diffSelection.from.changeId, this.diffSelection.to.changeId)
+          : diffKey(this.diffSelection.from.changeId, this.diffSelection.to.changeId),
         this.diffFileStatuses,
       );
     }
@@ -875,13 +871,11 @@ class RepositorySourceControlManager {
    * by default and resets any prior interdiff toggle.
    */
   async setDiffSelection(
-    from?: string,
-    to?: string,
+    from?: ChangeId,
+    to?: ChangeId,
     options?: {
       fromIsWorkingCopy?: boolean;
       toIsWorkingCopy?: boolean;
-      fromChangeOffset?: string | null;
-      toChangeOffset?: string | null;
     },
   ) {
     this.diffMode = "diff";
@@ -891,10 +885,8 @@ class RepositorySourceControlManager {
         to,
         fromIsWorkingCopy: options?.fromIsWorkingCopy ?? false,
         toIsWorkingCopy: options?.toIsWorkingCopy ?? false,
-        fromChangeOffset: options?.fromChangeOffset ?? null,
-        toChangeOffset: options?.toChangeOffset ?? null,
       };
-      this.diffFileStatuses = await this.repository.comparisonSummary("diff", from, to);
+      this.diffFileStatuses = await this.repository.comparisonSummary("diff", from.changeId, to.changeId);
     } else {
       this.diffSelection = undefined;
       this.diffFileStatuses = undefined;
@@ -913,7 +905,7 @@ class RepositorySourceControlManager {
     }
     this.diffMode = mode;
     const { from, to } = this.diffSelection;
-    this.diffFileStatuses = await this.repository.comparisonSummary(mode, from, to);
+    this.diffFileStatuses = await this.repository.comparisonSummary(mode, from.changeId, to.changeId);
     this.render();
   }
 
@@ -998,25 +990,23 @@ function buildUntrackedResourceStates(fileStatuses: FileStatus[]): vscode.Source
 function buildComparisonDiffResourceStates(
   fileStatuses: FileStatus[],
   options: {
-    from: string;
-    to: string;
+    from: ChangeId;
+    to: ChangeId;
     mode: "diff" | "interdiff";
     fromIsWorkingCopy: boolean;
     toIsWorkingCopy: boolean;
-    fromChangeOffset: string | null;
-    toChangeOffset: string | null;
   },
 ): vscode.SourceControlResourceState[] {
-  const { from, to, mode, fromChangeOffset, toChangeOffset, fromIsWorkingCopy, toIsWorkingCopy } = options;
-  const fromShort = formatComparisonRev(from, fromChangeOffset, fromIsWorkingCopy);
-  const toShort = formatComparisonRev(to, toChangeOffset, toIsWorkingCopy);
+  const { from, to, mode, fromIsWorkingCopy, toIsWorkingCopy } = options;
+  const fromShort = formatComparisonRev(from, fromIsWorkingCopy);
+  const toShort = formatComparisonRev(to, toIsWorkingCopy);
   const label = mode === "interdiff" ? "Interdiff" : "Diff";
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);
     const makeSideUri = (side: "left" | "right"): vscode.Uri =>
       mode === "interdiff"
-        ? toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side })
-        : toJJUri(fileUri, { diffFrom: from, diffTo: to, side });
+        ? toJJUri(fileUri, { interdiffFrom: from.changeId, interdiffTo: to.changeId, side })
+        : toJJUri(fileUri, { diffFrom: from.changeId, diffTo: to.changeId, side });
     const leftUri = fileStatus.type === "A" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("left");
     const rightUri = fileStatus.type === "D" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("right");
     return {

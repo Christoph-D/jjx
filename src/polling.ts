@@ -39,14 +39,12 @@ export function initInfrastructure(state: ExtensionState) {
       if (repoSCM) {
         if (selectedNodes.length === 2) {
           await repoSCM.setSelectedCommit(undefined);
-          await repoSCM.setDiffSelection(selectedNodes[0].changeId, selectedNodes[1].changeId, {
+          await repoSCM.setDiffSelection(selectedNodes[0].id, selectedNodes[1].id, {
             fromIsWorkingCopy: selectedNodes[0].currentWorkingCopy,
             toIsWorkingCopy: selectedNodes[1].currentWorkingCopy,
-            fromChangeOffset: selectedNodes[0].changeOffset,
-            toChangeOffset: selectedNodes[1].changeOffset,
           });
         } else {
-          const changeId = selectedNodes.length === 1 ? selectedNodes[0].changeId : undefined;
+          const changeId = selectedNodes.length === 1 ? selectedNodes[0].id.changeId : undefined;
           await repoSCM.setDiffSelection();
           await repoSCM.setSelectedCommit(changeId);
         }

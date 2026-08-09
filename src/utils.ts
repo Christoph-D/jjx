@@ -48,17 +48,11 @@ export function changeIdAffixes(
   };
 }
 
-export function formatComparisonRev(
-  changeId: string,
-  changeOffset: string | null,
-  isWorkingCopy: boolean,
-  workingCopyLabel = "@",
-): string {
+export function formatComparisonRev(changeId: ChangeId, isWorkingCopy: boolean, workingCopyLabel = "@"): string {
   if (isWorkingCopy) {
     return workingCopyLabel;
   }
-  const prefix = changeId.substring(0, 8);
-  return changeOffset ? `${prefix}/${changeOffset}` : prefix;
+  return formatChangeIdShort(changeId);
 }
 
 const isMacintosh = process.platform === "darwin";

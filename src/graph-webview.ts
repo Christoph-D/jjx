@@ -5,6 +5,7 @@ import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { showErrorMessage } from "./vscode-utils";
 import { changeIdAffixes, formatDiffTitle, formatRevSuffix, maxChangeIdPrefixLength } from "./utils";
+import type { ChangeId } from "./types";
 import { assignLanes } from "./lane-assigner";
 import type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elided-edges";
@@ -16,9 +17,8 @@ import { toJJUri } from "./uri";
 const rootChangeId = "z".repeat(32);
 
 export interface GraphSelection {
-  changeId: string;
+  id: ChangeId;
   currentWorkingCopy: boolean;
-  changeOffset: string | null;
 }
 
 type Message = WebviewToExtensionMessage;
@@ -504,13 +504,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
    * working copy without comparing change IDs.
    */
   private resolveSelection(selectedIds: string[]): GraphSelection[] {
-    return selectedIds.map((id) => {
+    return selectedIds.flatMap((id) => {
       const node = this.currentChanges.find((c) => c.id.changeId === id);
-      return {
-        changeId: id,
-        currentWorkingCopy: node?.currentWorkingCopy ?? false,
-        changeOffset: node?.id.changeOffset ?? null,
-      };
+      return node ? { id: node.id, currentWorkingCopy: node.currentWorkingCopy } : [];
     });
   }
 
