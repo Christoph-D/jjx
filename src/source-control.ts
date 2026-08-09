@@ -1007,7 +1007,12 @@ function buildComparisonDiffResourceStates(
         ? toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side })
         : toJJUri(fileUri, { diffFrom: from, diffTo: to, side });
     const leftUri = fileStatus.type === "A" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("left");
-    const rightUri = fileStatus.type === "D" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("right");
+    const rightUri =
+      fileStatus.type === "D"
+        ? toJJUri(fileUri, { deleted: true })
+        : mode === "diff" && toIsWorkingCopy
+          ? fileUri
+          : makeSideUri("right");
     return {
       resourceUri: makeSideUri("right"),
       decorations: {
