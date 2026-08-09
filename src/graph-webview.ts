@@ -12,11 +12,12 @@ import {
   fullChangeId,
   maxChangeIdPrefixLength,
 } from "./utils";
-import type { ChangeId } from "./types";
+import type { ChangeId, FullChangeId } from "./types";
 import { assignLanes } from "./lane-assigner";
 import {
   getUniqueId,
   type ChangeNode,
+  type RegularChangeNode,
   type WebviewToExtensionMessage,
   type ExtensionToWebviewMessage,
 } from "./graph-protocol";
@@ -379,14 +380,13 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           });
           break;
         case "abandonChange": {
-          const change = this.currentChanges.find((c) => getUniqueId(c) === message.changeId);
-          const fullDescription = change && change.branchType !== "~" ? change.fullDescription : "";
+          const change = this.findRegularChange(message.changeId);
+          const fullDescription = change ? change.fullDescription : "";
           const firstLine = fullDescription.split("\n")[0].trim() || "(no description set)";
           const truncated = firstLine.length > 120 ? firstLine.slice(0, 120) + "..." : firstLine;
-          const prompt =
-            change && change.branchType !== "~"
-              ? `Are you sure you want to abandon change "${change.id.changeIdPrefix}"?\n\n→ ${truncated}`
-              : "Are you sure you want to abandon this change?";
+          const prompt = change
+            ? `Are you sure you want to abandon change "${change.id.changeIdPrefix}"?\n\n→ ${truncated}`
+            : "Are you sure you want to abandon this change?";
           await this.confirmAndExecute(prompt, "Abandon", "abandon change", () =>
             repo.abandonRetryImmutable([message.changeId]),
           );
@@ -496,9 +496,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           const beforeUri = toJJUri(fileUri, beforeParams);
           const afterUri = toJJUri(fileUri, afterParams);
-          const node = this.currentChanges.find((c) => getUniqueId(c) === changeId);
-          const diffTitleSuffix =
-            node && node.branchType !== "~" ? formatChangeIdSuffix(node.id) : formatRevSuffix(changeId);
+          const node = this.findRegularChange(changeId);
+          const diffTitleSuffix = node ? formatChangeIdSuffix(node.id) : formatRevSuffix(changeId);
           const title = formatDiffTitle(renamedFrom, path.basename(relPath), diffTitleSuffix);
           try {
             await vscode.commands.executeCommand("vscode.diff", beforeUri, afterUri, title);
@@ -515,6 +514,16 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
 
     await this.updateElidingContext();
     await this.refresh();
+  }
+
+  /**
+   * Looks up a change node by its {@link FullChangeId}. Elided ("~") nodes only
+   * carry a synthetic {@link ElidedChangeNode.fakeId} and are never keyed by a
+   * real change ID, so a {@link FullChangeId} can only ever match a
+   * {@link RegularChangeNode}.
+   */
+  private findRegularChange(changeId: FullChangeId): RegularChangeNode | undefined {
+    return this.currentChanges.find((c): c is RegularChangeNode => c.branchType !== "~" && c.id.changeId === changeId);
   }
 
   /**
