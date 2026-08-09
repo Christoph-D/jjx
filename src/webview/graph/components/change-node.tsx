@@ -90,7 +90,10 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
   };
 
   const handleDoubleClick = () => {
-    if (change.branchType !== "~" && change.currentWorkingCopy) {
+    if (isElided) {
+      return;
+    }
+    if (change.currentWorkingCopy) {
       if (changeDoubleClickAction.value !== "new" || change.isEmpty) {
         return;
       }
