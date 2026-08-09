@@ -162,14 +162,14 @@ export class JJFileSystemProvider implements FileSystemProvider {
     } else if ("interdiffFrom" in params) {
       const pair = await this.getComparisonDiffPair(
         repository,
-        { mode: "interdiff", from: params.interdiffFrom, to: params.interdiffTo },
+        { mode: "interdiff", from: params.interdiffFrom.changeId, to: params.interdiffTo.changeId },
         uri.fsPath,
       );
       content = (params.side === "left" ? pair.left : pair.right) ?? new Uint8Array(0);
     } else if ("diffFrom" in params) {
       const pair = await this.getComparisonDiffPair(
         repository,
-        { mode: "diff", from: params.diffFrom, to: params.diffTo },
+        { mode: "diff", from: params.diffFrom.changeId, to: params.diffTo.changeId },
         uri.fsPath,
       );
       content = (params.side === "left" ? pair.left : pair.right) ?? new Uint8Array(0);

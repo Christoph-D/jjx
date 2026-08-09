@@ -1,7 +1,7 @@
 import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, ThemeColor } from "vscode";
 import { FileStatus, FileStatusType } from "./types";
 import { resolveRev, toJJUri, getParams, type JJUriParams } from "./uri";
-import { normalizePath } from "./utils";
+import { changeIdFromString, normalizePath } from "./utils";
 
 export function interdiffKey(from: string, to: string): string {
   return `interdiff:${from}..${to}`;
@@ -196,10 +196,12 @@ export class JJDecorationProvider implements FileDecorationProvider {
         return undefined;
       }
       if ("interdiffFrom" in params) {
-        return this.decorations.get(getKey(uri.fsPath, interdiffKey(params.interdiffFrom, params.interdiffTo)));
+        return this.decorations.get(
+          getKey(uri.fsPath, interdiffKey(params.interdiffFrom.changeId, params.interdiffTo.changeId)),
+        );
       }
       if ("diffFrom" in params) {
-        return this.decorations.get(getKey(uri.fsPath, diffKey(params.diffFrom, params.diffTo)));
+        return this.decorations.get(getKey(uri.fsPath, diffKey(params.diffFrom.changeId, params.diffTo.changeId)));
       }
     }
     const rev = resolveRev(uri, { diffOriginalRevBehavior: "exclude", excludeSpecial: true });
@@ -256,11 +258,14 @@ export class JJDecorationProvider implements FileDecorationProvider {
       if (comparison) {
         // Two-revision comparison (interdiff or from/to diff) resource states are keyed by
         // {from, to, side}, so emit those URIs (rather than a synthetic {rev}) so VS Code
-        // refreshes their badges.
+        // refreshes their badges. The decoration key only preserves the canonical change ID,
+        // so the affixes are rebuilt as empty here.
+        const from = changeIdFromString(comparison.from);
+        const to = changeIdFromString(comparison.to);
         const sideParams =
           comparison.kind === "interdiff"
-            ? { interdiffFrom: comparison.from, interdiffTo: comparison.to, side: "right" as const }
-            : { diffFrom: comparison.from, diffTo: comparison.to, side: "right" as const };
+            ? { interdiffFrom: from, interdiffTo: to, side: "right" as const }
+            : { diffFrom: from, diffTo: to, side: "right" as const };
         changedUris.push(toJJUri(Uri.file(fsPath), sideParams));
       } else {
         changedUris.push(toJJUri(Uri.file(fsPath), { rev }));

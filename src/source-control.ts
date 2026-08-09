@@ -1005,8 +1005,8 @@ function buildComparisonDiffResourceStates(
     const fileUri = vscode.Uri.file(fileStatus.path);
     const makeSideUri = (side: "left" | "right"): vscode.Uri =>
       mode === "interdiff"
-        ? toJJUri(fileUri, { interdiffFrom: from.changeId, interdiffTo: to.changeId, side })
-        : toJJUri(fileUri, { diffFrom: from.changeId, diffTo: to.changeId, side });
+        ? toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side })
+        : toJJUri(fileUri, { diffFrom: from, diffTo: to, side });
     const leftUri = fileStatus.type === "A" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("left");
     const rightUri = fileStatus.type === "D" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("right");
     return {

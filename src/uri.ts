@@ -1,11 +1,25 @@
 import { Uri } from "vscode";
+import type { ChangeId } from "./types";
 
 export type JJUriParams =
   | { rev: string }
   | { diffOriginalRev: string; renamedFrom?: string }
   | { deleted: boolean }
-  | { interdiffFrom: string; interdiffTo: string; side: "left" | "right" }
-  | { diffFrom: string; diffTo: string; side: "left" | "right" };
+  | { interdiffFrom: ChangeId; interdiffTo: ChangeId; side: "left" | "right" }
+  | { diffFrom: ChangeId; diffTo: ChangeId; side: "left" | "right" };
+
+function isChangeId(v: unknown): v is ChangeId {
+  if (typeof v !== "object" || v === null) {
+    return false;
+  }
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.changeId === "string" &&
+    typeof o.changeIdPrefix === "string" &&
+    typeof o.changeIdSuffix === "string" &&
+    (o.changeOffset === null || typeof o.changeOffset === "string")
+  );
+}
 
 function isJJUriParams(v: unknown): v is JJUriParams {
   if (typeof v !== "object" || v === null) {
@@ -30,14 +44,10 @@ function isJJUriParams(v: unknown): v is JJUriParams {
     return typeof o.diffOriginalRev === "string" && typeof o.renamedFrom === "string";
   }
   if (keys.length === 3 && has("interdiffFrom") && has("interdiffTo") && has("side")) {
-    return (
-      typeof o.interdiffFrom === "string" &&
-      typeof o.interdiffTo === "string" &&
-      (o.side === "left" || o.side === "right")
-    );
+    return isChangeId(o.interdiffFrom) && isChangeId(o.interdiffTo) && (o.side === "left" || o.side === "right");
   }
   if (keys.length === 3 && has("diffFrom") && has("diffTo") && has("side")) {
-    return typeof o.diffFrom === "string" && typeof o.diffTo === "string" && (o.side === "left" || o.side === "right");
+    return isChangeId(o.diffFrom) && isChangeId(o.diffTo) && (o.side === "left" || o.side === "right");
   }
   return false;
 }
