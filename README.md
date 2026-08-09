@@ -8,6 +8,7 @@ system.
 ## 🚀 Key features
 
 - Interactive commit graph with elided commits like the `jj` CLI
+- Clean short change IDs
 - Efficient: Defaults to showing up to 500 commits, can be configured to show more
 - Drag-and-drop for rebase, squash, move bookmarks/tags, and more
 - Context menus for change/bookmark/tag operations
@@ -31,8 +32,7 @@ system.
 - Elided commits  
   ![elided commits](images/elided-commits.gif)
 - Select a change to see its affected files and diffs
-- Select two changes (shift-click) to compare them. A "Diff" section (`jj diff`) shows the from→to changes by default;
-  toggle it to an "Interdiff" section (`jj interdiff`) via the section's inline action
+- Select two changes (shift-click) to compare them with diff or interdiff
 - Create merge changes with shift-select and then pressing the "+" button
 - Drag & drop changes onto other changes
 - Optionally show each commit's changed files inline in the graph (like `jj log -s`), with one-click diff opening (⚠️
@@ -62,10 +62,9 @@ system.
 
 ### 📁 File management
 
-- Show changed files in the working copy and parent changes
-- Show changed files in the selected change when clicking on a change in the graph
+- Show changed files in the working copy, parent changes, or a selected change
 - Compare two selected changes with a diff or interdiff
-- Show untracked files (files jj does not ignore but does not track)
+- Show, track, or delete untracked files (files jj does not ignore but does not track)
 - Right-click context menu: View as diff, open at revision, open in working copy, copy paths
 - Configurable file click action: View as diff, open at revision, open in working copy
 - Line-by-line blame annotations (optional)
