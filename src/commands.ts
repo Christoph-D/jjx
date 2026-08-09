@@ -18,6 +18,7 @@ import { getActiveTextEditorDiff, showErrorMessage } from "./vscode-utils";
 import {
   changeIdFromLogEntry,
   formatChangeIdShort,
+  formatChangeIdSuffix,
   formatDiffTitle,
   formatRevSuffix,
   maxChangeIdPrefixLength,
@@ -153,11 +154,13 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
     throw new Error(`No ${direction.toLowerCase()} changes found`);
   }
 
+  const maxPrefixLength = maxChangeIdPrefixLength(changes.map((e) => e.change_id_shortest));
   let selectedChange: string;
+  let selectedChangeId: ChangeId;
   if (changes.length === 1) {
     selectedChange = changes[0].change_id;
+    selectedChangeId = changeIdFromLogEntry(changes[0], maxPrefixLength);
   } else {
-    const maxPrefixLength = maxChangeIdPrefixLength(changes.map((e) => e.change_id_shortest));
     const items = changes.map((entry) => ({
       label: `$(${arrow}) ${direction}: ${formatChangeIdShort(changeIdFromLogEntry(entry, maxPrefixLength))}`,
       description: entry.description || "(no description)",
@@ -173,6 +176,11 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
     }
 
     selectedChange = selection.changeId;
+    const selectedEntry = changes.find((entry) => entry.change_id === selectedChange);
+    if (!selectedEntry) {
+      return;
+    }
+    selectedChangeId = changeIdFromLogEntry(selectedEntry, maxPrefixLength);
   }
 
   if (getActiveTextEditorDiff()) {
@@ -184,7 +192,7 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
       toJJUri(uri, {
         rev: selectedChange,
       }),
-      `${path.basename(uri.fsPath)} ${formatRevSuffix(selectedChange)}`,
+      `${path.basename(uri.fsPath)} ${formatChangeIdSuffix(selectedChangeId)}`,
     );
   } else {
     await vscode.commands.executeCommand(
@@ -193,7 +201,7 @@ async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpressi
         rev: selectedChange,
       }),
       {},
-      `${path.basename(uri.fsPath)} ${formatRevSuffix(selectedChange)}`,
+      `${path.basename(uri.fsPath)} ${formatChangeIdSuffix(selectedChangeId)}`,
     );
   }
 }

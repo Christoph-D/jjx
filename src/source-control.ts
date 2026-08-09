@@ -6,7 +6,7 @@ import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
-import { formatChangeIdShort, formatDiffTitle, formatRevSuffix, normalizePath } from "./utils";
+import { formatChangeIdShort, formatChangeIdSuffix, formatDiffTitle, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -751,7 +751,7 @@ class RepositorySourceControlManager {
       if (showResult) {
         parentChangeResourceGroup.resourceStates = buildResourceStates(showResult.fileStatuses, {
           changeId: parentChange.changeId.changeId,
-          diffTitleSuffix: formatRevSuffix(parentChange.changeId.changeId),
+          diffTitleSuffix: formatChangeIdSuffix(parentChange.changeId),
           fileClickAction,
           conflictedFiles: this.conflictedFilesByChange.get(parentChange.changeId.changeId),
         });
@@ -788,7 +788,7 @@ class RepositorySourceControlManager {
           this.selectedCommitShowResult.fileStatuses,
           {
             changeId,
-            diffTitleSuffix: formatRevSuffix(changeId),
+            diffTitleSuffix: formatChangeIdSuffix(this.selectedCommitShowResult.change.changeId),
             fileClickAction,
             conflictedFiles: this.conflictedFilesByChange.get(changeId),
           },

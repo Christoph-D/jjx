@@ -4,7 +4,14 @@ import type { JJRepository, LogEntry, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { showErrorMessage } from "./vscode-utils";
-import { changeIdAffixes, formatDiffTitle, formatRevSuffix, fullChangeId, maxChangeIdPrefixLength } from "./utils";
+import {
+  changeIdAffixes,
+  formatChangeIdSuffix,
+  formatDiffTitle,
+  formatRevSuffix,
+  fullChangeId,
+  maxChangeIdPrefixLength,
+} from "./utils";
 import type { ChangeId } from "./types";
 import { assignLanes } from "./lane-assigner";
 import {
@@ -489,7 +496,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           const beforeUri = toJJUri(fileUri, beforeParams);
           const afterUri = toJJUri(fileUri, afterParams);
-          const diffTitleSuffix = formatRevSuffix(changeId);
+          const node = this.currentChanges.find((c) => getUniqueId(c) === changeId);
+          const diffTitleSuffix =
+            node && node.branchType !== "~" ? formatChangeIdSuffix(node.id) : formatRevSuffix(changeId);
           const title = formatDiffTitle(renamedFrom, path.basename(relPath), diffTitleSuffix);
           try {
             await vscode.commands.executeCommand("vscode.diff", beforeUri, afterUri, title);
