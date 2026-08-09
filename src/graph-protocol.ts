@@ -1,4 +1,4 @@
-import type { ChangeId, FileStatusType } from "./types";
+import type { ChangeId, FileStatusType, FullChangeId } from "./types";
 
 export interface LogEntryLocalRef {
   name: string;
@@ -88,14 +88,14 @@ export interface DiffStats {
 
 export type WebviewToExtensionMessage =
   | { command: "webviewReady" }
-  | { command: "fetchDiffStats"; changeId: string }
-  | { command: "editChange"; changeId: string }
-  | { command: "editChangeDirect"; changeId: string }
-  | { command: "newChildChange"; changeId: string }
+  | { command: "fetchDiffStats"; changeId: FullChangeId }
+  | { command: "editChange"; changeId: FullChangeId }
+  | { command: "editChangeDirect"; changeId: FullChangeId }
+  | { command: "newChildChange"; changeId: FullChangeId }
   | { command: "selectChange"; selectedNodes: string[] }
-  | { command: "moveBookmark"; bookmark: string; targetChangeId: string }
-  | { command: "createBookmark"; targetChangeId: string }
-  | { command: "createTag"; targetChangeId: string }
+  | { command: "moveBookmark"; bookmark: string; targetChangeId: FullChangeId }
+  | { command: "createBookmark"; targetChangeId: FullChangeId }
+  | { command: "createTag"; targetChangeId: FullChangeId }
   | { command: "pushBookmark"; bookmark: string }
   | { command: "pushBookmarkToRemote"; bookmark: string; remote: string }
   | { command: "getBookmarkTrackingRemotes"; bookmark: string }
@@ -113,26 +113,26 @@ export type WebviewToExtensionMessage =
   | { command: "pushRemoteRef"; refType: "bookmark" | "tag"; name: string; remote: string }
   | { command: "deleteRemoteRef"; refType: "bookmark" | "tag"; name: string; remote: string }
   | { command: "restoreRemoteRef"; refType: "bookmark" | "tag"; name: string; remote: string }
-  | { command: "describeChange"; changeId: string }
-  | { command: "absorbChange"; changeId: string }
-  | { command: "abandonChange"; changeId: string }
+  | { command: "describeChange"; changeId: FullChangeId }
+  | { command: "absorbChange"; changeId: FullChangeId }
+  | { command: "abandonChange"; changeId: FullChangeId }
   | { command: "abandonChanges"; changeIds: string[] }
-  | { command: "rebaseOnto"; changeId: string; targetChangeId: string; withDescendants: boolean }
-  | { command: "rebaseAfter"; changeId: string; targetChangeId: string; withDescendants: boolean }
-  | { command: "rebaseBefore"; changeId: string; targetChangeId: string; withDescendants: boolean }
-  | { command: "rebaseAddParent"; changeId: string; targetChangeId: string }
-  | { command: "rebaseRemoveParent"; changeId: string; targetChangeId: string }
-  | { command: "squashInto"; changeId: string; targetChangeId: string }
-  | { command: "duplicateOnto"; changeId: string; targetChangeId: string }
-  | { command: "duplicateAfter"; changeId: string; targetChangeId: string }
-  | { command: "duplicateBefore"; changeId: string; targetChangeId: string }
-  | { command: "revertOnto"; changeId: string; targetChangeId: string }
-  | { command: "revertAfter"; changeId: string; targetChangeId: string }
-  | { command: "revertBefore"; changeId: string; targetChangeId: string }
-  | { command: "copyUrl"; changeId: string }
+  | { command: "rebaseOnto"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
+  | { command: "rebaseAfter"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
+  | { command: "rebaseBefore"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
+  | { command: "rebaseAddParent"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "rebaseRemoveParent"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "squashInto"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "duplicateOnto"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "duplicateAfter"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "duplicateBefore"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "revertOnto"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "revertAfter"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "revertBefore"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "copyUrl"; changeId: FullChangeId }
   | {
       command: "openFileDiff";
-      changeId: string;
+      changeId: FullChangeId;
       path: string;
       status: FileStatusType;
       renamedFrom?: string;
