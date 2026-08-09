@@ -6,7 +6,7 @@ import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
-import { formatChangeIdShort, formatComparisonRev, formatDiffTitle, formatRevSuffix, normalizePath } from "./utils";
+import { formatChangeIdShort, formatDiffTitle, formatRevSuffix, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -812,8 +812,8 @@ class RepositorySourceControlManager {
       if (!this.diffResourceGroup) {
         this.diffResourceGroup = this.sourceControl.createResourceGroup(this.diffMode, "");
       }
-      const fromShort = formatComparisonRev(from, fromIsWorkingCopy, "Working Copy");
-      const toShort = formatComparisonRev(to, toIsWorkingCopy, "Working Copy");
+      const fromShort = fromIsWorkingCopy ? "Working Copy" : formatChangeIdShort(from);
+      const toShort = toIsWorkingCopy ? "Working Copy" : formatChangeIdShort(to);
       this.diffResourceGroup.label =
         this.diffMode === "interdiff" ? `Interdiff ${fromShort} → ${toShort}` : `Diff ${fromShort} → ${toShort}`;
       this.diffResourceGroup.resourceStates = buildComparisonDiffResourceStates(this.diffFileStatuses, {
@@ -998,8 +998,8 @@ function buildComparisonDiffResourceStates(
   },
 ): vscode.SourceControlResourceState[] {
   const { from, to, mode, fromIsWorkingCopy, toIsWorkingCopy } = options;
-  const fromShort = formatComparisonRev(from, fromIsWorkingCopy);
-  const toShort = formatComparisonRev(to, toIsWorkingCopy);
+  const fromShort = fromIsWorkingCopy ? "@" : formatChangeIdShort(from);
+  const toShort = toIsWorkingCopy ? "@" : formatChangeIdShort(to);
   const label = mode === "interdiff" ? "Interdiff" : "Diff";
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);

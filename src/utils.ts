@@ -48,13 +48,6 @@ export function changeIdAffixes(
   };
 }
 
-export function formatComparisonRev(changeId: ChangeId, isWorkingCopy: boolean, workingCopyLabel = "@"): string {
-  if (isWorkingCopy) {
-    return workingCopyLabel;
-  }
-  return formatChangeIdShort(changeId);
-}
-
 const isMacintosh = process.platform === "darwin";
 export const isWindows = process.platform === "win32";
 
