@@ -39,7 +39,7 @@ import { NoRepoFoundState } from "./components/no-repo-found-state";
 import { ErrorState } from "./components/error-state";
 import { ErrorBoundary } from "./components/error-boundary";
 import type { PendingGraphUpdate } from "./signals";
-import type { ExtensionToWebviewMessage } from "../../graph-protocol";
+import { getUniqueId, type ExtensionToWebviewMessage } from "../../graph-protocol";
 
 export function App() {
   useEffect(() => {
@@ -48,13 +48,13 @@ export function App() {
       isJJNotFound.value = false;
       isNoRepoFound.value = false;
       isError.value = false;
-      const newChangeIds = new Set<string>(message.changes.map((c) => c.id.changeId));
+      const newChangeIds = new Set<string>(message.changes.map((c) => getUniqueId(c)));
       const preserved = new Set(Array.from(selectedNodes.value).filter((id) => newChangeIds.has(id)));
       selectedNodes.value = preserved;
       diffStatsCache.value = new Map();
       const activeTooltip = tooltip.value;
       if (activeTooltip) {
-        const updatedChange = message.changes.find((c) => c.id.changeId === activeTooltip.change.id.changeId);
+        const updatedChange = message.changes.find((c) => getUniqueId(c) === activeTooltip.change.id.changeId);
         if (updatedChange && updatedChange.branchType !== "~") {
           tooltip.value = { ...activeTooltip, change: updatedChange };
           vscode.postMessage({ command: "fetchDiffStats", changeId: updatedChange.id.changeId });

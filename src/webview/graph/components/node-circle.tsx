@@ -8,7 +8,7 @@ import {
   connectedHighlight,
 } from "../signals";
 import { CIRCLE_RADIUS } from "../types";
-import type { ChangeNode } from "../../../graph-protocol";
+import { getUniqueId, type ChangeNode } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
 import { cx } from "../utils";
 import styles from "./node-circle.module.css";
@@ -109,14 +109,14 @@ export function NodeCircles() {
         const pos = nodePositions.value[i];
         return (
           <g
-            key={change.id.changeId}
+            key={getUniqueId(change)}
             class={cx(
               styles.nodeCircle,
-              selectedNodes.value.has(change.id.changeId) && styles.selected,
-              hoveredChangeId.value === change.id.changeId && styles.hovered,
-              highlight && !highlight.connectedIds.has(change.id.changeId) && styles.dimmed,
+              selectedNodes.value.has(getUniqueId(change)) && styles.selected,
+              hoveredChangeId.value === getUniqueId(change) && styles.hovered,
+              highlight && !highlight.connectedIds.has(getUniqueId(change)) && styles.dimmed,
             )}
-            data-change-id={change.id.changeId}
+            data-change-id={getUniqueId(change)}
             style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}
             transform={pos ? `translate(${pos.x}, ${pos.y})` : undefined}
           >

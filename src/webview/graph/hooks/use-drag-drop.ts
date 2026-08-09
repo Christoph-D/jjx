@@ -16,13 +16,11 @@ import changeNodeStyles from "../components/change-node.module.css";
 import dragGhostStyles from "../components/drag-ghost.module.css";
 
 export function useDragDrop(change: ChangeNode) {
-  const isElided = change.branchType === "~";
-  const isRoot = change.id.changeId === rootChangeId;
-  const { clearAllTimers } = useTooltipTimers();
-
-  if (isElided) {
+  if (change.branchType === "~") {
     return {};
   }
+  const isRoot = change.id.changeId === rootChangeId;
+  const { clearAllTimers } = useTooltipTimers();
 
   return {
     draggable: !isRoot,

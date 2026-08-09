@@ -12,6 +12,7 @@ import {
 import { ChangeNodeRow } from "./change-node";
 import { NodeCircles } from "./node-circle";
 import { ConnectionLines } from "./connection-lines";
+import { getUniqueId } from "../../../graph-protocol";
 
 export function Graph() {
   const firstChangeIdRef = useRef<HTMLDivElement>(null);
@@ -52,7 +53,7 @@ export function Graph() {
           const nodeData = graph?.nodes[index];
           return (
             <ChangeNodeRow
-              key={change.id.changeId}
+              key={getUniqueId(change)}
               change={change}
               index={index}
               nodeData={nodeData ?? null}

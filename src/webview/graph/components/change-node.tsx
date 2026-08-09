@@ -30,13 +30,12 @@ import {
   connectedHighlight,
 } from "../signals";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
-import type { LaneNode } from "../../../graph-protocol";
-import type { ChangeNode, RegularChangeNode } from "../../../graph-protocol";
+import { getUniqueId, type LaneNode, type ChangeNode, type RegularChangeNode } from "../../../graph-protocol";
 import { abbreviateName, cx, escapeInvisibleChars } from "../utils";
 import { clearAllTooltipTimers } from "../hooks/use-tooltip-timers";
 
 function shouldShowTooltip(change: ChangeNode): change is RegularChangeNode {
-  return change.id.changeId !== rootChangeId && change.branchType !== "~";
+  return change.branchType !== "~" && change.id.changeId !== rootChangeId;
 }
 
 function isMenuOpen(): boolean {
@@ -73,14 +72,14 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
 
     const newSelected = new Set(selectedNodes.value);
     if (e.shiftKey) {
-      if (newSelected.has(change.id.changeId)) {
-        newSelected.delete(change.id.changeId);
+      if (newSelected.has(getUniqueId(change))) {
+        newSelected.delete(getUniqueId(change));
       } else {
-        newSelected.add(change.id.changeId);
+        newSelected.add(getUniqueId(change));
       }
     } else {
       newSelected.clear();
-      newSelected.add(change.id.changeId);
+      newSelected.add(getUniqueId(change));
     }
     selectedNodes.value = newSelected;
     vscode.postMessage({
@@ -98,12 +97,12 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
         return;
       }
     }
-    vscode.postMessage({ command: "editChange", changeId: change.id.changeId });
+    vscode.postMessage({ command: "editChange", changeId: getUniqueId(change) });
   };
 
   const handleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
-    if (change.id.changeId === rootChangeId || isElided) {
+    if (getUniqueId(change) === rootChangeId || isElided) {
       return;
     }
     clearHoverTimers();
@@ -131,16 +130,17 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
     if (!isDragging.value) {
       const childIds: string[] = [];
       for (const c of currentChanges.value) {
-        if (c.parentChangeIds?.includes(change.id.changeId)) {
-          childIds.push(c.id.changeId);
+        if (c.parentChangeIds?.includes(getUniqueId(change))) {
+          childIds.push(getUniqueId(c));
         }
       }
+      const id = getUniqueId(change);
       connectedHighlight.value = {
-        focalId: change.id.changeId,
-        connectedIds: new Set([change.id.changeId, ...(change.parentChangeIds ?? []), ...childIds]),
+        focalId: id,
+        connectedIds: new Set([id, ...(change.parentChangeIds ?? []), ...childIds]),
       };
     }
-    hoveredChangeId.value = change.id.changeId;
+    hoveredChangeId.value = getUniqueId(change);
     tryStartTooltip(e);
   };
 
@@ -159,13 +159,15 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
 
   const modeClasses = cx(compact && styles.compactMode, showingFiles && styles.showingFilesMode);
 
+  const changeUniqueId = getUniqueId(change);
+
   return (
     <ChangeNodeClass
-      changeId={change.id.changeId}
+      changeId={changeUniqueId}
       currentWorkingCopy={change.branchType !== "~" && change.currentWorkingCopy}
       isElided={isElided}
       modeClasses={modeClasses}
-      data-change-id={change.id.changeId}
+      data-change-id={changeUniqueId}
       onClick={handleClick}
       onDblClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
@@ -175,14 +177,18 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
       {...dragProps}
     >
       <div class={styles.changeIdLeft} data-role="change-id" ref={changeIdRef}>
-        {change.branchType !== "~" && change.conflict && (
-          <span class={styles.conflictIndicator} data-role="conflict-indicator">
-            ✗
-          </span>
+        {change.branchType !== "~" && (
+          <>
+            {change.conflict && (
+              <span class={styles.conflictIndicator} data-role="conflict-indicator">
+                ✗
+              </span>
+            )}
+            <span class={styles.changeIdPrefix}>{change.id.changeIdPrefix}</span>
+            <span class={styles.changeIdSuffix}>{change.id.changeIdSuffix}</span>
+            {change.id.changeOffset && <span class={styles.changeIdOffset}>/{change.id.changeOffset}</span>}
+          </>
         )}
-        <span class={styles.changeIdPrefix}>{change.id.changeIdPrefix}</span>
-        <span class={styles.changeIdSuffix}>{change.id.changeIdSuffix}</span>
-        {change.id.changeOffset && <span class={styles.changeIdOffset}>/{change.id.changeOffset}</span>}
       </div>
       {change.branchType === "~" ? (
         <ElidedTextContent graphW={graphW} />

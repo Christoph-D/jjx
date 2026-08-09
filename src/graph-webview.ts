@@ -4,17 +4,15 @@ import type { JJRepository, LogEntry, ParentRef } from "./repository";
 import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import path from "path";
 import { showErrorMessage } from "./vscode-utils";
-import {
-  changeIdAffixes,
-  formatDiffTitle,
-  formatRevSuffix,
-  fullChangeId,
-  fullChangeIdFromString,
-  maxChangeIdPrefixLength,
-} from "./utils";
+import { changeIdAffixes, formatDiffTitle, formatRevSuffix, fullChangeId, maxChangeIdPrefixLength } from "./utils";
 import type { ChangeId } from "./types";
 import { assignLanes } from "./lane-assigner";
-import type { ChangeNode, WebviewToExtensionMessage, ExtensionToWebviewMessage } from "./graph-protocol";
+import {
+  getUniqueId,
+  type ChangeNode,
+  type WebviewToExtensionMessage,
+  type ExtensionToWebviewMessage,
+} from "./graph-protocol";
 import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elided-edges";
 import { logger } from "./logger";
 import { getLogRevset, getElidedVisibleImmutableParents } from "./config";
@@ -374,13 +372,14 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           });
           break;
         case "abandonChange": {
-          const change = this.currentChanges.find((c) => c.id.changeId === message.changeId);
+          const change = this.currentChanges.find((c) => getUniqueId(c) === message.changeId);
           const fullDescription = change && change.branchType !== "~" ? change.fullDescription : "";
           const firstLine = fullDescription.split("\n")[0].trim() || "(no description set)";
           const truncated = firstLine.length > 120 ? firstLine.slice(0, 120) + "..." : firstLine;
-          const prompt = change
-            ? `Are you sure you want to abandon change "${change.id.changeIdPrefix}"?\n\n→ ${truncated}`
-            : "Are you sure you want to abandon this change?";
+          const prompt =
+            change && change.branchType !== "~"
+              ? `Are you sure you want to abandon change "${change.id.changeIdPrefix}"?\n\n→ ${truncated}`
+              : "Are you sure you want to abandon this change?";
           await this.confirmAndExecute(prompt, "Abandon", "abandon change", () =>
             repo.abandonRetryImmutable([message.changeId]),
           );
@@ -516,8 +515,11 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
    */
   private resolveSelection(selectedIds: string[]): GraphSelection[] {
     return selectedIds.flatMap((id) => {
-      const node = this.currentChanges.find((c) => c.id.changeId === id);
-      return node ? { id: node.id, currentWorkingCopy: node.branchType !== "~" && node.currentWorkingCopy } : [];
+      const node = this.currentChanges.find((c) => getUniqueId(c) === id);
+      if (!node || node.branchType === "~") {
+        return [];
+      }
+      return { id: node.id, currentWorkingCopy: node.currentWorkingCopy };
     });
   }
 
@@ -671,7 +673,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         }
       }
 
-      const changeIdsInGraph = new Set<string>(changes.map((c) => c.id.changeId));
+      const changeIdsInGraph = new Set<string>(changes.map((c) => getUniqueId(c)));
       const previousSelectedNodes = this.selectedNodes;
       this.selectedNodes = new Set(Array.from(previousSelectedNodes).filter((id) => changeIdsInGraph.has(id)));
       // If any selected changes were removed (e.g. abandoned), notify listeners so the
@@ -745,7 +747,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     if (a.length !== b.length) {
       return false;
     }
-    return a.every((nodeA, index) => nodeA.id.changeId === b[index].id.changeId);
+    return a.every((nodeA, index) => getUniqueId(nodeA) === getUniqueId(b[index]));
   }
 
   dispose() {
@@ -811,12 +813,7 @@ function parseJJLogJson(
       );
 
       return {
-        id: {
-          changeId: fullChangeIdFromString(entryUniqueId),
-          changeIdPrefix: "",
-          changeIdSuffix: "",
-          changeOffset: null,
-        },
+        fakeId: entryUniqueId,
         parentChangeIds: uniqueParentIds,
         branchType: "~" as const,
       };

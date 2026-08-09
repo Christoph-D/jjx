@@ -20,15 +20,17 @@ interface ChangedFile {
 }
 
 interface ChangeNodeBase {
-  id: ChangeId;
   parentChangeIds?: string[];
 }
 
 export interface ElidedChangeNode extends ChangeNodeBase {
+  // A unique ID for each elided node.
+  fakeId: string;
   branchType: "~";
 }
 
 export interface RegularChangeNode extends ChangeNodeBase {
+  id: ChangeId;
   label: string;
   description: string;
   tooltip: string;
@@ -51,6 +53,10 @@ export interface RegularChangeNode extends ChangeNodeBase {
 }
 
 export type ChangeNode = ElidedChangeNode | RegularChangeNode;
+
+export function getUniqueId(node: ChangeNode): string {
+  return node.branchType === "~" ? node.fakeId : node.id.changeId;
+}
 
 export interface LaneNode {
   lane: number;
