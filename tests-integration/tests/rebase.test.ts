@@ -30,6 +30,49 @@ test("rebase commit onto another via drag and drop", async ({ graphFrame, testRe
   }).toPass();
 });
 
+test("rebase multiple selected commits onto another via drag and drop", async ({ graphFrame, testRepo }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+  await testRepo.commitFile("c.txt", "content c", "C");
+  await testRepo.commitFile("d.txt", "content d", "D");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(6);
+
+  // Graph order, top to bottom: @(0), D(1), C(2), B(3), A(4), root(5).
+  const commitA = nodes.nth(4);
+  const commitB = nodes.nth(3);
+  const commitD = nodes.nth(1);
+
+  // Build a two-change selection (A and B) with Shift+click.
+  await commitA.click();
+  await commitB.click({ modifiers: ["Shift"] });
+
+  // Drag the selected B onto D; because B is part of the {A, B} selection,
+  // the rebase operates on both selected changes.
+  await commitB.dragTo(commitD);
+
+  const rebaseItem = graphFrame.locator('[data-action="rebase"]');
+  await expect(rebaseItem).toBeVisible();
+  await rebaseItem.hover();
+
+  const rebaseOntoItem = graphFrame.locator('[data-action="rebaseOnto"]');
+  await expect(rebaseOntoItem).toBeVisible();
+  await rebaseOntoItem.click();
+
+  await expect(nodes).toHaveCount(6);
+
+  // Before: root -> A -> B -> C -> D -> @
+  // After:  root -> C -> D -> @, with D -> A -> B branching off of D.
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "A")).toEqual(["D"]);
+    expect(getParents(logEntries, "B")).toEqual(["A"]);
+    expect(getParents(logEntries, "D")).toEqual(["C"]);
+    expect(getParents(logEntries, "@")).toEqual(["D"]);
+  }).toPass();
+});
+
 test("rebase after another commit via drag and drop", async ({ graphFrame, testRepo }) => {
   await testRepo.commitFile("a.txt", "content a", "A");
   await testRepo.commitFile("b.txt", "content b", "B");

@@ -8,6 +8,7 @@ import {
   dragBookmarkName,
   postMessage,
   closeAllMenus,
+  selectedNodes,
 } from "../signals";
 import { useTooltipTimers } from "./use-tooltip-timers";
 import { rootChangeId } from "../types";
@@ -67,6 +68,13 @@ export function useDragDrop(change: ChangeNode) {
             desc.className = dragGhostStyles.dragGhostDescription;
             desc.textContent = change.label;
             ghost.appendChild(desc);
+          }
+          const selection = selectedNodes.value;
+          if (selection.size > 1 && selection.has(change.id.changeId)) {
+            const count = document.createElement("span");
+            count.className = dragGhostStyles.dragGhostCount;
+            count.textContent = `+ ${selection.size - 1} more`;
+            ghost.appendChild(count);
           }
           document.body.appendChild(ghost);
           e.dataTransfer!.setDragImage(ghost, -15, 0);
@@ -133,6 +141,14 @@ export function useDragDrop(change: ChangeNode) {
         return;
       }
 
+      // When the dragged change is part of a multi-selection, operate on every
+      // selected change; otherwise fall back to just the dragged one.
+      const selection = selectedNodes.value;
+      const sourceIds: FullChangeId[] =
+        selection.size > 1 && selection.has(sourceId)
+          ? [sourceId, ...[...selection].filter((id) => id !== sourceId)]
+          : [sourceId];
+
       clearAllTimers();
       tooltip.value = null;
 
@@ -140,6 +156,7 @@ export function useDragDrop(change: ChangeNode) {
       closeAllMenus();
       rebaseMenu.value = {
         sourceId,
+        sourceIds,
         targetId,
         targetChange: change,
         pageX: e.pageX,

@@ -8,7 +8,7 @@ export function RebaseMenu() {
     return null;
   }
 
-  const { sourceId, targetId, targetChange } = state;
+  const { sourceId, sourceIds, targetId, targetChange } = state;
   const isImmutable = targetChange.branchType === "◆";
   const sourceChange = currentChanges.value.find((c) => c.branchType !== "~" && c.id.changeId === sourceId);
   const isSourceImmutable = sourceChange?.branchType === "◆";
@@ -19,6 +19,7 @@ export function RebaseMenu() {
   );
   const afterImmutableIcon = hasImmutableChild || isSourceImmutable ? <ImmutableIcon /> : null;
   const sourceImmutableIcon = isSourceImmutable ? <ImmutableIcon /> : null;
+  const isMultiSource = sourceIds.length > 1;
 
   const sendCommand = (
     command:
@@ -36,7 +37,12 @@ export function RebaseMenu() {
       | "revertBefore",
     withDescendants = false,
   ) => {
-    postMessage({ command, changeId: sourceId, targetChangeId: targetId, withDescendants });
+    if (command === "rebaseAddParent" || command === "rebaseRemoveParent") {
+      // These remain single-source operations.
+      postMessage({ command, changeId: sourceId, targetChangeId: targetId });
+    } else {
+      postMessage({ command, changeIds: sourceIds, targetChangeId: targetId, withDescendants });
+    }
     rebaseMenu.value = null;
   };
 
@@ -57,12 +63,12 @@ export function RebaseMenu() {
         <SubmenuItem action="rebaseOntoWithDescendants" onClick={() => sendCommand("rebaseOnto", true)}>
           Onto{sourceImmutableIcon}
         </SubmenuItem>
-        {!isTargetAlreadyParent && (
+        {!isMultiSource && !isTargetAlreadyParent && (
           <SubmenuItem action="rebaseAddParentWithDescendants" onClick={() => sendCommand("rebaseAddParent")}>
             Add Parent{sourceImmutableIcon}
           </SubmenuItem>
         )}
-        {isTargetAlreadyParent && (sourceChange?.parentChangeIds?.length ?? 0) >= 2 && (
+        {!isMultiSource && isTargetAlreadyParent && (sourceChange?.parentChangeIds?.length ?? 0) >= 2 && (
           <SubmenuItem action="rebaseRemoveParentWithDescendants" onClick={() => sendCommand("rebaseRemoveParent")}>
             Remove Parent{sourceImmutableIcon}
           </SubmenuItem>

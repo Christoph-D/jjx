@@ -570,12 +570,12 @@ export class JJRepository {
   }
 
   async squashRetryImmutable({
-    fromRev,
+    fromRevs,
     toRev,
     message,
     filepaths,
   }: {
-    fromRev: FullChangeId | "@";
+    fromRevs: (FullChangeId | "@")[];
     toRev: FullChangeId | "@";
     message?: string;
     filepaths?: string[];
@@ -584,14 +584,14 @@ export class JJRepository {
       toRev,
       () =>
         this.squash({
-          fromRev,
+          fromRevs,
           toRev,
           message,
           filepaths,
         }),
       () =>
         this.squash({
-          fromRev,
+          fromRevs,
           toRev,
           message,
           filepaths,
@@ -603,18 +603,19 @@ export class JJRepository {
   }
 
   private async squash({
-    fromRev,
+    fromRevs,
     toRev,
     message,
     filepaths,
     ignoreImmutable = false,
   }: {
-    fromRev: FullChangeId | "@";
+    fromRevs: (FullChangeId | "@")[];
     toRev: FullChangeId | "@";
     message?: string;
     filepaths?: string[];
     ignoreImmutable?: boolean;
   }) {
+    const fromRev = fromRevs.join("|");
     return (
       await this.jjCommand(
         [
@@ -1258,12 +1259,13 @@ export class JJRepository {
   }
 
   private async rebase(
-    source: FullChangeId,
+    sources: FullChangeId[],
     destination: FullChangeId,
     mode: "onto" | "after" | "before",
     withDescendants = false,
     ignoreImmutable = false,
   ) {
+    const source = sources.join("|");
     const sourceFlag = withDescendants ? "-s" : "-r";
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
     return this.jjCommand([
@@ -1277,15 +1279,15 @@ export class JJRepository {
   }
 
   async rebaseRetryImmutable(
-    source: FullChangeId,
+    sources: FullChangeId[],
     destination: FullChangeId,
     mode: "onto" | "after" | "before",
     withDescendants = false,
   ) {
     return this.retryWithImmutable(
-      source,
-      () => this.rebase(source, destination, mode, withDescendants),
-      () => this.rebase(source, destination, mode, withDescendants, true),
+      sources[0] ?? "@",
+      () => this.rebase(sources, destination, mode, withDescendants),
+      () => this.rebase(sources, destination, mode, withDescendants, true),
       "This rebase modifies one or more immutable commits, are you sure?",
       "Modify Immutable Change",
     );
@@ -1336,11 +1338,12 @@ export class JJRepository {
   }
 
   private async duplicate(
-    source: FullChangeId,
+    sources: FullChangeId[],
     destination: FullChangeId,
     mode: "onto" | "after" | "before",
     ignoreImmutable = false,
   ) {
+    const source = sources.join("|");
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
     return this.jjCommand([
       "duplicate",
@@ -1352,22 +1355,23 @@ export class JJRepository {
     ]);
   }
 
-  async duplicateRetryImmutable(source: FullChangeId, destination: FullChangeId, mode: "onto" | "after" | "before") {
+  async duplicateRetryImmutable(sources: FullChangeId[], destination: FullChangeId, mode: "onto" | "after" | "before") {
     return this.retryWithImmutable(
-      source,
-      () => this.duplicate(source, destination, mode),
-      () => this.duplicate(source, destination, mode, true),
+      sources[0] ?? "@",
+      () => this.duplicate(sources, destination, mode),
+      () => this.duplicate(sources, destination, mode, true),
       "This duplicate modifies one or more immutable commits, are you sure?",
       "Modify Immutable Change",
     );
   }
 
   private async revert(
-    source: FullChangeId,
+    sources: FullChangeId[],
     destination: FullChangeId,
     mode: "onto" | "after" | "before",
     ignoreImmutable = false,
   ) {
+    const source = sources.join("|");
     const flag = mode === "onto" ? "-o" : mode === "after" ? "-A" : "-B";
     return this.jjCommand([
       "revert",
@@ -1379,11 +1383,11 @@ export class JJRepository {
     ]);
   }
 
-  async revertRetryImmutable(source: FullChangeId, destination: FullChangeId, mode: "onto" | "after" | "before") {
+  async revertRetryImmutable(sources: FullChangeId[], destination: FullChangeId, mode: "onto" | "after" | "before") {
     return this.retryWithImmutable(
-      source,
-      () => this.revert(source, destination, mode),
-      () => this.revert(source, destination, mode, true),
+      sources[0] ?? "@",
+      () => this.revert(sources, destination, mode),
+      () => this.revert(sources, destination, mode, true),
       "This revert modifies one or more immutable commits, are you sure?",
       "Modify Immutable Change",
     );

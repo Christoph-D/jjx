@@ -130,18 +130,18 @@ export type WebviewToExtensionMessage =
   | { command: "absorbChange"; changeId: FullChangeId }
   | { command: "abandonChange"; changeId: FullChangeId }
   | { command: "abandonChanges"; changeIds: FullChangeId[] }
-  | { command: "rebaseOnto"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
-  | { command: "rebaseAfter"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
-  | { command: "rebaseBefore"; changeId: FullChangeId; targetChangeId: FullChangeId; withDescendants: boolean }
+  | { command: "rebaseOnto"; changeIds: FullChangeId[]; targetChangeId: FullChangeId; withDescendants: boolean }
+  | { command: "rebaseAfter"; changeIds: FullChangeId[]; targetChangeId: FullChangeId; withDescendants: boolean }
+  | { command: "rebaseBefore"; changeIds: FullChangeId[]; targetChangeId: FullChangeId; withDescendants: boolean }
   | { command: "rebaseAddParent"; changeId: FullChangeId; targetChangeId: FullChangeId }
   | { command: "rebaseRemoveParent"; changeId: FullChangeId; targetChangeId: FullChangeId }
-  | { command: "squashInto"; changeId: FullChangeId; targetChangeId: FullChangeId }
-  | { command: "duplicateOnto"; changeId: FullChangeId; targetChangeId: FullChangeId }
-  | { command: "duplicateAfter"; changeId: FullChangeId; targetChangeId: FullChangeId }
-  | { command: "duplicateBefore"; changeId: FullChangeId; targetChangeId: FullChangeId }
-  | { command: "revertOnto"; changeId: FullChangeId; targetChangeId: FullChangeId }
-  | { command: "revertAfter"; changeId: FullChangeId; targetChangeId: FullChangeId }
-  | { command: "revertBefore"; changeId: FullChangeId; targetChangeId: FullChangeId }
+  | { command: "squashInto"; changeIds: FullChangeId[]; targetChangeId: FullChangeId }
+  | { command: "duplicateOnto"; changeIds: FullChangeId[]; targetChangeId: FullChangeId }
+  | { command: "duplicateAfter"; changeIds: FullChangeId[]; targetChangeId: FullChangeId }
+  | { command: "duplicateBefore"; changeIds: FullChangeId[]; targetChangeId: FullChangeId }
+  | { command: "revertOnto"; changeIds: FullChangeId[]; targetChangeId: FullChangeId }
+  | { command: "revertAfter"; changeIds: FullChangeId[]; targetChangeId: FullChangeId }
+  | { command: "revertBefore"; changeIds: FullChangeId[]; targetChangeId: FullChangeId }
   | { command: "copyUrl"; changeId: FullChangeId }
   | {
       command: "openFileDiff";

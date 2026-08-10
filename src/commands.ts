@@ -622,7 +622,7 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       await repository.squashRetryImmutable({
-        fromRev: "@",
+        fromRevs: ["@"],
         toRev: destinationParentChange.changeId.changeId,
         filepaths: resourceStates.map((rs) => resolveRealpath(rs.resourceUri.fsPath)),
       });
@@ -648,7 +648,7 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       await repository.squashRetryImmutable({
-        fromRev: resourceGroup.id as FullChangeId | "@",
+        fromRevs: [resourceGroup.id as FullChangeId | "@"],
         toRev: "@",
         filepaths: resourceStates.map((rs) => resolveRealpath(rs.resourceUri.fsPath)),
       });
@@ -684,7 +684,7 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       await repository.squashRetryImmutable({
-        fromRev: "@",
+        fromRevs: ["@"],
         toRev: destinationParentChange.changeId.changeId,
       });
     },
@@ -708,7 +708,7 @@ export function registerInitCommands(state: ExtensionState): void {
       }
 
       await repository.squashRetryImmutable({
-        fromRev: resourceGroup.id as FullChangeId | "@",
+        fromRevs: [resourceGroup.id as FullChangeId | "@"],
         toRev: "@",
       });
     },

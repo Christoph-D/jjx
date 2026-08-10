@@ -56,6 +56,7 @@ interface ContextMenuState {
 
 interface RebaseMenuState {
   sourceId: FullChangeId;
+  sourceIds: FullChangeId[];
   targetId: FullChangeId;
   targetChange: RegularChangeNode;
   pageX: number;

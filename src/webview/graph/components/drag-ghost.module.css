@@ -22,6 +22,23 @@
   font-weight: normal;
 }
 
+.dragGhostCount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 1.4em;
+  height: 1.4em;
+  margin: 4px auto 0;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
 .bookmarkDragGhost {
   background: var(--bookmark-pill-bg);
   color: var(--pill-foreground);

@@ -448,7 +448,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "rebaseBefore": {
           const mode = message.command.replace("rebase", "").toLowerCase() as "onto" | "after" | "before";
           await this.withRefresh("rebase", () =>
-            repo.rebaseRetryImmutable(message.changeId, message.targetChangeId, mode, message.withDescendants),
+            repo.rebaseRetryImmutable(message.changeIds, message.targetChangeId, mode, message.withDescendants),
           );
           break;
         }
@@ -464,7 +464,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "squashInto":
           await this.withRefresh("squash", () =>
-            repo.squashRetryImmutable({ fromRev: message.changeId, toRev: message.targetChangeId }),
+            repo.squashRetryImmutable({ fromRevs: message.changeIds, toRev: message.targetChangeId }),
           );
           break;
         case "duplicateOnto":
@@ -472,7 +472,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "duplicateBefore": {
           const mode = message.command.replace("duplicate", "").toLowerCase() as "onto" | "after" | "before";
           await this.withRefresh("duplicate", () =>
-            repo.duplicateRetryImmutable(message.changeId, message.targetChangeId, mode),
+            repo.duplicateRetryImmutable(message.changeIds, message.targetChangeId, mode),
           );
           break;
         }
@@ -481,7 +481,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "revertBefore": {
           const mode = message.command.replace("revert", "").toLowerCase() as "onto" | "after" | "before";
           await this.withRefresh("revert", () =>
-            repo.revertRetryImmutable(message.changeId, message.targetChangeId, mode),
+            repo.revertRetryImmutable(message.changeIds, message.targetChangeId, mode),
           );
           break;
         }
