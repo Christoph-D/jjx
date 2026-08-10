@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.12.4
+
+### Bug Fixes
+
+- **Track untracked directories recursively** - Tracking an untracked directory from the SCM view now tracks its
+  contents recursively instead of failing silently.
+
 ## 1.12.3
 
 ### New Features
