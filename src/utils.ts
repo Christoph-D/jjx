@@ -26,6 +26,19 @@ export function filepathToFileset(filepath: string): string {
   return `file:"${escaped}"`;
 }
 
+/**
+ * Like {@link filepathToFileset}, but emits a workspace-relative path-prefix
+ * fileset (`root:"..."`) that matches the given path whether it is a single
+ * file or a directory (recursing into the directory's contents). The
+ * exact-match `file:"..."` form produced by {@link filepathToFileset} does not
+ * match files inside a directory, so `jj file track` silently no-ops when given
+ * an untracked directory.
+ */
+export function filepathToRootFileset(filepath: string): string {
+  const escaped = filepath.replaceAll(/\\/g, "\\\\").replaceAll(/"/g, '\\"');
+  return `root:"${escaped}"`;
+}
+
 export function formatDiffTitle(
   renamedFrom: string | undefined,
   baseName: string,

@@ -2,6 +2,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  filepathToFileset,
+  filepathToRootFileset,
   formatAtRevTitle,
   formatChangeIdShort,
   formatDiffTitle,
@@ -9,6 +11,26 @@ import {
   formatWorkingCopyTitle,
 } from "../utils";
 import type { FullChangeId } from "../types";
+
+describe("filepathToFileset Test Suite", () => {
+  it("wraps a plain path in an exact-file fileset", () => {
+    assert.equal(filepathToFileset("example"), 'file:"example"');
+  });
+
+  it("escapes backslashes and double quotes", () => {
+    assert.equal(filepathToFileset('a"b\\c'), 'file:"a\\"b\\\\c"');
+  });
+});
+
+describe("filepathToRootFileset Test Suite", () => {
+  it("wraps a plain path in a path-prefix fileset that recurses into directories", () => {
+    assert.equal(filepathToRootFileset("example"), 'root:"example"');
+  });
+
+  it("escapes backslashes and double quotes", () => {
+    assert.equal(filepathToRootFileset('a"b\\c'), 'root:"a\\"b\\\\c"');
+  });
+});
 
 describe("formatDiffTitle Test Suite", () => {
   it("formats a diff title with only a target rev", () => {

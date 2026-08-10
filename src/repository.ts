@@ -33,6 +33,7 @@ import { quoteJjName } from "./quote";
 import {
   changeIdFromLogEntry,
   filepathToFileset,
+  filepathToRootFileset,
   formatChangeIdShort,
   formatWorkingCopyTitle,
   isWindows,
@@ -424,10 +425,13 @@ export class JJRepository {
   /**
    * Tracks the given paths in the working copy via `jj file track
    * --include-ignored`, which tracks files regardless of size or ignore rules.
+   *
+   * Uses a path-prefix fileset (`root:"..."`) rather than the exact-file
+   * `file:"..."` form, so that untracked directories are tracked recursively.
    */
   async fileTrack(filepaths: string[]): Promise<Buffer> {
     const relativePaths = filepaths.map((filepath) =>
-      filepathToFileset(path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/")),
+      filepathToRootFileset(path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/")),
     );
     return this.jjCommand(["file", "track", "--include-ignored", "--", ...relativePaths]);
   }
