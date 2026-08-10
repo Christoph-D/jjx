@@ -1,4 +1,5 @@
-import { contextMenu, selectedNodes, postMessage } from "../signals";
+import { contextMenu, currentChanges, selectedNodes, postMessage } from "../signals";
+import { ImmutableIcon } from "./immutable-icon";
 import { Menu, MenuItem, MenuSeparator } from "./menu-container";
 
 export function ContextMenu() {
@@ -8,6 +9,13 @@ export function ContextMenu() {
   }
 
   const { change } = state;
+  const isImmutable = change.branchType === "◆";
+  const immutableIcon = isImmutable ? <ImmutableIcon /> : null;
+  const hasImmutableSelected =
+    selectedNodes.value.size > 1 &&
+    selectedNodes.value.has(change.id.changeId) &&
+    currentChanges.value.some((c) => c.branchType === "◆" && selectedNodes.value.has(c.id.changeId));
+  const abandonSelectedIcon = hasImmutableSelected ? <ImmutableIcon /> : null;
 
   return (
     <Menu id="context-menu" state={state} onClick={(e) => e.stopPropagation()} data-change-id={change.id.changeId}>
@@ -22,7 +30,7 @@ export function ContextMenu() {
             contextMenu.value = null;
           }}
         >
-          Edit
+          Edit{immutableIcon}
         </MenuItem>
       )}
       <MenuItem
@@ -43,7 +51,7 @@ export function ContextMenu() {
           contextMenu.value = null;
         }}
       >
-        Describe...
+        Describe...{immutableIcon}
       </MenuItem>
       <MenuSeparator />
       <MenuItem
@@ -91,7 +99,7 @@ export function ContextMenu() {
           contextMenu.value = null;
         }}
       >
-        Absorb Into Parents
+        Absorb Into Parents{immutableIcon}
       </MenuItem>
       <MenuItem
         action="abandon"
@@ -100,7 +108,7 @@ export function ContextMenu() {
           contextMenu.value = null;
         }}
       >
-        Abandon Change
+        Abandon Change{immutableIcon}
       </MenuItem>
       {selectedNodes.value.size > 1 && selectedNodes.value.has(change.id.changeId) && (
         <MenuItem
@@ -110,7 +118,7 @@ export function ContextMenu() {
             contextMenu.value = null;
           }}
         >
-          Abandon All Selected Changes
+          Abandon All Selected Changes{abandonSelectedIcon}
         </MenuItem>
       )}
     </Menu>
