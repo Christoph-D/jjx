@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.12.5
+
+### New Features
+
+- **Drag & drop multiple selected changes** - Select multiple changes to rebase/squash/etc. them all at once
+- **Immutable icon on destructive context menu items** - Context menu items that modify the target change now show an
+  immutable icon
+
 ## 1.12.4
 
 ### Bug Fixes
