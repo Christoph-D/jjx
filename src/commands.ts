@@ -962,15 +962,20 @@ export function registerInitCommands(state: ExtensionState): void {
       }
       const filepath = resolveRealpath(resourceState.resourceUri.fsPath);
       const relativePath = path.relative(scm.repositoryRoot, filepath);
+      const isDirectory = await fs.promises.stat(filepath).then(
+        (stat) => stat.isDirectory(),
+        () => false,
+      );
+      const noun = isDirectory ? "directory" : "file";
       const confirm = await vscode.window.showWarningMessage(
-        `Are you sure you want to delete the untracked file '${relativePath}'?\n\n!!! This file is not recorded in jj and cannot be restored !!!`,
+        `Are you sure you want to delete the untracked ${noun} '${relativePath}'?\n\n!!! This ${noun} is not recorded in jj and cannot be restored !!!`,
         { modal: true },
         "Delete",
       );
       if (confirm !== "Delete") {
         return;
       }
-      await fs.promises.rm(filepath);
+      await fs.promises.rm(filepath, { recursive: true, force: true });
       await scm.checkForUpdates(undefined, "force");
     },
     { errorPrefix: "Failed to delete file" },
@@ -1015,7 +1020,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (confirm !== "Delete") {
         return;
       }
-      await Promise.all(untrackedFiles.map((f) => fs.promises.rm(f.path)));
+      await Promise.all(untrackedFiles.map((f) => fs.promises.rm(f.path, { recursive: true, force: true })));
       await scm.checkForUpdates(undefined, "force");
     },
     { errorPrefix: "Failed to delete files" },
