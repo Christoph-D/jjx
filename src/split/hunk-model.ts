@@ -35,8 +35,9 @@ export type SplitCheckState = boolean | "indeterminate";
 
 /**
  * Checkbox state for a whole split view. Line checkboxes default to checked (true), so only
- * deviations need to be recorded. A whole-file entry in `files` wins over all line entries of
- * that file.
+ * deviations need to be recorded. Per-line entries win over the file-level entry, which acts as
+ * the fallback for lines without an explicit entry; toggling a whole file replaces any per-line
+ * entries.
  */
 export interface SplitCheckboxState {
   files: Record<string, boolean>;
@@ -153,11 +154,11 @@ export function getLineChecked(path: string, line: SplitLine, state: SplitCheckb
   if (line.kind === "context") {
     return true;
   }
-  const fileState = state.files[path];
-  if (fileState !== undefined) {
-    return fileState;
+  const lineState = state.lines[path]?.[lineKey(line)];
+  if (lineState !== undefined) {
+    return lineState;
   }
-  return state.lines[path]?.[lineKey(line)] ?? true;
+  return state.files[path] ?? true;
 }
 
 export function getHunkCheckState(path: string, hunk: SplitHunk, state: SplitCheckboxState): SplitCheckState {
@@ -185,12 +186,12 @@ export function setLineChecked(path: string, line: SplitLine, state: SplitCheckb
   if (line.kind === "context") {
     return;
   }
-  delete state.files[path];
+  // The file-level entry is kept as the fallback for the file's other lines.
   (state.lines[path] ??= {})[lineKey(line)] = checked;
 }
 
 export function setHunkChecked(path: string, hunk: SplitHunk, state: SplitCheckboxState, checked: boolean): void {
-  delete state.files[path];
+  // The file-level entry is kept as the fallback for the file's other lines.
   for (const line of hunk.lines) {
     if (line.kind !== "context") {
       (state.lines[path] ??= {})[lineKey(line)] = checked;
@@ -229,17 +230,15 @@ function reconstructEntry(
   result: Map<string, Buffer | undefined>,
 ): void {
   const path = entry.path;
-  const fileState = state.files[path];
 
   if (entry.hunks !== undefined) {
-    if (fileState === undefined) {
-      result.set(path, reconstructHunkModel(entry, state));
-    } else {
-      result.set(path, fileState ? decodeBase64(entry.rightBase64) : decodeBase64(entry.leftBase64));
-    }
+    // Per-line entries win over the file-level entry, so hunk-model files are always
+    // reconstructed line by line; lines without an entry fall back to the file-level state.
+    result.set(path, reconstructHunkModel(entry, state));
     return;
   }
 
+  const fileState = state.files[path];
   const checked = fileState ?? true;
   switch (entry.status) {
     case "A":

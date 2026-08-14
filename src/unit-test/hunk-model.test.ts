@@ -260,15 +260,35 @@ describe("tri-state Test Suite", () => {
     assert.equal(getFileCheckState(entry, state), false);
   });
 
-  it("clears the whole-file override when a single line is toggled", () => {
-    const entry = textEntry("f.txt", "a\nb\nc\n", "a\nx\nc\n");
+  it("selects only a single line after deselecting the whole file", () => {
+    const entry = textEntry("f.txt", "a\nb\nc\nd\n", "a\nx\nc\ny\n");
     const state = createSplitCheckboxState();
     setFileChecked(entry.path, state, false);
+    assert.equal(getLineChecked(entry.path, addLineOf(entry, 1, "y\n"), state), false);
+
+    setLineChecked(entry.path, addLineOf(entry, 1, "y\n"), state, true);
+    assert.equal(getLineChecked(entry.path, addLineOf(entry, 1, "y\n"), state), true);
+    // Every other line keeps the deselected whole-file state instead of reverting to checked.
+    assert.equal(getLineChecked(entry.path, delLineOf(entry, 0, "b\n"), state), false);
     assert.equal(getLineChecked(entry.path, addLineOf(entry, 0, "x\n"), state), false);
+    assert.equal(getHunkCheckState(entry.path, entry.hunks![0], state), false);
+    assert.equal(getHunkCheckState(entry.path, entry.hunks![1], state), "indeterminate");
+    assert.equal(getFileCheckState(entry, state), "indeterminate");
+  });
+
+  it("deselects only a single line after selecting the whole file", () => {
+    const entry = textEntry("f.txt", "a\nb\nc\nd\n", "a\nx\nc\ny\n");
+    const state = createSplitCheckboxState();
+    setFileChecked(entry.path, state, true);
 
     setLineChecked(entry.path, delLineOf(entry, 0, "b\n"), state, false);
     assert.equal(getLineChecked(entry.path, delLineOf(entry, 0, "b\n"), state), false);
+    // Every other line keeps the selected whole-file state.
     assert.equal(getLineChecked(entry.path, addLineOf(entry, 0, "x\n"), state), true);
+    assert.equal(getLineChecked(entry.path, delLineOf(entry, 1, "d\n"), state), true);
+    assert.equal(getLineChecked(entry.path, addLineOf(entry, 1, "y\n"), state), true);
+    assert.equal(getHunkCheckState(entry.path, entry.hunks![0], state), "indeterminate");
+    assert.equal(getHunkCheckState(entry.path, entry.hunks![1], state), true);
     assert.equal(getFileCheckState(entry, state), "indeterminate");
   });
 });
@@ -326,6 +346,24 @@ describe("reconstructRightSides Test Suite", () => {
     setLineChecked(entry.path, addLineOf(entry, 0, "a\n"), state, false);
     setLineChecked(entry.path, addLineOf(entry, 1, "z\n"), state, false);
     assert.deepEqual(reconstructRightSides([entry], state).get("f.txt"), Buffer.from("m\n", "utf8"));
+  });
+
+  it("reconstructs a single line selected after deselecting the whole file", () => {
+    const entry = textEntry("f.txt", "a\nb\nc\nd\n", "a\nx\nc\ny\n");
+    const state = createSplitCheckboxState();
+    setFileChecked(entry.path, state, false);
+    setLineChecked(entry.path, addLineOf(entry, 1, "y\n"), state, true);
+    // Only the "y" addition is applied; everything else stays on the left side.
+    assert.deepEqual(reconstructRightSides([entry], state).get("f.txt"), Buffer.from("a\nb\nc\nd\ny\n", "utf8"));
+  });
+
+  it("reconstructs a single line deselected after selecting the whole file", () => {
+    const entry = textEntry("f.txt", "a\nb\nc\nd\n", "a\nx\nc\ny\n");
+    const state = createSplitCheckboxState();
+    setFileChecked(entry.path, state, true);
+    setLineChecked(entry.path, delLineOf(entry, 0, "b\n"), state, false);
+    // The deletion of "b" is skipped; the "x" and "y" changes are applied.
+    assert.deepEqual(reconstructRightSides([entry], state).get("f.txt"), Buffer.from("a\nb\nx\nc\ny\n", "utf8"));
   });
 
   it("reconstructs whole-file toggles of hunk-model files byte-exactly", () => {
