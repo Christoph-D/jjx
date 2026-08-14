@@ -252,6 +252,113 @@ test("cancelling the split view leaves the repository unchanged", async ({ graph
   await expect(nodes).toHaveCount(4);
 });
 
+test("closing the split view offers to apply the current selection", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("f1.txt", "one\ntwo\nthree\n", "Base");
+  await testRepo.writeFile("f1.txt", "one\nTWO\nthree\n");
+  await testRepo.writeFile("f2.txt", "added\n");
+  await testRepo.commit("Close me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+  await expect(splitFrame.locator(".splitHeaderDescription")).toHaveText("Close me");
+
+  const splitTab = workbox.locator(".tab", { hasText: /^Split / });
+  await expect(splitTab).toBeVisible();
+
+  // Latest selection: only the f1.txt change goes into the first commit.
+  const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator("input.splitCheckbox");
+  await f2Checkbox.click();
+  await expect(f2Checkbox).not.toBeChecked();
+
+  // Closing the tab without confirming asks whether to apply the selection after all.
+  await splitTab.locator(".tab-close").click();
+  const dialog = workbox.locator(".monaco-dialog-box");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Apply the split with the current selection?");
+  await dialog.getByRole("button", { name: "Apply Split" }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(splitTab).toBeHidden();
+
+  await handleEditor(workbox, "", "Applied part");
+  await handleEditor(workbox, "", "Remaining part");
+
+  await expect(nodes).toHaveCount(5);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "Applied part")).toEqual(["Base"]);
+    expect(getParents(logEntries, "Remaining part")).toEqual(["Applied part"]);
+    expect(getParents(logEntries, "@")).toEqual(["Remaining part"]);
+  }).toPass();
+
+  expect(await diffSummary(testRepo, await changeIdFor(testRepo, "Applied part"))).toBe("M f1.txt");
+  expect(await diffSummary(testRepo, await changeIdFor(testRepo, "Remaining part"))).toBe("A f2.txt");
+  expect(await fileContent(testRepo, await changeIdFor(testRepo, "Applied part"), "f1.txt")).toBe("one\nTWO\nthree\n");
+});
+
+test("closing the split view and discarding leaves the repository unchanged", async ({
+  graphFrame,
+  testRepo,
+  workbox,
+}) => {
+  await testRepo.commitFile("base.txt", "base\n", "Base");
+  await testRepo.writeFile("f1.txt", "line1\nline2\n");
+  await testRepo.writeFile("f2.txt", "added\n");
+  await testRepo.commit("Close me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const before = await testRepo.log();
+  const splitTab = workbox.locator(".tab", { hasText: /^Split / });
+
+  // First close: dismissing the dialog with Discard aborts the split.
+  {
+    const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+    await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+    const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator("input.splitCheckbox");
+    await f2Checkbox.click();
+    await expect(f2Checkbox).not.toBeChecked();
+
+    await splitTab.locator(".tab-close").click();
+    const dialog = workbox.locator(".monaco-dialog-box");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("Apply the split with the current selection?");
+    await dialog.getByRole("button", { name: "Discard" }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(splitTab).toBeHidden();
+  }
+
+  let after = await testRepo.log();
+  expect(after.map((e) => [e.change_id, e.commit_id, e.description])).toEqual(
+    before.map((e) => [e.change_id, e.commit_id, e.description]),
+  );
+  await expect(nodes).toHaveCount(4);
+
+  // Second close: dismissing the dialog with Escape aborts the split as well.
+  {
+    const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+    await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+    await splitTab.locator(".tab-close").click();
+    const dialog = workbox.locator(".monaco-dialog-box");
+    await expect(dialog).toBeVisible();
+    await workbox.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+    await expect(splitTab).toBeHidden();
+  }
+
+  after = await testRepo.log();
+  expect(after.map((e) => [e.change_id, e.commit_id, e.description])).toEqual(
+    before.map((e) => [e.change_id, e.commit_id, e.description]),
+  );
+  await expect(nodes).toHaveCount(4);
+});
+
 test("added, renamed and conflicted files only offer whole-file checkboxes", async ({
   graphFrame,
   testRepo,

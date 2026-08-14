@@ -16,6 +16,9 @@ export interface SplitCommitMetadata {
 
 export type SplitWebviewToExtensionMessage =
   | { command: "webviewReady" }
+  // Sent on every checkbox change so the extension holds the latest selection even when
+  // the panel is closed without confirming (webviews cannot deliver messages during disposal).
+  | { command: "stateChanged"; state: SplitCheckboxState }
   // Sent when the user confirms the selection; `state` is the full checked-state model
   // consumable by the Phase E reconstruction.
   | { command: "split"; state: SplitCheckboxState }

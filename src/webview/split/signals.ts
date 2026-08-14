@@ -35,6 +35,7 @@ export function applyExtensionMessage(message: SplitExtensionToWebviewMessage): 
   entries.value = message.entries;
   metadata.value = message.metadata;
   checkState.value = createSplitCheckboxState();
+  postCurrentState();
 }
 
 export const entries = signal<SplitViewFileEntry[]>([]);
@@ -74,6 +75,12 @@ export function toggleHunkCollapsed(path: string, index: number): void {
 /** Reassigns the signal with a shallow clone so mutations become visible to subscribers. */
 function commitStateChange(state: SplitCheckboxState): void {
   checkState.value = { files: { ...state.files }, lines: { ...state.lines } };
+  postCurrentState();
+}
+
+/** Keeps the extension's mirror of the selection current, so a panel close can still apply it. */
+function postCurrentState(): void {
+  postMessage({ command: "stateChanged", state: checkState.value });
 }
 
 export function setFileCheckState(path: string, checked: boolean): void {
