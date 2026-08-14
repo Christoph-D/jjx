@@ -36,6 +36,15 @@ function splitFileRow(frame: Frame, path: string): Locator {
   return frame.locator(".splitFile").filter({ has: frame.locator(".splitPath", { hasText: pattern }) });
 }
 
+/**
+ * The close (X) button of an editor tab. Since VS Code 1.114 the button is a "Tab actions"
+ * toolbar item whose only stable handle is its accessible name ("Close (Ctrl+W)", with a
+ * platform-specific keybinding); older builds render an element with class `tab-close`.
+ */
+function tabCloseButton(tab: Locator): Locator {
+  return tab.getByRole("button", { name: /^Close/ }).or(tab.locator(".tab-close"));
+}
+
 async function changeIdFor(testRepo: TestRepo, description: string): Promise<string> {
   const entry = (await testRepo.log()).find((e) => e.description.trim() === description);
   expect(entry, `Expected to find commit "${description}"`).toBeDefined();
@@ -274,7 +283,7 @@ test("closing the split view offers to apply the current selection", async ({ gr
   await expect(f2Checkbox).not.toBeChecked();
 
   // Closing the tab without confirming asks whether to apply the selection after all.
-  await splitTab.locator(".tab-close").click();
+  await tabCloseButton(splitTab).click();
   const dialog = workbox.locator(".monaco-dialog-box");
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Apply the split with the current selection?");
@@ -324,7 +333,7 @@ test("closing the split view and discarding leaves the repository unchanged", as
     await f2Checkbox.click();
     await expect(f2Checkbox).not.toBeChecked();
 
-    await splitTab.locator(".tab-close").click();
+    await tabCloseButton(splitTab).click();
     const dialog = workbox.locator(".monaco-dialog-box");
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText("Apply the split with the current selection?");
@@ -344,7 +353,7 @@ test("closing the split view and discarding leaves the repository unchanged", as
     const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
     await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
 
-    await splitTab.locator(".tab-close").click();
+    await tabCloseButton(splitTab).click();
     const dialog = workbox.locator(".monaco-dialog-box");
     await expect(dialog).toBeVisible();
     await workbox.keyboard.press("Escape");
