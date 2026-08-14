@@ -1,0 +1,200 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  background-color: var(--vscode-editor-background);
+}
+
+.splitRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Fixed header: the action buttons never scroll out of view. */
+.splitHeader {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-editor-background);
+  z-index: 1;
+}
+
+.splitHeaderInfo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.splitHeaderChangeId {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-weight: bold;
+}
+
+.splitHeaderDescription {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--vscode-descriptionForeground);
+}
+
+.splitHeaderButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.splitButton {
+  border: none;
+  border-radius: 2px;
+  padding: 6px 14px;
+  font-size: var(--vscode-font-size);
+  font-family: var(--vscode-font-family);
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  background-color: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+  cursor: pointer;
+}
+
+.splitButton:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-hoverBackground));
+}
+
+.splitPrimaryButton {
+  color: var(--vscode-button-foreground);
+  background-color: var(--vscode-button-background);
+}
+
+.splitPrimaryButton:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.splitContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 24px;
+}
+
+.splitRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.splitFileRow {
+  cursor: default;
+  margin-top: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-weight: 500;
+}
+
+.splitFileRow.splitExpandable {
+  cursor: pointer;
+}
+
+.splitFileRow:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.splitFileRow .codicon {
+  font-size: 14px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.splitStatus {
+  flex: none;
+  width: 1.1em;
+  text-align: center;
+  font-weight: bold;
+}
+
+.splitPath {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.splitLeafDetail {
+  flex: none;
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.9em;
+}
+
+.splitConflict {
+  color: var(--vscode-errorForeground);
+}
+
+.splitHunks {
+  padding-left: 20px;
+}
+
+.splitHunk {
+  margin: 2px 0;
+}
+
+.splitHunkRow {
+  color: var(--vscode-descriptionForeground);
+}
+
+.splitHunkHeader {
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.splitSeparator {
+  padding-left: 26px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.9em;
+}
+
+.splitLineRow {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
+}
+
+.splitLineAdded {
+  background-color: var(--vscode-diffEditor-insertedTextBackground, rgba(168, 236, 7, 0.2));
+}
+
+.splitLineRemoved {
+  background-color: var(--vscode-diffEditor-removedTextBackground, rgba(255, 0, 0, 0.2));
+}
+
+.splitLinePrefix {
+  flex: none;
+  width: 1em;
+  text-align: center;
+}
+
+.splitAdded {
+  color: var(--vscode-jjDecoration-addedResourceForeground, #81b88b);
+}
+
+.splitRemoved {
+  color: var(--vscode-jjDecoration-deletedResourceForeground, #c74e39);
+}
+
+.splitLineText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.splitUnchecked {
+  opacity: 0.45;
+}
+
+.splitCheckbox {
+  flex: none;
+  margin: 0;
+}

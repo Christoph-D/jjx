@@ -60,7 +60,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/webview/graph/**/*.{ts,tsx}"],
+    files: ["src/webview/{graph,split}/**/*.{ts,tsx}"],
     languageOptions: {
       parser: tseslint.parser,
       ecmaVersion: 2022,

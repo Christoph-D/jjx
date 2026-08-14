@@ -18,6 +18,7 @@ function copyFile(src, dest) {
 
 function copyAssets() {
   fs.copyFileSync("src/webview/graph.html", "dist/webview/graph.html");
+  fs.copyFileSync("src/webview/split.html", "dist/webview/split.html");
   copyFile("src/config.toml", "dist/config.toml");
 
   fs.rmSync("dist/codicons", { recursive: true, force: true });
@@ -70,6 +71,13 @@ async function main() {
     createContext("src/jj-squash-tool-main.ts", "dist/jj-squash-tool-main.js"),
     createContext("src/jj-split-tool-main.ts", "dist/jj-split-tool-main.js"),
     createContext("src/webview/graph/main.tsx", "dist/webview/graph.js", {
+      format: "iife",
+      platform: "browser",
+      jsx: "automatic",
+      jsxImportSource: "preact",
+      loader: { ".module.css": "local-css" },
+    }),
+    createContext("src/webview/split/main.tsx", "dist/webview/split.js", {
       format: "iife",
       platform: "browser",
       jsx: "automatic",
