@@ -169,6 +169,8 @@ body {
 }
 
 .splitLineRow {
+  /* Indent line rows so their checkboxes sit right of the per-hunk checkboxes. */
+  padding-left: 40px;
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
   cursor: pointer;
