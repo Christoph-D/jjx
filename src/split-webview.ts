@@ -84,14 +84,21 @@ export class SplitWebview {
       // the latest selection should be applied after all. When the split was already settled
       // via Split/Cancel (which dispose the panel themselves), stay silent. Closing the whole
       // window or reloading cannot wait for the answer, so the split is then discarded.
+      // "Discard" is marked as the close affordance so VS Code does not add a third
+      // "Cancel" button to the dialog (Escape then discards, just like "Discard").
       panel.onDidDispose(() => {
         messageListener.dispose();
         if (settled) {
           return;
         }
         void vscode.window
-          .showWarningMessage("Apply the split with the current selection?", { modal: true }, "Apply Split", "Discard")
-          .then((answer) => settle(answer === "Apply Split" ? latestState : undefined));
+          .showWarningMessage(
+            "Apply the split with the current selection?",
+            { modal: true },
+            { title: "Apply Split" },
+            { title: "Discard", isCloseAffordance: true },
+          )
+          .then((answer) => settle(answer?.title === "Apply Split" ? latestState : undefined));
       });
     });
   }
