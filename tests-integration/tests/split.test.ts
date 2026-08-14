@@ -421,7 +421,12 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
   await expect(addedRow.locator(".splitLineRow")).toContainText("added");
 
   await expect(splitFileRow(splitFrame, "file1.txt").locator(".splitConflict")).toContainText("conflicted");
-  await expect(splitFileRow(splitFrame, "new.txt").locator(".splitLeafDetail")).toContainText("← old.txt");
+  // A pure rename has no content hunks, so it stays a leaf whose whole-file checkbox is the
+  // "File Renamed" checkbox.
+  const renamedRow = splitFileRow(splitFrame, "new.txt");
+  await expect(renamedRow.locator(".splitLeafDetail", { hasText: "←" })).toContainText("← old.txt");
+  await expect(renamedRow.locator(".splitLeafDetail", { hasText: "File Renamed" })).toHaveCount(1);
+  await expect(renamedRow.locator(".splitFileRow input.splitCheckbox")).toHaveAttribute("title", "File Renamed");
 
   // Split off the added file; conflict, rename and deletion stay in the first commit.
   const addedCheckbox = splitFileRow(splitFrame, "added.txt").locator(".splitFileRow input.splitCheckbox");
@@ -582,4 +587,73 @@ test("added text files split their addition via a full-addition hunk", async ({ 
   expect(await fileContent(testRepo, withoutN1, "new.txt")).toBe("n2\nn3\n");
   expect(await diffSummary(testRepo, withN1)).toBe("M new.txt");
   expect(await fileContent(testRepo, withN1, "new.txt")).toBe("n1\nn2\nn3\n");
+});
+
+test("renamed files split their rename via the File Renamed checkbox", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("base.txt", "base\n", "Base");
+  await testRepo.commitFile("old.txt", "r1\nr2\nr3\n", "Add old");
+  // Rename with a content edit: jj reports it as a rename whose sides differ.
+  await testRepo.deleteFile("old.txt");
+  await testRepo.writeFile("new.txt", "r1\nR2\nr3\n");
+  await testRepo.writeFile("keep.txt", "kept\n");
+  await testRepo.commit("Split me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(5);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+  // The renamed file is expandable: a "File Renamed" checkbox above the content hunks.
+  const renamedRow = splitFileRow(splitFrame, "new.txt");
+  await expect(renamedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  const renameRow = renamedRow.locator(".splitRename");
+  await expect(renameRow).toHaveCount(1);
+  await expect(renameRow).toContainText("File Renamed");
+  await expect(renameRow).toContainText("← old.txt");
+  const renameCheckbox = renameRow.locator("input.splitCheckbox");
+  await expect(renameCheckbox).toBeChecked();
+
+  // The content edit shows as a single hunk next to the rename.
+  const hunk = renamedRow.locator(".splitHunk");
+  await expect(hunk).toHaveCount(1);
+  const hunkCheckbox = hunk.locator(".splitHunkRow input.splitCheckbox");
+  await expect(hunkCheckbox).toBeChecked();
+  await expect(hunk.locator(".splitLineRow").first()).toContainText("r2");
+  await expect(hunk.locator(".splitLineAdded")).toContainText("R2");
+
+  // The content hunk can be picked independently of the rename.
+  await hunkCheckbox.click();
+  await expect(hunkCheckbox).not.toBeChecked();
+  await expect(renameCheckbox).toBeChecked();
+  await hunkCheckbox.click();
+  await expect(hunkCheckbox).toBeChecked();
+
+  // Keep the rename out of the first commit: only the content edit and keep.txt are split off.
+  await renameCheckbox.click();
+  await expect(renameCheckbox).not.toBeChecked();
+  await expect(hunkCheckbox).toBeChecked();
+  await splitFrame.locator(".splitPrimaryButton").click();
+
+  await handleEditor(workbox, "", "Edit only");
+  await handleEditor(workbox, "", "Rename rest");
+
+  await expect(nodes).toHaveCount(6);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "Edit only")).toEqual(["Add old"]);
+    expect(getParents(logEntries, "Rename rest")).toEqual(["Edit only"]);
+    expect(getParents(logEntries, "@")).toEqual(["Rename rest"]);
+  }).toPass();
+
+  const editOnly = await changeIdFor(testRepo, "Edit only");
+  const renameRest = await changeIdFor(testRepo, "Rename rest");
+
+  // The first commit applies the content edit at the old path; the rename itself is deferred.
+  expect(await diffSummary(testRepo, editOnly)).toBe("A keep.txt\nM old.txt");
+  expect(await fileContent(testRepo, editOnly, "old.txt")).toBe("r1\nR2\nr3\n");
+
+  // The second commit performs the rename of the already-edited file.
+  expect(await diffSummary(testRepo, renameRest)).toBe("R {old.txt => new.txt}");
 });

@@ -9,11 +9,13 @@ import {
   getFileCheckState,
   getHunkCheckState,
   getLineChecked,
+  getRenameChecked,
   lineKey,
   reconstructRightSides,
   setFileChecked,
   setHunkChecked,
   setLineChecked,
+  setRenameChecked,
   splitFileLines,
 } from "../split/hunk-model";
 import type { SplitFileEntry, SplitLine } from "../split/hunk-model";
@@ -165,7 +167,7 @@ describe("buildSplitFileEntry Test Suite", () => {
     assert.equal(entry.rightBase64, Buffer.from("b\n", "utf8").toString("base64"));
   });
 
-  it("falls back to whole-file contents for empty add, binary delete, rename, binary, and conflict leaves", () => {
+  it("falls back to whole-file contents for empty add, binary delete, pure rename, binary, and conflict leaves", () => {
     const addedEmpty = buildSplitFileEntry({ path: "added-empty.txt", status: "A", right: Buffer.from("") });
     assert.equal(addedEmpty.hunks, undefined);
     assert.equal(addedEmpty.leftBase64, undefined);
@@ -188,9 +190,10 @@ describe("buildSplitFileEntry Test Suite", () => {
       renamedFrom: "old.txt",
       status: "R",
       left: Buffer.from("a\n"),
-      right: Buffer.from("b\n"),
+      right: Buffer.from("a\n"),
     });
-    assert.equal(renamed.hunks, undefined);
+    // Identical sides produce no content hunks (an empty hunk list), only the rename remains.
+    assert.deepEqual(renamed.hunks, []);
     assert.equal(renamed.renamedFrom, "old.txt");
 
     const binary = buildSplitFileEntry({
@@ -236,6 +239,27 @@ describe("buildSplitFileEntry Test Suite", () => {
       [
         ["add", 1, "a\n"],
         ["add", 2, "b\n"],
+      ],
+    );
+  });
+
+  it("builds content hunks for renames that come with content changes", () => {
+    const renamed = buildSplitFileEntry({
+      path: "new.txt",
+      renamedFrom: "old.txt",
+      status: "R",
+      left: Buffer.from("a\nb\nc\n"),
+      right: Buffer.from("a\nB\nc\nX\n"),
+    });
+    assert.equal(renamed.hunks?.length, 2);
+    assert.deepEqual(
+      renamed.hunks.map((hunk) => hunk.lines.map((l) => [l.kind, l.text])),
+      [
+        [
+          ["del", "b\n"],
+          ["add", "B\n"],
+        ],
+        [["add", "X\n"]],
       ],
     );
   });
@@ -316,6 +340,70 @@ describe("tri-state Test Suite", () => {
     assert.equal(getFileCheckState(added, state), true);
   });
 
+  it("combines a renamed file's rename checkbox with its content hunks", () => {
+    const renamed = buildSplitFileEntry({
+      path: "new.txt",
+      renamedFrom: "old.txt",
+      status: "R",
+      left: Buffer.from("a\nb\n"),
+      right: Buffer.from("a\nB\n"),
+    });
+    const state = createSplitCheckboxState();
+    assert.equal(getFileCheckState(renamed, state), true);
+
+    // Unchecking only the rename leaves the content hunks selected and the file indeterminate.
+    setRenameChecked("new.txt", state, false);
+    assert.equal(getRenameChecked("new.txt", state), false);
+    assert.equal(getHunkCheckState("new.txt", renamed.hunks![0], state), true);
+    assert.equal(getFileCheckState(renamed, state), "indeterminate");
+
+    // Unchecking the hunks as well clears the file-level state.
+    setHunkChecked("new.txt", renamed.hunks![0], state, false);
+    assert.equal(getFileCheckState(renamed, state), false);
+
+    // Re-checking the rename alone leaves the file indeterminate again.
+    setRenameChecked("new.txt", state, true);
+    assert.equal(getFileCheckState(renamed, state), "indeterminate");
+  });
+
+  it("toggles a renamed file's rename and hunks together via the file checkbox", () => {
+    const renamed = buildSplitFileEntry({
+      path: "new.txt",
+      renamedFrom: "old.txt",
+      status: "R",
+      left: Buffer.from("a\nb\n"),
+      right: Buffer.from("a\nB\n"),
+    });
+    const state = createSplitCheckboxState();
+    setFileChecked("new.txt", state, false);
+    assert.equal(getRenameChecked("new.txt", state), false);
+    assert.equal(getHunkCheckState("new.txt", renamed.hunks![0], state), false);
+    assert.equal(getFileCheckState(renamed, state), false);
+
+    setFileChecked("new.txt", state, true);
+    assert.equal(getRenameChecked("new.txt", state), true);
+    assert.equal(getHunkCheckState("new.txt", renamed.hunks![0], state), true);
+  });
+
+  it("derives pure-rename leaves from the rename state", () => {
+    const renamed = buildSplitFileEntry({
+      path: "new.txt",
+      renamedFrom: "old.txt",
+      status: "R",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("a\n"),
+    });
+    const state = createSplitCheckboxState();
+    assert.deepEqual(renamed.hunks, []);
+    assert.equal(getFileCheckState(renamed, state), true);
+
+    setRenameChecked("new.txt", state, false);
+    assert.equal(getFileCheckState(renamed, state), false);
+
+    setFileChecked("new.txt", state, true);
+    assert.equal(getRenameChecked("new.txt", state), true);
+    assert.equal(getFileCheckState(renamed, state), true);
+  });
   it("lets the whole-file state win over line states", () => {
     const entry = textEntry("f.txt", "a\nb\nc\n", "a\nx\nc\n");
     const state = createSplitCheckboxState();
@@ -500,6 +588,65 @@ describe("reconstructRightSides Test Suite", () => {
     assert.deepEqual(reconstructRightSides([added], state).get("new.txt"), Buffer.from("b\n", "utf8"));
   });
 
+  it("reconstructs renamed files with the rename independent of the content hunks", () => {
+    const renamed = buildSplitFileEntry({
+      path: "new.txt",
+      renamedFrom: "old.txt",
+      status: "R",
+      left: Buffer.from("a\nb\n"),
+      right: Buffer.from("a\nB\nc\n"),
+    });
+
+    // Default: the rename and the content edits go into the first commit.
+    let state = createSplitCheckboxState();
+    let result = reconstructRightSides([renamed], state);
+    assert.equal(result.get("old.txt"), undefined);
+    assert.deepEqual(result.get("new.txt"), Buffer.from("a\nB\nc\n"));
+
+    // Rename unchecked, hunks checked: the edits apply to the old path in the first commit;
+    // the rename itself falls to the second commit.
+    state = createSplitCheckboxState();
+    setRenameChecked("new.txt", state, false);
+    result = reconstructRightSides([renamed], state);
+    assert.deepEqual(result.get("old.txt"), Buffer.from("a\nB\nc\n"));
+    assert.equal(result.get("new.txt"), undefined);
+
+    // Rename checked, hunks unchecked: the first commit holds a pure rename; the edits fall
+    // to the second commit.
+    state = createSplitCheckboxState();
+    setHunkChecked("new.txt", renamed.hunks![0], state, false);
+    result = reconstructRightSides([renamed], state);
+    assert.equal(result.get("old.txt"), undefined);
+    assert.deepEqual(result.get("new.txt"), Buffer.from("a\nb\n"));
+
+    // Partially selected hunks follow whichever path the file lives on.
+    state = createSplitCheckboxState();
+    setRenameChecked("new.txt", state, false);
+    setLineChecked("new.txt", delLineOf(renamed, 0, "b\n"), state, false);
+    setLineChecked("new.txt", addLineOf(renamed, 0, "B\n"), state, false);
+    result = reconstructRightSides([renamed], state);
+    assert.deepEqual(result.get("old.txt"), Buffer.from("a\nb\nc\n"));
+    assert.equal(result.get("new.txt"), undefined);
+  });
+
+  it("reconstructs pure renames via the rename state", () => {
+    const renamed = buildSplitFileEntry({
+      path: "new.txt",
+      renamedFrom: "old.txt",
+      status: "R",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("a\n"),
+    });
+
+    const state = createSplitCheckboxState();
+    assert.equal(reconstructRightSides([renamed], state).get("old.txt"), undefined);
+    assert.deepEqual(reconstructRightSides([renamed], state).get("new.txt"), Buffer.from("a\n"));
+
+    setRenameChecked("new.txt", state, false);
+    const result = reconstructRightSides([renamed], state);
+    assert.deepEqual(result.get("old.txt"), Buffer.from("a\n"));
+    assert.equal(result.get("new.txt"), undefined);
+  });
   it("preserves CRLF line endings", () => {
     const entry = textEntry("f.txt", "a\r\nb\r\nc\r\n", "a\r\nX\r\nc\r\n");
     const state = createSplitCheckboxState();

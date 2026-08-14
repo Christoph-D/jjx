@@ -1,7 +1,13 @@
 import { memo } from "preact/compat";
 import type { ComponentChild } from "preact";
 import type { FileStatusType } from "../../../types";
-import { getFileCheckState, getHunkCheckState, getLineChecked, splitFileLines } from "../../../split/hunk-model";
+import {
+  getFileCheckState,
+  getHunkCheckState,
+  getLineChecked,
+  getRenameChecked,
+  splitFileLines,
+} from "../../../split/hunk-model";
 import type { SplitLine } from "../../../split/hunk-model";
 import {
   checkState,
@@ -10,6 +16,7 @@ import {
   hunkKey,
   setFileCheckState,
   setHunkCheckState,
+  setRenameCheckState,
   toggleFileExpanded,
   toggleHunkCollapsed,
   toggleLineChecked,
@@ -57,6 +64,7 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
   const expanded = expandedFiles.value.has(entry.path);
   const fileState = getFileCheckState(entry, checkState.value);
   const deleted = entry.status === "D";
+  const renamed = entry.renamedFrom !== undefined;
 
   return (
     <div class="splitFile">
@@ -68,7 +76,7 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
         {expandable && <i class={expanded ? "codicon codicon-chevron-down" : "codicon codicon-chevron-right"} />}
         <TriStateCheckbox
           state={fileState}
-          title={deleted ? "File Deleted" : undefined}
+          title={deleted ? "File Deleted" : renamed && !expandable ? "File Renamed" : undefined}
           onChange={(checked) => setFileCheckState(entry.path, checked)}
         />
         <span class="splitStatus" style={`color: ${STATUS_COLORS[entry.status]}`}>
@@ -83,6 +91,7 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
         )}
         {entry.binary && <span class="splitLeafDetail">binary</span>}
         {expandable && deleted && <span class="splitLeafDetail">File Deleted</span>}
+        {!expandable && renamed && <span class="splitLeafDetail">File Renamed</span>}
         {!expandable && !entry.binary && leafSummary(entry) !== undefined && (
           <span class="splitLeafDetail">{leafSummary(entry)}</span>
         )}
@@ -103,6 +112,10 @@ function leafSummary(entry: SplitFileViewModel["entry"]): string | undefined {
 
 function HunkList({ file }: { file: SplitFileViewModel }) {
   const children: ComponentChild[] = [];
+  // A renamed file's rename is its own checkable, listed ahead of the content hunks.
+  if (file.entry.renamedFrom !== undefined) {
+    children.push(<RenameRow key="rename" path={file.entry.path} renamedFrom={file.entry.renamedFrom} />);
+  }
   file.hunkGroups.forEach((group, index) => {
     const contextCount = file.contextCounts[index] ?? 0;
     if (contextCount > 0) {
@@ -119,6 +132,24 @@ function HunkList({ file }: { file: SplitFileViewModel }) {
 
 function ContextSeparator({ count }: { count: number }) {
   return <div class="splitRow splitSeparator">⋯ {lineCount(count)} unchanged ⋯</div>;
+}
+
+/** The "File Renamed" checkbox row: decides which commit the rename itself lands in. */
+function RenameRow({ path, renamedFrom }: { path: string; renamedFrom: string }) {
+  const checked = getRenameChecked(path, checkState.value);
+  return (
+    <div class="splitRename">
+      <div class="splitRow splitHunkRow splitRenameRow" title={`${renamedFrom} → ${path}`}>
+        <TriStateCheckbox
+          state={checked}
+          title="File Renamed"
+          onChange={(nextChecked) => setRenameCheckState(path, nextChecked)}
+        />
+        <span class="splitHunkHeader">File Renamed</span>
+        <span class="splitLeafDetail">← {renamedFrom}</span>
+      </div>
+    </div>
+  );
 }
 
 function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; index: number }) {

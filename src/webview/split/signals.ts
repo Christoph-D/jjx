@@ -6,6 +6,7 @@ import {
   setFileChecked,
   setHunkChecked,
   setLineChecked,
+  setRenameChecked,
 } from "../../split/hunk-model";
 import type {
   SplitCommitMetadata,
@@ -74,7 +75,7 @@ export function toggleHunkCollapsed(path: string, index: number): void {
 
 /** Reassigns the signal with a shallow clone so mutations become visible to subscribers. */
 function commitStateChange(state: SplitCheckboxState): void {
-  checkState.value = { files: { ...state.files }, lines: { ...state.lines } };
+  checkState.value = { files: { ...state.files }, lines: { ...state.lines }, renames: { ...state.renames } };
   postCurrentState();
 }
 
@@ -92,6 +93,13 @@ export function setFileCheckState(path: string, checked: boolean): void {
 export function setHunkCheckState(path: string, hunk: SplitHunk, checked: boolean): void {
   const state = checkState.value;
   setHunkChecked(path, hunk, state, checked);
+  commitStateChange(state);
+}
+
+/** Toggles a renamed file's "File Renamed" checkbox, independent of its content hunks. */
+export function setRenameCheckState(path: string, checked: boolean): void {
+  const state = checkState.value;
+  setRenameChecked(path, state, checked);
   commitStateChange(state);
 }
 

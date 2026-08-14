@@ -149,6 +149,21 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
+/* The "File Renamed" row is not collapsible (no chevron, no pointer cursor); its checkbox
+   aligns with the hunk checkboxes below, which sit right of their chevrons. */
+.splitRename {
+  margin: 2px 0;
+}
+
+.splitRenameRow {
+  cursor: default;
+  padding-left: 20px;
+}
+
+.splitRenameRow:hover {
+  background-color: transparent;
+}
+
 .splitHunkRow:hover {
   background-color: var(--vscode-list-hoverBackground);
 }

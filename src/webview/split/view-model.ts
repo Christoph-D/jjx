@@ -17,12 +17,16 @@ export interface SplitFileViewModel {
   contextCounts: number[];
 }
 
-/** True for text files that get a hunk breakdown: modified files (see decisions 4 & 5 in #23), added files, and deleted files. */
+/**
+ * True for text files that get a hunk breakdown: modified files (see decisions 4 & 5 in #23),
+ * added files, deleted files, and renamed files (which usually produce no hunks for a pure
+ * rename, leaving only the "File Renamed" checkbox).
+ */
 export function isExpandableSplitEntry(entry: SplitViewFileEntry): boolean {
   if (entry.binary || entry.conflict) {
     return false;
   }
-  if (entry.status === "M") {
+  if (entry.status === "M" || entry.renamedFrom !== undefined) {
     return entry.leftText !== undefined && entry.rightText !== undefined;
   }
   if (entry.status === "D") {

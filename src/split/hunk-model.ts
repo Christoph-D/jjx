@@ -37,11 +37,13 @@ export type SplitCheckState = boolean | "indeterminate";
  * Checkbox state for a whole split view. Line checkboxes default to checked (true), so only
  * deviations need to be recorded. Per-line entries win over the file-level entry, which acts as
  * the fallback for lines without an explicit entry; toggling a whole file replaces any per-line
- * entries.
+ * entries. The rename checkboxes of renamed files are recorded separately (keyed by the renamed
+ * file's path) and fall back to the file-level entry the same way.
  */
 export interface SplitCheckboxState {
   files: Record<string, boolean>;
   lines: Record<string, Record<string, boolean>>;
+  renames: Record<string, boolean>;
 }
 
 /** Splits content into lines, keeping each line's terminator so content can be rebuilt byte-exactly. */
@@ -105,9 +107,9 @@ export function buildSplitHunks(left: string, right: string): SplitHunk[] {
 }
 
 /**
- * Builds a file entry from whole-file contents. Modified, added, and deleted non-binary,
- * non-conflict text files get a hunk model; everything else (renamed/binary/conflict leaves)
- * keeps whole-file contents only.
+ * Builds a file entry from whole-file contents. Modified, added, deleted, and renamed non-binary,
+ * non-conflict text files get a hunk model; everything else (binary/conflict leaves and pure
+ * renames, whose sides are identical) keeps whole-file contents only.
  */
 export function buildSplitFileEntry(options: {
   path: string;
@@ -130,7 +132,13 @@ export function buildSplitFileEntry(options: {
     rightBase64: options.right?.toString("base64"),
   };
   if (!binary && !conflict) {
-    if (options.status === "M" && options.left !== undefined && options.right !== undefined) {
+    if (
+      (options.status === "M" || options.renamedFrom !== undefined) &&
+      options.left !== undefined &&
+      options.right !== undefined
+    ) {
+      // Renames diff the old path's content against the new path's; a pure rename yields no
+      // hunks, so only the rename itself remains to be picked.
       entry.hunks = buildSplitHunks(options.left.toString("utf8"), options.right.toString("utf8"));
     } else if (options.status === "D" && options.left !== undefined) {
       // Diffing against an empty right side yields a single hunk removing every left-side line.
@@ -152,7 +160,7 @@ export function buildSplitFileEntry(options: {
 }
 
 export function createSplitCheckboxState(): SplitCheckboxState {
-  return { files: {}, lines: {} };
+  return { files: {}, lines: {}, renames: {} };
 }
 
 /** Stable key identifying a checkable (non-context) line within its file. */
@@ -181,7 +189,25 @@ export function getHunkCheckState(path: string, hunk: SplitHunk, state: SplitChe
   return combineCheckStates(hunk.lines.map((line) => getLineChecked(path, line, state)));
 }
 
+/** Checkbox state of a file's rename ("File Renamed"); defaults to checked like line states. */
+export function getRenameChecked(path: string, state: SplitCheckboxState): boolean {
+  const renameState = state.renames[path];
+  if (renameState !== undefined) {
+    return renameState;
+  }
+  return state.files[path] ?? true;
+}
+
 export function getFileCheckState(entry: SplitFileEntry, state: SplitCheckboxState): SplitCheckState {
+  if (entry.renamedFrom !== undefined) {
+    // A renamed file's rename is its own checkable next to any content hunks, so the file-level
+    // state combines both (a pure rename has no hunks and reduces to the rename state).
+    const renameState = getRenameChecked(entry.path, state);
+    if (!entry.hunks || entry.hunks.length === 0) {
+      return renameState;
+    }
+    return combineCheckStates([renameState, ...entry.hunks.map((hunk) => getHunkCheckState(entry.path, hunk, state))]);
+  }
   if (!entry.hunks || entry.hunks.length === 0) {
     return state.files[entry.path] ?? true;
   }
@@ -218,6 +244,12 @@ export function setHunkChecked(path: string, hunk: SplitHunk, state: SplitCheckb
 export function setFileChecked(path: string, state: SplitCheckboxState, checked: boolean): void {
   state.files[path] = checked;
   delete state.lines[path];
+  delete state.renames[path];
+}
+
+/** Records the "File Renamed" checkbox without touching the content hunk selection. */
+export function setRenameChecked(path: string, state: SplitCheckboxState, checked: boolean): void {
+  state.renames[path] = checked;
 }
 
 /**
@@ -247,6 +279,19 @@ function reconstructEntry(
 ): void {
   const path = entry.path;
 
+  if (entry.renamedFrom !== undefined) {
+    // The rename is its own checkable next to any content hunks: when checked, the reconstructed
+    // content lands at the new path (rename in the first commit); when unchecked, it stays at the
+    // old path so the rename falls to the second commit. Selected content hunks apply to
+    // whichever path the file lives on.
+    const renameChecked = getRenameChecked(path, state);
+    const content = entry.hunks !== undefined ? reconstructHunkModel(entry, state) : decodeBase64(entry.rightBase64);
+    const oldContent = entry.hunks !== undefined ? content : decodeBase64(entry.leftBase64);
+    result.set(entry.renamedFrom, renameChecked ? undefined : oldContent);
+    result.set(path, renameChecked ? content : undefined);
+    return;
+  }
+
   if (entry.hunks !== undefined) {
     // Per-line entries win over the file-level entry, so hunk-model files are always
     // reconstructed line by line; lines without an entry fall back to the file-level state.
@@ -267,12 +312,7 @@ function reconstructEntry(
       result.set(path, checked ? undefined : decodeBase64(entry.leftBase64));
       return;
     default:
-      if (entry.renamedFrom !== undefined) {
-        result.set(entry.renamedFrom, checked ? undefined : decodeBase64(entry.leftBase64));
-        result.set(path, checked ? decodeBase64(entry.rightBase64) : undefined);
-      } else {
-        result.set(path, checked ? decodeBase64(entry.rightBase64) : decodeBase64(entry.leftBase64));
-      }
+      result.set(path, checked ? decodeBase64(entry.rightBase64) : decodeBase64(entry.leftBase64));
       return;
   }
 }

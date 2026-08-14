@@ -41,6 +41,15 @@ describe("buildSplitFileViewModels Test Suite", () => {
       { path: "added.bin", status: "A", binary: true, conflict: false },
       { path: "deleted.bin", status: "D", binary: true, conflict: false },
       { path: "renamed.txt", renamedFrom: "old.txt", status: "R", binary: false, conflict: false, leftText: "x\n" },
+      {
+        path: "renamed.bin",
+        renamedFrom: "old.bin",
+        status: "R",
+        binary: true,
+        conflict: false,
+        leftText: "x\n",
+        rightText: "y\n",
+      },
       { path: "bin.dat", status: "M", binary: true, conflict: false, leftText: "a\n", rightText: "b\n" },
       { path: "conflict.txt", status: "M", binary: false, conflict: true, leftText: "a\n", rightText: "b\n" },
     ];
@@ -49,7 +58,46 @@ describe("buildSplitFileViewModels Test Suite", () => {
       assert.equal(model.hunkGroups.length, 0);
       assert.equal(model.entry.hunks, undefined);
     }
-    assert.deepEqual(entries.map(isExpandableSplitEntry), [false, false, false, false, false]);
+    assert.deepEqual(entries.map(isExpandableSplitEntry), [false, false, false, false, false, false]);
+  });
+
+  it("expands renames with content changes like modified files", () => {
+    const [model] = buildSplitFileViewModels([
+      {
+        path: "new.txt",
+        renamedFrom: "old.txt",
+        status: "R",
+        binary: false,
+        conflict: false,
+        leftText: "a\nb\nc\n",
+        rightText: "a\nB\nc\n",
+      },
+    ]);
+    assert.equal(isExpandableSplitEntry(model.entry), true);
+    assert.equal(model.hunkGroups.length, 1);
+    assert.deepEqual(model.contextCounts, [1, 1]);
+    assert.equal(model.hunkGroups[0].addedCount, 1);
+    assert.equal(model.hunkGroups[0].removedCount, 1);
+    assert.deepEqual(model.entry.hunks, buildSplitHunks("a\nb\nc\n", "a\nB\nc\n"));
+  });
+
+  it("keeps pure renames as leaves with a rename but no content hunks", () => {
+    const [model] = buildSplitFileViewModels([
+      {
+        path: "new.txt",
+        renamedFrom: "old.txt",
+        status: "R",
+        binary: false,
+        conflict: false,
+        leftText: "a\nb\n",
+        rightText: "a\nb\n",
+      },
+    ]);
+    // Both sides are present, so the entry qualifies as expandable, but the identical
+    // contents leave nothing to pick beyond the "File Renamed" checkbox.
+    assert.equal(isExpandableSplitEntry(model.entry), true);
+    assert.equal(model.hunkGroups.length, 0);
+    assert.equal(model.entry.hunks, undefined);
   });
 
   it("expands deleted text files into a single hunk removing all lines", () => {
