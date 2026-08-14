@@ -77,35 +77,39 @@ test("partial split of a multi-file multi-hunk commit with tri-state checkboxes"
   await expect(hunks).toHaveCount(2);
   const hunk1 = hunks.nth(0);
   const hunk2 = hunks.nth(1);
-  await expect(hunk1.locator("input.splitCheckbox")).toBeChecked();
-  await expect(hunk2.locator("input.splitCheckbox")).toBeChecked();
+  // A .splitHunk contains its own row plus its line rows, so the hunk checkbox
+  // must be scoped to the .splitHunkRow to not match the line checkboxes.
+  const hunk1Checkbox = hunk1.locator(".splitHunkRow input.splitCheckbox");
+  const hunk2Checkbox = hunk2.locator(".splitHunkRow input.splitCheckbox");
+  await expect(hunk1Checkbox).toBeChecked();
+  await expect(hunk2Checkbox).toBeChecked();
 
   // Unchecking a hunk propagates up: the file checkbox becomes indeterminate.
-  await hunk2.locator("input.splitCheckbox").click();
-  await expect(hunk2.locator("input.splitCheckbox")).not.toBeChecked();
-  await expect(hunk1.locator("input.splitCheckbox")).toBeChecked();
+  await hunk2Checkbox.click();
+  await expect(hunk2Checkbox).not.toBeChecked();
+  await expect(hunk1Checkbox).toBeChecked();
   await expect(f1Checkbox).toBeChecked({ indeterminate: true });
 
   // Unchecking a single line propagates up through its hunk to the file.
   const changed1bLine = hunk1.locator(".splitLineRow").filter({ hasText: "changed1b" });
   await changed1bLine.locator("input.splitCheckbox").click();
   await expect(changed1bLine.locator("input.splitCheckbox")).not.toBeChecked();
-  await expect(hunk1.locator("input.splitCheckbox")).toBeChecked({ indeterminate: true });
+  await expect(hunk1Checkbox).toBeChecked({ indeterminate: true });
   await expect(f1Checkbox).toBeChecked({ indeterminate: true });
 
   // Checking an indeterminate hunk propagates down and re-checks its lines.
-  await hunk1.locator("input.splitCheckbox").click();
+  await hunk1Checkbox.click();
   await expect(changed1bLine.locator("input.splitCheckbox")).toBeChecked();
-  await expect(hunk1.locator("input.splitCheckbox")).toBeChecked();
+  await expect(hunk1Checkbox).toBeChecked();
 
   // Checking an indeterminate file propagates down and re-checks its hunks.
   await f1Checkbox.click();
-  await expect(hunk2.locator("input.splitCheckbox")).toBeChecked();
+  await expect(hunk2Checkbox).toBeChecked();
   await expect(f1Checkbox).toBeChecked();
 
   // Final selection for the first commit: only the first hunk of f1.txt.
-  await hunk2.locator("input.splitCheckbox").click();
-  await expect(hunk2.locator("input.splitCheckbox")).not.toBeChecked();
+  await hunk2Checkbox.click();
+  await expect(hunk2Checkbox).not.toBeChecked();
   const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator("input.splitCheckbox");
   await f2Checkbox.click();
   await expect(f2Checkbox).not.toBeChecked();
@@ -130,19 +134,15 @@ test("partial split of a multi-file multi-hunk commit with tri-state checkboxes"
   const child = await changeIdFor(testRepo, "Child");
 
   expect(await diffSummary(testRepo, selected)).toBe("M f1.txt");
-  expect(await diffSummary(testRepo, remaining)).toBe("A f2.txt\nM f1.txt");
+  expect(await diffSummary(testRepo, remaining)).toBe("M f1.txt\nA f2.txt");
 
-  expect(await fileContent(testRepo, selected, "f1.txt")).toBe(
-    "changed1a\nchanged1b\nline3\nline4\nline5\nline6\n",
-  );
+  expect(await fileContent(testRepo, selected, "f1.txt")).toBe("changed1a\nchanged1b\nline3\nline4\nline5\nline6\n");
   expect(await fileContent(testRepo, remaining, "f1.txt")).toBe(
     "changed1a\nchanged1b\nline3\nline4\nchanged5\nline6\n",
   );
 
   // The rebased descendant sees both parts plus its own change.
-  expect(await fileContent(testRepo, child, "f1.txt")).toBe(
-    "changed1a\nchanged1b\nline3\nline4\nchanged5\nline6\n",
-  );
+  expect(await fileContent(testRepo, child, "f1.txt")).toBe("changed1a\nchanged1b\nline3\nline4\nchanged5\nline6\n");
   expect(await fileContent(testRepo, child, "f2.txt")).toBe("added\n");
   expect(await fileContent(testRepo, child, "child.txt")).toBe("child\n");
 });
@@ -273,7 +273,9 @@ test("added, deleted, renamed and conflicted files only offer whole-file checkbo
   await testRepo.writeFile("file1.txt", "C\n");
   await testRepo.writeFile("added.txt", "added\n");
   const leaves = await testRepo.commit("Leaves");
-  await testRepo.jjCommand(["rebase", "-r", leaves, "-d", sideB]);
+  // Rebase with descendants so the working copy stays a child of the split
+  // commit (`-r` would reattach it to the old parent instead).
+  await testRepo.jjCommand(["rebase", "-s", leaves, "-d", sideB]);
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);

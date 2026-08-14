@@ -12,7 +12,7 @@ export function TriStateCheckbox({ state, title, onChange }: Props) {
     <input
       type="checkbox"
       class="splitCheckbox"
-      checked={state !== false}
+      checked={state === true}
       indeterminate={state === "indeterminate"}
       title={title}
       onClick={(e) => e.stopPropagation()}
