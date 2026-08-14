@@ -131,6 +131,7 @@ export type WebviewToExtensionMessage =
   | { command: "restoreRemoteRef"; refType: "bookmark" | "tag"; name: string; remote: string }
   | { command: "describeChange"; changeId: FullChangeId }
   | { command: "absorbChange"; changeId: FullChangeId }
+  | { command: "splitChange"; changeId: FullChangeId }
   | { command: "abandonChange"; changeId: FullChangeId }
   | { command: "abandonChanges"; changeIds: FullChangeId[] }
   | { command: "rebaseOnto"; changeIds: FullChangeId[]; targetChangeId: FullChangeId; withDescendants: boolean }

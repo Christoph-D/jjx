@@ -49,6 +49,9 @@ import {
   getSquashToolConfigs,
   expectSquashToolRequest,
   completeSquashToolRequest,
+  getSplitToolConfigs,
+  expectSplitToolRequest,
+  completeSplitToolRequest,
   consumeEditorSession,
   openRecoveredEditor,
 } from "./jj-editor";
@@ -70,7 +73,12 @@ import type {
   DiffFileEntry,
   FullChangeId,
 } from "./types";
-import type { SplitFileEntry } from "./split/hunk-model";
+import {
+  buildSplitFileEntry,
+  reconstructRightSides,
+  type SplitCheckboxState,
+  type SplitFileEntry,
+} from "./split/hunk-model";
 
 export type {
   FileStatus,
@@ -753,6 +761,96 @@ export class JJRepository {
       completeSquashToolRequest(requestId, true);
     } catch (error) {
       completeSquashToolRequest(requestId, false);
+      throw error;
+    }
+
+    await jjExit;
+  }
+
+  /**
+   * Splits the commit `commitId` into two commits: the changes selected in the Split view
+   * (`state`) go into the first commit and the remainder into the second. The interactive
+   * selection already happened in the webview, so the `jjx-vscode-split` tool phase only
+   * writes the reconstructed right side into the diff tool's directories; without `-m`, jj
+   * afterwards opens the integrated description editors for the resulting commits.
+   *
+   * @param options.commitId - Full commit id of the commit to split, pinning the content the
+   * selection was made against.
+   * @param options.state - Checkbox state confirmed in the Split view.
+   */
+  async splitChange({ commitId, state }: { commitId: string; state: SplitCheckboxState }): Promise<void> {
+    const splitConfigs = getSplitToolConfigs();
+    if (!splitConfigs.length) {
+      throw new Error("Split tool not initialized.");
+    }
+
+    const requestId = crypto.randomUUID();
+    const pathPromise = expectSplitToolRequest(requestId);
+
+    const childProcess = this.spawnJJ(
+      ["split", "-r", commitId, "--tool=jjx-vscode-split", ...splitConfigs.flatMap((c) => ["--config", c])],
+      {
+        timeout: TIMEOUTS.SPLIT_TOOL,
+        cwd: this.repositoryRoot,
+        env: { VSCODE_JJ_SPLIT_REQUEST_ID: requestId },
+      },
+    );
+
+    const jjExit = collectProcessOutput(childProcess)
+      .catch(convertJJErrors)
+      .then(() => {});
+
+    try {
+      // If jj exits before invoking the split tool (e.g. the commit is immutable or was
+      // abandoned meanwhile), surface its error instead of waiting for a tool request forever.
+      const { leftPath, rightPath } = await Promise.race([
+        pathPromise,
+        jjExit.then(() => {
+          throw new Error("jj split finished before the split tool was invoked");
+        }),
+      ]);
+
+      const leftFolderAbsolutePath = path.isAbsolute(leftPath) ? leftPath : path.join(this.repositoryRoot, leftPath);
+      const rightFolderAbsolutePath = path.isAbsolute(rightPath)
+        ? rightPath
+        : path.join(this.repositoryRoot, rightPath);
+
+      const entries = (await this.getSplitFileEntries(commitId)).map((entry) =>
+        buildSplitFileEntry({
+          path: entry.path,
+          status: entry.status,
+          renamedFrom: entry.renamedFrom,
+          binary: entry.binary,
+          conflict: entry.conflict,
+          left: entry.leftBase64 !== undefined ? Buffer.from(entry.leftBase64, "base64") : undefined,
+          right: entry.rightBase64 !== undefined ? Buffer.from(entry.rightBase64, "base64") : undefined,
+        }),
+      );
+      const rightSides = reconstructRightSides(entries, state);
+
+      // The unchecked side is the parent state by construction: start from the left directory
+      // and write the reconstructed right contents on top of it.
+      await fs.rm(rightFolderAbsolutePath, { recursive: true, force: true });
+      await fs.mkdir(rightFolderAbsolutePath, { recursive: true });
+      await fs.cp(leftFolderAbsolutePath, rightFolderAbsolutePath, {
+        recursive: true,
+      });
+      for (const [filePath, content] of rightSides) {
+        const relativePath = (
+          path.isAbsolute(filePath) ? path.relative(this.repositoryRoot, filePath) : filePath
+        ).replace(/\\/g, "/");
+        const target = path.join(rightFolderAbsolutePath, relativePath);
+        // jj creates the diff-edit files read-only, so replace them instead of truncating.
+        await fs.rm(target, { force: true });
+        if (content !== undefined) {
+          await fs.mkdir(path.dirname(target), { recursive: true });
+          await fs.writeFile(target, content);
+        }
+      }
+
+      completeSplitToolRequest(requestId, true);
+    } catch (error) {
+      completeSplitToolRequest(requestId, false);
       throw error;
     }
 

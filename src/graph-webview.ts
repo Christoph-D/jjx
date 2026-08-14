@@ -19,6 +19,7 @@ import { classifyEdges, insertSyntheticNodes, getUniqueEntryId } from "./elided-
 import { logger } from "./logger";
 import { getLogRevset, getElidedVisibleImmutableParents } from "./config";
 import { DEFAULT_LOG_LIMIT } from "./constants";
+import { SplitWebview } from "./split-webview";
 import { toJJUri } from "./uri";
 
 const rootChangeId = "z".repeat(32);
@@ -40,6 +41,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   public selectedNodes: Set<FullChangeId> = new Set();
   private currentChanges: ChangeNode[] = [];
   private elideOverride: boolean | null = null;
+  private readonly splitWebview: SplitWebview;
 
   private _onDidChangeSelection = new vscode.EventEmitter<GraphSelection[]>();
   readonly onDidChangeSelection: vscode.Event<GraphSelection[]> = this._onDidChangeSelection.event;
@@ -51,6 +53,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     private readonly jjBinaryNotFound: boolean,
   ) {
     this.repository = repo;
+    this.splitWebview = new SplitWebview(extensionUri);
 
     // Register the webview provider
     context.subscriptions.push(
@@ -406,6 +409,20 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             }
           });
           break;
+        case "splitChange": {
+          const change = this.findRegularChange(message.changeId);
+          if (!change) {
+            break;
+          }
+          await this.withRefresh("split change", async () => {
+            const state = await this.splitWebview.selectChanges(repo, change.commitId);
+            if (!state) {
+              return;
+            }
+            await repo.splitChange({ commitId: change.commitId, state });
+          });
+          break;
+        }
         case "abandonChange": {
           const change = this.findRegularChange(message.changeId);
           const fullDescription = change ? change.fullDescription : "";

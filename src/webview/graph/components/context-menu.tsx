@@ -92,6 +92,18 @@ export function ContextMenu() {
         Copy Change ID
       </MenuItem>
       <MenuSeparator />
+      {!change.isEmpty && (
+        <MenuItem
+          action="split"
+          title="Split This Change"
+          onClick={() => {
+            postMessage({ command: "splitChange", changeId: change.id.changeId });
+            contextMenu.value = null;
+          }}
+        >
+          Split...{immutableIcon}
+        </MenuItem>
+      )}
       <MenuItem
         action="absorb"
         onClick={() => {
