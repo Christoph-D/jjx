@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.12.6
+
+### Bug Fixes
+
+- **Delete untracked directories recursively** - Deleting an untracked directory from the SCM view now removes it and
+  its contents recursively (after confirmation)
+
 ## 1.12.5
 
 ### New Features
