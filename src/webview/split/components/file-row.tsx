@@ -32,6 +32,21 @@ function lineText(text: string): string {
   return text.replace(/(?:\r\n|\r|\n)$/, "");
 }
 
+/** Mouse movement (in px) beyond this between mousedown and click counts as a drag selection. */
+const DRAG_THRESHOLD = 3;
+
+/** Where the mouse was pressed last, used to tell drag selections apart from clicks. */
+let lastPointerDown: { x: number; y: number } | undefined;
+
+function wasDragSelection(e: MouseEvent): boolean {
+  const down = lastPointerDown;
+  lastPointerDown = undefined;
+  return (
+    down !== undefined &&
+    (Math.abs(e.clientX - down.x) > DRAG_THRESHOLD || Math.abs(e.clientY - down.y) > DRAG_THRESHOLD)
+  );
+}
+
 function lineCount(count: number): string {
   return `${count} ${count === 1 ? "line" : "lines"}`;
 }
@@ -128,11 +143,17 @@ function LineRow({ path, line }: { path: string; line: SplitLine }) {
     <div
       class={`splitRow splitLineRow ${added ? "splitLineAdded" : "splitLineRemoved"}${checked ? "" : " splitUnchecked"}`}
       title={checked ? "Exclude line" : "Include line"}
-      onClick={() => {
-        // Ignore clicks that end a text selection so copying line text keeps working.
-        if (window.getSelection()?.toString()) {
+      onMouseDown={(e) => {
+        lastPointerDown = { x: e.clientX, y: e.clientY };
+      }}
+      onClick={(e) => {
+        // Ignore clicks that end a drag selection so copying line text keeps working.
+        if (wasDragSelection(e)) {
           return;
         }
+        // Double/triple clicks select a word/line incidentally; drop such (possibly stale)
+        // selections so rapid clicks always toggle the line.
+        window.getSelection()?.removeAllRanges();
         toggleLineChecked(path, line);
       }}
     >
