@@ -31,6 +31,17 @@ export function App() {
   return (
     <div class="splitRoot">
       <div class="splitHeader">
+        <div class="splitHeaderButtons">
+          <button
+            class="splitButton splitPrimaryButton"
+            onClick={() => postMessage({ command: "split", state: checkState.value })}
+          >
+            Split
+          </button>
+          <button class="splitButton" onClick={() => postMessage({ command: "cancel" })}>
+            Cancel
+          </button>
+        </div>
         <div class="splitHeaderInfo">
           {info && (
             <>
@@ -38,17 +49,6 @@ export function App() {
               <span class="splitHeaderDescription">{info.descriptionFirstLine}</span>
             </>
           )}
-        </div>
-        <div class="splitHeaderButtons">
-          <button class="splitButton" onClick={() => postMessage({ command: "cancel" })}>
-            Cancel
-          </button>
-          <button
-            class="splitButton splitPrimaryButton"
-            onClick={() => postMessage({ command: "split", state: checkState.value })}
-          >
-            Split
-          </button>
         </div>
       </div>
       <div class="splitContent">
