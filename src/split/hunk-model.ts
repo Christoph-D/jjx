@@ -13,6 +13,7 @@ export interface SplitHunk {
 }
 
 export interface SplitFileEntry {
+  // Repository-relative path with "/" separators; doubles as the key in SplitCheckboxState.
   path: string;
   renamedFrom?: string;
   status: FileStatusType;

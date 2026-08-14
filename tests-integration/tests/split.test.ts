@@ -31,7 +31,7 @@ async function openSplitView(workbox: Page, graphFrame: Frame, node: Locator): P
 
 /** The whole split view row (header plus hunk list) of the file `path`. */
 function splitFileRow(frame: Frame, path: string): Locator {
-  // The split view shows repository-absolute paths; match the repo-relative suffix.
+  // The split view shows repository-relative paths.
   const pattern = new RegExp(`(?:^|/)${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
   return frame.locator(".splitFile").filter({ has: frame.locator(".splitPath", { hasText: pattern }) });
 }

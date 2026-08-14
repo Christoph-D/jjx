@@ -1788,7 +1788,7 @@ export class JJRepository {
       );
       return {
         status: fileStatus.type,
-        path: fileStatus.path,
+        path: relativePath,
         renamedFrom,
         binary,
         conflict: conflictedPaths.has(normalizePath(fileStatus.path)),
