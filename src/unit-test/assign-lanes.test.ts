@@ -12,6 +12,7 @@ function makeEntry(change_id: string, parents: string[] | ParentRef[], overrides
     change_id,
     change_id_short: change_id.slice(0, 8),
     change_id_shortest: change_id.slice(0, 4),
+    commit_id: "c" + change_id,
     commit_id_short: "c" + change_id.slice(0, 7),
     immutable: false,
     mine: true,

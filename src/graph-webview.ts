@@ -936,6 +936,7 @@ function parseJJLogJson(
         changeOffset: changeOffset,
       },
       label: formattedLine,
+      commitId: entry.commit_id,
       description: formattedDescription,
       tooltip: entry.change_id,
       currentWorkingCopy: entry.current_working_copy,

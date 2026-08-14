@@ -242,6 +242,7 @@ const LOG_ENTRY_FIELDS: TemplateFields = {
   change_id: { type: "string", expr: "change_id" },
   change_id_short: { type: "string", expr: "change_id.short(8)" },
   change_id_shortest: { type: "string", expr: "change_id.shortest()" },
+  commit_id: { type: "string", expr: "commit_id" },
   commit_id_short: { type: "string", expr: "commit_id.short(8)" },
   committer: {
     type: "dict",

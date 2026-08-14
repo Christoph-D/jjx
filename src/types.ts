@@ -69,6 +69,7 @@ export interface LogEntry {
   change_id: string;
   change_id_short: string;
   change_id_shortest: string;
+  commit_id: string;
   commit_id_short: string;
   immutable: boolean;
   mine: boolean;

@@ -33,6 +33,9 @@ export interface ElidedChangeNode extends ChangeNodeBase {
 
 export interface RegularChangeNode extends ChangeNodeBase {
   id: ChangeId;
+  // Full commit id of the commit this node was created from. Immutable
+  // content address that stays valid even if the change is rewritten.
+  commitId: string;
   label: string;
   description: string;
   tooltip: string;
