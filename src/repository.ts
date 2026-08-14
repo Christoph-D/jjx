@@ -69,8 +69,8 @@ import type {
   Operation,
   DiffFileEntry,
   FullChangeId,
-  SplitFileEntry,
 } from "./types";
+import type { SplitFileEntry } from "./split/hunk-model";
 
 export type {
   FileStatus,

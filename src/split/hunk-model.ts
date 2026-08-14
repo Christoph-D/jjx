@@ -21,6 +21,12 @@ export interface SplitFileEntry {
   hunks?: SplitHunk[];
   leftBase64?: string;
   rightBase64?: string;
+  // Decoded left text, ready for hunk splitting; undefined for binary files
+  // and files absent on the left side.
+  leftText?: string;
+  // Decoded right text, ready for hunk splitting; undefined for binary files
+  // and files absent on the right side.
+  rightText?: string;
 }
 
 /** Checkbox state of a row: checked, unchecked, or mixed ("indeterminate"). */

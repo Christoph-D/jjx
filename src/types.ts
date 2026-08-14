@@ -31,35 +31,6 @@ export type FileStatus = {
   renamedFrom?: string;
 };
 
-/**
- * Per-file diff data of a commit for the Split view: the file's status in the
- * commit's diff plus the base64-encoded left (parent) and right (commit)
- * contents captured via the `jjx-vscode-diff` diff tool.
- */
-export interface SplitFileEntry {
-  status: FileStatusType;
-  // Absolute path of the file on the right side of the diff
-  // (the post-rename path for renames/copies).
-  path: string;
-  // Repo-relative source path, set for renames (`R`) and copies (`C`).
-  renamedFrom?: string;
-  // True when either side's content is not decodable UTF-8 text.
-  binary: boolean;
-  // True when the file is conflicted in the commit; both sides then contain
-  // jj's materialized conflict markers.
-  conflict: boolean;
-  // Base64-encoded left (parent) content; undefined when the file was added.
-  leftBase64?: string;
-  // Base64-encoded right (commit) content; undefined when the file was deleted.
-  rightBase64?: string;
-  // Decoded left text, ready for hunk splitting; undefined for binary files
-  // and files absent on the left side.
-  leftText?: string;
-  // Decoded right text, ready for hunk splitting; undefined for binary files
-  // and files absent on the right side.
-  rightText?: string;
-}
-
 export interface Change {
   changeId: ChangeId;
   commitId: string;
