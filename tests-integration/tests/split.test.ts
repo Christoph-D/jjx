@@ -110,7 +110,7 @@ test("partial split of a multi-file multi-hunk commit with tri-state checkboxes"
   // Final selection for the first commit: only the first hunk of f1.txt.
   await hunk2Checkbox.click();
   await expect(hunk2Checkbox).not.toBeChecked();
-  const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator("input.splitCheckbox");
+  const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator(".splitFileRow input.splitCheckbox");
   await f2Checkbox.click();
   await expect(f2Checkbox).not.toBeChecked();
 
@@ -160,7 +160,7 @@ test("split with nothing selected creates an empty first commit", async ({ graph
   await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
 
   for (const path of ["a.txt", "b.txt"]) {
-    const checkbox = splitFileRow(splitFrame, path).locator("input.splitCheckbox");
+    const checkbox = splitFileRow(splitFrame, path).locator(".splitFileRow input.splitCheckbox");
     await checkbox.click();
     await expect(checkbox).not.toBeChecked();
   }
@@ -237,7 +237,7 @@ test("cancelling the split view leaves the repository unchanged", async ({ graph
   await expect(splitTab).toBeVisible();
 
   // Toggling the selection must not matter when cancelling.
-  const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator("input.splitCheckbox");
+  const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator(".splitFileRow input.splitCheckbox");
   await f2Checkbox.click();
   await expect(f2Checkbox).not.toBeChecked();
 
@@ -359,11 +359,7 @@ test("closing the split view and discarding leaves the repository unchanged", as
   await expect(nodes).toHaveCount(4);
 });
 
-test("added, renamed and conflicted files only offer whole-file checkboxes", async ({
-  graphFrame,
-  testRepo,
-  workbox,
-}) => {
+test("renamed and conflicted files only offer whole-file checkboxes", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.writeFile("doomed.txt", "d1\nd2\n");
   await testRepo.writeFile("old.txt", "r1\nr2\nr3\n");
   await testRepo.writeFile("file1.txt", "A\n");
@@ -393,7 +389,8 @@ test("added, renamed and conflicted files only offer whole-file checkboxes", asy
   // None of the leaves is expandable: no chevron, no hunks, just a whole-file checkbox.
   // doomed.txt is deleted text, so it expands into a "File Deleted" checkbox plus one
   // full-removal hunk instead; its deletion stays selected and lands in the first commit.
-  for (const path of ["added.txt", "file1.txt", "new.txt"]) {
+  // added.txt is added text, so it expands into a single hunk adding all of its lines.
+  for (const path of ["file1.txt", "new.txt"]) {
     const row = splitFileRow(splitFrame, path);
     await expect(row.locator(".splitFileRow")).not.toHaveClass(/splitExpandable/);
     await expect(row.locator(".splitHunk")).toHaveCount(0);
@@ -407,11 +404,18 @@ test("added, renamed and conflicted files only offer whole-file checkboxes", asy
   await expect(doomedRow.locator(".splitHunk")).toHaveCount(1);
   await expect(doomedRow.locator(".splitLineRow")).toHaveCount(2);
 
+  const addedRow = splitFileRow(splitFrame, "added.txt");
+  await expect(addedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  await expect(addedRow.locator(".splitHunk")).toHaveCount(1);
+  await expect(addedRow.locator(".splitHunkHeader")).toHaveText("@@ +1 -0");
+  await expect(addedRow.locator(".splitLineRow")).toHaveCount(1);
+  await expect(addedRow.locator(".splitLineRow")).toContainText("added");
+
   await expect(splitFileRow(splitFrame, "file1.txt").locator(".splitConflict")).toContainText("conflicted");
   await expect(splitFileRow(splitFrame, "new.txt").locator(".splitLeafDetail")).toContainText("← old.txt");
 
   // Split off the added file; conflict, rename and deletion stay in the first commit.
-  const addedCheckbox = splitFileRow(splitFrame, "added.txt").locator("input.splitCheckbox");
+  const addedCheckbox = splitFileRow(splitFrame, "added.txt").locator(".splitFileRow input.splitCheckbox");
   await addedCheckbox.click();
   await expect(addedCheckbox).not.toBeChecked();
 
@@ -502,4 +506,71 @@ test("deleted text files split their deletion via the File Deleted checkbox", as
   expect(await diffSummary(testRepo, keepAdd)).toBe("A keep.txt");
   expect(await fileContent(testRepo, keepAdd, "doomed.txt")).toBe("d1\nd2\nd3\n");
   expect(await diffSummary(testRepo, keepDeletion)).toBe("D doomed.txt");
+});
+
+test("added text files split their addition via a full-addition hunk", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("base.txt", "base\n", "Base");
+  await testRepo.writeFile("keep.txt", "kept\n");
+  await testRepo.writeFile("new.txt", "n1\nn2\nn3\n");
+  await testRepo.commit("Split me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+  // The added file shows a single hunk adding all of its lines.
+  const newRow = splitFileRow(splitFrame, "new.txt");
+  await expect(newRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  const fileCheckbox = newRow.locator(".splitFileRow input.splitCheckbox");
+  await expect(fileCheckbox).toBeChecked();
+
+  const hunk = newRow.locator(".splitHunk");
+  await expect(hunk).toHaveCount(1);
+  await expect(hunk.locator(".splitHunkHeader")).toHaveText("@@ +3 -0");
+  const hunkCheckbox = hunk.locator(".splitHunkRow input.splitCheckbox");
+  await expect(hunkCheckbox).toBeChecked();
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(3);
+  await expect(hunk.locator(".splitLineRow").first()).toContainText("n1");
+
+  // Unchecking the file unchecks the full hunk with it.
+  await fileCheckbox.click();
+  await expect(fileCheckbox).not.toBeChecked();
+  await expect(hunkCheckbox).not.toBeChecked();
+
+  // Re-checking the hunk re-checks the file: the two cannot diverge.
+  await hunkCheckbox.click();
+  await expect(hunkCheckbox).toBeChecked();
+  await expect(fileCheckbox).toBeChecked();
+
+  // Keep the first line of the addition out of the first commit.
+  const n1Line = hunk.locator(".splitLineRow").filter({ hasText: "n1" });
+  await n1Line.locator("input.splitCheckbox").click();
+  await expect(n1Line.locator("input.splitCheckbox")).not.toBeChecked();
+  await expect(hunkCheckbox).toBeChecked({ indeterminate: true });
+  await expect(fileCheckbox).toBeChecked({ indeterminate: true });
+
+  await splitFrame.locator(".splitPrimaryButton").click();
+
+  await handleEditor(workbox, "", "Keep all but n1");
+  await handleEditor(workbox, "", "Add n1");
+
+  await expect(nodes).toHaveCount(5);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "Keep all but n1")).toEqual(["Base"]);
+    expect(getParents(logEntries, "Add n1")).toEqual(["Keep all but n1"]);
+    expect(getParents(logEntries, "@")).toEqual(["Add n1"]);
+  }).toPass();
+
+  const withoutN1 = await changeIdFor(testRepo, "Keep all but n1");
+  const withN1 = await changeIdFor(testRepo, "Add n1");
+
+  // The first commit adds keep.txt and new.txt without its first line; the second completes new.txt.
+  expect(await diffSummary(testRepo, withoutN1)).toBe("A keep.txt\nA new.txt");
+  expect(await fileContent(testRepo, withoutN1, "new.txt")).toBe("n2\nn3\n");
+  expect(await diffSummary(testRepo, withN1)).toBe("M new.txt");
+  expect(await fileContent(testRepo, withN1, "new.txt")).toBe("n1\nn2\nn3\n");
 });

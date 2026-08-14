@@ -17,16 +17,20 @@ export interface SplitFileViewModel {
   contextCounts: number[];
 }
 
-/** True for text files that get a hunk breakdown: modified files (see decisions 4 & 5 in #23) and deleted files. */
+/** True for text files that get a hunk breakdown: modified files (see decisions 4 & 5 in #23), added files, and deleted files. */
 export function isExpandableSplitEntry(entry: SplitViewFileEntry): boolean {
-  if (entry.binary || entry.conflict || entry.leftText === undefined) {
+  if (entry.binary || entry.conflict) {
     return false;
   }
   if (entry.status === "M") {
-    return entry.rightText !== undefined;
+    return entry.leftText !== undefined && entry.rightText !== undefined;
   }
-  // A deleted file has no right side; it expands into a single hunk removing every left-side line.
-  return entry.status === "D" && entry.rightText === undefined;
+  if (entry.status === "D") {
+    // A deleted file has no right side; it expands into a single hunk removing every left-side line.
+    return entry.leftText !== undefined && entry.rightText === undefined;
+  }
+  // An added file has no left side; it expands into a single hunk adding every right-side line.
+  return entry.status === "A" && entry.leftText === undefined && entry.rightText !== undefined;
 }
 
 export function buildSplitFileViewModels(entries: readonly SplitViewFileEntry[]): SplitFileViewModel[] {
@@ -37,8 +41,9 @@ function buildSplitFileViewModel(entry: SplitViewFileEntry): SplitFileViewModel 
   if (!isExpandableSplitEntry(entry)) {
     return { entry, hunkGroups: [], contextCounts: [] };
   }
-  // A deleted file is diffed against an empty right side, which removes every left-side line.
-  const { hunkGroups, contextCounts } = buildHunkGroups(entry.leftText!, entry.rightText ?? "");
+  // A deleted file is diffed against an empty right side (removing every left-side line) and
+  // an added file against an empty left side (adding every right-side line).
+  const { hunkGroups, contextCounts } = buildHunkGroups(entry.leftText ?? "", entry.rightText ?? "");
   if (hunkGroups.length === 0) {
     return { entry, hunkGroups: [], contextCounts: [] };
   }

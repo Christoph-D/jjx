@@ -165,11 +165,11 @@ describe("buildSplitFileEntry Test Suite", () => {
     assert.equal(entry.rightBase64, Buffer.from("b\n", "utf8").toString("base64"));
   });
 
-  it("falls back to whole-file contents for add, binary delete, rename, binary, and conflict leaves", () => {
-    const added = buildSplitFileEntry({ path: "new.txt", status: "A", right: Buffer.from("a\n") });
-    assert.equal(added.hunks, undefined);
-    assert.equal(added.leftBase64, undefined);
-    assert.equal(added.rightBase64, Buffer.from("a\n").toString("base64"));
+  it("falls back to whole-file contents for empty add, binary delete, rename, binary, and conflict leaves", () => {
+    const addedEmpty = buildSplitFileEntry({ path: "added-empty.txt", status: "A", right: Buffer.from("") });
+    assert.equal(addedEmpty.hunks, undefined);
+    assert.equal(addedEmpty.leftBase64, undefined);
+    assert.equal(addedEmpty.rightBase64, Buffer.from("").toString("base64"));
 
     const deletedBinary = buildSplitFileEntry({
       path: "old.dat",
@@ -226,6 +226,19 @@ describe("buildSplitFileEntry Test Suite", () => {
       ],
     );
   });
+
+  it("builds a single full-addition hunk for added text files", () => {
+    const added = buildSplitFileEntry({ path: "new.txt", status: "A", right: Buffer.from("a\nb\n") });
+    assert.equal(added.leftBase64, undefined);
+    assert.equal(added.hunks?.length, 1);
+    assert.deepEqual(
+      added.hunks[0].lines.map((l) => [l.kind, l.newLine, l.text]),
+      [
+        ["add", 1, "a\n"],
+        ["add", 2, "b\n"],
+      ],
+    );
+  });
 });
 
 describe("tri-state Test Suite", () => {
@@ -260,7 +273,13 @@ describe("tri-state Test Suite", () => {
   });
 
   it("derives leaf rows from the whole-file state", () => {
-    const entry = buildSplitFileEntry({ path: "new.txt", status: "A", right: Buffer.from("a\n") });
+    const entry = buildSplitFileEntry({
+      path: "renamed-to.txt",
+      renamedFrom: "renamed-from.txt",
+      status: "R",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("a\n"),
+    });
     const state = createSplitCheckboxState();
     assert.equal(getFileCheckState(entry, state), true);
     setFileChecked(entry.path, state, false);
@@ -280,6 +299,21 @@ describe("tri-state Test Suite", () => {
     setHunkChecked(deleted.path, deleted.hunks![0], state, true);
     assert.equal(getHunkCheckState(deleted.path, deleted.hunks![0], state), true);
     assert.equal(getFileCheckState(deleted, state), true);
+  });
+
+  it("keeps the whole-file state and the full-addition hunk of an added file in sync", () => {
+    const added = buildSplitFileEntry({ path: "new.txt", status: "A", right: Buffer.from("a\nb\n") });
+    const state = createSplitCheckboxState();
+    assert.equal(getFileCheckState(added, state), true);
+    assert.equal(getHunkCheckState(added.path, added.hunks![0], state), true);
+
+    setFileChecked(added.path, state, false);
+    assert.equal(getFileCheckState(added, state), false);
+    assert.equal(getHunkCheckState(added.path, added.hunks![0], state), false);
+
+    setHunkChecked(added.path, added.hunks![0], state, true);
+    assert.equal(getHunkCheckState(added.path, added.hunks![0], state), true);
+    assert.equal(getFileCheckState(added, state), true);
   });
 
   it("lets the whole-file state win over line states", () => {
@@ -437,6 +471,35 @@ describe("reconstructRightSides Test Suite", () => {
     assert.deepEqual(reconstructRightSides([deleted], state).get("old.txt"), Buffer.from("b\n", "utf8"));
   });
 
+  it("reconstructs added text files with the addition applied only when selected", () => {
+    const added = buildSplitFileEntry({ path: "new.txt", status: "A", right: Buffer.from("a\nb\n") });
+
+    // Default (checked): the whole file goes into the first commit.
+    assert.deepEqual(
+      reconstructRightSides([added], createSplitCheckboxState()).get("new.txt"),
+      Buffer.from("a\nb\n", "utf8"),
+    );
+
+    // Unchecking the whole file keeps it out of the first commit.
+    let state = createSplitCheckboxState();
+    setFileChecked("new.txt", state, false);
+    assert.equal(reconstructRightSides([added], state).get("new.txt"), undefined);
+
+    // Unchecking the full-addition hunk also keeps the file out.
+    state = createSplitCheckboxState();
+    setHunkChecked("new.txt", added.hunks![0], state, false);
+    assert.equal(reconstructRightSides([added], state).get("new.txt"), undefined);
+
+    // Re-checking the hunk adds the whole file again.
+    setHunkChecked("new.txt", added.hunks![0], state, true);
+    assert.deepEqual(reconstructRightSides([added], state).get("new.txt"), Buffer.from("a\nb\n", "utf8"));
+
+    // A partially unchecked hunk adds only the selected lines.
+    state = createSplitCheckboxState();
+    setLineChecked("new.txt", added.hunks![0].lines[0], state, false);
+    assert.deepEqual(reconstructRightSides([added], state).get("new.txt"), Buffer.from("b\n", "utf8"));
+  });
+
   it("preserves CRLF line endings", () => {
     const entry = textEntry("f.txt", "a\r\nb\r\nc\r\n", "a\r\nX\r\nc\r\n");
     const state = createSplitCheckboxState();
@@ -480,8 +543,8 @@ describe("reconstructRightSides Test Suite", () => {
     );
   });
 
-  it("reconstructs added, deleted, renamed, and binary leaves via whole-file state", () => {
-    const added = buildSplitFileEntry({ path: "added.txt", status: "A", right: Buffer.from("a\n") });
+  it("reconstructs empty-add, deleted, renamed, and binary leaves via whole-file state", () => {
+    const added = buildSplitFileEntry({ path: "added.txt", status: "A", right: Buffer.from("") });
     const deleted = buildSplitFileEntry({ path: "deleted.txt", status: "D", left: Buffer.from("a\n") });
     const renamed = buildSplitFileEntry({
       path: "renamed-to.txt",
@@ -500,7 +563,7 @@ describe("reconstructRightSides Test Suite", () => {
 
     let state = createSplitCheckboxState();
     let result = reconstructRightSides([added, deleted, renamed, binary], state);
-    assert.deepEqual(result.get("added.txt"), Buffer.from("a\n"));
+    assert.deepEqual(result.get("added.txt"), Buffer.from(""));
     assert.deepEqual(result.get("deleted.txt"), undefined);
     assert.deepEqual(result.get("renamed-from.txt"), undefined); // rename applied: old name gone
     assert.deepEqual(result.get("renamed-to.txt"), Buffer.from("b\n"));

@@ -105,9 +105,9 @@ export function buildSplitHunks(left: string, right: string): SplitHunk[] {
 }
 
 /**
- * Builds a file entry from whole-file contents. Modified and deleted non-binary, non-conflict text
- * files get a hunk model; everything else (added/renamed/binary/conflict leaves) keeps whole-file
- * contents only.
+ * Builds a file entry from whole-file contents. Modified, added, and deleted non-binary,
+ * non-conflict text files get a hunk model; everything else (renamed/binary/conflict leaves)
+ * keeps whole-file contents only.
  */
 export function buildSplitFileEntry(options: {
   path: string;
@@ -129,13 +129,20 @@ export function buildSplitFileEntry(options: {
     leftBase64: options.left?.toString("base64"),
     rightBase64: options.right?.toString("base64"),
   };
-  if (!binary && !conflict && options.left !== undefined) {
-    if (options.status === "M" && options.right !== undefined) {
+  if (!binary && !conflict) {
+    if (options.status === "M" && options.left !== undefined && options.right !== undefined) {
       entry.hunks = buildSplitHunks(options.left.toString("utf8"), options.right.toString("utf8"));
-    } else if (options.status === "D") {
+    } else if (options.status === "D" && options.left !== undefined) {
       // Diffing against an empty right side yields a single hunk removing every left-side line.
       // Empty left content stays a whole-file leaf so an empty deleted file reconstructs as absent.
       const hunks = buildSplitHunks(options.left.toString("utf8"), "");
+      if (hunks.length > 0) {
+        entry.hunks = hunks;
+      }
+    } else if (options.status === "A" && options.right !== undefined) {
+      // Diffing against an empty left side yields a single hunk adding every right-side line.
+      // Empty right content stays a whole-file leaf so an empty added file reconstructs as empty.
+      const hunks = buildSplitHunks("", options.right.toString("utf8"));
       if (hunks.length > 0) {
         entry.hunks = hunks;
       }
@@ -244,8 +251,9 @@ function reconstructEntry(
     // Per-line entries win over the file-level entry, so hunk-model files are always
     // reconstructed line by line; lines without an entry fall back to the file-level state.
     const content = reconstructHunkModel(entry, state);
-    // A deleted file whose lines are all removed is absent, not emptied.
-    result.set(path, entry.status === "D" && content.length === 0 ? undefined : content);
+    // A deleted file whose lines are all removed, and an added file whose lines are all
+    // excluded, are absent — not emptied — on the reconstructed right side.
+    result.set(path, (entry.status === "D" || entry.status === "A") && content.length === 0 ? undefined : content);
     return;
   }
 
