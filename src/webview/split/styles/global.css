@@ -145,6 +145,16 @@ body {
 }
 
 .splitHunkRow {
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+}
+
+.splitHunkRow:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.splitHunkRow .codicon {
+  font-size: 14px;
   color: var(--vscode-descriptionForeground);
 }
 

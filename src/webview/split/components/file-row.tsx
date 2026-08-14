@@ -5,10 +5,13 @@ import { getFileCheckState, getHunkCheckState, getLineChecked, splitFileLines } 
 import type { SplitLine } from "../../../split/hunk-model";
 import {
   checkState,
+  collapsedHunks,
   expandedFiles,
+  hunkKey,
   setFileCheckState,
   setHunkCheckState,
   toggleFileExpanded,
+  toggleHunkCollapsed,
   toggleLineChecked,
 } from "../signals";
 import type { SplitFileViewModel, SplitHunkGroup } from "../view-model";
@@ -99,9 +102,11 @@ function ContextSeparator({ count }: { count: number }) {
 
 function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; index: number }) {
   const hunkState = getHunkCheckState(path, group.hunk, checkState.value);
+  const collapsed = collapsedHunks.value.has(hunkKey(path, index));
   return (
     <div class="splitHunk">
-      <div class="splitRow splitHunkRow">
+      <div class="splitRow splitHunkRow" title="Collapse/expand hunk" onClick={() => toggleHunkCollapsed(path, index)}>
+        <i class={collapsed ? "codicon codicon-chevron-right" : "codicon codicon-chevron-down"} />
         <TriStateCheckbox
           state={hunkState}
           title={`Hunk ${index + 1}`}
@@ -111,9 +116,7 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
           @@ <span class="splitAdded">+{group.addedCount}</span> <span class="splitRemoved">-{group.removedCount}</span>
         </span>
       </div>
-      {group.hunk.lines.map((line, lineIndex) => (
-        <LineRow key={lineIndex} path={path} line={line} />
-      ))}
+      {!collapsed && group.hunk.lines.map((line, lineIndex) => <LineRow key={lineIndex} path={path} line={line} />)}
     </div>
   );
 }

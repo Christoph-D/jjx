@@ -42,6 +42,10 @@ export const metadata = signal<SplitCommitMetadata | null>(null);
 export const checkState = signal<SplitCheckboxState>(createSplitCheckboxState());
 export const expandedFiles = signal<Set<string>>(new Set());
 
+// Hunks are expanded by default (unlike files, which track the expanded set), so
+// only the collapsed ones are tracked here. Keyed by `hunkKey`.
+export const collapsedHunks = signal<Set<string>>(new Set());
+
 export function toggleFileExpanded(path: string): void {
   const next = new Set(expandedFiles.value);
   if (next.has(path)) {
@@ -50,6 +54,21 @@ export function toggleFileExpanded(path: string): void {
     next.add(path);
   }
   expandedFiles.value = next;
+}
+
+export function hunkKey(path: string, index: number): string {
+  return `${path}:${index}`;
+}
+
+export function toggleHunkCollapsed(path: string, index: number): void {
+  const key = hunkKey(path, index);
+  const next = new Set(collapsedHunks.value);
+  if (next.has(key)) {
+    next.delete(key);
+  } else {
+    next.add(key);
+  }
+  collapsedHunks.value = next;
 }
 
 /** Reassigns the signal with a shallow clone so mutations become visible to subscribers. */
