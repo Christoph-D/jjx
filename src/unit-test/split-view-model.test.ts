@@ -81,6 +81,35 @@ describe("buildSplitFileViewModels Test Suite", () => {
     assert.deepEqual(model.entry.hunks, buildSplitHunks("a\nb\nc\n", "a\nB\nc\n"));
   });
 
+  it("pairs a modified line of a renamed file into a single hunk group", () => {
+    // One changed line ("5346" → "53465") with the old line repeating after it: the split view
+    // must show one del/add hunk, not an addition and a deletion separated by context.
+    const leftText = "34\n6546\n5\n346\n5\n56\n6546\n36\n5346\n5346\n5\n346\n53\n46\n534\n65\n4\n6\n";
+    const rightText = leftText.replace("5346\n5346\n5\n", "53465\n5346\n5\n");
+    const [model] = buildSplitFileViewModels([
+      {
+        path: "test-renamed.txt",
+        renamedFrom: "test.txt",
+        status: "R",
+        binary: false,
+        conflict: false,
+        leftText,
+        rightText,
+      },
+    ]);
+    assert.equal(model.hunkGroups.length, 1);
+    assert.deepEqual(model.contextCounts, [8, 9]);
+    assert.equal(model.hunkGroups[0].removedCount, 1);
+    assert.equal(model.hunkGroups[0].addedCount, 1);
+    assert.deepEqual(
+      model.hunkGroups[0].hunk.lines.map((l) => [l.kind, l.text]),
+      [
+        ["del", "5346\n"],
+        ["add", "53465\n"],
+      ],
+    );
+  });
+
   it("keeps pure renames as leaves with a rename but no content hunks", () => {
     const [model] = buildSplitFileViewModels([
       {

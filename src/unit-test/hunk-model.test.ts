@@ -133,6 +133,47 @@ describe("buildSplitHunks Test Suite", () => {
     );
   });
 
+  it("pairs a modified line surrounded by equal lines into one hunk", () => {
+    // The differ pairs the second "5346" with the new side's "5346", splitting the single
+    // modification into an addition and a deletion around an unchanged line; the split view
+    // slides them together like git's diff does (issue: renamed file with a non-empty diff).
+    const left = "34\n6546\n5\n346\n5\n56\n6546\n36\n5346\n5346\n5\n346\n53\n46\n534\n65\n4\n6\n";
+    const right = left.replace("5346\n5346\n5\n", "53465\n5346\n5\n");
+    const hunks = buildSplitHunks(left, right);
+    assert.equal(hunks.length, 1);
+    assert.deepEqual(
+      hunks[0].lines.map((l) => [l.kind, l.oldLine, l.newLine, l.text]),
+      [
+        ["del", 9, undefined, "5346\n"],
+        ["add", undefined, 9, "53465\n"],
+      ],
+    );
+  });
+
+  it("pairs a deletion and an addition around a re-pairable unchanged line", () => {
+    // The deletion of the second "b" and the addition of the second "c" stay apart in the
+    // differ's pairing; the unchanged "c" between them lets them slide together.
+    const hunks = buildSplitHunks("a\nb\nb\nc\n", "a\nb\nc\nc\n");
+    assert.equal(hunks.length, 1);
+    assert.deepEqual(
+      hunks[0].lines.map((l) => [l.kind, l.oldLine, l.newLine, l.text]),
+      [
+        ["del", 3, undefined, "b\n"],
+        ["add", undefined, 3, "c\n"],
+      ],
+    );
+  });
+
+  it("keeps changed lines apart when no unchanged line re-pairs them", () => {
+    // The deleted "x" and the added "y" cannot slide through the unchanged "b" between them.
+    const hunks = buildSplitHunks("a\nx\nx\nb\n", "a\nx\nb\ny\n");
+    assert.equal(hunks.length, 2);
+    assert.deepEqual(
+      hunks.map((hunk) => hunk.lines.map((l) => [l.kind, l.oldLine, l.newLine, l.text])),
+      [[["del", 3, undefined, "x\n"]], [["add", undefined, 4, "y\n"]]],
+    );
+  });
+
   it("handles empty left or right content", () => {
     assert.deepEqual(
       buildSplitHunks("", "a\nb\n").map((h) => h.lines.map((l) => [l.kind, l.newLine])),
@@ -262,6 +303,36 @@ describe("buildSplitFileEntry Test Suite", () => {
         [["add", "X\n"]],
       ],
     );
+  });
+
+  it("pairs a modified line of a renamed file into a single hunk", () => {
+    // Rename test.txt → test-renamed.txt with one changed line ("5346" → "53465") where the
+    // old line repeats right after; the modification must show up as one del/add hunk.
+    const left = "34\n6546\n5\n346\n5\n56\n6546\n36\n5346\n5346\n5\n346\n53\n46\n534\n65\n4\n6\n";
+    const right = left.replace("5346\n5346\n5\n", "53465\n5346\n5\n");
+    const renamed = buildSplitFileEntry({
+      path: "test-renamed.txt",
+      renamedFrom: "test.txt",
+      status: "R",
+      left: Buffer.from(left, "utf8"),
+      right: Buffer.from(right, "utf8"),
+    });
+    assert.equal(renamed.hunks?.length, 1);
+    assert.deepEqual(
+      renamed.hunks[0].lines.map((l) => [l.kind, l.oldLine, l.newLine, l.text]),
+      [
+        ["del", 9, undefined, "5346\n"],
+        ["add", undefined, 9, "53465\n"],
+      ],
+    );
+
+    // Reconstruction keeps working on the re-paired lines: fully selected yields the right side,
+    // and excluding the whole hunk reverts the modification.
+    const state = createSplitCheckboxState();
+    assert.equal(reconstructRightSides([renamed], state).get("test-renamed.txt")?.toString("utf8"), right);
+    setHunkChecked("test-renamed.txt", renamed.hunks[0], state, false);
+    assert.equal(reconstructRightSides([renamed], state).get("test-renamed.txt")?.toString("utf8"), left);
+    assert.equal(reconstructRightSides([renamed], state).get("test.txt"), undefined);
   });
 });
 

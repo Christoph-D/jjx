@@ -1,4 +1,4 @@
-import { diffArrays } from "diff";
+import { diffArrays, type ArrayChange } from "diff";
 import type { FileStatusType } from "../types";
 
 export interface SplitLine {
@@ -64,24 +64,206 @@ export function splitFileLines(content: string): string[] {
   return lines;
 }
 
+/** A maximal run of changed lines: removed lines and added lines at one boundary. */
+interface ChangeRun {
+  dels: string[];
+  adds: string[];
+}
+
+type CtxBlock = { kind: "ctx"; texts: string[] };
+type RunBlock = { kind: "run" } & ChangeRun;
+
+/** A diff as alternating blocks of unchanged lines and runs of changed lines. */
+type DiffBlock = CtxBlock | RunBlock;
+
+/** Groups the differ's chunks into runs of changed lines separated by unchanged lines. */
+function chunkTokensToBlocks(changes: ArrayChange<string>[]): DiffBlock[] {
+  const blocks: DiffBlock[] = [];
+  for (const change of changes) {
+    if (change.added) {
+      appendRun(blocks).adds.push(...change.value);
+    } else if (change.removed) {
+      appendRun(blocks).dels.push(...change.value);
+    } else {
+      const last = blocks[blocks.length - 1];
+      if (last?.kind === "ctx") {
+        last.texts.push(...change.value);
+      } else {
+        blocks.push({ kind: "ctx", texts: [...change.value] });
+      }
+    }
+  }
+  return blocks;
+}
+
+/** Opens a run block for appending; a removed chunk followed by an added chunk joins one run. */
+function appendRun(blocks: DiffBlock[]): ChangeRun {
+  const last = blocks[blocks.length - 1];
+  if (last?.kind === "run") {
+    return last;
+  }
+  const run: RunBlock = { kind: "run", dels: [], adds: [] };
+  blocks.push(run);
+  return run;
+}
+
+/** True if the run can slide down past the first unchanged line of the gap behind it. */
+function canSlideDown(run: ChangeRun, gapText: string): boolean {
+  if (run.dels.length > 0 && run.adds.length > 0) {
+    // Both sides release their leading line, which re-pairs as a new unchanged pair.
+    return run.dels[0] === run.adds[0];
+  }
+  // A one-sided run releases its leading line, paired with the gap line it slides past.
+  const leading = run.dels[0] ?? run.adds[0];
+  return leading !== undefined && leading === gapText;
+}
+
+/** True if the run can slide up past the last unchanged line of the gap ahead of it. */
+function canSlideUp(run: ChangeRun, gapText: string): boolean {
+  if (run.dels.length > 0 && run.adds.length > 0) {
+    // Both sides release their trailing line, which re-pairs as a new unchanged pair.
+    return run.dels[run.dels.length - 1] === run.adds[run.adds.length - 1];
+  }
+  // A one-sided run releases its trailing line, paired with the gap line it slides past.
+  const trailing = run.dels.length > 0 ? run.dels[run.dels.length - 1] : run.adds[run.adds.length - 1];
+  return trailing !== undefined && trailing === gapText;
+}
+
+/**
+ * Slides the run down past the first line of its following gap. The gap line joins the run and
+ * the run's released line re-pairs with the gap's other side, landing in the preceding
+ * unchanged lines — so the gap between the run and the next run shrinks by one line.
+ */
+function slideDown(run: ChangeRun, preceding: string[], gap: string[]): void {
+  const gapText = gap.shift() as string;
+  if (run.dels.length > 0 && run.adds.length > 0) {
+    preceding.push(run.dels.shift() as string);
+    run.adds.shift();
+    run.dels.push(gapText);
+    run.adds.push(gapText);
+  } else if (run.dels.length > 0) {
+    preceding.push(run.dels.shift() as string);
+    run.dels.push(gapText);
+  } else {
+    preceding.push(run.adds.shift() as string);
+    run.adds.push(gapText);
+  }
+}
+
+/**
+ * Slides the run up past the last line of its preceding gap — the mirror of slideDown; the gap
+ * between the previous run and this run shrinks by one line.
+ */
+function slideUp(run: ChangeRun, gap: string[], following: string[]): void {
+  const gapText = gap.pop() as string;
+  if (run.dels.length > 0 && run.adds.length > 0) {
+    run.dels.pop();
+    following.unshift(run.adds.pop() as string);
+    run.dels.unshift(gapText);
+    run.adds.unshift(gapText);
+  } else if (run.dels.length > 0) {
+    following.unshift(run.dels.pop() as string);
+    run.dels.unshift(gapText);
+  } else {
+    following.unshift(run.adds.pop() as string);
+    run.adds.unshift(gapText);
+  }
+}
+
+/**
+ * Merges runs of changed lines that only stay apart because the differ paired the "wrong" one of
+ * several equal lines, like a modification the differ splits into a separate addition and
+ * deletion around an unchanged line (git's change compaction pairs such lines into one hunk).
+ * Two runs separated only by unchanged lines are slid together whenever sliding can close the
+ * whole gap; runs that cannot reach each other keep the differ's pairing.
+ */
+function mergeRuns(blocks: DiffBlock[]): DiffBlock[] {
+  let i = 0;
+  while (i + 2 < blocks.length) {
+    const left = blocks[i];
+    const gap = blocks[i + 1];
+    const right = blocks[i + 2];
+    if (left.kind !== "run" || gap.kind !== "ctx" || gap.texts.length === 0 || right.kind !== "run") {
+      i++;
+      continue;
+    }
+    if (!closeGap(blocks, i, left, gap, right)) {
+      i++;
+      continue;
+    }
+    // The merged run may now reach its predecessor, whose trailing run changed with the merge,
+    // so the scan resumes just behind the merged run instead of running past it.
+    i = Math.max(0, i - 2);
+  }
+  return blocks;
+}
+
+/** The unchanged block at i, if any; run/gap neighbors of a merge attempt are looked up this way. */
+function ctxAt(blocks: DiffBlock[], i: number): CtxBlock | undefined {
+  const block = blocks[i];
+  return i >= 0 && i < blocks.length && block !== undefined && block.kind === "ctx" ? block : undefined;
+}
+
+/**
+ * Tries to close the unchanged gap between the runs at i and i+2 by sliding them together; on
+ * success merges the runs in place and returns true, on failure leaves the blocks untouched.
+ */
+function closeGap(blocks: DiffBlock[], i: number, left: RunBlock, gap: CtxBlock, right: RunBlock): boolean {
+  // Slides mutate the blocks around the gap, so a partial attempt that fails to close the gap
+  // is abandoned by working on copies of just the affected window.
+  const precedingBlock = ctxAt(blocks, i - 1);
+  const followingBlock = ctxAt(blocks, i + 3);
+  const preceding = [...(precedingBlock?.texts ?? [])];
+  const leftCopy: RunBlock = { kind: "run", dels: [...left.dels], adds: [...left.adds] };
+  const gapTexts = [...gap.texts];
+  const rightCopy: RunBlock = { kind: "run", dels: [...right.dels], adds: [...right.adds] };
+  const following = [...(followingBlock?.texts ?? [])];
+  // Slide the later run up first so deletions land ahead of additions in the merged run.
+  while (gapTexts.length > 0 && canSlideUp(rightCopy, gapTexts[gapTexts.length - 1])) {
+    slideUp(rightCopy, gapTexts, following);
+  }
+  while (gapTexts.length > 0 && canSlideDown(leftCopy, gapTexts[0])) {
+    slideDown(leftCopy, preceding, gapTexts);
+  }
+  if (gapTexts.length > 0) {
+    return false;
+  }
+  left.dels = [...leftCopy.dels, ...rightCopy.dels];
+  left.adds = [...leftCopy.adds, ...rightCopy.adds];
+  // Splice the merged run in place; lines released by sliding land in the unchanged blocks
+  // around it, synthesizing those blocks at the file's edges when needed.
+  blocks.splice(i, 3, left);
+  if (precedingBlock !== undefined) {
+    precedingBlock.texts = preceding;
+  } else if (preceding.length > 0) {
+    blocks.splice(i, 0, { kind: "ctx", texts: preceding });
+  }
+  if (followingBlock !== undefined) {
+    followingBlock.texts = following;
+  } else if (following.length > 0) {
+    blocks.splice(i + 1, 0, { kind: "ctx", texts: following });
+  }
+  return true;
+}
+
 /** Computes the full ordered left/right line model (context, added, and deleted lines). */
 export function buildSplitLines(left: string, right: string): SplitLine[] {
-  const changes = diffArrays(splitFileLines(left), splitFileLines(right));
+  const blocks = mergeRuns(chunkTokensToBlocks(diffArrays(splitFileLines(left), splitFileLines(right))));
   const result: SplitLine[] = [];
   let oldLine = 1;
   let newLine = 1;
-  for (const change of changes) {
-    if (change.added) {
-      for (const text of change.value) {
-        result.push({ kind: "add", newLine: newLine++, text });
-      }
-    } else if (change.removed) {
-      for (const text of change.value) {
-        result.push({ kind: "del", oldLine: oldLine++, text });
+  for (const block of blocks) {
+    if (block.kind === "ctx") {
+      for (const text of block.texts) {
+        result.push({ kind: "context", oldLine: oldLine++, newLine: newLine++, text });
       }
     } else {
-      for (const text of change.value) {
-        result.push({ kind: "context", oldLine: oldLine++, newLine: newLine++, text });
+      // Deleted lines come first within a run, mirroring git's rendering of modifications.
+      for (const text of block.dels) {
+        result.push({ kind: "del", oldLine: oldLine++, text });
+      }
+      for (const text of block.adds) {
+        result.push({ kind: "add", newLine: newLine++, text });
       }
     }
   }
