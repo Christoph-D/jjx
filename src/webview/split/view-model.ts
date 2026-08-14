@@ -17,15 +17,16 @@ export interface SplitFileViewModel {
   contextCounts: number[];
 }
 
-/** True for modified text files that get a hunk breakdown (see decisions 4 & 5 in #23). */
+/** True for text files that get a hunk breakdown: modified files (see decisions 4 & 5 in #23) and deleted files. */
 export function isExpandableSplitEntry(entry: SplitViewFileEntry): boolean {
-  return (
-    entry.status === "M" &&
-    !entry.binary &&
-    !entry.conflict &&
-    entry.leftText !== undefined &&
-    entry.rightText !== undefined
-  );
+  if (entry.binary || entry.conflict || entry.leftText === undefined) {
+    return false;
+  }
+  if (entry.status === "M") {
+    return entry.rightText !== undefined;
+  }
+  // A deleted file has no right side; it expands into a single hunk removing every left-side line.
+  return entry.status === "D" && entry.rightText === undefined;
 }
 
 export function buildSplitFileViewModels(entries: readonly SplitViewFileEntry[]): SplitFileViewModel[] {
@@ -36,7 +37,8 @@ function buildSplitFileViewModel(entry: SplitViewFileEntry): SplitFileViewModel 
   if (!isExpandableSplitEntry(entry)) {
     return { entry, hunkGroups: [], contextCounts: [] };
   }
-  const { hunkGroups, contextCounts } = buildHunkGroups(entry.leftText!, entry.rightText!);
+  // A deleted file is diffed against an empty right side, which removes every left-side line.
+  const { hunkGroups, contextCounts } = buildHunkGroups(entry.leftText!, entry.rightText ?? "");
   if (hunkGroups.length === 0) {
     return { entry, hunkGroups: [], contextCounts: [] };
   }

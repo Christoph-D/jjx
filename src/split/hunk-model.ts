@@ -105,8 +105,8 @@ export function buildSplitHunks(left: string, right: string): SplitHunk[] {
 }
 
 /**
- * Builds a file entry from whole-file contents. Modified non-binary, non-conflict text files get
- * a hunk model; everything else (added/deleted/renamed/binary/conflict leaves) keeps whole-file
+ * Builds a file entry from whole-file contents. Modified and deleted non-binary, non-conflict text
+ * files get a hunk model; everything else (added/renamed/binary/conflict leaves) keeps whole-file
  * contents only.
  */
 export function buildSplitFileEntry(options: {
@@ -129,8 +129,17 @@ export function buildSplitFileEntry(options: {
     leftBase64: options.left?.toString("base64"),
     rightBase64: options.right?.toString("base64"),
   };
-  if (options.status === "M" && !binary && !conflict && options.left !== undefined && options.right !== undefined) {
-    entry.hunks = buildSplitHunks(options.left.toString("utf8"), options.right.toString("utf8"));
+  if (!binary && !conflict && options.left !== undefined) {
+    if (options.status === "M" && options.right !== undefined) {
+      entry.hunks = buildSplitHunks(options.left.toString("utf8"), options.right.toString("utf8"));
+    } else if (options.status === "D") {
+      // Diffing against an empty right side yields a single hunk removing every left-side line.
+      // Empty left content stays a whole-file leaf so an empty deleted file reconstructs as absent.
+      const hunks = buildSplitHunks(options.left.toString("utf8"), "");
+      if (hunks.length > 0) {
+        entry.hunks = hunks;
+      }
+    }
   }
   return entry;
 }
@@ -234,7 +243,9 @@ function reconstructEntry(
   if (entry.hunks !== undefined) {
     // Per-line entries win over the file-level entry, so hunk-model files are always
     // reconstructed line by line; lines without an entry fall back to the file-level state.
-    result.set(path, reconstructHunkModel(entry, state));
+    const content = reconstructHunkModel(entry, state);
+    // A deleted file whose lines are all removed is absent, not emptied.
+    result.set(path, entry.status === "D" && content.length === 0 ? undefined : content);
     return;
   }
 

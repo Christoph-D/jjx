@@ -56,6 +56,7 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
   const expandable = file.hunkGroups.length > 0;
   const expanded = expandedFiles.value.has(entry.path);
   const fileState = getFileCheckState(entry, checkState.value);
+  const deleted = entry.status === "D";
 
   return (
     <div class="splitFile">
@@ -65,7 +66,11 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
         onClick={() => expandable && toggleFileExpanded(entry.path)}
       >
         {expandable && <i class={expanded ? "codicon codicon-chevron-down" : "codicon codicon-chevron-right"} />}
-        <TriStateCheckbox state={fileState} onChange={(checked) => setFileCheckState(entry.path, checked)} />
+        <TriStateCheckbox
+          state={fileState}
+          title={deleted ? "File Deleted" : undefined}
+          onChange={(checked) => setFileCheckState(entry.path, checked)}
+        />
         <span class="splitStatus" style={`color: ${STATUS_COLORS[entry.status]}`}>
           {entry.status}
         </span>
@@ -77,6 +82,7 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
           </span>
         )}
         {entry.binary && <span class="splitLeafDetail">binary</span>}
+        {expandable && deleted && <span class="splitLeafDetail">File Deleted</span>}
         {!expandable && !entry.binary && leafSummary(entry) !== undefined && (
           <span class="splitLeafDetail">{leafSummary(entry)}</span>
         )}

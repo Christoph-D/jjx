@@ -165,15 +165,23 @@ describe("buildSplitFileEntry Test Suite", () => {
     assert.equal(entry.rightBase64, Buffer.from("b\n", "utf8").toString("base64"));
   });
 
-  it("falls back to whole-file contents for add, delete, rename, binary, and conflict leaves", () => {
+  it("falls back to whole-file contents for add, binary delete, rename, binary, and conflict leaves", () => {
     const added = buildSplitFileEntry({ path: "new.txt", status: "A", right: Buffer.from("a\n") });
     assert.equal(added.hunks, undefined);
     assert.equal(added.leftBase64, undefined);
     assert.equal(added.rightBase64, Buffer.from("a\n").toString("base64"));
 
-    const deleted = buildSplitFileEntry({ path: "old.txt", status: "D", left: Buffer.from("a\n") });
-    assert.equal(deleted.hunks, undefined);
-    assert.equal(deleted.rightBase64, undefined);
+    const deletedBinary = buildSplitFileEntry({
+      path: "old.dat",
+      status: "D",
+      binary: true,
+      left: Buffer.from([0x00]),
+    });
+    assert.equal(deletedBinary.hunks, undefined);
+    assert.equal(deletedBinary.rightBase64, undefined);
+
+    const deletedEmpty = buildSplitFileEntry({ path: "empty.txt", status: "D", left: Buffer.from("") });
+    assert.equal(deletedEmpty.hunks, undefined);
 
     const renamed = buildSplitFileEntry({
       path: "new.txt",
@@ -204,6 +212,19 @@ describe("buildSplitFileEntry Test Suite", () => {
     });
     assert.equal(conflict.conflict, true);
     assert.equal(conflict.hunks, undefined);
+  });
+
+  it("builds a single full-removal hunk for deleted text files", () => {
+    const deleted = buildSplitFileEntry({ path: "old.txt", status: "D", left: Buffer.from("a\nb\n") });
+    assert.equal(deleted.rightBase64, undefined);
+    assert.equal(deleted.hunks?.length, 1);
+    assert.deepEqual(
+      deleted.hunks[0].lines.map((l) => [l.kind, l.oldLine, l.text]),
+      [
+        ["del", 1, "a\n"],
+        ["del", 2, "b\n"],
+      ],
+    );
   });
 });
 
@@ -244,6 +265,21 @@ describe("tri-state Test Suite", () => {
     assert.equal(getFileCheckState(entry, state), true);
     setFileChecked(entry.path, state, false);
     assert.equal(getFileCheckState(entry, state), false);
+  });
+
+  it("keeps the whole-file state and the full-removal hunk of a deleted file in sync", () => {
+    const deleted = buildSplitFileEntry({ path: "old.txt", status: "D", left: Buffer.from("a\nb\n") });
+    const state = createSplitCheckboxState();
+    assert.equal(getFileCheckState(deleted, state), true);
+    assert.equal(getHunkCheckState(deleted.path, deleted.hunks![0], state), true);
+
+    setFileChecked(deleted.path, state, false);
+    assert.equal(getFileCheckState(deleted, state), false);
+    assert.equal(getHunkCheckState(deleted.path, deleted.hunks![0], state), false);
+
+    setHunkChecked(deleted.path, deleted.hunks![0], state, true);
+    assert.equal(getHunkCheckState(deleted.path, deleted.hunks![0], state), true);
+    assert.equal(getFileCheckState(deleted, state), true);
   });
 
   it("lets the whole-file state win over line states", () => {
@@ -373,6 +409,32 @@ describe("reconstructRightSides Test Suite", () => {
     assert.deepEqual(reconstructRightSides([entry], state).get("f.txt"), Buffer.from("a\nx\n", "utf8"));
     setFileChecked("f.txt", state, false);
     assert.deepEqual(reconstructRightSides([entry], state).get("f.txt"), Buffer.from("a\nb\n", "utf8"));
+  });
+
+  it("reconstructs deleted text files with the deletion applied only when selected", () => {
+    const deleted = buildSplitFileEntry({ path: "old.txt", status: "D", left: Buffer.from("a\nb\n") });
+
+    // Default ("File Deleted" checked): the file is absent on the reconstructed right side.
+    assert.equal(reconstructRightSides([deleted], createSplitCheckboxState()).get("old.txt"), undefined);
+
+    // Unchecking "File Deleted" keeps the file in the first commit.
+    let state = createSplitCheckboxState();
+    setFileChecked("old.txt", state, false);
+    assert.deepEqual(reconstructRightSides([deleted], state).get("old.txt"), Buffer.from("a\nb\n", "utf8"));
+
+    // Unchecking the full-removal hunk also keeps the file.
+    state = createSplitCheckboxState();
+    setHunkChecked("old.txt", deleted.hunks![0], state, false);
+    assert.deepEqual(reconstructRightSides([deleted], state).get("old.txt"), Buffer.from("a\nb\n", "utf8"));
+
+    // Re-checking the hunk removes the whole file again.
+    setHunkChecked("old.txt", deleted.hunks![0], state, true);
+    assert.equal(reconstructRightSides([deleted], state).get("old.txt"), undefined);
+
+    // A partially unchecked hunk keeps the surviving lines.
+    state = createSplitCheckboxState();
+    setLineChecked("old.txt", deleted.hunks![0].lines[1], state, false);
+    assert.deepEqual(reconstructRightSides([deleted], state).get("old.txt"), Buffer.from("b\n", "utf8"));
   });
 
   it("preserves CRLF line endings", () => {

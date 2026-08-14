@@ -39,7 +39,7 @@ describe("buildSplitFileViewModels Test Suite", () => {
   it("keeps non-modified, binary, and conflicted files as whole-file leaves", () => {
     const entries: SplitViewFileEntry[] = [
       { path: "added.txt", status: "A", binary: false, conflict: false, rightText: "x\ny\n" },
-      { path: "deleted.txt", status: "D", binary: false, conflict: false, leftText: "x\n" },
+      { path: "deleted.bin", status: "D", binary: true, conflict: false },
       { path: "renamed.txt", renamedFrom: "old.txt", status: "R", binary: false, conflict: false, leftText: "x\n" },
       { path: "bin.dat", status: "M", binary: true, conflict: false, leftText: "a\n", rightText: "b\n" },
       { path: "conflict.txt", status: "M", binary: false, conflict: true, leftText: "a\n", rightText: "b\n" },
@@ -50,6 +50,24 @@ describe("buildSplitFileViewModels Test Suite", () => {
       assert.equal(model.entry.hunks, undefined);
     }
     assert.deepEqual(entries.map(isExpandableSplitEntry), [false, false, false, false, false]);
+  });
+
+  it("expands deleted text files into a single hunk removing all lines", () => {
+    const [model] = buildSplitFileViewModels([
+      { path: "gone.txt", status: "D", binary: false, conflict: false, leftText: "x\ny\n" },
+    ]);
+    assert.equal(isExpandableSplitEntry(model.entry), true);
+    assert.equal(model.hunkGroups.length, 1);
+    assert.deepEqual(model.contextCounts, [0, 0]);
+    assert.equal(model.hunkGroups[0].addedCount, 0);
+    assert.equal(model.hunkGroups[0].removedCount, 2);
+    assert.deepEqual(
+      model.entry.hunks?.[0].lines.map((l) => [l.kind, l.oldLine, l.text]),
+      [
+        ["del", 1, "x\n"],
+        ["del", 2, "y\n"],
+      ],
+    );
   });
 
   it("drops modified files without any changed lines", () => {

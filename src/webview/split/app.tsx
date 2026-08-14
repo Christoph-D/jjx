@@ -15,7 +15,7 @@ export function App() {
         return;
       }
       applyExtensionMessage(message);
-      // Everything starts checked and modified text files start expanded.
+      // Everything starts checked and expandable text files (modified or deleted) start expanded.
       expandedFiles.value = new Set(
         buildSplitFileViewModels(message.entries)
           .filter((file) => file.hunkGroups.length > 0)

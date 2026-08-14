@@ -252,7 +252,7 @@ test("cancelling the split view leaves the repository unchanged", async ({ graph
   await expect(nodes).toHaveCount(4);
 });
 
-test("added, deleted, renamed and conflicted files only offer whole-file checkboxes", async ({
+test("added, renamed and conflicted files only offer whole-file checkboxes", async ({
   graphFrame,
   testRepo,
   workbox,
@@ -284,12 +284,21 @@ test("added, deleted, renamed and conflicted files only offer whole-file checkbo
   await expect(splitFrame.locator(".splitFile")).toHaveCount(4);
 
   // None of the leaves is expandable: no chevron, no hunks, just a whole-file checkbox.
-  for (const path of ["added.txt", "doomed.txt", "file1.txt", "new.txt"]) {
+  // doomed.txt is deleted text, so it expands into a "File Deleted" checkbox plus one
+  // full-removal hunk instead; its deletion stays selected and lands in the first commit.
+  for (const path of ["added.txt", "file1.txt", "new.txt"]) {
     const row = splitFileRow(splitFrame, path);
     await expect(row.locator(".splitFileRow")).not.toHaveClass(/splitExpandable/);
     await expect(row.locator(".splitHunk")).toHaveCount(0);
     await expect(row.locator("input.splitCheckbox")).toBeChecked();
   }
+
+  const doomedRow = splitFileRow(splitFrame, "doomed.txt");
+  await expect(doomedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  await expect(doomedRow.locator(".splitFileRow input.splitCheckbox")).toBeChecked();
+  await expect(doomedRow.locator(".splitLeafDetail")).toHaveText("File Deleted");
+  await expect(doomedRow.locator(".splitHunk")).toHaveCount(1);
+  await expect(doomedRow.locator(".splitLineRow")).toHaveCount(2);
 
   await expect(splitFileRow(splitFrame, "file1.txt").locator(".splitConflict")).toContainText("conflicted");
   await expect(splitFileRow(splitFrame, "new.txt").locator(".splitLeafDetail")).toContainText("← old.txt");
@@ -319,4 +328,71 @@ test("added, deleted, renamed and conflicted files only offer whole-file checkbo
   expect(await diffSummary(testRepo, first!.change_id)).toBe("D doomed.txt\nM file1.txt\nR {old.txt => new.txt}");
 
   expect(await diffSummary(testRepo, await changeIdFor(testRepo, "Leaves rest"))).toBe("A added.txt");
+});
+
+test("deleted text files split their deletion via the File Deleted checkbox", async ({
+  graphFrame,
+  testRepo,
+  workbox,
+}) => {
+  await testRepo.commitFile("base.txt", "base\n", "Base");
+  await testRepo.commitFile("doomed.txt", "d1\nd2\nd3\n", "Add doomed");
+  await testRepo.deleteFile("doomed.txt");
+  await testRepo.writeFile("keep.txt", "kept\n");
+  await testRepo.commit("Split me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(5);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+  // The deleted file shows a "File Deleted" checkbox and a single hunk removing all lines.
+  const doomedRow = splitFileRow(splitFrame, "doomed.txt");
+  await expect(doomedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  const fileDeletedCheckbox = doomedRow.locator(".splitFileRow input.splitCheckbox");
+  await expect(fileDeletedCheckbox).toBeChecked();
+  await expect(doomedRow.locator(".splitLeafDetail")).toHaveText("File Deleted");
+
+  const hunk = doomedRow.locator(".splitHunk");
+  await expect(hunk).toHaveCount(1);
+  const hunkCheckbox = hunk.locator(".splitHunkRow input.splitCheckbox");
+  await expect(hunkCheckbox).toBeChecked();
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(3);
+  await expect(hunk.locator(".splitLineRow").first()).toContainText("d1");
+
+  // Unchecking "File Deleted" unchecks the full hunk with it.
+  await fileDeletedCheckbox.click();
+  await expect(fileDeletedCheckbox).not.toBeChecked();
+  await expect(hunkCheckbox).not.toBeChecked();
+
+  // Re-checking the hunk re-checks "File Deleted": the two cannot diverge.
+  await hunkCheckbox.click();
+  await expect(hunkCheckbox).toBeChecked();
+  await expect(fileDeletedCheckbox).toBeChecked();
+
+  // Keep the deletion out of the first commit: only keep.txt is split off.
+  await fileDeletedCheckbox.click();
+  await expect(fileDeletedCheckbox).not.toBeChecked();
+  await splitFrame.locator(".splitPrimaryButton").click();
+
+  await handleEditor(workbox, "", "Keep add");
+  await handleEditor(workbox, "", "Keep deletion");
+
+  await expect(nodes).toHaveCount(6);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "Keep add")).toEqual(["Add doomed"]);
+    expect(getParents(logEntries, "Keep deletion")).toEqual(["Keep add"]);
+    expect(getParents(logEntries, "@")).toEqual(["Keep deletion"]);
+  }).toPass();
+
+  const keepAdd = await changeIdFor(testRepo, "Keep add");
+  const keepDeletion = await changeIdFor(testRepo, "Keep deletion");
+
+  // The file survives in the first commit and is deleted in the second.
+  expect(await diffSummary(testRepo, keepAdd)).toBe("A keep.txt");
+  expect(await fileContent(testRepo, keepAdd, "doomed.txt")).toBe("d1\nd2\nd3\n");
+  expect(await diffSummary(testRepo, keepDeletion)).toBe("D doomed.txt");
 });
