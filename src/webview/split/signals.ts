@@ -58,6 +58,11 @@ export function toggleFileExpanded(path: string): void {
   expandedFiles.value = next;
 }
 
+/** Expands (or collapses) every expandable file at once; `paths` are the expandable file paths. */
+export function setAllFilesExpanded(paths: readonly string[], expanded: boolean): void {
+  expandedFiles.value = expanded ? new Set(paths) : new Set();
+}
+
 export function hunkKey(path: string, index: number): string {
   return `${path}:${index}`;
 }

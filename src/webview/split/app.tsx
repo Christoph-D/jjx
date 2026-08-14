@@ -1,11 +1,16 @@
 import { useEffect } from "preact/hooks";
 import { computed } from "@preact/signals";
-import { applyExtensionMessage, checkState, entries, expandedFiles, metadata, postMessage } from "./signals";
+import { applyExtensionMessage, checkState, entries, metadata, postMessage, setAllFilesExpanded } from "./signals";
 import { buildSplitFileViewModels } from "./view-model";
 import { FileRow } from "./components/file-row";
 import type { SplitExtensionToWebviewMessage } from "../../split-protocol";
 
 const fileModels = computed(() => buildSplitFileViewModels(entries.value));
+
+// Paths of the files that have a hunk breakdown (the only ones that can be expanded).
+const expandablePaths = computed(() =>
+  fileModels.value.filter((file) => file.hunkGroups.length > 0).map((file) => file.entry.path),
+);
 
 export function App() {
   useEffect(() => {
@@ -17,7 +22,7 @@ export function App() {
       applyExtensionMessage(message);
       // Everything starts checked; files start collapsed so the user first gets an
       // overview of the changes and can expand the ones they care about.
-      expandedFiles.value = new Set();
+      setAllFilesExpanded(expandablePaths.value, false);
     });
 
     postMessage({ command: "webviewReady" });
@@ -37,6 +42,20 @@ export function App() {
           </button>
           <button class="splitButton" onClick={() => postMessage({ command: "cancel" })}>
             Cancel
+          </button>
+          <button
+            class="splitButton"
+            title="Expand every file entry"
+            onClick={() => setAllFilesExpanded(expandablePaths.value, true)}
+          >
+            Expand All
+          </button>
+          <button
+            class="splitButton"
+            title="Collapse every file entry"
+            onClick={() => setAllFilesExpanded(expandablePaths.value, false)}
+          >
+            Collapse All
           </button>
         </div>
         <div class="splitHeaderInfo">
