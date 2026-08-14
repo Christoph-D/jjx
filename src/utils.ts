@@ -129,6 +129,22 @@ export function pathEquals(a: string, b: string): boolean {
 }
 
 /**
+ * Decodes file content as UTF-8 text, ready for line-based diffing. Returns
+ * undefined when the content looks binary: a NUL byte anywhere or byte
+ * sequences that are not valid UTF-8.
+ */
+export function decodeFileText(content: Buffer): string | undefined {
+  if (content.includes(0)) {
+    return undefined;
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(content);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Creates a throttled version of an async function that ensures the underlying
  * function (`fn`) is called at most once concurrently.
  *

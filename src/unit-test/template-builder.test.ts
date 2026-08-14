@@ -7,6 +7,7 @@ import {
   LOG_TEMPLATE,
   buildLogTemplate,
   buildOperationTemplate,
+  CONFLICTED_FILES_TEMPLATE,
 } from "../template-builder";
 
 describe("TemplateBuilder Test Suite", () => {
@@ -190,6 +191,13 @@ describe("TemplateBuilder Test Suite", () => {
     assert.ok(result.includes("conflicted_files"));
     assert.ok(result.includes("self.conflicted_files()"));
     assert.ok(result.includes("f.path().display()"));
+  });
+
+  it("CONFLICTED_FILES_TEMPLATE emits only the conflicted_files array", () => {
+    assert.strictEqual(
+      CONFLICTED_FILES_TEMPLATE,
+      `"{" ++ "\\"conflicted_files\\": [" ++ self.conflicted_files().map(|f| stringify(f.path().display()).escape_json()).join(",") ++ "]" ++ "}\\n"`,
+    );
   });
 
   it("buildOperationTemplate() (no version) defaults to deprecated self.tags()", () => {

@@ -2,6 +2,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  decodeFileText,
   filepathToFileset,
   filepathToRootFileset,
   formatAtRevTitle,
@@ -82,5 +83,23 @@ describe("Rev Label Test Suite", () => {
       }),
       "xy1234",
     );
+  });
+});
+
+describe("decodeFileText Test Suite", () => {
+  it("decodes UTF-8 text including multibyte characters", () => {
+    assert.equal(decodeFileText(Buffer.from("héllo wörld\nsecond line\n", "utf-8")), "héllo wörld\nsecond line\n");
+  });
+
+  it("decodes empty content to an empty string", () => {
+    assert.equal(decodeFileText(Buffer.alloc(0)), "");
+  });
+
+  it("returns undefined for content containing a NUL byte", () => {
+    assert.equal(decodeFileText(Buffer.from([0x74, 0x65, 0x78, 0x74, 0x00, 0x74, 0x65, 0x78, 0x74])), undefined);
+  });
+
+  it("returns undefined for content with invalid UTF-8 sequences", () => {
+    assert.equal(decodeFileText(Buffer.from([0xc3, 0x28])), undefined);
   });
 });

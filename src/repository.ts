@@ -12,6 +12,7 @@ import {
   DIFF_STATS_TEMPLATE,
   BOOKMARK_TRACKING_INFO_TEMPLATE,
   REMOTE_REF_STATUS_TEMPLATE,
+  CONFLICTED_FILES_TEMPLATE,
 } from "./template-builder";
 import spawn from "cross-spawn";
 import type { ChildProcess } from "child_process";
@@ -32,12 +33,14 @@ import { logger } from "./logger";
 import { quoteJjName } from "./quote";
 import {
   changeIdFromLogEntry,
+  decodeFileText,
   filepathToFileset,
   filepathToRootFileset,
   formatChangeIdShort,
   formatWorkingCopyTitle,
   isWindows,
   maxChangeIdPrefixLength,
+  normalizePath,
   pathEquals,
 } from "./utils";
 import {
@@ -66,6 +69,7 @@ import type {
   Operation,
   DiffFileEntry,
   FullChangeId,
+  SplitFileEntry,
 } from "./types";
 
 export type {
@@ -82,6 +86,7 @@ export type {
   ParentRef,
   Operation,
   DiffFileEntry,
+  SplitFileEntry,
 };
 
 export class JJRepository {
@@ -1640,6 +1645,77 @@ export class JJRepository {
       left: left !== undefined ? Buffer.from(left, "base64") : undefined,
       right: right !== undefined ? Buffer.from(right, "base64") : undefined,
     };
+  }
+
+  /**
+   * Collects the per-file diff data of the commit `commitId` for the Split view:
+   * the file statuses parsed from `jj diff --summary` (M/A/D/R/C) plus the
+   * base64-encoded left (parent) and right (commit) contents of every changed
+   * file, captured via the `jjx-vscode-diff` diff tool handshake. Handles adds,
+   * deletes, renames (including rename plus content edit), and binaries. The
+   * commit's conflicted files are fetched with an extra `jj log` template call
+   * so {@link SplitFileEntry.conflict} can be set; the contents of a conflicted
+   * file contain jj's materialized conflict markers. Non-binary contents are
+   * decoded into `leftText`/`rightText`, ready for hunk splitting.
+   *
+   * `commitId` must be a full (unabbreviated) commit id so the diff stays
+   * pinned to the same commit across concurrent repo updates.
+   */
+  async getSplitFileEntries(commitId: string, token?: vscode.CancellationToken): Promise<SplitFileEntry[]> {
+    const { summary, leftFiles, rightFiles } = await this.runDiffToolSummary(["diff", "-r", commitId], []);
+    const fileStatuses = parseInterdiffSummary(summary, this.repositoryRoot);
+
+    const conflictedPaths = new Set(
+      (await this.getConflictedFilePaths(commitId, token)).map((conflictedPath) =>
+        normalizePath(path.join(this.repositoryRoot, conflictedPath.replace(/\\/g, "/"))),
+      ),
+    );
+
+    return fileStatuses.map((fileStatus) => {
+      const relativePath = path.relative(this.repositoryRoot, fileStatus.path).replace(/\\/g, "/");
+      const renamedFrom = fileStatus.renamedFrom?.replace(/\\/g, "/");
+      const leftPath = fileStatus.type === "A" ? undefined : (renamedFrom ?? relativePath);
+      const rightPath = fileStatus.type === "D" ? undefined : relativePath;
+      const leftBase64 = leftPath !== undefined ? leftFiles[leftPath] : undefined;
+      const rightBase64 = rightPath !== undefined ? rightFiles[rightPath] : undefined;
+      const leftBuffer = leftBase64 !== undefined ? Buffer.from(leftBase64, "base64") : undefined;
+      const rightBuffer = rightBase64 !== undefined ? Buffer.from(rightBase64, "base64") : undefined;
+      const leftText = leftBuffer !== undefined ? decodeFileText(leftBuffer) : undefined;
+      const rightText = rightBuffer !== undefined ? decodeFileText(rightBuffer) : undefined;
+      const binary =
+        (leftBuffer !== undefined && leftText === undefined) || (rightBuffer !== undefined && rightText === undefined);
+      logger.trace(
+        `[getSplitFileEntries] ${fileStatus.type} ${relativePath} left=${leftBase64 !== undefined} ` +
+          `right=${rightBase64 !== undefined} binary=${binary}`,
+      );
+      return {
+        status: fileStatus.type,
+        path: fileStatus.path,
+        renamedFrom,
+        binary,
+        conflict: conflictedPaths.has(normalizePath(fileStatus.path)),
+        leftBase64,
+        rightBase64,
+        leftText,
+        rightText,
+      };
+    });
+  }
+
+  /**
+   * Returns the repo-relative paths of the files that are conflicted in the
+   * commit `commitId`.
+   */
+  private async getConflictedFilePaths(commitId: string, token?: vscode.CancellationToken): Promise<string[]> {
+    const output = (
+      await this.jjCommandRead(["log", "-r", commitId, "--no-graph", "-T", CONFLICTED_FILES_TEMPLATE], { token })
+    ).toString();
+    const trimmed = output.trim();
+    if (!trimmed) {
+      return [];
+    }
+    const entry = JSON.parse(trimmed) as { conflicted_files?: string[] };
+    return entry.conflicted_files ?? [];
   }
 
   /**

@@ -376,6 +376,15 @@ const DIFF_STATS_FIELDS: TemplateFields = {
   },
 };
 
+const CONFLICTED_FILES_FIELDS: TemplateFields = {
+  conflicted_files: {
+    type: "string_array",
+    expr: "self.conflicted_files()",
+    loopVar: "f",
+    value: "f.path().display()",
+  },
+};
+
 const BOOKMARK_TRACKING_INFO_FIELDS: TemplateFields = {
   remote: { type: "string", expr: "remote" },
   synced: { type: "boolean", expr: "synced" },
@@ -396,5 +405,6 @@ export const SHOW_TEMPLATE = generateTemplate(SHOW_ENTRY_FIELDS);
 export const STATUS_TEMPLATE = generateTemplate(STATUS_ENTRY_FIELDS);
 export const LOG_TEMPLATE = buildLogTemplate();
 export const DIFF_STATS_TEMPLATE = generateTemplate(DIFF_STATS_FIELDS);
+export const CONFLICTED_FILES_TEMPLATE = generateTemplate(CONFLICTED_FILES_FIELDS);
 export const BOOKMARK_TRACKING_INFO_TEMPLATE = generateTemplate(BOOKMARK_TRACKING_INFO_FIELDS);
 export const REMOTE_REF_STATUS_TEMPLATE = generateTemplate(REMOTE_REF_STATUS_FIELDS);
