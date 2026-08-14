@@ -36,6 +36,11 @@ function splitFileRow(frame: Frame, path: string): Locator {
   return frame.locator(".splitFile").filter({ has: frame.locator(".splitPath", { hasText: pattern }) });
 }
 
+/** Expands a file's hunk list by clicking its chevron; files start collapsed in the split view. */
+async function expandSplitFile(row: Locator): Promise<void> {
+  await row.locator(".splitFileRow > i.codicon-chevron-right").click();
+}
+
 /**
  * The close (X) button of an editor tab. Since VS Code 1.114 the button is a "Tab actions"
  * toolbar item whose only stable handle is its accessible name ("Close (Ctrl+W)", with a
@@ -77,8 +82,10 @@ test("partial split of a multi-file multi-hunk commit with tri-state checkboxes"
   await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
   await expect(splitFrame.locator(".splitHeaderDescription")).toHaveText("Split me");
 
-  // The modified f1.txt is expanded into two hunks, everything checked initially.
+  // The modified f1.txt expands into two hunks; files start collapsed, so expand it first.
+  // Everything starts checked initially.
   const f1Row = splitFileRow(splitFrame, "f1.txt");
+  await expandSplitFile(f1Row);
   const f1Checkbox = f1Row.locator(".splitFileRow input.splitCheckbox");
   await expect(f1Checkbox).toBeChecked();
 
@@ -408,6 +415,7 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
 
   const doomedRow = splitFileRow(splitFrame, "doomed.txt");
   await expect(doomedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  await expandSplitFile(doomedRow);
   await expect(doomedRow.locator(".splitFileRow input.splitCheckbox")).toBeChecked();
   await expect(doomedRow.locator(".splitLeafDetail")).toHaveText("File Deleted");
   await expect(doomedRow.locator(".splitHunk")).toHaveCount(1);
@@ -415,6 +423,7 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
 
   const addedRow = splitFileRow(splitFrame, "added.txt");
   await expect(addedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  await expandSplitFile(addedRow);
   await expect(addedRow.locator(".splitHunk")).toHaveCount(1);
   await expect(addedRow.locator(".splitHunkHeader")).toHaveText("@@ +1 -0");
   await expect(addedRow.locator(".splitLineRow")).toHaveCount(1);
@@ -475,6 +484,7 @@ test("deleted text files split their deletion via the File Deleted checkbox", as
   // The deleted file shows a "File Deleted" checkbox and a single hunk removing all lines.
   const doomedRow = splitFileRow(splitFrame, "doomed.txt");
   await expect(doomedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  await expandSplitFile(doomedRow);
   const fileDeletedCheckbox = doomedRow.locator(".splitFileRow input.splitCheckbox");
   await expect(fileDeletedCheckbox).toBeChecked();
   await expect(doomedRow.locator(".splitLeafDetail")).toHaveText("File Deleted");
@@ -537,6 +547,7 @@ test("added text files split their addition via a full-addition hunk", async ({ 
   // The added file shows a single hunk adding all of its lines.
   const newRow = splitFileRow(splitFrame, "new.txt");
   await expect(newRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  await expandSplitFile(newRow);
   const fileCheckbox = newRow.locator(".splitFileRow input.splitCheckbox");
   await expect(fileCheckbox).toBeChecked();
 
@@ -607,6 +618,7 @@ test("renamed files split their rename via the File Renamed checkbox", async ({ 
   // The renamed file is expandable: a "File Renamed" checkbox above the content hunks.
   const renamedRow = splitFileRow(splitFrame, "new.txt");
   await expect(renamedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  await expandSplitFile(renamedRow);
   const renameRow = renamedRow.locator(".splitRename");
   await expect(renameRow).toHaveCount(1);
   await expect(renameRow).toContainText("File Renamed");

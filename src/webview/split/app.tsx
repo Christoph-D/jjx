@@ -15,12 +15,9 @@ export function App() {
         return;
       }
       applyExtensionMessage(message);
-      // Everything starts checked and expandable text files (modified, added, or deleted) start expanded.
-      expandedFiles.value = new Set(
-        buildSplitFileViewModels(message.entries)
-          .filter((file) => file.hunkGroups.length > 0)
-          .map((file) => file.entry.path),
-      );
+      // Everything starts checked; files start collapsed so the user first gets an
+      // overview of the changes and can expand the ones they care about.
+      expandedFiles.value = new Set();
     });
 
     postMessage({ command: "webviewReady" });
