@@ -68,6 +68,7 @@ async function main() {
     createContext("src/jj-merge-editor-main.ts", "dist/jj-merge-editor-main.js"),
     createContext("src/jj-diff-tool-main.ts", "dist/jj-diff-tool-main.js"),
     createContext("src/jj-squash-tool-main.ts", "dist/jj-squash-tool-main.js"),
+    createContext("src/jj-split-tool-main.ts", "dist/jj-split-tool-main.js"),
     createContext("src/webview/graph/main.tsx", "dist/webview/graph.js", {
       format: "iife",
       platform: "browser",

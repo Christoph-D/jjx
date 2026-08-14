@@ -5,7 +5,7 @@ import { WorkspaceSourceControlManager } from "./source-control";
 import { JJDecorationProvider } from "./decoration-provider";
 import { initLogger, logger } from "./logger";
 import { createIPCServer } from "./ipc/ipc-server";
-import { JJEditor, JJMergeEditor, JJDiffTool, JJSquashTool } from "./jj-editor";
+import { JJEditor, JJMergeEditor, JJDiffTool, JJSquashTool, JJSplitTool } from "./jj-editor";
 import { killAllProcesses } from "./process";
 import { createExtensionState } from "./extension-state";
 import { registerPreInitCommands, registerInitCommands } from "./commands";
@@ -38,6 +38,8 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(jjDiffTool);
     const jjSquashTool = new JJSquashTool(ipcServer, distDir);
     context.subscriptions.push(jjSquashTool);
+    const jjSplitTool = new JJSplitTool(ipcServer, distDir);
+    context.subscriptions.push(jjSplitTool);
     logger.info("JJEditor IPC server initialized");
   } catch (error) {
     logger.error(`Failed to initialize JJEditor: ${error instanceof Error ? error.message : String(error)}`);

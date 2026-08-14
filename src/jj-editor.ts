@@ -28,6 +28,7 @@ let editorEnv: Record<string, string> = {};
 let mergeEditorConfigs: string[] = [];
 let diffToolConfigs: string[] = [];
 let squashToolConfigs: string[] = [];
+let splitToolConfigs: string[] = [];
 
 function escapeShlexDoubleQuoted(s: string): string {
   return s.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
@@ -47,6 +48,10 @@ export function getDiffToolConfigs(): string[] {
 
 export function getSquashToolConfigs(): string[] {
   return squashToolConfigs;
+}
+
+export function getSplitToolConfigs(): string[] {
+  return splitToolConfigs;
 }
 
 function tomlProgramConfig(toolName: string): string {
@@ -136,6 +141,33 @@ export function expectSquashToolRequest(requestId: string): Promise<{ leftPath: 
 
 export function completeSquashToolRequest(requestId: string, success: boolean): void {
   const pending = pendingSquashRequests.get(requestId);
+  if (pending) {
+    pending.complete(success);
+  }
+}
+
+interface SplitToolRequest {
+  requestId: string;
+  leftPath: string;
+  rightPath: string;
+}
+
+interface PendingSplitRequest {
+  resolve: (data: { leftPath: string; rightPath: string }) => void;
+  reject: (error: Error) => void;
+  complete: (success: boolean) => void;
+}
+
+const pendingSplitRequests = new Map<string, PendingSplitRequest>();
+
+export function expectSplitToolRequest(requestId: string): Promise<{ leftPath: string; rightPath: string }> {
+  return new Promise((resolve, reject) => {
+    pendingSplitRequests.set(requestId, { resolve, reject, complete: () => {} });
+  });
+}
+
+export function completeSplitToolRequest(requestId: string, success: boolean): void {
+  const pending = pendingSplitRequests.get(requestId);
   if (pending) {
     pending.complete(success);
   }
@@ -347,6 +379,40 @@ export class JJSquashTool implements IIPCHandler {
       pending.resolve({ leftPath: request.leftPath, rightPath: request.rightPath });
       pending.complete = (success: boolean) => {
         pendingSquashRequests.delete(request.requestId);
+        resolve(success);
+      };
+    });
+  }
+
+  dispose(): void {
+    this.disposable.dispose();
+  }
+}
+
+export class JJSplitTool implements IIPCHandler {
+  private disposable = EmptyDisposable;
+
+  constructor(ipc: IPCServer, extensionDir: string) {
+    this.disposable = ipc.registerHandler("jj-split-tool", this);
+
+    const mainJsPath = path.join(extensionDir, "jj-split-tool-main.js");
+    const toolName = "jjx-vscode-split";
+    splitToolConfigs = [
+      tomlProgramConfig(toolName),
+      tomlArgsConfig(toolName, "edit-args", mainJsPath, ["$left", "$right"]),
+    ];
+  }
+
+  handle(request: SplitToolRequest): Promise<boolean> {
+    const pending = pendingSplitRequests.get(request.requestId);
+    if (!pending) {
+      return Promise.resolve(false);
+    }
+
+    return new Promise((resolve) => {
+      pending.resolve({ leftPath: request.leftPath, rightPath: request.rightPath });
+      pending.complete = (success: boolean) => {
+        pendingSplitRequests.delete(request.requestId);
         resolve(success);
       };
     });
