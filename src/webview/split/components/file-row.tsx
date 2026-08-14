@@ -124,6 +124,14 @@ function LineRow({ path, line }: { path: string; line: SplitLine }) {
   return (
     <div
       class={`splitRow splitLineRow ${added ? "splitLineAdded" : "splitLineRemoved"}${checked ? "" : " splitUnchecked"}`}
+      title={checked ? "Exclude line" : "Include line"}
+      onClick={() => {
+        // Ignore clicks that end a text selection so copying line text keeps working.
+        if (window.getSelection()?.toString()) {
+          return;
+        }
+        toggleLineChecked(path, line);
+      }}
     >
       <TriStateCheckbox state={checked} onChange={() => toggleLineChecked(path, line)} />
       <span class={`splitLinePrefix ${added ? "splitAdded" : "splitRemoved"}`}>{added ? "+" : "-"}</span>
