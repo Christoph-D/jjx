@@ -250,6 +250,60 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             () => repo.deleteTag(message.tag),
           );
           break;
+        case "forgetWorkspace":
+          if (await this.isCurrentWorkspace(repo, message.workspace)) {
+            break;
+          }
+          await this.confirmAndExecute(
+            `Are you sure you want to forget the workspace "${message.workspace}"?`,
+            "Forget Workspace",
+            "forget workspace",
+            () => repo.forgetWorkspace(message.workspace),
+          );
+          break;
+        case "forgetAndDeleteWorkspace": {
+          if (await this.isCurrentWorkspace(repo, message.workspace)) {
+            break;
+          }
+          let workspaceRoot: string | undefined;
+          try {
+            workspaceRoot = await repo.getWorkspaceRoot(message.workspace);
+          } catch (error: unknown) {
+            showErrorMessage(`Failed to look up workspace "${message.workspace}"`, error);
+            break;
+          }
+          if (!workspaceRoot) {
+            vscode.window.showWarningMessage(
+              `The root path of workspace "${message.workspace}" could not be determined, so its directory cannot be deleted.`,
+            );
+            break;
+          }
+          const root = workspaceRoot;
+          await this.confirmAndExecute(
+            `Are you sure you want to delete the workspace "${message.workspace}" and its directory "${root}"?`,
+            "Forget and Delete",
+            "forget and delete workspace",
+            async () => {
+              await repo.forgetWorkspace(message.workspace);
+              await vscode.workspace.fs.delete(vscode.Uri.file(root), { useTrash: false, recursive: true });
+            },
+          );
+          break;
+        }
+        case "copyWorkspacePath":
+          try {
+            const workspaceRoot = await repo.getWorkspaceRoot(message.workspace);
+            if (!workspaceRoot) {
+              vscode.window.showWarningMessage(
+                `The root path of workspace "${message.workspace}" could not be determined.`,
+              );
+              break;
+            }
+            await vscode.env.clipboard.writeText(workspaceRoot);
+          } catch (error: unknown) {
+            showErrorMessage("Failed to copy workspace path", error);
+          }
+          break;
         case "getTagPushRemotes":
           try {
             const allRemotes = await repo.getRemotes();
@@ -641,6 +695,27 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     await this.withRefresh(errorLabel, fn);
   }
 
+  /**
+   * Guards destructive workspace actions: the workspace this graph operates on
+   * cannot be forgotten (jj would only warn while leaving the working copy
+   * unusable). Returns true (after showing a warning) when the named workspace
+   * is the current one. A lookup failure doesn't block the action; the jj
+   * invocation then reports the problem itself.
+   */
+  private async isCurrentWorkspace(repo: JJRepository, workspace: string): Promise<boolean> {
+    let currentWorkspace: string | undefined;
+    try {
+      currentWorkspace = await repo.getCurrentWorkspaceName();
+    } catch {
+      return false;
+    }
+    if (currentWorkspace !== workspace) {
+      return false;
+    }
+    vscode.window.showWarningMessage(`The current workspace "${workspace}" cannot be forgotten.`);
+    return true;
+  }
+
   public async enableElideImmutableCommits(): Promise<void> {
     this.elideOverride = true;
     await this.updateElidingContext();
@@ -770,6 +845,15 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       }
       const changeDoubleClickAction = config.get<string>("changeDoubleClickAction") || "edit";
 
+      let currentWorkspace: string | undefined;
+      try {
+        currentWorkspace = await this.repository.getCurrentWorkspaceName(operationId);
+      } catch (error: unknown) {
+        logger.warn(
+          `Failed to determine the current workspace: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+
       const laneInfo = assignLanes(entriesWithSynthetics);
 
       const msg: ExtensionToWebviewMessage = {
@@ -784,6 +868,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         showTooltips: config.get<boolean>("showTooltips") ?? true,
         showChangedFiles,
         supportsTagTracking,
+        currentWorkspace,
       };
       this.postMessageToWebview(msg);
       try {

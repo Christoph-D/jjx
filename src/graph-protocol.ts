@@ -125,6 +125,9 @@ export type WebviewToExtensionMessage =
   | { command: "untrackTag"; tag: string; remote: string }
   | { command: "pushTag"; tag: string }
   | { command: "cancelRemoteRefOperation"; refType: "bookmark" | "tag"; name: string }
+  | { command: "forgetWorkspace"; workspace: string }
+  | { command: "forgetAndDeleteWorkspace"; workspace: string }
+  | { command: "copyWorkspacePath"; workspace: string }
   | { command: "getRemoteRefStatus"; refType: "bookmark" | "tag"; name: string; remote: string }
   | { command: "pushRemoteRef"; refType: "bookmark" | "tag"; name: string; remote: string }
   | { command: "deleteRemoteRef"; refType: "bookmark" | "tag"; name: string; remote: string }
@@ -170,6 +173,7 @@ export type ExtensionToWebviewMessage =
       showTooltips: boolean;
       showChangedFiles: boolean;
       supportsTagTracking: boolean;
+      currentWorkspace: string | undefined;
     }
   | { command: "showStaleState" }
   | { command: "showJJNotFoundState" }

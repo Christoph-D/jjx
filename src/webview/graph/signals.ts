@@ -41,6 +41,7 @@ export const changeDoubleClickAction = signal("new");
 export const showTooltips = signal(true);
 export const showChangedFiles = signal(false);
 export const supportsTagTracking = signal(false);
+export const currentWorkspace = signal<string | null>(null);
 export const scrollY = signal(0);
 export const offsetWidth = signal(0);
 export const tooltipTimeout = signal<ReturnType<typeof setTimeout> | null>(null);
@@ -91,10 +92,11 @@ export interface PendingGraphUpdate {
   showTooltips: boolean;
   showChangedFiles: boolean;
   supportsTagTracking: boolean;
+  currentWorkspace: string | undefined;
 }
 
 interface PillContextMenuState {
-  type: "bookmark" | "tag";
+  type: "bookmark" | "tag" | "workspace";
   name: string;
   pageX: number;
   pageY: number;

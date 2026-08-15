@@ -21,6 +21,7 @@ import {
   deletingTags,
   supportsTagTracking,
   postMessage,
+  currentWorkspace,
   diffStatsCache,
   tooltip,
   showTooltips,
@@ -73,6 +74,7 @@ export function App() {
       showTooltips.value = message.showTooltips;
       showChangedFiles.value = message.showChangedFiles;
       supportsTagTracking.value = message.supportsTagTracking;
+      currentWorkspace.value = message.currentWorkspace ?? null;
       maxPrefixLength.value = message.maxPrefixLength;
       offsetWidth.value = message.offsetWidth;
       scrollY.value = message.preserveScroll ? window.scrollY : 0;

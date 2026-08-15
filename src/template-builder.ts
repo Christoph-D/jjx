@@ -385,6 +385,13 @@ const CONFLICTED_FILES_FIELDS: TemplateFields = {
   },
 };
 
+const WORKSPACE_LIST_FIELDS: TemplateFields = {
+  name: { type: "string", expr: "self.name()" },
+  // The root is optional: workspaces created before jj 0.38.0 did not record
+  // one, and a recorded path can become stale if the directory is moved.
+  root: { type: "string", expr: "self.root()" },
+};
+
 const BOOKMARK_TRACKING_INFO_FIELDS: TemplateFields = {
   remote: { type: "string", expr: "remote" },
   synced: { type: "boolean", expr: "synced" },
@@ -408,3 +415,4 @@ export const DIFF_STATS_TEMPLATE = generateTemplate(DIFF_STATS_FIELDS);
 export const CONFLICTED_FILES_TEMPLATE = generateTemplate(CONFLICTED_FILES_FIELDS);
 export const BOOKMARK_TRACKING_INFO_TEMPLATE = generateTemplate(BOOKMARK_TRACKING_INFO_FIELDS);
 export const REMOTE_REF_STATUS_TEMPLATE = generateTemplate(REMOTE_REF_STATUS_FIELDS);
+export const WORKSPACE_LIST_TEMPLATE = generateTemplate(WORKSPACE_LIST_FIELDS);

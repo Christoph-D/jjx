@@ -13,6 +13,7 @@ import {
   BOOKMARK_TRACKING_INFO_TEMPLATE,
   REMOTE_REF_STATUS_TEMPLATE,
   CONFLICTED_FILES_TEMPLATE,
+  WORKSPACE_LIST_TEMPLATE,
 } from "./template-builder";
 import spawn from "cross-spawn";
 import type { ChildProcess } from "child_process";
@@ -97,6 +98,12 @@ export type {
   DiffFileEntry,
   SplitFileEntry,
 };
+
+export interface WorkspaceInfo {
+  name: string;
+  /** Absolute path of the workspace root, if it is recorded and resolvable. */
+  root?: string;
+}
 
 export class JJRepository {
   statusCache: RepositoryStatus | undefined;
@@ -1589,6 +1596,60 @@ export class JJRepository {
 
   async updateStale(token?: vscode.CancellationToken): Promise<void> {
     await this.jjCommand(["workspace", "update-stale"], { token, timeout: TIMEOUTS.UPDATE_STALE });
+  }
+
+  private workspacesCache: { operationId: string; workspaces: WorkspaceInfo[] } | undefined;
+
+  async listWorkspaces(operationId?: string): Promise<WorkspaceInfo[]> {
+    if (operationId && this.workspacesCache?.operationId === operationId) {
+      return this.workspacesCache.workspaces;
+    }
+    const output = (
+      await this.jjCommandRead(["workspace", "list", "-T", WORKSPACE_LIST_TEMPLATE], undefined, operationId)
+    ).toString();
+    const workspaces = output
+      .trim()
+      .split("\n")
+      .filter((line) => line.length > 0)
+      .map((line) => {
+        const workspace = JSON.parse(line) as { name: string; root: string };
+        return { name: workspace.name, ...(workspace.root ? { root: workspace.root } : {}) };
+      });
+    if (operationId) {
+      this.workspacesCache = { operationId, workspaces };
+    }
+    return workspaces;
+  }
+
+  async getWorkspaceRoot(name: string, operationId?: string): Promise<string | undefined> {
+    const workspaces = await this.listWorkspaces(operationId);
+    return workspaces.find((workspace) => workspace.name === name)?.root;
+  }
+
+  async getCurrentWorkspaceName(operationId?: string): Promise<string | undefined> {
+    const workspaces = await this.listWorkspaces(operationId);
+    for (const workspace of workspaces) {
+      if (!workspace.root) {
+        continue;
+      }
+      if (pathEquals(workspace.root, this.repositoryRoot)) {
+        return workspace.name;
+      }
+      // The recorded root may contain symlinks that the (canonicalized)
+      // repository root doesn't, e.g. /tmp vs /private/tmp on macOS.
+      try {
+        if (pathEquals(realFs.realpathSync.native(workspace.root), this.repositoryRoot)) {
+          return workspace.name;
+        }
+      } catch {
+        // Unresolvable path (e.g. the workspace directory was moved) — skip.
+      }
+    }
+    return undefined;
+  }
+
+  async forgetWorkspace(name: string): Promise<void> {
+    await this.jjCommand(["workspace", "forget", name]);
   }
 
   async tryAutoUpdateStale(token?: vscode.CancellationToken): Promise<boolean> {

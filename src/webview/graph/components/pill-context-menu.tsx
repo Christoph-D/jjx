@@ -7,14 +7,50 @@ export function PillContextMenu() {
     return null;
   }
 
+  if (state.type === "workspace") {
+    return (
+      <Menu id="pill-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
+        <MenuItem
+          action="forgetWorkspace"
+          onClick={() => {
+            postMessage({ command: "forgetWorkspace", workspace: state.name });
+            pillContextMenu.value = null;
+          }}
+        >
+          Forget Workspace
+        </MenuItem>
+        <MenuItem
+          action="forgetAndDeleteWorkspace"
+          onClick={() => {
+            postMessage({ command: "forgetAndDeleteWorkspace", workspace: state.name });
+            pillContextMenu.value = null;
+          }}
+        >
+          Forget and Delete Workspace
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem
+          action="copyWorkspacePath"
+          onClick={() => {
+            postMessage({ command: "copyWorkspacePath", workspace: state.name });
+            pillContextMenu.value = null;
+          }}
+        >
+          Copy Workspace Path
+        </MenuItem>
+      </Menu>
+    );
+  }
+
   // While the ref is being pushed, the only available action is to cancel the push.
   if (state.cancelPush) {
+    const refType = state.type;
     return (
       <Menu id="pill-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
         <MenuItem
           action="cancelPush"
           onClick={() => {
-            postMessage({ command: "cancelRemoteRefOperation", refType: state.type, name: state.name });
+            postMessage({ command: "cancelRemoteRefOperation", refType, name: state.name });
             pillContextMenu.value = null;
           }}
         >

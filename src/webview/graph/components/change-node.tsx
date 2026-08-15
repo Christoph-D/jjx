@@ -20,6 +20,7 @@ import {
   showChangedFiles,
   dragBookmarkName,
   pillContextMenu,
+  currentWorkspace,
   remoteRefContextMenu,
   closeAllMenus,
   pushingBookmarks,
@@ -276,7 +277,26 @@ const MemoizedChangeNodeTextContent = memo(function ChangeNodeTextContent({
     >
       <div>
         {change.workingCopies?.map((wc) => (
-          <WorkspacePill key={wc} data-workspace={wc}>
+          <WorkspacePill
+            key={wc}
+            data-workspace={wc}
+            title={wc === currentWorkspace.value ? undefined : "Right-click for workspace actions"}
+            onContextMenu={
+              wc === currentWorkspace.value
+                ? undefined
+                : (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllMenus();
+                    pillContextMenu.value = {
+                      type: "workspace",
+                      name: wc,
+                      pageX: e.pageX,
+                      pageY: e.pageY,
+                    };
+                  }
+            }
+          >
             {escapeInvisibleChars(wc)}
           </WorkspacePill>
         ))}

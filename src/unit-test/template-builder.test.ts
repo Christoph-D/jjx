@@ -8,6 +8,7 @@ import {
   buildLogTemplate,
   buildOperationTemplate,
   CONFLICTED_FILES_TEMPLATE,
+  WORKSPACE_LIST_TEMPLATE,
 } from "../template-builder";
 
 describe("TemplateBuilder Test Suite", () => {
@@ -197,6 +198,13 @@ describe("TemplateBuilder Test Suite", () => {
     assert.strictEqual(
       CONFLICTED_FILES_TEMPLATE,
       `"{" ++ "\\"conflicted_files\\": [" ++ self.conflicted_files().map(|f| stringify(f.path().display()).escape_json()).join(",") ++ "]" ++ "}\\n"`,
+    );
+  });
+
+  it("WORKSPACE_LIST_TEMPLATE emits name and root per line", () => {
+    assert.strictEqual(
+      WORKSPACE_LIST_TEMPLATE,
+      `"{" ++ "\\"name\\": " ++ stringify(self.name()).escape_json() ++ "," ++ "\\"root\\": " ++ stringify(self.root()).escape_json() ++ "}\\n"`,
     );
   });
 
