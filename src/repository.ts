@@ -824,7 +824,10 @@ export class JJRepository {
         ...splitConfigs.flatMap((c) => ["--config", c]),
       ],
       {
-        timeout: TIMEOUTS.SPLIT_TOOL,
+        // No timeout: after the diff-tool phase jj opens its interactive description editors,
+        // which must not be killed while the user is writing the commit messages. The
+        // Promise.race against jjExit below already covers jj dying before the tool runs.
+        timeout: 0,
         cwd: this.repositoryRoot,
         env: { VSCODE_JJ_SPLIT_REQUEST_ID: requestId },
       },
