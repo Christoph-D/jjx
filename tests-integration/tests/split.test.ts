@@ -687,7 +687,7 @@ test("file mode changes split via the File mode changed checkbox", async ({ grap
 
   await testRepo.commitFile("base.txt", "base\n", "Base");
   await testRepo.commitFile("f.sh", "one\ntwo\n", "Add script");
-  await testRepo.jjCommand(["file", "chmod", "+x", "f.sh"]);
+  await testRepo.jjCommand(["file", "chmod", "x", "f.sh"]);
   await testRepo.writeFile("keep.txt", "kept\n");
   await testRepo.commit("Split me");
 
@@ -751,12 +751,12 @@ test("a selected mode change lands in the first split commit", async ({ graphFra
 
   await testRepo.commitFile("base.txt", "base\n", "Base");
   await testRepo.commitFile("f.sh", "one\ntwo\n", "Add script");
-  await testRepo.jjCommand(["file", "chmod", "+x", "f.sh"]);
+  await testRepo.jjCommand(["file", "chmod", "x", "f.sh"]);
   await testRepo.writeFile("f.sh", "one\ntwo\nthree\n");
   await testRepo.commit("Split me");
 
   const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(4);
+  await expect(nodes).toHaveCount(5);
 
   const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
   await expect(splitFrame.locator(".splitFile")).toHaveCount(1);
@@ -773,7 +773,7 @@ test("a selected mode change lands in the first split commit", async ({ graphFra
   await handleEditor(workbox, "", "All selected");
   await handleEditor(workbox, "", "All remaining");
 
-  await expect(nodes).toHaveCount(5);
+  await expect(nodes).toHaveCount(6);
 
   const allSelected = await changeIdFor(testRepo, "All selected");
   const gitDiffs = await gitDiff(testRepo, allSelected);
