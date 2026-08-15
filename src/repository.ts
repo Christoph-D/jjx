@@ -1611,9 +1611,17 @@ export class JJRepository {
       .trim()
       .split("\n")
       .filter((line) => line.length > 0)
-      .map((line) => {
-        const workspace = JSON.parse(line) as { name: string; root: string };
-        return { name: workspace.name, ...(workspace.root ? { root: workspace.root } : {}) };
+      .flatMap((line) => {
+        try {
+          const workspace = JSON.parse(line) as { name: string; root: string };
+          return [{ name: workspace.name, ...(workspace.root ? { root: workspace.root } : {}) }];
+        } catch {
+          // jj 0.40–0.43 render `self.root()` evaluation failures inline (e.g.
+          // "<Error: Failed to resolve workspace root: ...>"), which breaks the
+          // JSON line for workspaces whose root is unrecorded or stale. Skip
+          // such lines instead of failing the whole listing.
+          return [];
+        }
       });
     if (operationId) {
       this.workspacesCache = { operationId, workspaces };
@@ -1622,8 +1630,23 @@ export class JJRepository {
   }
 
   async getWorkspaceRoot(name: string, operationId?: string): Promise<string | undefined> {
-    const workspaces = await this.listWorkspaces(operationId);
-    return workspaces.find((workspace) => workspace.name === name)?.root;
+    // `jj workspace list` templates cannot report this reliably: on jj 0.44+
+    // `self.root()` silently renders empty when the recorded root is stale or
+    // was never recorded (workspaces created before jj 0.38), on jj 0.40–0.43
+    // it breaks the output with an inline error, and on jj 0.38–0.39 it doesn't
+    // exist at all. `jj workspace root --name` (jj's strict diagnostics) fails
+    // loudly instead, and prints an absolute path on jj 0.40+.
+    let root: string;
+    try {
+      root = (await this.jjCommandRead(["workspace", "root", "--name", name], undefined, operationId)).toString();
+    } catch {
+      // No such workspace, or its root is unrecorded/unresolvable.
+      return undefined;
+    }
+    root = root.trim();
+    // jj 0.38–0.39 print a path relative to the repo's .jj directory, which
+    // cannot be resolved reliably (and must never be used for deletion).
+    return path.isAbsolute(root) ? root : undefined;
   }
 
   async getCurrentWorkspaceName(operationId?: string): Promise<string | undefined> {

@@ -137,6 +137,26 @@ test("workspace pill context menu", async ({ graphFrame, testRepo, workbox }) =>
     await expect(workspace2Pill).not.toBeVisible();
   });
 
+  await test.step("forget and delete workspace falls back to forget when the root cannot be determined", async () => {
+    await addWorkspace2();
+    await expect(workspace2Pill).toBeVisible();
+    // Remove the workspace directory behind jj's back: its recorded root
+    // becomes stale, so jj can no longer report it.
+    fs.rmSync(workspace2Path, { recursive: true, force: true });
+
+    await clickPillMenuItem(graphFrame, workspace2Pill, "Forget and Delete Workspace");
+
+    const dialog = workbox.locator(".monaco-dialog-box");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('The root path of workspace "workspace2" could not be determined');
+    await dialog.getByRole("button", { name: "Forget Workspace" }).click();
+    await expect(dialog).not.toBeVisible();
+
+    await expect(workspace2Pill).not.toBeVisible();
+    const workspaces = await testRepo.jjCommand(["workspace", "list"]);
+    expect(workspaces.stdout).not.toContain("workspace2");
+  });
+
   await test.step("copy workspace path copies the root to the clipboard", async () => {
     await addWorkspace2();
     await expect(workspace2Pill).toBeVisible();

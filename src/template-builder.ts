@@ -387,8 +387,11 @@ const CONFLICTED_FILES_FIELDS: TemplateFields = {
 
 const WORKSPACE_LIST_FIELDS: TemplateFields = {
   name: { type: "string", expr: "self.name()" },
-  // The root is optional: workspaces created before jj 0.38.0 did not record
-  // one, and a recorded path can become stale if the directory is moved.
+  // The root is optional and unreliable: `WorkspaceRef.root()` requires
+  // jj 0.40.0, workspaces created before jj 0.38.0 did not record one, and
+  // jj 0.44+ renders it empty when the recorded path is stale (directory
+  // moved or deleted). Use `getWorkspaceRoot()` for a strict per-workspace
+  // lookup.
   root: { type: "string", expr: "self.root()" },
 };
 

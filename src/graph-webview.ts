@@ -273,8 +273,13 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             break;
           }
           if (!workspaceRoot) {
-            vscode.window.showWarningMessage(
-              `The root path of workspace "${message.workspace}" could not be determined, so its directory cannot be deleted.`,
+            // Degrade gracefully: forget the workspace without deleting its
+            // directory instead of aborting entirely.
+            await this.confirmAndExecute(
+              `The root path of workspace "${message.workspace}" could not be determined, so its directory cannot be deleted. Forget the workspace without deleting its directory?`,
+              "Forget Workspace",
+              "forget workspace",
+              () => repo.forgetWorkspace(message.workspace),
             );
             break;
           }
