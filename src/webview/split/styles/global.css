@@ -71,6 +71,12 @@ body {
   background-color: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-hoverBackground));
 }
 
+.splitHint {
+  align-self: center;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+
 .splitPrimaryButton {
   color: var(--vscode-button-foreground);
   background-color: var(--vscode-button-background);
