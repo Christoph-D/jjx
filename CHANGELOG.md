@@ -1,5 +1,23 @@
 # Change Log
 
+## 1.13.0
+
+### New Features
+
+- **Interactive `jj split`** - A new "Split" action in the graph context menu runs `jj split` interactively.
+- **Workspace pill context menu** - Right-click a workspace pill to forget the workspace (optionally deleting its
+  directory) or copy its path.
+
+### Bug Fixes
+
+- Make custom context-menu text non-selectable so menu items cannot be accidentally highlighted or drag-selected
+
+### Internal
+
+- **Read diff-tool snapshots from disk** - The `jjx-vscode-diff` subprocess now reports only its snapshot directory
+  paths; the extension reads the files it needs directly from disk instead of serializing whole file trees as base64
+  JSON over IPC. This removes per-file serialization and speeds up single-file diffs and the Split view.
+
 ## 1.12.6
 
 ### Bug Fixes
