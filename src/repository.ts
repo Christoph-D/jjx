@@ -112,6 +112,16 @@ export class JJRepository {
   private autoUpdateStaleAttempted = false;
   private _gitDirPromise: Promise<string> | undefined;
 
+  // Latest operation id observed for this repository
+  private lastKnownOperationId: string | undefined;
+
+  /**
+   * Short-lived memo for show()/showAll() results (see {@link JJRepository.showAll}),
+   * keyed by the queried revsets. Only valid for {@link showMemoOperationId}.
+   */
+  private showMemo = new Map<string, Promise<Show[]>>();
+  private showMemoOperationId: string | undefined;
+
   /**
    * Cancellation sources for in-flight remote ref operations,
    * keyed by `<refType>:<name>`.
@@ -251,6 +261,7 @@ export class JJRepository {
     args: string[],
     options?: { token?: vscode.CancellationToken; timeout?: number; env?: Record<string, string> },
   ) {
+    this.showMemo.clear();
     return handleJJCommand(
       this.spawnJJ(args, { timeout: options?.timeout, cwd: this.repositoryRoot, env: options?.env }),
       options?.token,
@@ -345,7 +356,9 @@ export class JJRepository {
       () => handleJJCommand(this.spawnJJ(reconcileArgs, { cwd: this.repositoryRoot }), token),
       (maxDelayMs) => this.jitteredDelay(maxDelayMs, token),
     );
-    return buf.toString().trim();
+    const operationId = buf.toString().trim();
+    this.lastKnownOperationId = operationId;
+    return operationId;
   }
 
   async getStatus(useCache = false, token?: vscode.CancellationToken, operationId?: string): Promise<RepositoryStatus> {
@@ -477,7 +490,42 @@ export class JJRepository {
     return formatChangeIdShort(change.changeId);
   }
 
-  async showAll(revsets: string[], token?: vscode.CancellationToken, operationId?: string) {
+  /**
+   * Runs `jj log -T SHOW_TEMPLATE --no-graph` for the given revsets, memoized per
+   * (revsets, operation id).
+   */
+  async showAll(revsets: string[], token?: vscode.CancellationToken, operationId?: string): Promise<Show[]> {
+    const memoOperationId = operationId ?? this.lastKnownOperationId;
+    if (!memoOperationId) {
+      // No operation id is known yet, so the result cannot be pinned (and safely memoized).
+      return this.showAllUncached(revsets, token, operationId);
+    }
+    if (this.showMemoOperationId !== memoOperationId) {
+      this.showMemo.clear();
+      this.showMemoOperationId = memoOperationId;
+    }
+    const key = revsets.join("\0");
+    const memoized = this.showMemo.get(key);
+    if (memoized) {
+      return memoized;
+    }
+    const promise = this.showAllUncached(revsets, token, operationId).catch((error) => {
+      this.showMemo.delete(key);
+      throw error;
+    });
+    this.showMemo.set(key, promise);
+    return promise;
+  }
+
+  /**
+   * Like {@link JJRepository.showAll}, but always spawns `jj log` without consulting (or
+   * populating) the memo.
+   */
+  private async showAllUncached(
+    revsets: string[],
+    token?: vscode.CancellationToken,
+    operationId?: string,
+  ): Promise<Show[]> {
     const output = (
       await this.jjCommandRead(
         ["log", "-T", SHOW_TEMPLATE, "--no-graph", ...revsets.flatMap((revset) => ["-r", revset])],
