@@ -75,6 +75,7 @@ import type {
   FullChangeId,
 } from "./types";
 import {
+  SYMLINK_FILE_MODE,
   buildSplitFileEntry,
   reconstructRightModes,
   reconstructRightSides,
@@ -882,14 +883,21 @@ export class JJRepository {
         const target = path.join(rightFolderAbsolutePath, relativePath);
         // jj creates the diff-edit files read-only, so replace them instead of truncating.
         await fs.rm(target, { force: true });
-        if (content !== undefined) {
-          await fs.mkdir(path.dirname(target), { recursive: true });
-          await fs.writeFile(target, content);
+        if (content === undefined) {
+          continue;
         }
+        await fs.mkdir(path.dirname(target), { recursive: true });
+        const mode = rightModes.get(relativePath);
+        if (mode === SYMLINK_FILE_MODE) {
+          // A symlink's content is its target string: recreate the link itself, since the
+          // git-style type bits cannot be applied to a regular file by a chmod.
+          await fs.symlink(content.toString("utf8"), target);
+          continue;
+        }
+        await fs.writeFile(target, content);
         // A selected mode change (or the restored old mode of a deselected one) is applied on
         // top; the permission bits carry it, the git-style type bits do not survive a chmod.
-        const mode = rightModes.get(relativePath);
-        if (mode !== undefined && content !== undefined) {
+        if (mode !== undefined) {
           await fs.chmod(target, parseInt(mode, 8) & 0o777);
         }
       }
@@ -1909,13 +1917,18 @@ export class JJRepository {
       const binary =
         (leftBuffer !== undefined && leftText === undefined) || (rightBuffer !== undefined && rightText === undefined);
       // A mode change is only offered for modified and renamed files whose mode differs between
-      // the two sides (added/deleted files lack one side, so they never qualify). Modes are empty
-      // on platforms that cannot track them (see jj-diff-tool-main.ts).
+      // the two sides (added/deleted files lack one side, so they never qualify). Symlink modes
+      // ("120000") are carried too — even when unchanged, for retargeted links — so the split
+      // reconstruction can recreate the link; the Split view offers no checkbox for them (a
+      // chmod cannot express a type change). Modes are empty on platforms that cannot track
+      // them (see jj-diff-tool-main.ts).
       const modeEligible = fileStatus.type === "M" || renamedFrom !== undefined;
       const leftMode = modeEligible && leftPath !== undefined ? leftModes[leftPath] : undefined;
       const rightMode = modeEligible && rightPath !== undefined ? rightModes[rightPath] : undefined;
       const modeChanged =
-        leftMode !== undefined && rightMode !== undefined && leftMode !== rightMode ? rightMode : undefined;
+        leftMode !== undefined && rightMode !== undefined && (leftMode !== rightMode || rightMode === SYMLINK_FILE_MODE)
+          ? rightMode
+          : undefined;
       logger.trace(
         `[getSplitFileEntries] ${fileStatus.type} ${relativePath} left=${leftBase64 !== undefined} ` +
           `right=${rightBase64 !== undefined} binary=${binary} modeChangedTo=${modeChanged ?? "<none>"}`,

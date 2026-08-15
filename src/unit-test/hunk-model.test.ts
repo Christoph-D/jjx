@@ -986,6 +986,50 @@ describe("reconstructRightModes Test Suite", () => {
     assert.equal(modes.size, 0);
   });
 
+  it("carries symlink modes so type changes reconstruct as links", () => {
+    const toLink = buildSplitFileEntry({
+      path: "f.txt",
+      status: "M",
+      modeChangedFrom: "100644",
+      modeChangedTo: "120000",
+      left: Buffer.from("regular\n"),
+      right: Buffer.from("target.txt"),
+    });
+    // Default: the selected type change recreates the link in the first commit.
+    assert.equal(reconstructRightModes([toLink], createSplitCheckboxState()).get("f.txt"), "120000");
+
+    // Unchecked: the first commit keeps the regular file.
+    const state = createSplitCheckboxState();
+    setFileChecked("f.txt", state, false);
+    assert.equal(reconstructRightModes([toLink], state).get("f.txt"), "100644");
+
+    // The reverse type change keeps the link when unchecked.
+    const toFile = buildSplitFileEntry({
+      path: "l.txt",
+      status: "M",
+      modeChangedFrom: "120000",
+      modeChangedTo: "100644",
+      left: Buffer.from("target.txt"),
+      right: Buffer.from("regular\n"),
+    });
+    setFileChecked("l.txt", state, false);
+    assert.equal(reconstructRightModes([toFile], state).get("l.txt"), "120000");
+  });
+
+  it("keeps the symlink mode of a retargeted link", () => {
+    const retargeted = buildSplitFileEntry({
+      path: "r.txt",
+      status: "M",
+      modeChangedFrom: "120000",
+      modeChangedTo: "120000",
+      left: Buffer.from("old.txt"),
+      right: Buffer.from("new.txt"),
+    });
+    // The mode did not change, but the reconstruction still needs it to recreate the link
+    // whichever target string the selection keeps.
+    assert.equal(reconstructRightModes([retargeted], createSplitCheckboxState()).get("r.txt"), "120000");
+  });
+
   it("applies a renamed file's mode change to whichever path it lives on", () => {
     const renamed = buildSplitFileEntry({
       path: "new.sh",

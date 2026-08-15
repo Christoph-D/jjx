@@ -1,4 +1,5 @@
 import {
+  SYMLINK_FILE_MODE,
   buildSplitLines,
   getFileCheckState,
   getHunkCheckState,
@@ -106,10 +107,15 @@ export function buildSplitFileViewModels(entries: readonly SplitViewFileEntry[])
 
 /**
  * The new mode offered by a file's "File mode changed to <mode>" entry, if any: only modified
- * and renamed files whose mode actually changed get one (added/deleted files never do).
+ * and renamed files whose mode actually changed get one (added/deleted files never do). Symlink
+ * type changes offer no entry — a chmod cannot turn a regular file into a link (or vice versa),
+ * so they move with the file's own checkbox and the reconstruction recreates the link.
  */
 export function modeChangeOf(entry: SplitViewFileEntry): string | undefined {
-  if (entry.modeChangedTo === undefined) {
+  if (entry.modeChangedTo === undefined || entry.modeChangedFrom === undefined) {
+    return undefined;
+  }
+  if (entry.modeChangedTo === SYMLINK_FILE_MODE || entry.modeChangedFrom === SYMLINK_FILE_MODE) {
     return undefined;
   }
   return entry.status === "M" || entry.renamedFrom !== undefined ? entry.modeChangedTo : undefined;

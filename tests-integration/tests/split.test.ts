@@ -949,3 +949,127 @@ test("file mode changes split between the resulting commits", async ({ graphFram
     expect(await fileContent(testRepo, allSelected, "g.sh")).toBe("one\ntwo\nthree\n");
   });
 });
+
+test("file type changes to and from symlinks split between the resulting commits", async ({
+  graphFrame,
+  testRepo,
+  workbox,
+}) => {
+  test.skip(process.platform === "win32", "Windows file systems do not support symlinks");
+  test.slow();
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await testRepo.commitFile("target.txt", "hello\n", "Base");
+  await testRepo.commitFile("f.txt", "regular\n", "Add regular");
+
+  await test.step("an unselected file-to-symlink change defers to the second commit", async () => {
+    await testRepo.deleteFile("f.txt");
+    await testRepo.createSymlink("f.txt", "target.txt");
+    await testRepo.writeFile("keep.txt", "kept\n");
+    await testRepo.commit("Split me");
+
+    await expect(nodes).toHaveCount(5);
+
+    const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+    await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+    const fRow = splitFileRow(splitFrame, "f.txt");
+    await expandSplitFile(fRow);
+    // The type change offers no "File mode changed to 120000" entry: only the link's target
+    // string shows up, as plain content next to the old file's text.
+    await expect(fRow.locator(".splitRename")).toHaveCount(0);
+    await expect(fRow.locator(".splitHunk")).toHaveCount(1);
+    await expect(fRow.locator(".splitLineRemoved")).toContainText("regular");
+    await expect(fRow.locator(".splitLineAdded")).toContainText("target.txt");
+
+    // Keep the type change out of the first commit: only keep.txt is split off.
+    const fCheckbox = fRow.locator(".splitFileRow input.splitCheckbox");
+    await fCheckbox.click();
+    await expect(fCheckbox).not.toBeChecked();
+    await splitFrame.locator(".splitPrimaryButton").click();
+
+    await handleEditor(workbox, "", "Keep rest");
+    await handleEditor(workbox, "", "Type change");
+
+    await expect(nodes).toHaveCount(6);
+
+    await expect(async () => {
+      const logEntries = await testRepo.log();
+      expect(getParents(logEntries, "Keep rest")).toEqual(["Add regular"]);
+      expect(getParents(logEntries, "Type change")).toEqual(["Keep rest"]);
+      expect(getParents(logEntries, "@")).toEqual(["Type change"]);
+    }).toPass();
+
+    // The first commit only adds keep.txt; the type change falls to the second commit.
+    expect(await diffSummary(testRepo, await changeIdFor(testRepo, "Keep rest"))).toBe("A keep.txt");
+    const typeChangeDiff = await gitDiff(testRepo, await changeIdFor(testRepo, "Type change"));
+    expect(typeChangeDiff).toContain("old mode 100644");
+    expect(typeChangeDiff).toContain("new mode 120000");
+    expect(typeChangeDiff).toContain("-regular");
+    expect(typeChangeDiff).toContain("+target.txt");
+  });
+
+  await test.step("a selected symlink-to-file change lands in the first split commit", async () => {
+    await testRepo.deleteFile("f.txt");
+    await testRepo.writeFile("f.txt", "now regular\n");
+    await testRepo.commit("Split me");
+
+    await expect(nodes).toHaveCount(7);
+
+    const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+    await expect(splitFrame.locator(".splitFile")).toHaveCount(1);
+
+    const fRow = splitFileRow(splitFrame, "f.txt");
+    await expandSplitFile(fRow);
+    await expect(fRow.locator(".splitRename")).toHaveCount(0);
+    await expect(fRow.locator(".splitHunk")).toHaveCount(1);
+    await expect(fRow.locator(".splitLineRemoved")).toContainText("target.txt");
+    await expect(fRow.locator(".splitLineAdded")).toContainText("now regular");
+
+    // Everything stays selected, so the type change goes into the first commit.
+    await splitFrame.locator(".splitPrimaryButton").click();
+
+    await handleEditor(workbox, "", "To file");
+    await handleEditor(workbox, "", "To file rest");
+
+    await expect(nodes).toHaveCount(8);
+
+    const toFile = await changeIdFor(testRepo, "To file");
+    expect(await diffSummary(testRepo, toFile)).toBe("M f.txt");
+    const toFileDiff = await gitDiff(testRepo, toFile);
+    expect(toFileDiff).toContain("old mode 120000");
+    expect(toFileDiff).toContain("new mode 100644");
+    expect(await fileContent(testRepo, toFile, "f.txt")).toBe("now regular\n");
+  });
+
+  await test.step("a selected file-to-symlink change recreates the link in the first commit", async () => {
+    await testRepo.deleteFile("f.txt");
+    await testRepo.createSymlink("f.txt", "target.txt");
+    await testRepo.commit("Split me");
+
+    await expect(nodes).toHaveCount(9);
+
+    const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+    await expect(splitFrame.locator(".splitFile")).toHaveCount(1);
+
+    const fRow = splitFileRow(splitFrame, "f.txt");
+    await expandSplitFile(fRow);
+    await expect(fRow.locator(".splitRename")).toHaveCount(0);
+    await expect(fRow.locator(".splitHunk")).toHaveCount(1);
+
+    // Everything stays selected, so the first commit must hold the actual link, not a regular
+    // file with the target string (or 777 permissions) as content.
+    await splitFrame.locator(".splitPrimaryButton").click();
+
+    await handleEditor(workbox, "", "To link");
+    await handleEditor(workbox, "", "To link rest");
+
+    await expect(nodes).toHaveCount(10);
+
+    const toLink = await changeIdFor(testRepo, "To link");
+    expect(await diffSummary(testRepo, toLink)).toBe("M f.txt");
+    const toLinkDiff = await gitDiff(testRepo, toLink);
+    expect(toLinkDiff).toContain("old mode 100644");
+    expect(toLinkDiff).toContain("new mode 120000");
+  });
+});

@@ -12,6 +12,9 @@ export interface SplitHunk {
   lines: SplitLine[];
 }
 
+/** Git-style mode of a symlink (see {@link SplitFileEntry.modeChangedTo}). */
+export const SYMLINK_FILE_MODE = "120000";
+
 export interface SplitFileEntry {
   // Repository-relative path with "/" separators; doubles as the key in SplitCheckboxState.
   path: string;
@@ -21,7 +24,10 @@ export interface SplitFileEntry {
   conflict: boolean;
   // Git-style octal modes (e.g. "100644"/"100755") of a modified or renamed file whose mode
   // differs between the two sides of the split; both are undefined when the mode is unchanged
-  // (and for added/deleted files, which show no mode-change entry).
+  // (and for added/deleted files, which show no mode-change entry). Symlink modes
+  // ("120000") are carried too — even when unchanged, for retargeted links — but offer no
+  // mode-change entry: a type change moves with the file's own checkbox instead, and the
+  // reconstruction recreates the link rather than chmod-ing permission bits.
   modeChangedFrom?: string;
   modeChangedTo?: string;
   hunks?: SplitHunk[];
@@ -494,9 +500,10 @@ export function setModeChecked(path: string, state: SplitCheckboxState, checked:
 }
 
 /**
- * Reconstructs the right-side file mode of every entry with a mode change. The returned map is
- * keyed by the path the file lives on in the first commit (including rename source paths for
- * unchecked renames); files without an entry keep the mode of the left side as-is.
+ * Reconstructs the right-side file mode of every entry with a mode change (symlink modes ride
+ * along even without one, since the link must be recreated rather than chmod-ed). The returned
+ * map is keyed by the path the file lives on in the first commit (including rename source paths
+ * for unchecked renames); files without an entry keep the mode of the left side as-is.
  */
 export function reconstructRightModes(
   entries: readonly SplitFileEntry[],

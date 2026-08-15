@@ -266,6 +266,50 @@ describe("buildSplitFileViewModels Test Suite", () => {
       );
     }
   });
+
+  it("offers no mode-change entry for symlink type changes", () => {
+    const models = buildSplitFileViewModels([
+      // Regular file replaced by a symlink: the content becomes the link's target string.
+      {
+        path: "f.txt",
+        status: "M",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "100644",
+        modeChangedTo: "120000",
+        leftText: "regular\n",
+        rightText: "target.txt",
+      },
+      // Symlink replaced by a regular file.
+      {
+        path: "l.txt",
+        status: "M",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "120000",
+        modeChangedTo: "100644",
+        leftText: "target.txt",
+        rightText: "regular\n",
+      },
+      // Retargeted link: the mode stays "120000" while the target string changes.
+      {
+        path: "r.txt",
+        status: "M",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "120000",
+        modeChangedTo: "120000",
+        leftText: "old.txt",
+        rightText: "new.txt",
+      },
+    ]);
+    for (const model of models) {
+      assert.equal(modeChangeOf(model.entry), undefined);
+      // The type change is not its own checkable; only the content hunks expand.
+      assert.equal(hasExpandableSplitEntries(model), model.hunkGroups.length > 0);
+    }
+    assert.equal(models[0].hunkGroups.length, 1);
+  });
 });
 
 describe("split change counts Test Suite", () => {

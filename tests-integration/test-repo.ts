@@ -118,6 +118,12 @@ export class TestRepo {
     await fs.unlink(fullPath);
   }
 
+  async createSymlink(relativePath: string, target: string): Promise<void> {
+    const fullPath = path.join(this.repoPath, relativePath);
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
+    await fs.symlink(target, fullPath);
+  }
+
   async commitFile(relativePath: string, content: string, message: string): Promise<string> {
     await this.writeFile(relativePath, content);
     return this.commit(message);

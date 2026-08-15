@@ -34,7 +34,14 @@ function readDirRecursive(
       Object.assign(files, nested.files);
       Object.assign(modes, nested.modes);
     } else {
-      files[relativePath] = fs.readFileSync(fullPath).toString("base64");
+      // A symlink's content is its target string (matching how git and jj diff symlinks):
+      // read the link itself so a link whose target is missing from the materialized snapshot
+      // (jj only writes changed files there) doesn't fail the whole directory read.
+      if (entry.isSymbolicLink()) {
+        files[relativePath] = Buffer.from(fs.readlinkSync(fullPath), "utf8").toString("base64");
+      } else {
+        files[relativePath] = fs.readFileSync(fullPath).toString("base64");
+      }
       if (supportsFileModes) {
         modes[relativePath] = fileMode(fullPath);
       }
