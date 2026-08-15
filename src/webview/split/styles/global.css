@@ -163,16 +163,19 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
-/* The "File Renamed" and "File mode changed" rows are not collapsible (no chevron, no pointer
-   cursor); their checkboxes align with the hunk checkboxes below, which sit right of their
-   chevrons. */
+/* The "File Renamed" and "File mode changed" rows are not collapsible (no pointer cursor); a
+   hidden chevron reserves the hunk rows' expand/collapse slot so their checkboxes align with
+   the hunk checkboxes below. */
 .splitRename {
   margin: 2px 0;
 }
 
 .splitRenameRow {
   cursor: default;
-  padding-left: 20px;
+}
+
+.splitChevronPlaceholder {
+  visibility: hidden;
 }
 
 .splitRenameRow:hover {

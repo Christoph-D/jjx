@@ -155,6 +155,11 @@ function ContextSeparator({ count }: { count: number }) {
   return <div class="splitRow splitSeparator">⋯ {lineCount(count)} unchanged ⋯</div>;
 }
 
+/** Hidden chevron reserving the exact expand/collapse slot of hunk rows so the checkbox lines up. */
+function ChevronPlaceholder() {
+  return <i class="codicon codicon-chevron-right splitChevronPlaceholder" aria-hidden="true" />;
+}
+
 /** The "File Renamed" checkbox row: decides which commit the rename itself lands in. */
 function RenameRow({ path, renamedFrom }: { path: string; renamedFrom: string }) {
   const checked = getRenameChecked(path, checkState.value);
@@ -165,6 +170,7 @@ function RenameRow({ path, renamedFrom }: { path: string; renamedFrom: string })
         title={`${renamedFrom} → ${path}`}
         onClick={() => toggleRenameChecked(path)}
       >
+        <ChevronPlaceholder />
         <TriStateCheckbox
           state={checked}
           title="File Renamed"
@@ -187,6 +193,7 @@ function ModeRow({ path, mode }: { path: string; mode: string }) {
         title={`File mode changed to ${mode}`}
         onClick={() => toggleModeChecked(path)}
       >
+        <ChevronPlaceholder />
         <TriStateCheckbox
           state={checked}
           title={`File mode changed to ${mode}`}
