@@ -68,20 +68,12 @@ export function ariaChecked(state: SplitCheckState): "true" | "mixed" | "false" 
   return state === true ? "true" : state === false ? "false" : "mixed";
 }
 
-/**
- * The class suffix marking `id` as the selected row of the arrow-key navigation. Every row
- * reads the selection signal directly (the outline does not rely on DOM focus), so a click on
- * a row selects it in addition to toggling its checkbox.
- */
+/** The class suffix marking `id` as the selected row of the arrow-key navigation. */
 function selectedClass(id: SplitRowId): string {
   return sameSplitRow(selectedRow.value, id) ? " splitSelected" : "";
 }
 
-/**
- * The `+N -M` added/removed line counts shared by the "Select Everything" row, the file
- * header rows, and the section header rows; a count of 0 is omitted, and rows with no
- * counted changes show no numbers at all.
- */
+/** The `+N -M` added/removed line counts; a count of 0 is omitted entirely. */
 export function ChangeCounts({ counts }: { counts: SplitChangeCounts }) {
   if (counts.added <= 0 && counts.removed <= 0) {
     return null;
@@ -96,11 +88,8 @@ export function ChangeCounts({ counts }: { counts: SplitChangeCounts }) {
 }
 
 /**
- * The vertical line running down a section's contents, horizontally centered under the
- * section's chevron. Clicking it toggles the section's collapse state (the same toggle as its
- * header chevron); like the chevrons, it is a real button and works with the keyboard. Only
- * rendered while the section is expanded: a collapsed section has no contents for the line
- * to span.
+ * The vertical line spanning a section's contents; a real button that toggles the collapse
+ * like the header chevron (keyboard accessible) and is rendered only while expanded.
  */
 function CollapseLine({ label, onClick }: { label: string; onClick: () => void }) {
   const title = `Collapse ${label}`;
@@ -108,11 +97,9 @@ function CollapseLine({ label, onClick }: { label: string; onClick: () => void }
 }
 
 /**
- * The expand/collapse chevron of a file or section row, in the `CollapseLine` pattern: a real
- * `<button>` with title/aria-label, focus styles, and Enter/Space activation (unlike the
- * `<i>` it renders, which is purely the codicon glyph). The chevron is the dedicated
- * expand/collapse affordance while the row itself toggles the selection, so its activation
- * must not reach the row handler.
+ * The expand/collapse chevron of a file or section row: a real button wrapping the codicon
+ * glyph (title/aria-label, focus, Enter/Space). Its activation must not reach the row's own
+ * click handler.
  */
 function Chevron({ expanded, title, onClick }: { expanded: boolean; title: string; onClick: () => void }) {
   return (

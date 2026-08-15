@@ -1877,18 +1877,16 @@ export class JJRepository {
   }
 
   /**
-   * Collects the per-file diff data of the commit `commitId` for the Split view:
-   * the file statuses parsed from `jj diff --summary` (M/A/D/R/C) plus the
-   * base64-encoded left (parent) and right (commit) contents of every changed
-   * file, captured via the `jjx-vscode-diff` diff tool handshake. Handles adds,
-   * deletes, renames (including rename plus content edit), and binaries. The
-   * commit's conflicted files are fetched with an extra `jj log` template call
-   * so {@link SplitFileEntry.conflict} can be set; the contents of a conflicted
-   * file contain jj's materialized conflict markers. Non-binary contents are
-   * decoded into `leftText`/`rightText`, ready for hunk splitting.
+   * Collects the per-file diff data of the commit `commitId` for the Split view: the file
+   * statuses parsed from `jj diff --summary` (M/A/D/R/C) plus the base64-encoded left (parent)
+   * and right (commit) contents of every changed file, captured via the `jjx-vscode-diff` diff
+   * tool handshake. Conflicted files are fetched with an extra `jj log` call so
+   * {@link SplitFileEntry.conflict} can be set (their contents contain jj's materialized
+   * conflict markers); non-binary contents are decoded into `leftText`/`rightText` for hunk
+   * splitting.
    *
-   * `commitId` must be a full (unabbreviated) commit id so the diff stays
-   * pinned to the same commit across concurrent repo updates.
+   * `commitId` must be a full (unabbreviated) commit id so the diff stays pinned across
+   * concurrent repo updates.
    */
   async getSplitFileEntries(commitId: string, token?: vscode.CancellationToken): Promise<SplitFileEntry[]> {
     const { summary, leftFiles, rightFiles, leftModes, rightModes } = await this.runDiffToolSummary(
@@ -1916,12 +1914,10 @@ export class JJRepository {
       const rightText = rightBuffer !== undefined ? decodeFileText(rightBuffer) : undefined;
       const binary =
         (leftBuffer !== undefined && leftText === undefined) || (rightBuffer !== undefined && rightText === undefined);
-      // A mode change is only offered for modified and renamed files whose mode differs between
-      // the two sides (added/deleted files lack one side, so they never qualify). Symlink modes
-      // ("120000") are carried too — even when unchanged, for retargeted links — so the split
-      // reconstruction can recreate the link; the Split view offers no checkbox for them (a
-      // chmod cannot express a type change). Modes are empty on platforms that cannot track
-      // them (see jj-diff-tool-main.ts).
+      // A mode change is only offered for modified/renamed files whose mode differs between the
+      // two sides (see SplitFileEntry.modeChangedFrom). Symlink modes ("120000") ride along
+      // even when unchanged, for retargeted links. Modes are empty on platforms that cannot
+      // track them (see jj-diff-tool-main.ts).
       const modeEligible = fileStatus.type === "M" || renamedFrom !== undefined;
       const leftMode = modeEligible && leftPath !== undefined ? leftModes[leftPath] : undefined;
       const rightMode = modeEligible && rightPath !== undefined ? rightModes[rightPath] : undefined;
@@ -1949,10 +1945,7 @@ export class JJRepository {
     });
   }
 
-  /**
-   * Returns the repo-relative paths of the files that are conflicted in the
-   * commit `commitId`.
-   */
+  /** Returns the repo-relative paths of the files conflicted in the commit `commitId`. */
   private async getConflictedFilePaths(commitId: string, token?: vscode.CancellationToken): Promise<string[]> {
     const output = (
       await this.jjCommandRead(["log", "-r", commitId, "--no-graph", "-T", CONFLICTED_FILES_TEMPLATE], { token })

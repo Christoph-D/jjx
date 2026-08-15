@@ -56,8 +56,7 @@ export function splitFileChangeCounts(file: SplitFileViewModel): SplitChangeCoun
     removed += group.removedCount;
   }
   if (added === 0 && removed === 0) {
-    // Entries that expand into no hunks (empty or non-expandable adds/deletes) still count
-    // their one-sided contents, like the whole-file summary they replace.
+    // Whole-file adds/deletes without hunks still count their one-sided contents.
     const text =
       file.entry.status === "A" ? file.entry.rightText : file.entry.status === "D" ? file.entry.leftText : undefined;
     const count = text === undefined ? 0 : splitFileLines(text).length;
@@ -106,10 +105,8 @@ export function buildSplitFileViewModels(entries: readonly SplitViewFileEntry[])
 }
 
 /**
- * The new mode offered by a file's "File mode changed to <mode>" entry, if any: only modified
- * and renamed files whose mode actually changed get one (added/deleted files never do). Symlink
- * type changes offer no entry — a chmod cannot turn a regular file into a link (or vice versa),
- * so they move with the file's own checkbox and the reconstruction recreates the link.
+ * The new mode offered by a file's "File mode changed to <mode>" entry, if any; symlink type
+ * changes offer none — a chmod cannot change a file's type (see SplitFileEntry.modeChangedTo).
  */
 export function modeChangeOf(entry: SplitViewFileEntry): string | undefined {
   if (entry.modeChangedTo === undefined || entry.modeChangedFrom === undefined) {
@@ -121,10 +118,7 @@ export function modeChangeOf(entry: SplitViewFileEntry): string | undefined {
   return entry.status === "M" || entry.renamedFrom !== undefined ? entry.modeChangedTo : undefined;
 }
 
-/**
- * True when a file has entries to expand into: content hunks or a mode change whose "File mode
- * changed to <mode>" checkbox is picked separately from the whole-file checkbox.
- */
+/** True when a file has rows to expand into: content hunks or a separate mode-change checkbox. */
 export function hasExpandableSplitEntries(file: SplitFileViewModel): boolean {
   return file.hunkGroups.length > 0 || modeChangeOf(file.entry) !== undefined;
 }
@@ -133,8 +127,6 @@ function buildSplitFileViewModel(entry: SplitViewFileEntry): SplitFileViewModel 
   if (!isExpandableSplitEntry(entry)) {
     return { entry, hunkGroups: [], contextCounts: [] };
   }
-  // A deleted file is diffed against an empty right side (removing every left-side line) and
-  // an added file against an empty left side (adding every right-side line).
   const { hunkGroups, contextCounts } = buildHunkGroups(entry.leftText ?? "", entry.rightText ?? "");
   if (hunkGroups.length === 0) {
     return { entry, hunkGroups: [], contextCounts: [] };
@@ -142,41 +134,27 @@ function buildSplitFileViewModel(entry: SplitViewFileEntry): SplitFileViewModel 
   return { entry: { ...entry, hunks: hunkGroups.map((group) => group.hunk) }, hunkGroups, contextCounts };
 }
 
-/**
- * The state a file or hunk row's toggle lands on: a fully unchecked row checks all of its lines,
- * while a partially or fully checked row unchecks them — the same cycle the line rows perform
- * on themselves.
- */
+/** The state a toggle lands on: a fully unchecked row checks all of its lines, anything else unchecks. */
 function toggleTargetOf(current: SplitCheckState): boolean {
   return current === false;
 }
 
-/**
- * Toggles a whole file's selection in `state`: a fully unchecked file checks all of its lines
- * (plus its rename and mode change), while a partially or fully checked file unchecks them all.
- */
+/** Toggles all of a file's checkables — lines, rename, and mode change — at once. */
 export function toggleSplitFileChecked(file: SplitFileViewModel, state: SplitCheckboxState): void {
   setFileChecked(file.entry.path, state, toggleTargetOf(getFileCheckState(file.entry, state)));
 }
 
-/**
- * Toggles a hunk's selection in `state`: a fully unchecked hunk checks all of its lines, while a
- * partially or fully checked hunk unchecks them all.
- */
+/** Toggles all of a hunk's lines at once. */
 export function toggleSplitHunkChecked(path: string, hunk: SplitHunk, state: SplitCheckboxState): void {
   setHunkChecked(path, hunk, state, toggleTargetOf(getHunkCheckState(path, hunk, state)));
 }
 
-/**
- * Toggles a renamed file's rename selection in `state`, independent of its content hunks.
- */
+/** Toggles a renamed file's rename selection. */
 export function toggleSplitRenameChecked(path: string, state: SplitCheckboxState): void {
   setRenameChecked(path, state, toggleTargetOf(getRenameChecked(path, state)));
 }
 
-/**
- * Toggles a file's mode-change selection in `state`, independent of its content hunks.
- */
+/** Toggles a file's mode-change selection. */
 export function toggleSplitModeChecked(path: string, state: SplitCheckboxState): void {
   setModeChecked(path, state, toggleTargetOf(getModeChecked(path, state)));
 }
@@ -230,10 +208,8 @@ export function sameSplitRow(a: SplitRowId | null, b: SplitRowId | null): boolea
 }
 
 /**
- * Builds every row of the view in display order — the "Select Everything" row, then each
- * file's row followed by its mode-change, rename, section, and line rows — with the
- * visibility flag derived from the collapse state. Context separators carry no checkbox and
- * are not selectable, so they take no part in the navigation model.
+ * Builds every row in display order, with visibility derived from the collapse state. Context
+ * separators carry no checkbox, so they take no part in the navigation model.
  */
 export function buildSplitRows(
   files: readonly SplitFileViewModel[],
@@ -267,10 +243,9 @@ export function buildSplitRows(
 }
 
 /**
- * Steps through the rows in display order for the Up/Down keys: from `current` (or from just
- * outside the list when nothing is selected — Down then picks the first row, Up the last) to
- * the previous/next visible row, wrapping around at both ends and skipping rows hidden inside
- * collapsed sections.
+ * Steps to the previous/next visible row for the Up/Down keys, wrapping around at both ends
+ * and skipping rows hidden inside collapsed sections. With nothing selected, starts just
+ * outside the list, so Down picks the first row and Up the last.
  */
 export function stepSplitRow(
   rows: readonly SplitRowRef[],
@@ -280,8 +255,8 @@ export function stepSplitRow(
   if (rows.length === 0) {
     return null;
   }
-  // A missing selection (initially, or after the selected row vanished with a refresh) starts
-  // just outside the list; a hidden one keeps its real place and the walk skips it.
+  // A selection that vanished with a refresh starts just outside the list; a hidden one keeps
+  // its real place and the walk skips it.
   const found = current === null ? -1 : rows.findIndex((row) => sameSplitRow(row.id, current));
   let index = found === -1 ? (delta > 0 ? -1 : rows.length) : found;
   for (let step = 0; step < rows.length; step++) {

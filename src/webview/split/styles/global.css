@@ -15,7 +15,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  /* The split view is a mouse-driven UI; no text should be selectable by dragging. */
+  /* Mouse-driven UI: text is not selectable. */
   user-select: none;
 }
 
@@ -67,7 +67,7 @@ body {
   color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
   background-color: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
   cursor: pointer;
-  /* Button labels must stay on one line no matter how narrow the view gets. */
+  /* Keep button labels on one line even in narrow views. */
   white-space: nowrap;
   flex: none;
 }
@@ -80,7 +80,7 @@ body {
   align-self: center;
   color: var(--vscode-descriptionForeground);
   white-space: nowrap;
-  /* In very narrow views the hint yields space to the buttons and ellipsizes. */
+  /* In narrow views the hint yields space to the buttons. */
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -109,16 +109,14 @@ body {
   white-space: nowrap;
 }
 
-/* Text is unselectable across the split view, so an outline is the only way to tell which
-   row the arrow-key selection is on (the separators carry no checkbox and are never
-   selectable). The rows are not focusable; the app tracks the selection itself, so the
-   outline does not rely on DOM focus order. */
+/* Text is unselectable, so an outline is the only way to mark the arrow-key selection. The
+   rows are not focusable (the app tracks the selection itself), so it cannot rely on DOM
+   focus. */
 .splitRow.splitSelected {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
 }
 
-/* The "Select Everything" row sits above every file row. */
 .splitSelectAllRow {
   margin-top: 0px;
   padding-top: 1px;
@@ -135,7 +133,7 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
-/* Every file row toggles its whole selection on click, so all of them act clickable. */
+/* File rows toggle their whole selection on click. */
 .splitFileRow {
   cursor: pointer;
   margin-top: 0px;
@@ -185,8 +183,8 @@ body {
   margin: 2px 0;
 }
 
-/* The line rows of an expanded hunk; the hunk's vertical collapse line runs down their left
-   edge, starting under the hunk row's chevron. */
+/* The hunk's vertical collapse line runs down the line rows' left edge, starting under the
+   hunk row's chevron. */
 .splitLines {
   position: relative;
 }
@@ -196,13 +194,12 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
-/* The "File Renamed" and "File mode changed" rows are not collapsible (no pointer cursor); a
-   hidden chevron reserves the hunk rows' expand/collapse slot so their checkboxes align with
-   the hunk checkboxes below. */
 .splitRename {
   margin: 2px 0;
 }
 
+/* The rename and mode-change rows are not collapsible; the hidden chevron reserves the hunk
+   rows' expand/collapse slot so the checkboxes align. */
 .splitRenameRow {
   cursor: default;
 }
@@ -224,9 +221,8 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
-/* The chevron buttons are the dedicated expand/collapse affordances of file and hunk rows
-   (the rows themselves toggle the selection); the padding/negative-margin pair enlarges
-   their hit area without shifting the row layout. */
+/* The padding/negative-margin pair enlarges the chevron's hit area without shifting the row
+   layout. */
 .splitChevron {
   display: inline-flex;
   align-items: center;
@@ -243,13 +239,10 @@ body {
   outline-offset: -1px;
 }
 
-/* The vertical collapse lines of the file and hunk sections: the button is the line's hit
-   area (the line itself is drawn by ::before), and clicking it toggles the section like the
-   header chevrons. Every section row starts with a 16px chevron slot (codicon.css sizes the
-   icons at 16px, outspecifying the 14px font-size rules below), and the button covers exactly
-   that slot so the line is centered under the chevron: the file line spans the file's
-   contents, while a hunk line starts below the hunk's header row and spans the hunk's
-   lines. */
+/* The vertical collapse line's hit area; the line itself is drawn by ::before. Clicking it
+   toggles the section like the header chevron. The 16px width matches the chevron slot
+   every section row starts with (codicon.css sizes the icons at 16px, outspecifying the
+   14px font-size rules below), so the line centers under the chevron. */
 .splitCollapseLine {
   position: absolute;
   top: 0;
@@ -308,12 +301,11 @@ body {
 
 /* The diff editor paints purely added lines with two stacked translucent backgrounds: the
    word-level diffEditor.insertedTextBackground underneath and the whole-line
-   diffEditor.insertedLineBackground band on top (its diffWholeLineAddDecoration over
-   line-insert), which composites to a brighter green than either layer alone. Layer both to
-   match; a solid color cannot be stacked on background-color, so the line band is drawn as a
-   gradient over it. The fallbacks are the tokens' VS Code defaults; insertedTextBackground's
-   default differs per theme, so the light default gets its own rule keyed on the webview's
-   theme class. */
+   diffEditor.insertedLineBackground band on top, compositing to a brighter green than
+   either layer alone. Layer both to match; a solid color cannot stack on
+   background-color, so the line band is drawn as a gradient over it. The fallbacks are the
+   tokens' VS Code defaults; insertedTextBackground's default differs per theme, so the
+   light default gets its own rule keyed on the webview's theme class. */
 .splitLineAdded {
   background-color: var(--vscode-diffEditor-insertedTextBackground, #9ccc2c33);
   background-image: linear-gradient(
@@ -358,9 +350,8 @@ body {
 
 .splitCheckbox {
   flex: none;
-  /* Pin one size so every checkbox renders identically: the native default follows the
-     inherited font size, which differs between line rows (editor font size) and the other
-     rows (UI font size). Matches the 14px codicons used alongside them. */
+  /* Pin one size: the native default follows the inherited font size, which differs between
+     line rows (editor font) and the other rows (UI font). Matches the 14px codicons. */
   width: 14px;
   height: 14px;
   margin: 0;

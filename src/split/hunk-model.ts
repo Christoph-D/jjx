@@ -23,11 +23,10 @@ export interface SplitFileEntry {
   binary: boolean;
   conflict: boolean;
   // Git-style octal modes (e.g. "100644"/"100755") of a modified or renamed file whose mode
-  // differs between the two sides of the split; both are undefined when the mode is unchanged
-  // (and for added/deleted files, which show no mode-change entry). Symlink modes
-  // ("120000") are carried too — even when unchanged, for retargeted links — but offer no
-  // mode-change entry: a type change moves with the file's own checkbox instead, and the
-  // reconstruction recreates the link rather than chmod-ing permission bits.
+  // differs between the two sides; undefined when unchanged or for added/deleted files. Symlink
+  // modes ("120000") ride along even when unchanged (for retargeted links) but get no checkbox:
+  // a type change moves with the file's own checkbox, and reconstruction recreates the link
+  // rather than chmod-ing permission bits.
   modeChangedFrom?: string;
   modeChangedTo?: string;
   hunks?: SplitHunk[];
@@ -45,12 +44,10 @@ export interface SplitFileEntry {
 export type SplitCheckState = boolean | "indeterminate";
 
 /**
- * Checkbox state for a whole split view. Line checkboxes default to checked (true), so only
- * deviations need to be recorded. Per-line entries win over the file-level entry, which acts as
- * the fallback for lines without an explicit entry; toggling a whole file replaces any per-line
- * entries. The rename checkboxes of renamed files and the mode-change checkboxes of files whose
- * mode changed are recorded separately (keyed by the file's path) and fall back to the file-level
- * entry the same way.
+ * Checkbox state for a whole split view. Everything defaults to checked, so only deviations
+ * are recorded: per-line entries win over the file-level entry (the fallback), and toggling a
+ * whole file replaces its per-line entries. Rename and mode-change checkboxes are recorded
+ * separately and fall back to the file-level entry the same way.
  */
 export interface SplitCheckboxState {
   files: Record<string, boolean>;
@@ -184,11 +181,10 @@ function slideUp(run: ChangeRun, gap: string[], following: string[]): void {
 }
 
 /**
- * Merges runs of changed lines that only stay apart because the differ paired the "wrong" one of
- * several equal lines, like a modification the differ splits into a separate addition and
- * deletion around an unchanged line (git's change compaction pairs such lines into one hunk).
- * Two runs separated only by unchanged lines are slid together whenever sliding can close the
- * whole gap; runs that cannot reach each other keep the differ's pairing.
+ * Merges runs of changed lines that only stay apart because the differ paired the "wrong" one
+ * of several equal lines, like a modification split into a separate addition and deletion
+ * around an unchanged line (git's change compaction pairs these into one hunk). Runs separated
+ * only by unchanged lines are slid together whenever sliding can close the whole gap.
  */
 function mergeRuns(blocks: DiffBlock[]): DiffBlock[] {
   let i = 0;
@@ -398,7 +394,7 @@ export function getHunkCheckState(path: string, hunk: SplitHunk, state: SplitChe
   return combineCheckStates(hunk.lines.map((line) => getLineChecked(path, line, state)));
 }
 
-/** Checkbox state of a file's rename ("File Renamed"); defaults to checked like line states. */
+/** Checkbox state of a file's rename ("File Renamed"). */
 export function getRenameChecked(path: string, state: SplitCheckboxState): boolean {
   const renameState = state.renames[path];
   if (renameState !== undefined) {
@@ -407,7 +403,7 @@ export function getRenameChecked(path: string, state: SplitCheckboxState): boole
   return state.files[path] ?? true;
 }
 
-/** Checkbox state of a file's mode change ("File mode changed to <mode>"); defaults to checked. */
+/** Checkbox state of a file's mode change ("File mode changed to <mode>"). */
 export function getModeChecked(path: string, state: SplitCheckboxState): boolean {
   const modeState = state.modes[path];
   if (modeState !== undefined) {

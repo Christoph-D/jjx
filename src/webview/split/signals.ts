@@ -89,7 +89,7 @@ export function setAllFilesExpanded(paths: readonly string[], expanded: boolean)
   expandedFiles.value = expanded ? new Set(paths) : new Set();
 }
 
-/** Collapses (or expands) a hunk, keyed like `collapsedHunks`. */
+/** Collapses (or expands) a hunk. */
 export function setHunkCollapsed(path: string, index: number, collapsed: boolean): void {
   const key = hunkKey(path, index);
   const next = new Set(collapsedHunks.value);
@@ -101,7 +101,7 @@ export function setHunkCollapsed(path: string, index: number, collapsed: boolean
   collapsedHunks.value = next;
 }
 
-/** Toggles a hunk's collapse state, keyed like `collapsedHunks`. */
+/** Toggles a hunk's collapse state. */
 export function toggleHunkCollapsed(path: string, index: number): void {
   setHunkCollapsed(path, index, !collapsedHunks.value.has(hunkKey(path, index)));
 }
@@ -128,28 +128,28 @@ export function setAllFilesCheckState(entries: readonly SplitViewFileEntry[], ch
   setAllFilesChecked(entries, state, checked);
   commitStateChange(state);
 }
-/** Toggles a renamed file's "File Renamed" checkbox, independent of its content hunks. */
+/** Sets a renamed file's "File Renamed" checkbox. */
 export function setRenameCheckState(path: string, checked: boolean): void {
   const state = checkState.value;
   setRenameChecked(path, state, checked);
   commitStateChange(state);
 }
 
-/** Toggles a file's "File mode changed" checkbox, independent of its content hunks. */
+/** Sets a file's "File mode changed" checkbox. */
 export function setModeCheckState(path: string, checked: boolean): void {
   const state = checkState.value;
   setModeChecked(path, state, checked);
   commitStateChange(state);
 }
 
-/** Toggles a renamed file's "File Renamed" checkbox like a row click, independent of its content hunks. */
+/** Toggles a renamed file's "File Renamed" checkbox like a row click. */
 export function toggleRenameChecked(path: string): void {
   const state = checkState.value;
   toggleSplitRenameChecked(path, state);
   commitStateChange(state);
 }
 
-/** Toggles a file's "File mode changed" checkbox like a row click, independent of its content hunks. */
+/** Toggles a file's "File mode changed" checkbox like a row click. */
 export function toggleModeChecked(path: string): void {
   const state = checkState.value;
   toggleSplitModeChecked(path, state);
@@ -162,17 +162,14 @@ export function toggleLineChecked(path: string, line: SplitLine): void {
   commitStateChange(state);
 }
 
-/**
- * Toggles every checkable of a file like a line row: a fully unchecked file checks all of its
- * lines (plus its rename and mode change), otherwise everything is unchecked.
- */
+/** Toggles every checkable of a file like a row click. */
 export function toggleFileChecked(file: SplitFileViewModel): void {
   const state = checkState.value;
   toggleSplitFileChecked(file, state);
   commitStateChange(state);
 }
 
-/** Toggles every line of a hunk like a line row: fully unchecked checks them, otherwise unchecks. */
+/** Toggles every line of a hunk like a row click. */
 export function toggleHunkChecked(path: string, hunk: SplitHunk): void {
   const state = checkState.value;
   toggleSplitHunkChecked(path, hunk, state);

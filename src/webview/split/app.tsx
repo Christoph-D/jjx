@@ -53,8 +53,7 @@ const allFilesState = computed(() =>
 // Aggregate added/removed line counts shown on the "Select Everything" row.
 const allFilesCounts = computed(() => splitChangeCountsTotal(fileModels.value));
 
-// Every row of the view in display order, with the visibility flag that hides the contents
-// of collapsed files and sections from arrow-key navigation.
+// Every row in display order, with visibility derived from the collapse state.
 const splitRows = computed(() => buildSplitRows(fileModels.value, expandedFiles.value, collapsedHunks.value));
 
 const allRowId: SplitRowId = { kind: "all" };
@@ -110,9 +109,8 @@ function toggleSelectedRow(): void {
 }
 
 /**
- * Left/Right: collapses/expands the selected row. A file row collapses and expands the file,
- * a section row the section; every other row (and the direction the row already sits in) is
- * a no-op, so neither key ever moves the selection.
+ * Left/Right: collapses/expands the selected file or section row; other rows (and the
+ * direction the row already sits in) are no-ops, and neither key moves the selection.
  */
 function setSelectedRowExpanded(expanded: boolean): void {
   const id = selectedRow.value;
@@ -132,9 +130,9 @@ function setSelectedRowExpanded(expanded: boolean): void {
 }
 
 /**
- * True when the key event belongs to one of the view's real controls (the header buttons and
- * the chevrons, collapse lines, and checkboxes). Those keep their native keys — Space toggles
- * a focused checkbox, Tab and Enter work the buttons — so the row navigation must not claim them.
+ * True when the key event belongs to one of the view's real controls (buttons, chevrons,
+ * collapse lines, checkboxes). Those keep their native keys, so the row navigation must not
+ * claim them.
  */
 function fromInteractiveControl(e: KeyboardEvent): boolean {
   return e.target instanceof Element && e.target.closest("button, input, textarea, select") !== null;

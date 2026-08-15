@@ -87,15 +87,11 @@ export class SplitWebview {
         }
       });
 
-      // VS Code cannot veto a panel close (onDidDispose fires after the panel is gone), so
-      // closing the view without confirming can only be handled after the fact: ask whether
-      // the latest selection should be applied after all. When the split was already settled
-      // via Split/Cancel (which dispose the panel themselves), stay silent; likewise when the
-      // selection was never touched, confirming would just apply a full split (an empty second
-      // commit) the user almost certainly did not intend, so the split is discarded silently.
+      // VS Code cannot veto a panel close, so closing without confirming is handled after the
+      // fact: ask whether the latest selection should be applied after all. Stay silent when
+      // the split was already settled via Split/Cancel, or when the selection was never touched.
       // Closing the whole window or reloading cannot wait for the answer, so the split is then
-      // discarded. "Discard" is marked as the close affordance so VS Code does not add a third
-      // "Cancel" button to the dialog (Escape then discards, just like "Discard").
+      // discarded.
       panel.onDidDispose(() => {
         messageListener.dispose();
         if (settled || !selectionTouched) {
