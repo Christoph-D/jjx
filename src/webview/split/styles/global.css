@@ -54,6 +54,8 @@ body {
 .splitHeaderButtons {
   display: flex;
   gap: 8px;
+  /* Keep the buttons at their natural size; the header info yields space instead. */
+  flex: none;
 }
 
 .splitButton {
@@ -65,6 +67,9 @@ body {
   color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
   background-color: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
   cursor: pointer;
+  /* Button labels must stay on one line no matter how narrow the view gets. */
+  white-space: nowrap;
+  flex: none;
 }
 
 .splitButton:hover {
@@ -75,6 +80,9 @@ body {
   align-self: center;
   color: var(--vscode-descriptionForeground);
   white-space: nowrap;
+  /* In very narrow views the hint yields space to the buttons and ellipsizes. */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .splitPrimaryButton {
