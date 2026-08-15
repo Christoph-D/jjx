@@ -51,25 +51,40 @@ and error messages for failing or noisy results. Read the resulting log to diagn
 | `src/repository.ts`              | Core JJ command execution, repository state                  |
 | `src/source-control.ts`          | VS Code source control integration                           |
 | `src/config.ts`                  | VS Code settings (jj path, timeout, config paths)            |
+| `src/config.toml`                | jj config applied to extension-invoked jj commands           |
 | `src/extension-state.ts`         | Shared mutable extension state with change notifications     |
 | `src/polling.ts`                 | Graph webview init and periodic repository state polling     |
 | `src/process.ts`                 | Child process spawning for jj CLI invocations                |
+| `src/spawn-env.ts`               | Allowlist-based environment for spawned jj processes         |
 | `src/constants.ts`               | Timeout defaults, debounce intervals, min jj version         |
 | `src/template-builder.ts`        | JJ template string generation for JSON output                |
+| `src/types.ts`                   | Shared types (change IDs, file statuses)                     |
+| `src/utils.ts`                   | Change ID helpers, TOML escaping, fileset construction       |
+| `src/logger.ts`                  | Logging to the extension's output channel                    |
 | `src/graph-webview.ts`           | Commit graph webview host                                    |
 | `src/graph-protocol.ts`          | TypeScript interfaces for commit graph data (webview IPC)    |
 | `src/webview/graph/`             | Commit graph UI (Preact)                                     |
 | `src/lane-assigner.ts`           | Algorithm for commit graph lane layout                       |
 | `src/elided-edges.ts`            | Collapsed edge rendering for graph                           |
+| `src/split-webview.ts`           | Split view webview host (interactive `jj split`)             |
+| `src/split-protocol.ts`          | TypeScript interfaces for split view data (webview IPC)      |
+| `src/split/`                     | Hunk/checkbox model backing the split view                   |
+| `src/webview/split/`             | Split view UI (Preact)                                       |
 | `src/file-system-provider.ts`    | Virtual file system for `jj://` URIs                         |
 | `src/uri.ts`                     | Constructs and parses `jj://` scheme URIs                    |
 | `src/annotations.ts`             | Inline editor decorations showing change IDs (`jj annotate`) |
+| `src/diff-utils.ts`              | Line-level diff computation for editor decorations           |
 | `src/ipc/`                       | IPC server/client for extension subprocess communication     |
 | `src/jj-editor.ts`               | External editor integration (`jj edit`, squash, merge, diff) |
 | `src/jj-*-main.ts`               | Standalone subprocess entry points for jj tools (IPC)        |
 | `src/decoration-provider.ts`     | In-editor line decorations (change IDs, etc.)                |
 | `src/operation-log-tree-view.ts` | Tree view for JJ operation log                               |
 | `src/colocated-check.ts`         | Detects and warns colocated repos (`.jj` + `.git`)           |
+| `src/divergence-handling.ts`     | Retry/reconcile logic for divergent jj operation heads       |
+| `src/parse-*.ts`                 | Parsers for jj textual output (file statuses, rename paths)  |
+| `src/quote.ts`                   | Quotes tag/bookmark names as jj string literals              |
+| `src/relative-time.ts`           | Relative time formatting for graph timestamps                |
+| `src/vscode-utils.ts`            | VS Code helpers (error display, event combinators)           |
 | `src/errors.ts`                  | Custom error classes and jj error message parsing            |
 
 ## JJ Templating Reference
