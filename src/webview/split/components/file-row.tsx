@@ -15,11 +15,11 @@ import {
   collapsedHunks,
   expandedFiles,
   hunkKey,
-  setFileCheckState,
-  setHunkCheckState,
   setModeCheckState,
   setRenameCheckState,
+  toggleFileChecked,
   toggleFileExpanded,
+  toggleHunkChecked,
   toggleHunkCollapsed,
   toggleLineChecked,
 } from "../signals";
@@ -74,13 +74,24 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
       <div
         class={"splitRow splitFileRow" + (expandable ? " splitExpandable" : "")}
         title={entry.renamedFrom ? `${entry.renamedFrom} → ${entry.path}` : entry.path}
-        onClick={() => expandable && toggleFileExpanded(entry.path)}
+        onClick={() => toggleFileChecked(file)}
       >
-        {expandable && <i class={expanded ? "codicon codicon-chevron-down" : "codicon codicon-chevron-right"} />}
+        {expandable && (
+          <i
+            class={expanded ? "codicon codicon-chevron-down" : "codicon codicon-chevron-right"}
+            title={expanded ? "Collapse file" : "Expand file"}
+            onClick={(e) => {
+              // The chevron is the dedicated expand/collapse affordance; the row itself toggles
+              // the selection, so the click must not reach the row handler.
+              e.stopPropagation();
+              toggleFileExpanded(entry.path);
+            }}
+          />
+        )}
         <TriStateCheckbox
           state={fileState}
           title={deleted ? "File Deleted" : renamed && !expandable ? "File Renamed" : undefined}
-          onChange={(checked) => setFileCheckState(entry.path, checked)}
+          onChange={() => toggleFileChecked(file)}
         />
         <span class="splitStatus" style={`color: ${STATUS_COLORS[entry.status]}`}>
           {entry.status}
@@ -182,12 +193,25 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
   const collapsed = collapsedHunks.value.has(hunkKey(path, index));
   return (
     <div class="splitHunk">
-      <div class="splitRow splitHunkRow" title="Collapse/expand hunk" onClick={() => toggleHunkCollapsed(path, index)}>
-        <i class={collapsed ? "codicon codicon-chevron-right" : "codicon codicon-chevron-down"} />
+      <div
+        class="splitRow splitHunkRow"
+        title={hunkState === false ? "Include hunk" : "Exclude hunk"}
+        onClick={() => toggleHunkChecked(path, group.hunk)}
+      >
+        <i
+          class={collapsed ? "codicon codicon-chevron-right" : "codicon codicon-chevron-down"}
+          title={collapsed ? "Expand hunk" : "Collapse hunk"}
+          onClick={(e) => {
+            // The chevron is the dedicated collapse/expand affordance; the row itself toggles
+            // the selection, so the click must not reach the row handler.
+            e.stopPropagation();
+            toggleHunkCollapsed(path, index);
+          }}
+        />
         <TriStateCheckbox
           state={hunkState}
           title={`Hunk ${index + 1}`}
-          onChange={(checked) => setHunkCheckState(path, group.hunk, checked)}
+          onChange={() => toggleHunkChecked(path, group.hunk)}
         />
         <span class="splitHunkHeader">
           @@ <span class="splitAdded">+{group.addedCount}</span> <span class="splitRemoved">-{group.removedCount}</span>

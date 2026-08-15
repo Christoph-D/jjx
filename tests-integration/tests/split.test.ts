@@ -113,21 +113,28 @@ test("partial split of a multi-file multi-hunk commit with tri-state checkboxes"
   await expect(hunk1Checkbox).toBeChecked({ indeterminate: true });
   await expect(f1Checkbox).toBeChecked({ indeterminate: true });
 
-  // Checking an indeterminate hunk propagates down and re-checks its lines.
+  // Toggling a partially checked hunk unchecks all of its lines; with the second hunk already
+  // unchecked, the file checkbox goes fully unchecked as well.
   await hunk1Checkbox.click();
+  await expect(changed1bLine.locator("input.splitCheckbox")).not.toBeChecked();
+  await expect(hunk1Checkbox).not.toBeChecked();
+  await expect(f1Checkbox).not.toBeChecked();
+
+  // Toggling the fully unchecked file propagates down and re-checks its hunks.
+  await f1Checkbox.click();
   await expect(changed1bLine.locator("input.splitCheckbox")).toBeChecked();
   await expect(hunk1Checkbox).toBeChecked();
-
-  // Checking an indeterminate file propagates down and re-checks its hunks.
-  await f1Checkbox.click();
   await expect(hunk2Checkbox).toBeChecked();
   await expect(f1Checkbox).toBeChecked();
 
-  // Final selection for the first commit: only the first hunk of f1.txt.
-  await hunk2Checkbox.click();
+  // Final selection for the first commit: only the first hunk of f1.txt. Clicking the hunk row
+  // itself (not just its checkbox) toggles every line of the hunk.
+  await hunk2.locator(".splitHunkRow").click();
   await expect(hunk2Checkbox).not.toBeChecked();
-  const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator(".splitFileRow input.splitCheckbox");
-  await f2Checkbox.click();
+  const f2Row = splitFileRow(splitFrame, "f2.txt");
+  const f2Checkbox = f2Row.locator(".splitFileRow input.splitCheckbox");
+  // Clicking the file row itself (not just its checkbox) toggles the whole file.
+  await f2Row.locator(".splitFileRow").click();
   await expect(f2Checkbox).not.toBeChecked();
 
   await splitFrame.locator(".splitPrimaryButton").click();

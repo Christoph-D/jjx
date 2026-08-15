@@ -1,13 +1,25 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildSplitHunks } from "../split/hunk-model";
+import {
+  buildSplitHunks,
+  createSplitCheckboxState,
+  getFileCheckState,
+  getHunkCheckState,
+  getLineChecked,
+  getModeChecked,
+  getRenameChecked,
+  setLineChecked,
+} from "../split/hunk-model";
 import {
   buildSplitFileViewModels,
   hasExpandableSplitEntries,
   isExpandableSplitEntry,
   modeChangeOf,
+  toggleSplitFileChecked,
+  toggleSplitHunkChecked,
 } from "../webview/split/view-model";
+import type { SplitCheckboxState } from "../split/hunk-model";
 import type { SplitViewFileEntry } from "../split-protocol";
 
 function modifiedEntry(path: string, left: string, right: string): SplitViewFileEntry {
@@ -249,5 +261,126 @@ describe("buildSplitFileViewModels Test Suite", () => {
         model.entry.path === "added.txt" || model.entry.path === "gone.txt",
       );
     }
+  });
+});
+
+describe("split file/hunk toggle Test Suite", () => {
+  /** A modified file with two single-line hunks (b → B and e → E) around unchanged lines. */
+  function twoHunkModel() {
+    return buildSplitFileViewModels([modifiedEntry("f.txt", "a\nb\nc\nd\ne\nf\n", "a\nB\nc\nd\nE\nf\n")])[0];
+  }
+
+  it("toggling a fully checked file unchecks every line, and toggling again re-checks them", () => {
+    const model = twoHunkModel();
+    const state: SplitCheckboxState = createSplitCheckboxState();
+    assert.equal(getFileCheckState(model.entry, state), true);
+
+    toggleSplitFileChecked(model, state);
+    assert.equal(getFileCheckState(model.entry, state), false);
+    for (const group of model.hunkGroups) {
+      assert.equal(getHunkCheckState("f.txt", group.hunk, state), false);
+      for (const line of group.hunk.lines) {
+        assert.equal(getLineChecked("f.txt", line, state), false);
+      }
+    }
+
+    toggleSplitFileChecked(model, state);
+    assert.equal(getFileCheckState(model.entry, state), true);
+    for (const group of model.hunkGroups) {
+      assert.equal(getHunkCheckState("f.txt", group.hunk, state), true);
+    }
+  });
+
+  it("toggling a partially checked file unchecks its remaining lines", () => {
+    const model = twoHunkModel();
+    const state: SplitCheckboxState = createSplitCheckboxState();
+    // One excluded line leaves the file checkbox indeterminate.
+    setLineChecked("f.txt", model.hunkGroups[0].hunk.lines[0], state, false);
+    assert.equal(getFileCheckState(model.entry, state), "indeterminate");
+
+    toggleSplitFileChecked(model, state);
+    assert.equal(getFileCheckState(model.entry, state), false);
+    for (const group of model.hunkGroups) {
+      for (const line of group.hunk.lines) {
+        assert.equal(getLineChecked("f.txt", line, state), false);
+      }
+    }
+  });
+
+  it("toggling a hunk unchecks only that hunk's lines and turns the file indeterminate", () => {
+    const model = twoHunkModel();
+    const state: SplitCheckboxState = createSplitCheckboxState();
+
+    toggleSplitHunkChecked("f.txt", model.hunkGroups[0].hunk, state);
+    assert.equal(getHunkCheckState("f.txt", model.hunkGroups[0].hunk, state), false);
+    assert.equal(getHunkCheckState("f.txt", model.hunkGroups[1].hunk, state), true);
+    for (const line of model.hunkGroups[0].hunk.lines) {
+      assert.equal(getLineChecked("f.txt", line, state), false);
+    }
+    for (const line of model.hunkGroups[1].hunk.lines) {
+      assert.equal(getLineChecked("f.txt", line, state), true);
+    }
+    assert.equal(getFileCheckState(model.entry, state), "indeterminate");
+  });
+
+  it("toggling a partially checked hunk unchecks its remaining lines", () => {
+    const model = twoHunkModel();
+    const state: SplitCheckboxState = createSplitCheckboxState();
+    setLineChecked("f.txt", model.hunkGroups[0].hunk.lines[0], state, false);
+    assert.equal(getHunkCheckState("f.txt", model.hunkGroups[0].hunk, state), "indeterminate");
+
+    toggleSplitHunkChecked("f.txt", model.hunkGroups[0].hunk, state);
+    assert.equal(getHunkCheckState("f.txt", model.hunkGroups[0].hunk, state), false);
+    for (const line of model.hunkGroups[0].hunk.lines) {
+      assert.equal(getLineChecked("f.txt", line, state), false);
+    }
+
+    // A fully unchecked hunk toggles back to fully checked.
+    toggleSplitHunkChecked("f.txt", model.hunkGroups[0].hunk, state);
+    assert.equal(getHunkCheckState("f.txt", model.hunkGroups[0].hunk, state), true);
+  });
+
+  it("toggling a file covers its rename, mode change, and content hunks", () => {
+    const [model] = buildSplitFileViewModels([
+      {
+        path: "new.sh",
+        renamedFrom: "old.sh",
+        status: "R",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "100644",
+        modeChangedTo: "100755",
+        leftText: "a\n",
+        rightText: "b\n",
+      },
+    ]);
+    assert.equal(model.hunkGroups.length, 1);
+
+    const state: SplitCheckboxState = createSplitCheckboxState();
+    toggleSplitFileChecked(model, state);
+    assert.equal(getFileCheckState(model.entry, state), false);
+    assert.equal(getRenameChecked("new.sh", state), false);
+    assert.equal(getModeChecked("new.sh", state), false);
+    assert.equal(getHunkCheckState("new.sh", model.hunkGroups[0].hunk, state), false);
+
+    toggleSplitFileChecked(model, state);
+    assert.equal(getFileCheckState(model.entry, state), true);
+    assert.equal(getRenameChecked("new.sh", state), true);
+    assert.equal(getModeChecked("new.sh", state), true);
+    assert.equal(getHunkCheckState("new.sh", model.hunkGroups[0].hunk, state), true);
+  });
+
+  it("toggling a whole-file leaf records the file-level state", () => {
+    const [model] = buildSplitFileViewModels([{ path: "b.bin", status: "M", binary: true, conflict: false }]);
+    assert.equal(model.hunkGroups.length, 0);
+
+    const state: SplitCheckboxState = createSplitCheckboxState();
+    toggleSplitFileChecked(model, state);
+    assert.equal(state.files["b.bin"], false);
+    assert.equal(getFileCheckState(model.entry, state), false);
+
+    toggleSplitFileChecked(model, state);
+    assert.equal(state.files["b.bin"], true);
+    assert.equal(getFileCheckState(model.entry, state), true);
   });
 });

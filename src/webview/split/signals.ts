@@ -4,8 +4,6 @@ import {
   createSplitCheckboxState,
   getLineChecked,
   setAllFilesChecked,
-  setFileChecked,
-  setHunkChecked,
   setLineChecked,
   setModeChecked,
   setRenameChecked,
@@ -17,6 +15,8 @@ import type {
   SplitViewFileEntry,
 } from "../../split-protocol";
 import type { SplitHunk, SplitLine } from "../../split/hunk-model";
+import type { SplitFileViewModel } from "./view-model";
+import { toggleSplitFileChecked, toggleSplitHunkChecked } from "./view-model";
 
 export interface VSCodeAPI {
   postMessage(message: unknown): void;
@@ -96,25 +96,12 @@ function postCurrentState(): void {
   postMessage({ command: "stateChanged", state: checkState.value });
 }
 
-export function setFileCheckState(path: string, checked: boolean): void {
-  const state = checkState.value;
-  setFileChecked(path, state, checked);
-  commitStateChange(state);
-}
-
 /** Toggles the "Select Everything" checkbox across every file at once. */
 export function setAllFilesCheckState(entries: readonly SplitViewFileEntry[], checked: boolean): void {
   const state = checkState.value;
   setAllFilesChecked(entries, state, checked);
   commitStateChange(state);
 }
-
-export function setHunkCheckState(path: string, hunk: SplitHunk, checked: boolean): void {
-  const state = checkState.value;
-  setHunkChecked(path, hunk, state, checked);
-  commitStateChange(state);
-}
-
 /** Toggles a renamed file's "File Renamed" checkbox, independent of its content hunks. */
 export function setRenameCheckState(path: string, checked: boolean): void {
   const state = checkState.value;
@@ -132,5 +119,22 @@ export function setModeCheckState(path: string, checked: boolean): void {
 export function toggleLineChecked(path: string, line: SplitLine): void {
   const state = checkState.value;
   setLineChecked(path, line, state, !getLineChecked(path, line, state));
+  commitStateChange(state);
+}
+
+/**
+ * Toggles every checkable of a file like a line row: a fully unchecked file checks all of its
+ * lines (plus its rename and mode change), otherwise everything is unchecked.
+ */
+export function toggleFileChecked(file: SplitFileViewModel): void {
+  const state = checkState.value;
+  toggleSplitFileChecked(file, state);
+  commitStateChange(state);
+}
+
+/** Toggles every line of a hunk like a line row: fully unchecked checks them, otherwise unchecks. */
+export function toggleHunkChecked(path: string, hunk: SplitHunk): void {
+  const state = checkState.value;
+  toggleSplitHunkChecked(path, hunk, state);
   commitStateChange(state);
 }

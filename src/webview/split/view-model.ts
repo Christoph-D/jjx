@@ -1,4 +1,15 @@
-import { buildSplitLines, type SplitFileEntry, type SplitHunk, type SplitLine } from "../../split/hunk-model";
+import {
+  buildSplitLines,
+  getFileCheckState,
+  getHunkCheckState,
+  setFileChecked,
+  setHunkChecked,
+  type SplitCheckState,
+  type SplitCheckboxState,
+  type SplitFileEntry,
+  type SplitHunk,
+  type SplitLine,
+} from "../../split/hunk-model";
 import type { SplitViewFileEntry } from "../../split-protocol";
 
 export interface SplitHunkGroup {
@@ -71,6 +82,31 @@ function buildSplitFileViewModel(entry: SplitViewFileEntry): SplitFileViewModel 
     return { entry, hunkGroups: [], contextCounts: [] };
   }
   return { entry: { ...entry, hunks: hunkGroups.map((group) => group.hunk) }, hunkGroups, contextCounts };
+}
+
+/**
+ * The state a file or hunk row's toggle lands on: a fully unchecked row checks all of its lines,
+ * while a partially or fully checked row unchecks them — the same cycle the line rows perform
+ * on themselves.
+ */
+function toggleTargetOf(current: SplitCheckState): boolean {
+  return current === false;
+}
+
+/**
+ * Toggles a whole file's selection in `state`: a fully unchecked file checks all of its lines
+ * (plus its rename and mode change), while a partially or fully checked file unchecks them all.
+ */
+export function toggleSplitFileChecked(file: SplitFileViewModel, state: SplitCheckboxState): void {
+  setFileChecked(file.entry.path, state, toggleTargetOf(getFileCheckState(file.entry, state)));
+}
+
+/**
+ * Toggles a hunk's selection in `state`: a fully unchecked hunk checks all of its lines, while a
+ * partially or fully checked hunk unchecks them all.
+ */
+export function toggleSplitHunkChecked(path: string, hunk: SplitHunk, state: SplitCheckboxState): void {
+  setHunkChecked(path, hunk, state, toggleTargetOf(getHunkCheckState(path, hunk, state)));
 }
 
 /**
