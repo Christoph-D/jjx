@@ -18,6 +18,7 @@ system.
 - Multi-workspace support with automatic stale workspace updates
 - Operation log with undo/redo
 - Compare two changes with a diff or interdiff
+- Interactively split a change into two changes (`jj split`)
 - Handles divergent commits, conflicted bookmarks, and more
 
 ## 📖 Full Feature List
@@ -48,6 +49,7 @@ system.
 - Copy the commit's web URL, for example the Github URL
 - Copy the full change ID
 - Absorb the change into its parents
+- Split the change into two changes
 - Abandon one or more changes (shift-click to select multiple)
 
 ### ✋ Drag & drop operations
@@ -79,6 +81,12 @@ system.
 - Move changes between working copy and parents
 - Move specific lines from the working copy to its parent changes
 - Discard changes
+
+### ✂️ Interactive split
+
+- Split any change into two changes from the graph context menu, with an interactive selection  
+  ![split view](images/split-view.png)
+- Supports renames, file mode changes, and more
 
 ### ⚠️ Conflicts
 

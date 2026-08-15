@@ -2,7 +2,7 @@ import { test, expect, TestRepo, newTestRepo } from "../tests/base-test";
 import path from "path";
 import fs from "fs/promises";
 import { execSync } from "child_process";
-import { Page } from "@playwright/test";
+import { Frame, Locator, Page } from "@playwright/test";
 
 // Use the system jj identity for the screenshots to match the identity seen by the extension under test.
 TestRepo.userName = null;
@@ -248,6 +248,107 @@ test("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, 
     y: 0,
     width: 1000,
     height: 600,
+  });
+});
+
+/** Right-clicks `node` in the graph, picks "Split..." and returns the frame of the opened Split view. */
+async function openSplitView(workbox: Page, graphFrame: Frame, node: Locator): Promise<Frame> {
+  await node.click({ button: "right" });
+  const splitItem = graphFrame.locator('[data-action="split"]');
+  await expect(splitItem).toBeVisible();
+  await splitItem.click();
+
+  let splitFrame: Frame | undefined;
+  await expect(async () => {
+    for (const frame of workbox.frames()) {
+      try {
+        if ((await frame.locator(".splitRoot").count()) > 0) {
+          splitFrame = frame;
+          return;
+        }
+      } catch {
+        // The frame can be mid-navigation while the webview (re)loads; just try the next.
+      }
+    }
+    throw new Error("Split view frame not ready");
+  }).toPass();
+  return splitFrame!;
+}
+
+/** Expands a file's hunk list by clicking its chevron; files start collapsed in the split view. */
+async function expandSplitFile(row: Locator): Promise<void> {
+  await row.locator(".splitFileRow > i.codicon-chevron-right").click();
+}
+
+test("take screenshot of split view", async ({ userDataDir, graphFrame, testRepo, workbox }) => {
+  await initializeSettings(userDataDir, ZOOM_LEVEL);
+
+  // Base commit: a 20-line file, a file destined for deletion, and one destined for a rename.
+  const lines = Array.from({ length: 20 }, (_, i) => `Line ${i + 1}`);
+  await testRepo.writeFile("some-file.txt", `${lines.join("\n")}\n`);
+  await testRepo.writeFile("deleted.txt", "Obsolete line 1\nObsolete line 2\nObsolete line 3\n");
+  await testRepo.writeFile("old.txt", "Renamed content\n");
+  await testRepo.commit("initial commit");
+
+  // The commit to split: lines 3 and 4 modified, deleted.txt removed, old.txt renamed to new.txt.
+  lines[2] = "Line 3 (modified)";
+  lines[3] = "Line 4 (modified)";
+  await testRepo.writeFile("some-file.txt", `${lines.join("\n")}\n`);
+  await testRepo.deleteFile("deleted.txt");
+  await testRepo.deleteFile("old.txt");
+  await testRepo.writeFile("new.txt", "Renamed content\n");
+  await testRepo.commit("refactor: Reorganize project files");
+
+  await workbox.waitForTimeout(1000);
+  await workbox.setViewportSize({ width: 1920, height: 1080 });
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  // Narrow the editor area so the split view panel fits the screenshot nicely.
+  const sash = workbox.locator(".monaco-sash.vertical").nth(1);
+  const sashBox = await sash.boundingBox();
+  if (!sashBox) {
+    throw new Error("Failed to resize editor area");
+  }
+  const sashCenterX = sashBox.x + sashBox.width / 2;
+  const sashCenterY = sashBox.y + sashBox.height / 2;
+  await workbox.mouse.move(sashCenterX, sashCenterY);
+  await workbox.mouse.down();
+  await workbox.mouse.move(sashCenterX + 350, sashCenterY);
+  await workbox.mouse.up();
+  await workbox.mouse.move(0, 0);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  await expect(splitFrame.locator(".splitFile")).toHaveCount(3);
+  await expect(splitFrame.locator(".splitHeaderDescription")).toHaveText("refactor: Reorganize project files");
+
+  // The deleted file stays collapsed and the pure rename is a leaf whose checkbox covers the rename.
+  const deletedFile = splitFrame.locator(".splitFile").filter({ hasText: "deleted.txt" });
+  await expect(deletedFile.locator(".splitStatus")).toHaveText("D");
+  await expect(deletedFile.locator(".splitFileRow .splitLeafDetail")).toHaveText("-3");
+  const renamedFile = splitFrame.locator(".splitFile").filter({ hasText: "new.txt" });
+  await expect(renamedFile.locator(".splitLeafDetail", { hasText: "←" })).toContainText("← old.txt");
+
+  // Files start collapsed; expand the modified file so its hunk shows with every line.
+  const someFile = splitFrame.locator(".splitFile").filter({ hasText: "some-file.txt" });
+  await expandSplitFile(someFile);
+  await expect(someFile.locator(".splitHunk")).toHaveCount(1);
+  await expect(someFile.locator(".splitLineRow")).toHaveCount(4);
+
+  await workbox.mouse.move(0, 0);
+
+  const splitRootBox = await splitFrame.locator(".splitRoot").boundingBox();
+  const someFileBox = await someFile.boundingBox();
+  if (!splitRootBox || !someFileBox) {
+    throw new Error("Split view not laid out");
+  }
+
+  await screenshot(workbox, "split-view.png", {
+    x: scaleToZoomLevel(splitRootBox.x),
+    y: scaleToZoomLevel(splitRootBox.y) + 1,
+    width: scaleToZoomLevel(splitRootBox.width / 2),
+    height: scaleToZoomLevel(someFileBox.y + someFileBox.height - splitRootBox.y) + 12,
   });
 });
 
