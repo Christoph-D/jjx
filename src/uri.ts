@@ -21,51 +21,40 @@ function isChangeId(v: unknown): v is ChangeId {
   );
 }
 
+const isString = (v: unknown): v is string => typeof v === "string";
+const isBoolean = (v: unknown): v is boolean => typeof v === "boolean";
+const isSide = (v: unknown): v is "left" | "right" => v === "left" || v === "right";
+
+interface ParamShape {
+  required: Record<string, (v: unknown) => boolean>;
+  optional?: Record<string, (v: unknown) => boolean>;
+}
+
+// Each variant is matched by exactly its own required keys plus a subset of its optional keys,
+// so mixed shapes and objects carrying extra/bogus fields are rejected.
+const paramShapes: ParamShape[] = [
+  { required: { rev: isString } },
+  { required: { deleted: isBoolean } },
+  { required: { diffOriginalRev: isString }, optional: { renamedFrom: isString } },
+  {
+    required: { interdiffFrom: isChangeId, interdiffTo: isChangeId, side: isSide },
+    optional: { renamedFrom: isString },
+  },
+  { required: { diffFrom: isChangeId, diffTo: isChangeId, side: isSide }, optional: { renamedFrom: isString } },
+];
+
 function isJJUriParams(v: unknown): v is JJUriParams {
   if (typeof v !== "object" || v === null) {
     return false;
   }
   const o = v as Record<string, unknown>;
-  const keys = Object.keys(o);
-  const has = (k: string): boolean => k in o;
-
-  // Each variant is matched by exactly its own (exhaustive) set of keys, so
-  // mixed shapes and objects carrying extra/bogus fields are rejected.
-  if (keys.length === 1 && has("rev")) {
-    return typeof o.rev === "string";
-  }
-  if (keys.length === 1 && has("deleted")) {
-    return typeof o.deleted === "boolean";
-  }
-  if (keys.length === 1 && has("diffOriginalRev")) {
-    return typeof o.diffOriginalRev === "string";
-  }
-  if (keys.length === 2 && has("diffOriginalRev") && has("renamedFrom")) {
-    return typeof o.diffOriginalRev === "string" && typeof o.renamedFrom === "string";
-  }
-  if (
-    (keys.length === 3 && has("interdiffFrom") && has("interdiffTo") && has("side")) ||
-    (keys.length === 4 && has("interdiffFrom") && has("interdiffTo") && has("side") && has("renamedFrom"))
-  ) {
+  return paramShapes.some((shape) => {
+    const validators = { ...shape.required, ...shape.optional };
     return (
-      isChangeId(o.interdiffFrom) &&
-      isChangeId(o.interdiffTo) &&
-      (o.side === "left" || o.side === "right") &&
-      (keys.length === 3 || typeof o.renamedFrom === "string")
+      Object.keys(o).every((key) => Object.hasOwn(validators, key) && validators[key](o[key])) &&
+      Object.keys(shape.required).every((key) => Object.hasOwn(o, key))
     );
-  }
-  if (
-    (keys.length === 3 && has("diffFrom") && has("diffTo") && has("side")) ||
-    (keys.length === 4 && has("diffFrom") && has("diffTo") && has("side") && has("renamedFrom"))
-  ) {
-    return (
-      isChangeId(o.diffFrom) &&
-      isChangeId(o.diffTo) &&
-      (o.side === "left" || o.side === "right") &&
-      (keys.length === 3 || typeof o.renamedFrom === "string")
-    );
-  }
-  return false;
+  });
 }
 
 /**
