@@ -164,6 +164,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
         repository,
         { mode: "interdiff", from: params.interdiffFrom.changeId, to: params.interdiffTo.changeId },
         uri.fsPath,
+        params.renamedFrom,
       );
       content = (params.side === "left" ? pair.left : pair.right) ?? new Uint8Array(0);
     } else if ("diffFrom" in params) {
@@ -171,6 +172,7 @@ export class JJFileSystemProvider implements FileSystemProvider {
         repository,
         { mode: "diff", from: params.diffFrom.changeId, to: params.diffTo.changeId },
         uri.fsPath,
+        params.renamedFrom,
       );
       content = (params.side === "left" ? pair.left : pair.right) ?? new Uint8Array(0);
     } else {
@@ -185,11 +187,12 @@ export class JJFileSystemProvider implements FileSystemProvider {
     repository: JJRepository,
     params: { mode: "diff" | "interdiff"; from: string; to: string },
     fsPath: string,
+    renamedFrom?: string,
   ): Promise<{ left: Uint8Array | undefined; right: Uint8Array | undefined }> {
-    const key = `${params.mode}\0${params.from}\0${params.to}\0${fsPath}`;
+    const key = `${params.mode}\0${params.from}\0${params.to}\0${fsPath}\0${renamedFrom ?? ""}`;
     let promise = this.comparisonDiffCache.get(key);
     if (!promise) {
-      promise = repository.getComparisonDiff(params.mode, params.from, params.to, fsPath).finally(() => {
+      promise = repository.getComparisonDiff(params.mode, params.from, params.to, fsPath, renamedFrom).finally(() => {
         this.comparisonDiffCache.delete(key);
       });
       this.comparisonDiffCache.set(key, promise);

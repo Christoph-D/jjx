@@ -1002,10 +1002,13 @@ function buildComparisonDiffResourceStates(
   const toShort = toIsWorkingCopy ? formatWorkingCopyTitle() : formatChangeIdShort(to);
   return fileStatuses.map((fileStatus) => {
     const fileUri = vscode.Uri.file(fileStatus.path);
+    // renamedFrom rides along so the file-system provider can key the left side of a rename by
+    // its pre-rename path when reading the comparison diff.
+    const renameParams = fileStatus.renamedFrom ? { renamedFrom: fileStatus.renamedFrom } : {};
     const makeSideUri = (side: "left" | "right"): vscode.Uri =>
       mode === "interdiff"
-        ? toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side })
-        : toJJUri(fileUri, { diffFrom: from, diffTo: to, side });
+        ? toJJUri(fileUri, { interdiffFrom: from, interdiffTo: to, side, ...renameParams })
+        : toJJUri(fileUri, { diffFrom: from, diffTo: to, side, ...renameParams });
     const leftUri = fileStatus.type === "A" ? toJJUri(fileUri, { deleted: true }) : makeSideUri("left");
     const rightUri =
       fileStatus.type === "D"

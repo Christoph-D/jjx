@@ -98,37 +98,35 @@ function parseConflictLabels(content: string): { left?: ConflictSideLabels; righ
 
 interface DiffToolRequest {
   requestId: string;
-  // File contents are base64-encoded so binary files (e.g. images) survive the
-  // JSON IPC transport undistorted.
-  leftFiles: Record<string, string>;
-  rightFiles: Record<string, string>;
-  // Git-style octal file modes (e.g. "100755"), collected only where file modes are meaningful
-  // (see jj-diff-tool-main.ts); empty when the platform cannot track them.
-  leftModes?: Record<string, string>;
-  rightModes?: Record<string, string>;
+  // Absolute paths of the snapshot directories jj materialized for the diff. The extension reads
+  // the files it needs directly from disk; the tool process (and with it the snapshot
+  // directories) stays alive until `completeDiffToolRequest` responds to it.
+  leftDir: string;
+  rightDir: string;
 }
 
 interface PendingDiffRequest {
-  resolve: (data: {
-    leftFiles: Record<string, string>;
-    rightFiles: Record<string, string>;
-    leftModes: Record<string, string>;
-    rightModes: Record<string, string>;
-  }) => void;
+  resolve: (data: { leftDir: string; rightDir: string }) => void;
   reject: (error: Error) => void;
+  complete: (success: boolean) => void;
 }
 
 const pendingDiffRequests = new Map<string, PendingDiffRequest>();
 
-export function expectDiffToolRequest(requestId: string): Promise<{
-  leftFiles: Record<string, string>;
-  rightFiles: Record<string, string>;
-  leftModes: Record<string, string>;
-  rightModes: Record<string, string>;
-}> {
+export function expectDiffToolRequest(requestId: string): Promise<{ leftDir: string; rightDir: string }> {
   return new Promise((resolve, reject) => {
-    pendingDiffRequests.set(requestId, { resolve, reject });
+    pendingDiffRequests.set(requestId, { resolve, reject, complete: () => {} });
   });
+}
+
+export function completeDiffToolRequest(requestId: string, success: boolean): void {
+  const pending = pendingDiffRequests.get(requestId);
+  if (pending) {
+    pending.complete(success);
+    // When the tool request never arrived (e.g. jj exited early), `complete` is still the
+    // placeholder no-op and would leave the entry behind, so remove it explicitly.
+    pendingDiffRequests.delete(requestId);
+  }
 }
 
 interface SquashToolRequest {
@@ -360,14 +358,14 @@ export class JJDiffTool implements IIPCHandler {
     if (!pending) {
       return Promise.resolve(false);
     }
-    pendingDiffRequests.delete(request.requestId);
-    pending.resolve({
-      leftFiles: request.leftFiles,
-      rightFiles: request.rightFiles,
-      leftModes: request.leftModes ?? {},
-      rightModes: request.rightModes ?? {},
+
+    return new Promise((resolve) => {
+      pending.resolve({ leftDir: request.leftDir, rightDir: request.rightDir });
+      pending.complete = (success: boolean) => {
+        pendingDiffRequests.delete(request.requestId);
+        resolve(success);
+      };
     });
-    return Promise.resolve(true);
   }
 
   dispose(): void {

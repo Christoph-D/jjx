@@ -203,3 +203,48 @@ test("interdiff toggle survives a commit but reverts on selection change", async
     expect((await getComparisonSection(workbox, "Interdiff")).exists).toBe(false);
   }).toPass();
 });
+
+test("renamed files show their pre-rename content on the left of a comparison diff", async ({
+  graphFrame,
+  testRepo,
+  workbox,
+}) => {
+  // B renames old.txt to new.txt (with a content edit) on top of A.
+  await testRepo.commitFile("old.txt", "r1\nr2\nr3\nr4\nr5\n", "A");
+  await testRepo.deleteFile("old.txt");
+  await testRepo.writeFile("new.txt", "r1\nr2\nX\nr4\nr5\n");
+  await testRepo.commit("B");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4); // @, B, A, root
+  // The working copy is empty, but its Parent Commit section lists B's rename of new.txt.
+  await waitForSCMView(workbox, [], ["new.txt"]);
+
+  // Select A then B so the diff runs from A to B and lists the rename as new.txt.
+  await nodes.nth(2).click();
+  await nodes.nth(1).click({ modifiers: ["Shift"] });
+
+  await expect(async () => {
+    expect((await getComparisonSection(workbox, "Diff")).files).toEqual(expect.arrayContaining(["new.txt"]));
+  }).toPass();
+
+  // Clicking the renamed file opens a diff whose left side is keyed by the pre-rename path
+  // (old.txt in A) and whose right side is keyed by the post-rename path (new.txt in B).
+  // The Diff section's entry is the last of the two new.txt treeitems.
+  const newFileItems = workbox
+    .locator(".scm-view")
+    .first()
+    .getByRole("treeitem", { name: /^new\.txt/ });
+  await expect(newFileItems).toHaveCount(2);
+  await newFileItems.last().click();
+
+  const diffEditor = workbox.locator(".editor-instance");
+  await expect(diffEditor).toBeVisible();
+  const original = diffEditor.locator(".editor.original .view-lines");
+  const modified = diffEditor.locator(".editor.modified .view-lines");
+  await expect(original.getByText("r3", { exact: true }).first()).toBeVisible();
+  await expect(modified.getByText("X", { exact: true }).first()).toBeVisible();
+
+  // jj interdiff doesn't detect renames (it reports `A new.txt` + `D old.txt` instead of
+  // `R {old.txt => new.txt}`), so the rename plumbing only applies to from/to diffs.
+});

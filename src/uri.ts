@@ -5,8 +5,8 @@ export type JJUriParams =
   | { rev: string }
   | { diffOriginalRev: string; renamedFrom?: string }
   | { deleted: boolean }
-  | { interdiffFrom: ChangeId; interdiffTo: ChangeId; side: "left" | "right" }
-  | { diffFrom: ChangeId; diffTo: ChangeId; side: "left" | "right" };
+  | { interdiffFrom: ChangeId; interdiffTo: ChangeId; side: "left" | "right"; renamedFrom?: string }
+  | { diffFrom: ChangeId; diffTo: ChangeId; side: "left" | "right"; renamedFrom?: string };
 
 function isChangeId(v: unknown): v is ChangeId {
   if (typeof v !== "object" || v === null) {
@@ -43,11 +43,27 @@ function isJJUriParams(v: unknown): v is JJUriParams {
   if (keys.length === 2 && has("diffOriginalRev") && has("renamedFrom")) {
     return typeof o.diffOriginalRev === "string" && typeof o.renamedFrom === "string";
   }
-  if (keys.length === 3 && has("interdiffFrom") && has("interdiffTo") && has("side")) {
-    return isChangeId(o.interdiffFrom) && isChangeId(o.interdiffTo) && (o.side === "left" || o.side === "right");
+  if (
+    (keys.length === 3 && has("interdiffFrom") && has("interdiffTo") && has("side")) ||
+    (keys.length === 4 && has("interdiffFrom") && has("interdiffTo") && has("side") && has("renamedFrom"))
+  ) {
+    return (
+      isChangeId(o.interdiffFrom) &&
+      isChangeId(o.interdiffTo) &&
+      (o.side === "left" || o.side === "right") &&
+      (keys.length === 3 || typeof o.renamedFrom === "string")
+    );
   }
-  if (keys.length === 3 && has("diffFrom") && has("diffTo") && has("side")) {
-    return isChangeId(o.diffFrom) && isChangeId(o.diffTo) && (o.side === "left" || o.side === "right");
+  if (
+    (keys.length === 3 && has("diffFrom") && has("diffTo") && has("side")) ||
+    (keys.length === 4 && has("diffFrom") && has("diffTo") && has("side") && has("renamedFrom"))
+  ) {
+    return (
+      isChangeId(o.diffFrom) &&
+      isChangeId(o.diffTo) &&
+      (o.side === "left" || o.side === "right") &&
+      (keys.length === 3 || typeof o.renamedFrom === "string")
+    );
   }
   return false;
 }
