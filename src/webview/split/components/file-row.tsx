@@ -8,12 +8,13 @@ import {
   getModeChecked,
   getRenameChecked,
 } from "../../../split/hunk-model";
-import type { SplitLine } from "../../../split/hunk-model";
+import type { SplitCheckState, SplitLine } from "../../../split/hunk-model";
 import {
   checkState,
   collapsedHunks,
   expandedFiles,
-  hunkKey,
+  selectSplitRow,
+  selectedRow,
   setModeCheckState,
   setRenameCheckState,
   toggleFileChecked,
@@ -24,8 +25,8 @@ import {
   toggleModeChecked,
   toggleRenameChecked,
 } from "../signals";
-import type { SplitChangeCounts, SplitFileViewModel, SplitHunkGroup } from "../view-model";
-import { hasExpandableSplitEntries, modeChangeOf, splitFileChangeCounts } from "../view-model";
+import type { SplitChangeCounts, SplitFileViewModel, SplitHunkGroup, SplitRowId } from "../view-model";
+import { hasExpandableSplitEntries, hunkKey, modeChangeOf, sameSplitRow, splitFileChangeCounts } from "../view-model";
 import { TriStateCheckbox } from "./tri-state-checkbox";
 
 const STATUS_COLORS: Record<FileStatusType, string> = {
@@ -62,6 +63,20 @@ function lineCount(count: number): string {
   return `${count} ${count === 1 ? "line" : "lines"}`;
 }
 
+/** Maps a tri-state check state to the `aria-checked` value of a row acting as a checkbox. */
+export function ariaChecked(state: SplitCheckState): "true" | "mixed" | "false" {
+  return state === true ? "true" : state === false ? "false" : "mixed";
+}
+
+/**
+ * The class suffix marking `id` as the selected row of the arrow-key navigation. Every row
+ * reads the selection signal directly (the outline does not rely on DOM focus), so a click on
+ * a row selects it in addition to toggling its checkbox.
+ */
+function selectedClass(id: SplitRowId): string {
+  return sameSplitRow(selectedRow.value, id) ? " splitSelected" : "";
+}
+
 /**
  * The `+N -M` added/removed line counts shared by the "Select Everything" row, the file
  * header rows, and the section header rows; a count of 0 is omitted, and rows with no
@@ -83,13 +98,38 @@ export function ChangeCounts({ counts }: { counts: SplitChangeCounts }) {
 /**
  * The vertical line running down a section's contents, horizontally centered under the
  * section's chevron. Clicking it toggles the section's collapse state (the same toggle as its
- * header chevron); being a real button, it also works with the keyboard, which the chevrons
- * do not. Only rendered while the section is expanded: a collapsed section has no contents
- * for the line to span.
+ * header chevron); like the chevrons, it is a real button and works with the keyboard. Only
+ * rendered while the section is expanded: a collapsed section has no contents for the line
+ * to span.
  */
 function CollapseLine({ label, onClick }: { label: string; onClick: () => void }) {
   const title = `Collapse ${label}`;
   return <button type="button" class="splitCollapseLine" title={title} aria-label={title} onClick={onClick} />;
+}
+
+/**
+ * The expand/collapse chevron of a file or section row, in the `CollapseLine` pattern: a real
+ * `<button>` with title/aria-label, focus styles, and Enter/Space activation (unlike the
+ * `<i>` it renders, which is purely the codicon glyph). The chevron is the dedicated
+ * expand/collapse affordance while the row itself toggles the selection, so its activation
+ * must not reach the row handler.
+ */
+function Chevron({ expanded, title, onClick }: { expanded: boolean; title: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      class="splitChevron"
+      title={title}
+      aria-label={title}
+      aria-expanded={expanded}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+    >
+      <i class={expanded ? "codicon codicon-chevron-down" : "codicon codicon-chevron-right"} aria-hidden="true" />
+    </button>
+  );
 }
 
 export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewModel }) {
@@ -97,24 +137,27 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
   const expandable = hasExpandableSplitEntries(file);
   const expanded = expandedFiles.value.has(entry.path);
   const fileState = getFileCheckState(entry, checkState.value);
+  const label = entry.renamedFrom ? `${entry.renamedFrom} → ${entry.path}` : entry.path;
+  const id: SplitRowId = { kind: "file", path: entry.path };
 
   return (
     <div class="splitFile">
       <div
-        class={"splitRow splitFileRow" + (expandable ? " splitExpandable" : "")}
-        title={entry.renamedFrom ? `${entry.renamedFrom} → ${entry.path}` : entry.path}
-        onClick={() => toggleFileChecked(file)}
+        class={"splitRow splitFileRow" + (expandable ? " splitExpandable" : "") + selectedClass(id)}
+        role="checkbox"
+        aria-checked={ariaChecked(fileState)}
+        aria-label={label}
+        title={label}
+        onClick={() => {
+          selectSplitRow(id);
+          toggleFileChecked(file);
+        }}
       >
         {expandable ? (
-          <i
-            class={expanded ? "codicon codicon-chevron-down" : "codicon codicon-chevron-right"}
+          <Chevron
+            expanded={expanded}
             title={expanded ? "Collapse file" : "Expand file"}
-            onClick={(e) => {
-              // The chevron is the dedicated expand/collapse affordance; the row itself toggles
-              // the selection, so the click must not reach the row handler.
-              e.stopPropagation();
-              toggleFileExpanded(entry.path);
-            }}
+            onClick={() => toggleFileExpanded(entry.path)}
           />
         ) : (
           <ChevronPlaceholder />
@@ -180,12 +223,19 @@ function ChevronPlaceholder() {
 /** The "File Renamed" checkbox row: decides which commit the rename itself lands in. */
 function RenameRow({ path, renamedFrom }: { path: string; renamedFrom: string }) {
   const checked = getRenameChecked(path, checkState.value);
+  const id: SplitRowId = { kind: "rename", path };
   return (
     <div class="splitRename">
       <div
-        class="splitRow splitHunkRow splitRenameRow"
+        class={"splitRow splitHunkRow splitRenameRow" + selectedClass(id)}
+        role="checkbox"
+        aria-checked={ariaChecked(checked)}
+        aria-label={`File Renamed: ${renamedFrom} → ${path}`}
         title={`${renamedFrom} → ${path}`}
-        onClick={() => toggleRenameChecked(path)}
+        onClick={() => {
+          selectSplitRow(id);
+          toggleRenameChecked(path);
+        }}
       >
         <ChevronPlaceholder />
         <TriStateCheckbox
@@ -203,12 +253,20 @@ function RenameRow({ path, renamedFrom }: { path: string; renamedFrom: string })
 /** The "File mode changed" checkbox row: decides which commit the mode change lands in. */
 function ModeRow({ path, mode }: { path: string; mode: string }) {
   const checked = getModeChecked(path, checkState.value);
+  const title = `File mode changed to ${mode}`;
+  const id: SplitRowId = { kind: "mode", path };
   return (
     <div class="splitRename">
       <div
-        class="splitRow splitHunkRow splitRenameRow"
-        title={`File mode changed to ${mode}`}
-        onClick={() => toggleModeChecked(path)}
+        class={"splitRow splitHunkRow splitRenameRow" + selectedClass(id)}
+        role="checkbox"
+        aria-checked={ariaChecked(checked)}
+        aria-label={title}
+        title={title}
+        onClick={() => {
+          selectSplitRow(id);
+          toggleModeChecked(path);
+        }}
       >
         <ChevronPlaceholder />
         <TriStateCheckbox
@@ -225,22 +283,24 @@ function ModeRow({ path, mode }: { path: string; mode: string }) {
 function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; index: number }) {
   const hunkState = getHunkCheckState(path, group.hunk, checkState.value);
   const collapsed = collapsedHunks.value.has(hunkKey(path, index));
+  const id: SplitRowId = { kind: "hunk", path, index };
   return (
     <div class="splitHunk">
       <div
-        class="splitRow splitHunkRow"
+        class={"splitRow splitHunkRow" + selectedClass(id)}
+        role="checkbox"
+        aria-checked={ariaChecked(hunkState)}
+        aria-label={`Section ${index + 1}`}
         title={hunkState === false ? "Include section" : "Exclude section"}
-        onClick={() => toggleHunkChecked(path, group.hunk)}
+        onClick={() => {
+          selectSplitRow(id);
+          toggleHunkChecked(path, group.hunk);
+        }}
       >
-        <i
-          class={collapsed ? "codicon codicon-chevron-right" : "codicon codicon-chevron-down"}
+        <Chevron
+          expanded={!collapsed}
           title={collapsed ? "Expand section" : "Collapse section"}
-          onClick={(e) => {
-            // The chevron is the dedicated collapse/expand affordance; the row itself toggles
-            // the selection, so the click must not reach the row handler.
-            e.stopPropagation();
-            toggleHunkCollapsed(path, index);
-          }}
+          onClick={() => toggleHunkCollapsed(path, index)}
         />
         <TriStateCheckbox
           state={hunkState}
@@ -254,7 +314,7 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
         <div class="splitLines">
           <CollapseLine label="section" onClick={() => toggleHunkCollapsed(path, index)} />
           {group.hunk.lines.map((line, lineIndex) => (
-            <LineRow key={lineIndex} path={path} line={line} />
+            <LineRow key={lineIndex} path={path} line={line} hunkIndex={index} lineIndex={lineIndex} />
           ))}
         </div>
       )}
@@ -262,12 +322,26 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
   );
 }
 
-function LineRow({ path, line }: { path: string; line: SplitLine }) {
+function LineRow({
+  path,
+  line,
+  hunkIndex,
+  lineIndex,
+}: {
+  path: string;
+  line: SplitLine;
+  hunkIndex: number;
+  lineIndex: number;
+}) {
   const checked = getLineChecked(path, line, checkState.value);
   const added = line.kind === "add";
+  const id: SplitRowId = { kind: "line", path, hunkIndex, lineIndex };
   return (
     <div
-      class={`splitRow splitLineRow ${added ? "splitLineAdded" : "splitLineRemoved"}${checked ? "" : " splitUnchecked"}`}
+      class={`splitRow splitLineRow ${added ? "splitLineAdded" : "splitLineRemoved"}${checked ? "" : " splitUnchecked"}${selectedClass(id)}`}
+      role="checkbox"
+      aria-checked={ariaChecked(checked)}
+      aria-label={`${added ? "+" : "-"}${lineText(line.text)}`}
       title={checked ? "Exclude line" : "Include line"}
       onMouseDown={(e) => {
         lastPointerDown = { x: e.clientX, y: e.clientY };
@@ -280,6 +354,7 @@ function LineRow({ path, line }: { path: string; line: SplitLine }) {
         // Double/triple clicks select a word/line incidentally; drop such (possibly stale)
         // selections so rapid clicks always toggle the line.
         window.getSelection()?.removeAllRanges();
+        selectSplitRow(id);
         toggleLineChecked(path, line);
       }}
     >

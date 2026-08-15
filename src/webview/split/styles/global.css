@@ -109,6 +109,15 @@ body {
   white-space: nowrap;
 }
 
+/* Text is unselectable across the split view, so an outline is the only way to tell which
+   row the arrow-key selection is on (the separators carry no checkbox and are never
+   selectable). The rows are not focusable; the app tracks the selection itself, so the
+   outline does not rely on DOM focus order. */
+.splitRow.splitSelected {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
 /* The "Select Everything" row sits above every file row. */
 .splitSelectAllRow {
   margin-top: 0px;
@@ -215,14 +224,23 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
-/* The chevrons are the dedicated expand/collapse affordances of file and hunk rows (the rows
-   themselves toggle the selection); the padding/negative-margin pair enlarges their hit area
-   without shifting the row layout. */
-.splitFileRow > .codicon,
-.splitHunkRow > .codicon {
+/* The chevron buttons are the dedicated expand/collapse affordances of file and hunk rows
+   (the rows themselves toggle the selection); the padding/negative-margin pair enlarges
+   their hit area without shifting the row layout. */
+.splitChevron {
+  display: inline-flex;
+  align-items: center;
   padding: 4px;
   margin: -4px;
+  border: none;
+  background: transparent;
+  font: inherit;
   cursor: pointer;
+}
+
+.splitChevron:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 /* The vertical collapse lines of the file and hunk sections: the button is the line's hit

@@ -15,8 +15,9 @@ import type {
   SplitViewFileEntry,
 } from "../../split-protocol";
 import type { SplitHunk, SplitLine } from "../../split/hunk-model";
-import type { SplitFileViewModel } from "./view-model";
+import type { SplitFileViewModel, SplitRowId } from "./view-model";
 import {
+  hunkKey,
   toggleSplitFileChecked,
   toggleSplitHunkChecked,
   toggleSplitModeChecked,
@@ -45,6 +46,8 @@ export function applyExtensionMessage(message: SplitExtensionToWebviewMessage): 
   // Restores the selection the extension sent along, so a webview restored after being
   // unloaded keeps the user's in-progress selection.
   checkState.value = message.selection;
+  // The refreshed entry list invalidates any row selection.
+  selectedRow.value = null;
   postCurrentState();
 }
 
@@ -57,14 +60,28 @@ export const expandedFiles = signal<Set<string>>(new Set());
 // only the collapsed ones are tracked here. Keyed by `hunkKey`.
 export const collapsedHunks = signal<Set<string>>(new Set());
 
-export function toggleFileExpanded(path: string): void {
+// The row currently selected by arrow-key navigation, outlined on screen; null until the
+// first keypress or row click. Tracked by the app instead of DOM focus, so the outline does
+// not depend on focus order.
+export const selectedRow = signal<SplitRowId | null>(null);
+
+/** Selects `id` (or clears the selection with null), the single source of truth for the outline. */
+export function selectSplitRow(id: SplitRowId | null): void {
+  selectedRow.value = id;
+}
+
+export function setFileExpanded(path: string, expanded: boolean): void {
   const next = new Set(expandedFiles.value);
-  if (next.has(path)) {
-    next.delete(path);
-  } else {
+  if (expanded) {
     next.add(path);
+  } else {
+    next.delete(path);
   }
   expandedFiles.value = next;
+}
+
+export function toggleFileExpanded(path: string): void {
+  setFileExpanded(path, !expandedFiles.value.has(path));
 }
 
 /** Expands (or collapses) every expandable file at once; `paths` are the expandable file paths. */
@@ -72,19 +89,21 @@ export function setAllFilesExpanded(paths: readonly string[], expanded: boolean)
   expandedFiles.value = expanded ? new Set(paths) : new Set();
 }
 
-export function hunkKey(path: string, index: number): string {
-  return `${path}:${index}`;
-}
-
-export function toggleHunkCollapsed(path: string, index: number): void {
+/** Collapses (or expands) a hunk, keyed like `collapsedHunks`. */
+export function setHunkCollapsed(path: string, index: number, collapsed: boolean): void {
   const key = hunkKey(path, index);
   const next = new Set(collapsedHunks.value);
-  if (next.has(key)) {
-    next.delete(key);
-  } else {
+  if (collapsed) {
     next.add(key);
+  } else {
+    next.delete(key);
   }
   collapsedHunks.value = next;
+}
+
+/** Toggles a hunk's collapse state, keyed like `collapsedHunks`. */
+export function toggleHunkCollapsed(path: string, index: number): void {
+  setHunkCollapsed(path, index, !collapsedHunks.value.has(hunkKey(path, index)));
 }
 
 /** Reassigns the signal with a shallow clone so mutations become visible to subscribers. */

@@ -277,7 +277,7 @@ async function openSplitView(workbox: Page, graphFrame: Frame, node: Locator): P
 
 /** Expands a file's hunk list by clicking its chevron; files start collapsed in the split view. */
 async function expandSplitFile(row: Locator): Promise<void> {
-  await row.locator(".splitFileRow > i.codicon-chevron-right").click();
+  await row.locator(".splitFileRow > .splitChevron").click();
 }
 
 test("take screenshot of split view", async ({ userDataDir, graphFrame, testRepo, workbox }) => {

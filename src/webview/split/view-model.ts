@@ -181,6 +181,118 @@ export function toggleSplitModeChecked(path: string, state: SplitCheckboxState):
   setModeChecked(path, state, toggleTargetOf(getModeChecked(path, state)));
 }
 
+/** Stable key identifying a file's hunk by its index within the file's hunk groups. */
+export function hunkKey(path: string, index: number): string {
+  return `${path}:${index}`;
+}
+
+/** Identifies one selectable row of the split view: the "Select Everything" row, a file row, its mode-change and rename rows, a section row, or a line row. */
+export type SplitRowId =
+  | { kind: "all" }
+  | { kind: "file"; path: string }
+  | { kind: "mode"; path: string }
+  | { kind: "rename"; path: string }
+  | { kind: "hunk"; path: string; index: number }
+  | { kind: "line"; path: string; hunkIndex: number; lineIndex: number };
+
+/**
+ * One row of the split view's flat navigation model: its identity plus whether it is on
+ * screen. Rows hidden inside collapsed files or sections stay in the list (marked
+ * invisible) so a selection that becomes hidden keeps its place and arrow keys can step to
+ * the next visible row.
+ */
+export interface SplitRowRef {
+  id: SplitRowId;
+  visible: boolean;
+}
+
+/** String form of a row identity; unique per row because each kind fixes its trailing fields. */
+export function splitRowKey(id: SplitRowId): string {
+  switch (id.kind) {
+    case "all":
+      return "all";
+    case "file":
+      return `file:${id.path}`;
+    case "mode":
+      return `mode:${id.path}`;
+    case "rename":
+      return `rename:${id.path}`;
+    case "hunk":
+      return `hunk:${hunkKey(id.path, id.index)}`;
+    case "line":
+      return `line:${id.path}:${id.hunkIndex}:${id.lineIndex}`;
+  }
+}
+
+/** True when both ids (or both nulls) identify the same row. */
+export function sameSplitRow(a: SplitRowId | null, b: SplitRowId | null): boolean {
+  return a === b || (a !== null && b !== null && splitRowKey(a) === splitRowKey(b));
+}
+
+/**
+ * Builds every row of the view in display order — the "Select Everything" row, then each
+ * file's row followed by its mode-change, rename, section, and line rows — with the
+ * visibility flag derived from the collapse state. Context separators carry no checkbox and
+ * are not selectable, so they take no part in the navigation model.
+ */
+export function buildSplitRows(
+  files: readonly SplitFileViewModel[],
+  expandedFiles: ReadonlySet<string>,
+  collapsedHunks: ReadonlySet<string>,
+): SplitRowRef[] {
+  const rows: SplitRowRef[] = [{ id: { kind: "all" }, visible: true }];
+  for (const file of files) {
+    const path = file.entry.path;
+    rows.push({ id: { kind: "file", path }, visible: true });
+    if (!hasExpandableSplitEntries(file)) {
+      continue;
+    }
+    // The contents of a collapsed file stay in the list as invisible rows.
+    const contentsVisible = expandedFiles.has(path);
+    if (modeChangeOf(file.entry) !== undefined) {
+      rows.push({ id: { kind: "mode", path }, visible: contentsVisible });
+    }
+    if (file.entry.renamedFrom !== undefined) {
+      rows.push({ id: { kind: "rename", path }, visible: contentsVisible });
+    }
+    file.hunkGroups.forEach((group, index) => {
+      rows.push({ id: { kind: "hunk", path, index }, visible: contentsVisible });
+      const linesVisible = contentsVisible && !collapsedHunks.has(hunkKey(path, index));
+      group.hunk.lines.forEach((_, lineIndex) => {
+        rows.push({ id: { kind: "line", path, hunkIndex: index, lineIndex }, visible: linesVisible });
+      });
+    });
+  }
+  return rows;
+}
+
+/**
+ * Steps through the rows in display order for the Up/Down keys: from `current` (or from just
+ * outside the list when nothing is selected — Down then picks the first row, Up the last) to
+ * the previous/next visible row, wrapping around at both ends and skipping rows hidden inside
+ * collapsed sections.
+ */
+export function stepSplitRow(
+  rows: readonly SplitRowRef[],
+  current: SplitRowId | null,
+  delta: 1 | -1,
+): SplitRowId | null {
+  if (rows.length === 0) {
+    return null;
+  }
+  // A missing selection (initially, or after the selected row vanished with a refresh) starts
+  // just outside the list; a hidden one keeps its real place and the walk skips it.
+  const found = current === null ? -1 : rows.findIndex((row) => sameSplitRow(row.id, current));
+  let index = found === -1 ? (delta > 0 ? -1 : rows.length) : found;
+  for (let step = 0; step < rows.length; step++) {
+    index = (index + delta + rows.length) % rows.length;
+    if (rows[index].visible) {
+      return rows[index].id;
+    }
+  }
+  return null;
+}
+
 /**
  * Groups the full line model into maximal runs of changed lines (hunks) and counts the
  * unchanged lines surrounding them.

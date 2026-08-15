@@ -13,15 +13,20 @@ import {
 } from "../split/hunk-model";
 import {
   buildSplitFileViewModels,
+  buildSplitRows,
   hasExpandableSplitEntries,
+  hunkKey,
   isExpandableSplitEntry,
   modeChangeOf,
+  sameSplitRow,
   splitChangeCountsTotal,
   splitFileChangeCounts,
+  stepSplitRow,
   toggleSplitFileChecked,
   toggleSplitHunkChecked,
   toggleSplitModeChecked,
   toggleSplitRenameChecked,
+  type SplitRowId,
 } from "../webview/split/view-model";
 import type { SplitCheckboxState } from "../split/hunk-model";
 import type { SplitViewFileEntry } from "../split-protocol";
@@ -564,5 +569,149 @@ describe("split file/hunk toggle Test Suite", () => {
     toggleSplitFileChecked(model, state);
     assert.equal(state.files["b.bin"], true);
     assert.equal(getFileCheckState(model.entry, state), true);
+  });
+});
+
+describe("split row navigation model Test Suite", () => {
+  /** An expandable modified file (two single-line hunks), a rename with a mode change, and a binary leaf. */
+  function navigationModels() {
+    return buildSplitFileViewModels([
+      modifiedEntry("f.txt", "a\nb\nc\nd\ne\nf\n", "a\nB\nc\nd\nE\nf\n"),
+      {
+        path: "new.sh",
+        renamedFrom: "old.sh",
+        status: "R",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "100644",
+        modeChangedTo: "100755",
+        leftText: "x\n",
+        rightText: "y\n",
+      },
+      { path: "b.bin", status: "M", binary: true, conflict: false },
+    ]);
+  }
+
+  const allFilesExpanded = () => new Set(["f.txt", "new.sh"]);
+
+  it("lists every row in display order, all visible when nothing is collapsed", () => {
+    const rows = buildSplitRows(navigationModels(), allFilesExpanded(), new Set());
+    assert.deepEqual(
+      rows.map((row) => row.visible),
+      rows.map(() => true),
+    );
+    assert.deepEqual(
+      rows.map((row) => row.id),
+      [
+        { kind: "all" },
+        { kind: "file", path: "f.txt" },
+        { kind: "hunk", path: "f.txt", index: 0 },
+        { kind: "line", path: "f.txt", hunkIndex: 0, lineIndex: 0 },
+        { kind: "line", path: "f.txt", hunkIndex: 0, lineIndex: 1 },
+        { kind: "hunk", path: "f.txt", index: 1 },
+        { kind: "line", path: "f.txt", hunkIndex: 1, lineIndex: 0 },
+        { kind: "line", path: "f.txt", hunkIndex: 1, lineIndex: 1 },
+        { kind: "file", path: "new.sh" },
+        // A file's mode-change and rename rows sit between the file row and its sections.
+        { kind: "mode", path: "new.sh" },
+        { kind: "rename", path: "new.sh" },
+        { kind: "hunk", path: "new.sh", index: 0 },
+        { kind: "line", path: "new.sh", hunkIndex: 0, lineIndex: 0 },
+        { kind: "line", path: "new.sh", hunkIndex: 0, lineIndex: 1 },
+        { kind: "file", path: "b.bin" },
+      ] satisfies SplitRowId[],
+    );
+  });
+
+  it("hides the contents of collapsed files and the lines of collapsed sections", () => {
+    // f.txt stays collapsed while new.sh is expanded with its only section collapsed.
+    const rows = buildSplitRows(navigationModels(), new Set(["new.sh"]), new Set([hunkKey("new.sh", 0)]));
+    const invisible = rows.filter((row) => !row.visible).map((row) => row.id);
+    assert.deepEqual(invisible, [
+      { kind: "hunk", path: "f.txt", index: 0 },
+      { kind: "line", path: "f.txt", hunkIndex: 0, lineIndex: 0 },
+      { kind: "line", path: "f.txt", hunkIndex: 0, lineIndex: 1 },
+      { kind: "hunk", path: "f.txt", index: 1 },
+      { kind: "line", path: "f.txt", hunkIndex: 1, lineIndex: 0 },
+      { kind: "line", path: "f.txt", hunkIndex: 1, lineIndex: 1 },
+      { kind: "line", path: "new.sh", hunkIndex: 0, lineIndex: 0 },
+      { kind: "line", path: "new.sh", hunkIndex: 0, lineIndex: 1 },
+    ] satisfies SplitRowId[]);
+    // The "Select Everything" row, the file rows, and the expanded section stay visible.
+    assert.deepEqual(
+      rows.filter((row) => row.visible).map((row) => row.id),
+      [
+        { kind: "all" },
+        { kind: "file", path: "f.txt" },
+        { kind: "file", path: "new.sh" },
+        { kind: "mode", path: "new.sh" },
+        { kind: "rename", path: "new.sh" },
+        { kind: "hunk", path: "new.sh", index: 0 },
+        { kind: "file", path: "b.bin" },
+      ] satisfies SplitRowId[],
+    );
+  });
+
+  it("Down from no selection picks the first row and Up the bottom-most", () => {
+    const rows = buildSplitRows(navigationModels(), new Set(), new Set());
+    assert.deepEqual(stepSplitRow(rows, null, 1), { kind: "all" });
+    assert.deepEqual(stepSplitRow(rows, null, -1), { kind: "file", path: "b.bin" });
+    // An empty view has nothing to select at all.
+    assert.equal(stepSplitRow([], null, 1), null);
+    assert.equal(stepSplitRow([], null, -1), null);
+  });
+
+  it("moves to the previous/next visible row, skipping collapsed contents and wrapping around", () => {
+    const rows = buildSplitRows(navigationModels(), allFilesExpanded(), new Set([hunkKey("new.sh", 0)]));
+    const down = (current: SplitRowId | null): SplitRowId | null => stepSplitRow(rows, current, 1);
+    const up = (current: SplitRowId | null): SplitRowId | null => stepSplitRow(rows, current, -1);
+
+    // Walking down from the top crosses every visible row of f.txt, then new.sh's section
+    // header (its lines are hidden by the collapse), then the binary leaf.
+    assert.deepEqual(down({ kind: "all" }), { kind: "file", path: "f.txt" });
+    assert.deepEqual(down({ kind: "file", path: "f.txt" }), { kind: "hunk", path: "f.txt", index: 0 });
+    assert.deepEqual(down({ kind: "hunk", path: "f.txt", index: 0 }), {
+      kind: "line",
+      path: "f.txt",
+      hunkIndex: 0,
+      lineIndex: 0,
+    });
+    assert.deepEqual(down({ kind: "file", path: "new.sh" }), { kind: "mode", path: "new.sh" });
+    assert.deepEqual(down({ kind: "rename", path: "new.sh" }), { kind: "hunk", path: "new.sh", index: 0 });
+    // The collapsed section's lines are skipped over.
+    assert.deepEqual(down({ kind: "hunk", path: "new.sh", index: 0 }), { kind: "file", path: "b.bin" });
+    // Down on the last row wraps around to the top.
+    assert.deepEqual(down({ kind: "file", path: "b.bin" }), { kind: "all" });
+
+    // Walking up mirrors it: Up on the top row wraps around to the bottom.
+    assert.deepEqual(up({ kind: "all" }), { kind: "file", path: "b.bin" });
+    assert.deepEqual(up({ kind: "file", path: "b.bin" }), { kind: "hunk", path: "new.sh", index: 0 });
+    assert.deepEqual(up({ kind: "line", path: "f.txt", hunkIndex: 1, lineIndex: 0 }), {
+      kind: "hunk",
+      path: "f.txt",
+      index: 1,
+    });
+    assert.deepEqual(up({ kind: "file", path: "f.txt" }), { kind: "all" });
+  });
+
+  it("steps from a selection hidden by a collapse to the next visible row", () => {
+    // The selection sits on a line of new.sh's collapsed section; the neighbors on either
+    // side are hidden too, so both directions reach past them.
+    const rows = buildSplitRows(navigationModels(), allFilesExpanded(), new Set([hunkKey("new.sh", 0)]));
+    const hiddenLine: SplitRowId = { kind: "line", path: "new.sh", hunkIndex: 0, lineIndex: 1 };
+    assert.deepEqual(stepSplitRow(rows, hiddenLine, 1), { kind: "file", path: "b.bin" });
+    assert.deepEqual(stepSplitRow(rows, hiddenLine, -1), { kind: "hunk", path: "new.sh", index: 0 });
+  });
+
+  it("identifies rows by kind and coordinates", () => {
+    const line: SplitRowId = { kind: "line", path: "f.txt", hunkIndex: 0, lineIndex: 1 };
+    assert.equal(sameSplitRow(null, null), true);
+    assert.equal(sameSplitRow(line, null), false);
+    assert.equal(sameSplitRow(line, { kind: "line", path: "f.txt", hunkIndex: 0, lineIndex: 1 }), true);
+    // A different line index, hunk index, path, or kind is a different row.
+    assert.equal(sameSplitRow(line, { kind: "line", path: "f.txt", hunkIndex: 0, lineIndex: 0 }), false);
+    assert.equal(sameSplitRow(line, { kind: "line", path: "g.txt", hunkIndex: 0, lineIndex: 1 }), false);
+    assert.equal(sameSplitRow(line, { kind: "hunk", path: "f.txt", index: 0 }), false);
+    assert.equal(sameSplitRow({ kind: "all" }, { kind: "all" }), true);
   });
 });

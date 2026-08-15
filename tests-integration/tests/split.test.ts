@@ -7,7 +7,9 @@ import { getParents, type TestRepo } from "../test-repo";
  * opened Split view webview panel.
  */
 async function openSplitView(workbox: Page, graphFrame: Frame, node: Locator): Promise<Frame> {
-  await node.click({ button: "right" });
+  // Right-click the change-id area: the row's center can land on a bookmark/tag pill
+  // (compact style, narrow sidebar), which opens the pill's own menu instead.
+  await node.locator("[data-role='change-id']").click({ button: "right" });
   const splitItem = graphFrame.locator('[data-action="split"]');
   await expect(splitItem).toBeVisible();
   await splitItem.click();
@@ -38,7 +40,7 @@ function splitFileRow(frame: Frame, path: string): Locator {
 
 /** Expands a file's hunk list by clicking its chevron; files start collapsed in the split view. */
 async function expandSplitFile(row: Locator): Promise<void> {
-  await row.locator(".splitFileRow > i.codicon-chevron-right").click();
+  await row.locator(".splitFileRow > .splitChevron").click();
 }
 
 /**
@@ -202,8 +204,8 @@ test("vertical collapse lines collapse and expand files and hunks", async ({ gra
     expect(box).toBeDefined();
     return box!.x + box!.width / 2;
   };
-  expect(await centerXOf(fileLine)).toBeCloseTo(await centerXOf(f1Row.locator(".splitFileRow > i.codicon")), 0);
-  expect(await centerXOf(hunkLine)).toBeCloseTo(await centerXOf(hunk.locator(".splitHunkRow > i.codicon")), 0);
+  expect(await centerXOf(fileLine)).toBeCloseTo(await centerXOf(f1Row.locator(".splitFileRow > .splitChevron")), 0);
+  expect(await centerXOf(hunkLine)).toBeCloseTo(await centerXOf(hunk.locator(".splitHunkRow > .splitChevron")), 0);
 
   // The hunk line starts under the hunk row's chevron (below the header row) and spans the
   // hunk's lines; the file line starts under the file row and spans the file's contents.
@@ -226,11 +228,11 @@ test("vertical collapse lines collapse and expand files and hunks", async ({ gra
   await hunkLine.click();
   await expect(lines).toHaveCount(0);
   await expect(hunkLine).toHaveCount(0);
-  await hunk.locator(".splitHunkRow > i.codicon-chevron-right").click();
+  await hunk.locator(".splitHunkRow > .splitChevron").click();
   await expect(lines).toHaveCount(2);
   await expect(hunkLine).toHaveCount(1);
 
-  // Unlike the chevrons, the collapse line is a real button and works with the keyboard.
+  // Like the chevrons, the collapse line is a real button and works with the keyboard.
   await hunkLine.focus();
   await workbox.keyboard.press("Enter");
   await expect(lines).toHaveCount(0);
@@ -240,6 +242,134 @@ test("vertical collapse lines collapse and expand files and hunks", async ({ gra
   await expect(f1Row.locator(".splitHunks")).toHaveCount(0);
   await expandSplitFile(f1Row);
   await expect(hunk).toHaveCount(1);
+});
+
+test("arrow keys navigate rows and Space toggles the selection", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("f1.txt", "line1\nline2\nline3\n", "Base");
+  await testRepo.writeFile("f1.txt", "line1\nchanged\nline3\n");
+  await testRepo.commit("Split me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  const f1Row = splitFileRow(splitFrame, "f1.txt");
+  const fileRow = f1Row.locator(".splitFileRow");
+  const f1Checkbox = fileRow.locator("input.splitCheckbox");
+  const selectAllRow = splitFrame.locator(".splitSelectAllRow");
+
+  // The rows are not focusable; clicking a neutral spot in the header gives the webview
+  // itself focus, which is enough for the window-level key handling (focusing <body> alone
+  // does not activate the frame, so keys would never arrive). Down from the empty selection
+  // picks the first row ("Select Everything").
+  await splitFrame.locator(".splitHint").click();
+  await workbox.keyboard.press("ArrowDown");
+  await expect(selectAllRow).toHaveClass(/splitSelected/);
+
+  // Down again selects the file row, and Space toggles the whole file like a row click,
+  // with the row itself carrying the checkbox semantics (name and tri-state).
+  await workbox.keyboard.press("ArrowDown");
+  await expect(fileRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("Space");
+  await expect(f1Checkbox).not.toBeChecked();
+  await expect(fileRow).toHaveAttribute("aria-checked", "false");
+  await workbox.keyboard.press("Space");
+  await expect(f1Checkbox).toBeChecked();
+  await expect(fileRow).toHaveAttribute("aria-checked", "true");
+
+  // Right expands the selected expandable file row without toggling the selection.
+  await workbox.keyboard.press("ArrowRight");
+  const hunk = f1Row.locator(".splitHunk");
+  await expect(hunk).toHaveCount(1);
+  await expect(f1Checkbox).toBeChecked();
+
+  // Down selects the section row; Space toggles the whole section.
+  const hunkRow = hunk.locator(".splitHunkRow");
+  const hunkCheckbox = hunkRow.locator("input.splitCheckbox");
+  await workbox.keyboard.press("ArrowDown");
+  await expect(hunkRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("Space");
+  await expect(hunkCheckbox).not.toBeChecked();
+  await expect(hunkRow).toHaveAttribute("aria-checked", "false");
+  await expect(f1Checkbox).not.toBeChecked();
+
+  // Down selects the first line row; Space toggles just that line, propagating up as "mixed".
+  const firstLine = hunk.locator(".splitLineRow").first();
+  const changedLine = hunk.locator(".splitLineRow").filter({ hasText: "changed" });
+  await workbox.keyboard.press("ArrowDown");
+  await expect(firstLine).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("Space");
+  await expect(firstLine.locator("input.splitCheckbox")).toBeChecked();
+  await expect(changedLine.locator("input.splitCheckbox")).not.toBeChecked();
+  await expect(hunkRow).toHaveAttribute("aria-checked", "mixed");
+  await expect(hunkCheckbox).toBeChecked({ indeterminate: true });
+  await expect(fileRow).toHaveAttribute("aria-checked", "mixed");
+
+  // Left and Right collapse and expand the selected row; neither ever selects parents. A
+  // line row has nothing to collapse, so Left leaves it (and the view) alone.
+  await workbox.keyboard.press("ArrowLeft");
+  await expect(firstLine).toHaveClass(/splitSelected/);
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(2);
+
+  // Up selects the section row; Left collapses it without moving the selection, and Right
+  // expands it again.
+  await workbox.keyboard.press("ArrowUp");
+  await expect(hunkRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("ArrowLeft");
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(0);
+  await expect(hunkRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("ArrowRight");
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(2);
+
+  // Up through the file row reaches the top row: Up on the top row wraps around to the
+  // bottom-most row (the section's last line), and Down on the bottom row wraps back to the top.
+  await workbox.keyboard.press("ArrowUp");
+  await expect(fileRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("ArrowUp");
+  await expect(selectAllRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("ArrowUp");
+  await expect(changedLine).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("ArrowDown");
+  await expect(selectAllRow).toHaveClass(/splitSelected/);
+
+  // Left on the selected file row collapses the whole file contents; Right expands them again.
+  await workbox.keyboard.press("ArrowDown");
+  await expect(fileRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("ArrowLeft");
+  await expect(f1Row.locator(".splitHunks")).toHaveCount(0);
+  await expect(fileRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("ArrowRight");
+  await expect(hunk).toHaveCount(1);
+
+  // Left on the selected section row collapses it, hiding its lines from navigation: Down
+  // from the section skips them and wraps around to "Select Everything".
+  await workbox.keyboard.press("ArrowDown");
+  await expect(hunkRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("ArrowLeft");
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(0);
+  await workbox.keyboard.press("ArrowDown");
+  await expect(selectAllRow).toHaveClass(/splitSelected/);
+  await expect(hunkCheckbox).toBeChecked({ indeterminate: true });
+
+  // Tab does nothing: it neither collapses the selected section nor moves focus into the
+  // view's controls. (Up first wraps around to the section row, the last visible one with
+  // its lines collapsed.)
+  await workbox.keyboard.press("ArrowUp");
+  await expect(hunkRow).toHaveClass(/splitSelected/);
+  await workbox.keyboard.press("Tab");
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(0);
+  await expect(hunkRow).toHaveClass(/splitSelected/);
+  await expect(splitFrame.locator(".splitPrimaryButton")).not.toBeFocused();
+
+  // Enter on the focused chevron button expands the section again without toggling the
+  // selection, and Space on the focused hunk chevron collapses it the same way.
+  await hunkRow.getByRole("button", { name: "Expand section" }).focus();
+  await workbox.keyboard.press("Enter");
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(2);
+  await hunkRow.getByRole("button", { name: "Collapse section" }).focus();
+  await workbox.keyboard.press("Space");
+  await expect(hunk.locator(".splitLineRow")).toHaveCount(0);
+  await expect(hunkCheckbox).toBeChecked({ indeterminate: true });
 });
 
 test("splitting with an empty selection creates an empty commit on either side", async ({
@@ -485,6 +615,11 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(5);
+
+  // The rebase leaves the node count unchanged, so the graph may still show the
+  // pre-rebase commit; wait for its conflict marker to know it has caught up before
+  // splitting (a stale commit id would split the non-conflicted pre-rebase commit).
+  await expect(nodes.nth(1).locator("[data-role='conflict-indicator']")).toHaveCount(1);
 
   const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
   await expect(splitFrame.locator(".splitFile")).toHaveCount(4);
