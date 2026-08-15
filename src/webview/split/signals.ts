@@ -42,7 +42,9 @@ export function postMessage(message: SplitWebviewToExtensionMessage): void {
 export function applyExtensionMessage(message: SplitExtensionToWebviewMessage): void {
   entries.value = message.entries;
   metadata.value = message.metadata;
-  checkState.value = createSplitCheckboxState();
+  // Restores the selection the extension sent along, so a webview restored after being
+  // unloaded keeps the user's in-progress selection.
+  checkState.value = message.selection;
   postCurrentState();
 }
 

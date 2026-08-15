@@ -29,6 +29,9 @@ export type SplitExtensionToWebviewMessage = {
   command: "updateSplitFiles";
   entries: SplitViewFileEntry[];
   metadata: SplitCommitMetadata;
+  // The selection mirror the extension holds, so a webview restored after being unloaded
+  // can pick up the user's in-progress selection instead of resetting to all-checked.
+  selection: SplitCheckboxState;
 };
 
 /** Strips the fields the Split view does not need before sending entries over IPC. */

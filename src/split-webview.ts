@@ -56,11 +56,14 @@ export class SplitWebview {
       const messageListener = panel.webview.onDidReceiveMessage((message: SplitWebviewToExtensionMessage) => {
         switch (message.command) {
           case "webviewReady": {
-            // Sent again when the webview is restored after being unloaded.
+            // Sent again when the webview is restored after being unloaded. The selection
+            // mirror travels along, so a restored webview resumes the user's selection
+            // instead of resetting it to all-checked.
             const msg: SplitExtensionToWebviewMessage = {
               command: "updateSplitFiles",
               entries: toSplitViewEntries(entries),
               metadata: { shortChangeId, descriptionFirstLine },
+              selection: latestState,
             };
             void panel.webview.postMessage(msg);
             break;
