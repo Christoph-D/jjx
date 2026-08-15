@@ -423,6 +423,11 @@ export function getFileCheckState(entry: SplitFileEntry, state: SplitCheckboxSta
   ]);
 }
 
+/** Checkbox state across every entry, for the view's "Select Everything" checkbox. */
+export function getAllFilesCheckState(entries: readonly SplitFileEntry[], state: SplitCheckboxState): SplitCheckState {
+  return combineCheckStates(entries.map((entry) => getFileCheckState(entry, state)));
+}
+
 function combineCheckStates(states: SplitCheckState[]): SplitCheckState {
   if (states.every((s) => s === true)) {
     return true;
@@ -455,6 +460,17 @@ export function setFileChecked(path: string, state: SplitCheckboxState, checked:
   delete state.lines[path];
   delete state.renames[path];
   delete state.modes[path];
+}
+
+/** Toggles every entry at once, replacing any finer-grained selection underneath. */
+export function setAllFilesChecked(
+  entries: readonly SplitFileEntry[],
+  state: SplitCheckboxState,
+  checked: boolean,
+): void {
+  for (const entry of entries) {
+    setFileChecked(entry.path, state, checked);
+  }
 }
 
 /** Records the "File Renamed" checkbox without touching the content hunk selection. */

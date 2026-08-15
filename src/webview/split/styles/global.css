@@ -93,6 +93,19 @@ body {
   white-space: nowrap;
 }
 
+/* The "Select Everything" row sits above every file row. */
+.splitSelectAllRow {
+  margin-top: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-weight: 500;
+  cursor: default;
+}
+
+.splitSelectAllLabel {
+  color: var(--vscode-descriptionForeground);
+}
+
 .splitFileRow {
   cursor: default;
   margin-top: 4px;

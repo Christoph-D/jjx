@@ -1,8 +1,18 @@
 import { useEffect } from "preact/hooks";
 import { computed } from "@preact/signals";
-import { applyExtensionMessage, checkState, entries, metadata, postMessage, setAllFilesExpanded } from "./signals";
+import {
+  applyExtensionMessage,
+  checkState,
+  entries,
+  metadata,
+  postMessage,
+  setAllFilesCheckState,
+  setAllFilesExpanded,
+} from "./signals";
 import { buildSplitFileViewModels, hasExpandableSplitEntries } from "./view-model";
+import { getAllFilesCheckState } from "../../split/hunk-model";
 import { FileRow } from "./components/file-row";
+import { TriStateCheckbox } from "./components/tri-state-checkbox";
 import type { SplitExtensionToWebviewMessage } from "../../split-protocol";
 
 const fileModels = computed(() => buildSplitFileViewModels(entries.value));
@@ -10,6 +20,14 @@ const fileModels = computed(() => buildSplitFileViewModels(entries.value));
 // Paths of the files that have a hunk or mode-change breakdown (the expandable ones).
 const expandablePaths = computed(() =>
   fileModels.value.filter(hasExpandableSplitEntries).map((file) => file.entry.path),
+);
+
+// Checkbox state of the "Select Everything" row above every file row.
+const allFilesState = computed(() =>
+  getAllFilesCheckState(
+    fileModels.value.map((file) => file.entry),
+    checkState.value,
+  ),
 );
 
 export function App() {
@@ -68,6 +86,14 @@ export function App() {
         </div>
       </div>
       <div class="splitContent">
+        <div class="splitRow splitSelectAllRow" title="Select Everything">
+          <TriStateCheckbox
+            state={allFilesState.value}
+            title="Select Everything"
+            onChange={(checked) => setAllFilesCheckState(entries.value, checked)}
+          />
+          <span class="splitSelectAllLabel">Select Everything</span>
+        </div>
         {fileModels.value.map((file) => (
           <FileRow key={file.entry.path} file={file} />
         ))}

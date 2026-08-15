@@ -6,6 +6,7 @@ import {
   buildSplitHunks,
   buildSplitLines,
   createSplitCheckboxState,
+  getAllFilesCheckState,
   getFileCheckState,
   getHunkCheckState,
   getLineChecked,
@@ -14,6 +15,7 @@ import {
   lineKey,
   reconstructRightModes,
   reconstructRightSides,
+  setAllFilesChecked,
   setFileChecked,
   setHunkChecked,
   setLineChecked,
@@ -615,6 +617,47 @@ describe("tri-state Test Suite", () => {
     assert.equal(getHunkCheckState(entry.path, entry.hunks![0], state), "indeterminate");
     assert.equal(getHunkCheckState(entry.path, entry.hunks![1], state), true);
     assert.equal(getFileCheckState(entry, state), "indeterminate");
+  });
+
+  it("marks select-everything checked, mixed, or unchecked across every entry", () => {
+    const modified = textEntry("f.txt", "a\nb\nc\n", "a\nx\nc\n");
+    const added = buildSplitFileEntry({ path: "new.txt", status: "A", right: Buffer.from("a\n") });
+    const state = createSplitCheckboxState();
+    assert.equal(getAllFilesCheckState([modified, added], state), true);
+
+    setLineChecked(modified.path, delLineOf(modified, 0, "b\n"), state, false);
+    assert.equal(getAllFilesCheckState([modified, added], state), "indeterminate");
+
+    setFileChecked(modified.path, state, false);
+    setFileChecked(added.path, state, false);
+    assert.equal(getAllFilesCheckState([modified, added], state), false);
+  });
+
+  it("toggles every entry, rename, and line together via select-everything", () => {
+    const modified = textEntry("f.txt", "a\nb\nc\n", "a\nx\nc\n");
+    const renamed = buildSplitFileEntry({
+      path: "new.txt",
+      renamedFrom: "old.txt",
+      status: "R",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("b\n"),
+    });
+    const entries = [modified, renamed];
+    const state = createSplitCheckboxState();
+
+    setAllFilesChecked(entries, state, false);
+    assert.equal(getAllFilesCheckState(entries, state), false);
+    assert.equal(getLineChecked(modified.path, delLineOf(modified, 0, "b\n"), state), false);
+    assert.equal(getRenameChecked(renamed.path, state), false);
+
+    setLineChecked(modified.path, addLineOf(modified, 0, "x\n"), state, true);
+    assert.equal(getAllFilesCheckState(entries, state), "indeterminate");
+
+    setAllFilesChecked(entries, state, true);
+    assert.equal(getAllFilesCheckState(entries, state), true);
+    // The whole-file state replaces any per-line selection underneath.
+    assert.equal(getLineChecked(modified.path, delLineOf(modified, 0, "b\n"), state), true);
+    assert.equal(getRenameChecked(renamed.path, state), true);
   });
 });
 

@@ -3,6 +3,7 @@ import type { SplitCheckboxState } from "../../split/hunk-model";
 import {
   createSplitCheckboxState,
   getLineChecked,
+  setAllFilesChecked,
   setFileChecked,
   setHunkChecked,
   setLineChecked,
@@ -98,6 +99,13 @@ function postCurrentState(): void {
 export function setFileCheckState(path: string, checked: boolean): void {
   const state = checkState.value;
   setFileChecked(path, state, checked);
+  commitStateChange(state);
+}
+
+/** Toggles the "Select Everything" checkbox across every file at once. */
+export function setAllFilesCheckState(entries: readonly SplitViewFileEntry[], checked: boolean): void {
+  const state = checkState.value;
+  setAllFilesChecked(entries, state, checked);
   commitStateChange(state);
 }
 
