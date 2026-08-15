@@ -9,12 +9,15 @@ import {
   getFileCheckState,
   getHunkCheckState,
   getLineChecked,
+  getModeChecked,
   getRenameChecked,
   lineKey,
+  reconstructRightModes,
   reconstructRightSides,
   setFileChecked,
   setHunkChecked,
   setLineChecked,
+  setModeChecked,
   setRenameChecked,
   splitFileLines,
 } from "../split/hunk-model";
@@ -284,6 +287,32 @@ describe("buildSplitFileEntry Test Suite", () => {
     );
   });
 
+  it("carries mode changes through while building content hunks", () => {
+    const entry = buildSplitFileEntry({
+      path: "f.sh",
+      status: "M",
+      modeChangedFrom: "100644",
+      modeChangedTo: "100755",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("b\n"),
+    });
+    assert.equal(entry.modeChangedFrom, "100644");
+    assert.equal(entry.modeChangedTo, "100755");
+    assert.equal(entry.hunks?.length, 1);
+
+    const modeOnly = buildSplitFileEntry({
+      path: "g.sh",
+      status: "M",
+      modeChangedFrom: "100644",
+      modeChangedTo: "100755",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("a\n"),
+    });
+    // A mode-only change has identical contents, so it carries no content hunks.
+    assert.deepEqual(modeOnly.hunks, []);
+    assert.equal(modeOnly.modeChangedTo, "100755");
+  });
+
   it("builds content hunks for renames that come with content changes", () => {
     const renamed = buildSplitFileEntry({
       path: "new.txt",
@@ -474,6 +503,73 @@ describe("tri-state Test Suite", () => {
     setFileChecked("new.txt", state, true);
     assert.equal(getRenameChecked("new.txt", state), true);
     assert.equal(getFileCheckState(renamed, state), true);
+  });
+  it("combines a file's mode-change checkbox with its content hunks", () => {
+    const entry = buildSplitFileEntry({
+      path: "f.sh",
+      status: "M",
+      modeChangedFrom: "100644",
+      modeChangedTo: "100755",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("b\n"),
+    });
+    const state = createSplitCheckboxState();
+    assert.equal(getFileCheckState(entry, state), true);
+
+    // Unchecking only the mode change leaves the content hunks selected and the file indeterminate.
+    setModeChecked("f.sh", state, false);
+    assert.equal(getModeChecked("f.sh", state), false);
+    assert.equal(getHunkCheckState("f.sh", entry.hunks![0], state), true);
+    assert.equal(getFileCheckState(entry, state), "indeterminate");
+
+    // Unchecking the hunks as well clears the file-level state.
+    setHunkChecked("f.sh", entry.hunks![0], state, false);
+    assert.equal(getFileCheckState(entry, state), false);
+
+    // Re-checking the mode change alone leaves the file indeterminate again.
+    setModeChecked("f.sh", state, true);
+    assert.equal(getFileCheckState(entry, state), "indeterminate");
+  });
+
+  it("toggles a file's mode change and hunks together via the file checkbox", () => {
+    const entry = buildSplitFileEntry({
+      path: "f.sh",
+      status: "M",
+      modeChangedFrom: "100644",
+      modeChangedTo: "100755",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("b\n"),
+    });
+    const state = createSplitCheckboxState();
+    setFileChecked("f.sh", state, false);
+    assert.equal(getModeChecked("f.sh", state), false);
+    assert.equal(getHunkCheckState("f.sh", entry.hunks![0], state), false);
+    assert.equal(getFileCheckState(entry, state), false);
+
+    setFileChecked("f.sh", state, true);
+    assert.equal(getModeChecked("f.sh", state), true);
+    assert.equal(getHunkCheckState("f.sh", entry.hunks![0], state), true);
+  });
+
+  it("derives mode-only change files from the mode state", () => {
+    const entry = buildSplitFileEntry({
+      path: "f.sh",
+      status: "M",
+      modeChangedFrom: "100644",
+      modeChangedTo: "100755",
+      left: Buffer.from("#!/bin/sh\n"),
+      right: Buffer.from("#!/bin/sh\n"),
+    });
+    const state = createSplitCheckboxState();
+    assert.deepEqual(entry.hunks, []);
+    assert.equal(getFileCheckState(entry, state), true);
+
+    setModeChecked("f.sh", state, false);
+    assert.equal(getFileCheckState(entry, state), false);
+
+    setFileChecked("f.sh", state, true);
+    assert.equal(getModeChecked("f.sh", state), true);
+    assert.equal(getFileCheckState(entry, state), true);
   });
   it("lets the whole-file state win over line states", () => {
     const entry = textEntry("f.txt", "a\nb\nc\n", "a\nx\nc\n");
@@ -808,6 +904,65 @@ describe("reconstructRightSides Test Suite", () => {
     const result = reconstructRightSides([a, b], state);
     assert.deepEqual(result.get("a.txt"), Buffer.from("1\n", "utf8"));
     assert.deepEqual(result.get("b.txt"), Buffer.from("y\n", "utf8"));
+  });
+});
+
+describe("reconstructRightModes Test Suite", () => {
+  it("applies the new mode when checked and the old mode when unchecked", () => {
+    const entry = buildSplitFileEntry({
+      path: "f.sh",
+      status: "M",
+      modeChangedFrom: "100644",
+      modeChangedTo: "100755",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("b\n"),
+    });
+
+    // Default: the mode change goes into the first commit.
+    assert.equal(reconstructRightModes([entry], createSplitCheckboxState()).get("f.sh"), "100755");
+
+    // Unchecked: the first commit keeps the old mode.
+    const state = createSplitCheckboxState();
+    setModeChecked("f.sh", state, false);
+    assert.equal(reconstructRightModes([entry], state).get("f.sh"), "100644");
+
+    // Unchecking the whole file unchecks the mode change with it.
+    setFileChecked("f.sh", state, true);
+    setFileChecked("f.sh", state, false);
+    assert.equal(reconstructRightModes([entry], state).get("f.sh"), "100644");
+  });
+
+  it("records no mode for files without a mode change", () => {
+    const entries = [
+      textEntry("f.txt", "a\n", "b\n"),
+      buildSplitFileEntry({ path: "added.txt", status: "A", right: Buffer.from("a\n") }),
+      buildSplitFileEntry({ path: "gone.txt", status: "D", left: Buffer.from("a\n") }),
+    ];
+    const modes = reconstructRightModes(entries, createSplitCheckboxState());
+    assert.equal(modes.size, 0);
+  });
+
+  it("applies a renamed file's mode change to whichever path it lives on", () => {
+    const renamed = buildSplitFileEntry({
+      path: "new.sh",
+      renamedFrom: "old.sh",
+      status: "R",
+      modeChangedFrom: "100644",
+      modeChangedTo: "100755",
+      left: Buffer.from("a\n"),
+      right: Buffer.from("b\n"),
+    });
+
+    // Default: the rename and the mode change both go into the first commit.
+    let state = createSplitCheckboxState();
+    assert.equal(reconstructRightModes([renamed], state).get("new.sh"), "100755");
+    assert.equal(reconstructRightModes([renamed], state).has("old.sh"), false);
+
+    // Rename unchecked: the file lives at the old path, so the mode applies there.
+    state = createSplitCheckboxState();
+    setRenameChecked("new.sh", state, false);
+    assert.equal(reconstructRightModes([renamed], state).get("old.sh"), "100755");
+    assert.equal(reconstructRightModes([renamed], state).has("new.sh"), false);
   });
 });
 

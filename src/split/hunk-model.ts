@@ -19,6 +19,11 @@ export interface SplitFileEntry {
   status: FileStatusType;
   binary: boolean;
   conflict: boolean;
+  // Git-style octal modes (e.g. "100644"/"100755") of a modified or renamed file whose mode
+  // differs between the two sides of the split; both are undefined when the mode is unchanged
+  // (and for added/deleted files, which show no mode-change entry).
+  modeChangedFrom?: string;
+  modeChangedTo?: string;
   hunks?: SplitHunk[];
   leftBase64?: string;
   rightBase64?: string;
@@ -37,13 +42,15 @@ export type SplitCheckState = boolean | "indeterminate";
  * Checkbox state for a whole split view. Line checkboxes default to checked (true), so only
  * deviations need to be recorded. Per-line entries win over the file-level entry, which acts as
  * the fallback for lines without an explicit entry; toggling a whole file replaces any per-line
- * entries. The rename checkboxes of renamed files are recorded separately (keyed by the renamed
- * file's path) and fall back to the file-level entry the same way.
+ * entries. The rename checkboxes of renamed files and the mode-change checkboxes of files whose
+ * mode changed are recorded separately (keyed by the file's path) and fall back to the file-level
+ * entry the same way.
  */
 export interface SplitCheckboxState {
   files: Record<string, boolean>;
   lines: Record<string, Record<string, boolean>>;
   renames: Record<string, boolean>;
+  modes: Record<string, boolean>;
 }
 
 /** Splits content into lines, keeping each line's terminator so content can be rebuilt byte-exactly. */
@@ -299,6 +306,8 @@ export function buildSplitFileEntry(options: {
   renamedFrom?: string;
   binary?: boolean;
   conflict?: boolean;
+  modeChangedFrom?: string;
+  modeChangedTo?: string;
   left?: Buffer;
   right?: Buffer;
 }): SplitFileEntry {
@@ -310,6 +319,8 @@ export function buildSplitFileEntry(options: {
     status: options.status,
     binary,
     conflict,
+    modeChangedFrom: options.modeChangedFrom,
+    modeChangedTo: options.modeChangedTo,
     leftBase64: options.left?.toString("base64"),
     rightBase64: options.right?.toString("base64"),
   };
@@ -342,7 +353,7 @@ export function buildSplitFileEntry(options: {
 }
 
 export function createSplitCheckboxState(): SplitCheckboxState {
-  return { files: {}, lines: {}, renames: {} };
+  return { files: {}, lines: {}, renames: {}, modes: {} };
 }
 
 /** Stable key identifying a checkable (non-context) line within its file. */
@@ -380,20 +391,36 @@ export function getRenameChecked(path: string, state: SplitCheckboxState): boole
   return state.files[path] ?? true;
 }
 
+/** Checkbox state of a file's mode change ("File mode changed to <mode>"); defaults to checked. */
+export function getModeChecked(path: string, state: SplitCheckboxState): boolean {
+  const modeState = state.modes[path];
+  if (modeState !== undefined) {
+    return modeState;
+  }
+  return state.files[path] ?? true;
+}
+
 export function getFileCheckState(entry: SplitFileEntry, state: SplitCheckboxState): SplitCheckState {
+  // A renamed file's rename and a changed file mode are their own checkables next to any content
+  // hunks, so the file-level state combines them all.
+  const extraStates: SplitCheckState[] = [];
   if (entry.renamedFrom !== undefined) {
-    // A renamed file's rename is its own checkable next to any content hunks, so the file-level
-    // state combines both (a pure rename has no hunks and reduces to the rename state).
-    const renameState = getRenameChecked(entry.path, state);
+    extraStates.push(getRenameChecked(entry.path, state));
+  }
+  if (entry.modeChangedTo !== undefined) {
+    extraStates.push(getModeChecked(entry.path, state));
+  }
+  if (extraStates.length === 0) {
     if (!entry.hunks || entry.hunks.length === 0) {
-      return renameState;
+      return state.files[entry.path] ?? true;
     }
-    return combineCheckStates([renameState, ...entry.hunks.map((hunk) => getHunkCheckState(entry.path, hunk, state))]);
+    return combineCheckStates(entry.hunks.map((hunk) => getHunkCheckState(entry.path, hunk, state)));
   }
-  if (!entry.hunks || entry.hunks.length === 0) {
-    return state.files[entry.path] ?? true;
-  }
-  return combineCheckStates(entry.hunks.map((hunk) => getHunkCheckState(entry.path, hunk, state)));
+  // A pure rename or mode-only change has no hunks and reduces to its own checkable's state.
+  return combineCheckStates([
+    ...extraStates,
+    ...(entry.hunks ?? []).map((hunk) => getHunkCheckState(entry.path, hunk, state)),
+  ]);
 }
 
 function combineCheckStates(states: SplitCheckState[]): SplitCheckState {
@@ -427,11 +454,40 @@ export function setFileChecked(path: string, state: SplitCheckboxState, checked:
   state.files[path] = checked;
   delete state.lines[path];
   delete state.renames[path];
+  delete state.modes[path];
 }
 
 /** Records the "File Renamed" checkbox without touching the content hunk selection. */
 export function setRenameChecked(path: string, state: SplitCheckboxState, checked: boolean): void {
   state.renames[path] = checked;
+}
+
+/** Records the "File mode changed" checkbox without touching the content hunk selection. */
+export function setModeChecked(path: string, state: SplitCheckboxState, checked: boolean): void {
+  state.modes[path] = checked;
+}
+
+/**
+ * Reconstructs the right-side file mode of every entry with a mode change. The returned map is
+ * keyed by the path the file lives on in the first commit (including rename source paths for
+ * unchecked renames); files without an entry keep the mode of the left side as-is.
+ */
+export function reconstructRightModes(
+  entries: readonly SplitFileEntry[],
+  state: SplitCheckboxState,
+): Map<string, string> {
+  const result = new Map<string, string>();
+  for (const entry of entries) {
+    if (entry.modeChangedTo === undefined || entry.modeChangedFrom === undefined) {
+      continue;
+    }
+    // The mode change applies to whichever path the file lives on: the new path when the rename
+    // is checked, the old path when it is not (the rename then falls to the second commit).
+    const targetPath =
+      entry.renamedFrom !== undefined && !getRenameChecked(entry.path, state) ? entry.renamedFrom : entry.path;
+    result.set(targetPath, getModeChecked(entry.path, state) ? entry.modeChangedTo : entry.modeChangedFrom);
+  }
+  return result;
 }
 
 /**

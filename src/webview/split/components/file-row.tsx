@@ -5,6 +5,7 @@ import {
   getFileCheckState,
   getHunkCheckState,
   getLineChecked,
+  getModeChecked,
   getRenameChecked,
   splitFileLines,
 } from "../../../split/hunk-model";
@@ -16,12 +17,14 @@ import {
   hunkKey,
   setFileCheckState,
   setHunkCheckState,
+  setModeCheckState,
   setRenameCheckState,
   toggleFileExpanded,
   toggleHunkCollapsed,
   toggleLineChecked,
 } from "../signals";
 import type { SplitFileViewModel, SplitHunkGroup } from "../view-model";
+import { hasExpandableSplitEntries, modeChangeOf } from "../view-model";
 import { TriStateCheckbox } from "./tri-state-checkbox";
 
 const STATUS_COLORS: Record<FileStatusType, string> = {
@@ -60,7 +63,7 @@ function lineCount(count: number): string {
 
 export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewModel }) {
   const { entry } = file;
-  const expandable = file.hunkGroups.length > 0;
+  const expandable = hasExpandableSplitEntries(file);
   const expanded = expandedFiles.value.has(entry.path);
   const fileState = getFileCheckState(entry, checkState.value);
   const deleted = entry.status === "D";
@@ -112,6 +115,11 @@ function leafSummary(entry: SplitFileViewModel["entry"]): string | undefined {
 
 function HunkList({ file }: { file: SplitFileViewModel }) {
   const children: ComponentChild[] = [];
+  // A file's mode change is its own checkable, listed ahead of the rename and content hunks.
+  const modeChange = modeChangeOf(file.entry);
+  if (modeChange !== undefined) {
+    children.push(<ModeRow key="mode" path={file.entry.path} mode={modeChange} />);
+  }
   // A renamed file's rename is its own checkable, listed ahead of the content hunks.
   if (file.entry.renamedFrom !== undefined) {
     children.push(<RenameRow key="rename" path={file.entry.path} renamedFrom={file.entry.renamedFrom} />);
@@ -147,6 +155,23 @@ function RenameRow({ path, renamedFrom }: { path: string; renamedFrom: string })
         />
         <span class="splitHunkHeader">File Renamed</span>
         <span class="splitLeafDetail">← {renamedFrom}</span>
+      </div>
+    </div>
+  );
+}
+
+/** The "File mode changed" checkbox row: decides which commit the mode change lands in. */
+function ModeRow({ path, mode }: { path: string; mode: string }) {
+  const checked = getModeChecked(path, checkState.value);
+  return (
+    <div class="splitRename">
+      <div class="splitRow splitHunkRow splitRenameRow" title={`File mode changed to ${mode}`}>
+        <TriStateCheckbox
+          state={checked}
+          title={`File mode changed to ${mode}`}
+          onChange={(nextChecked) => setModeCheckState(path, nextChecked)}
+        />
+        <span class="splitHunkHeader">File mode changed to {mode}</span>
       </div>
     </div>
   );

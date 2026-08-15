@@ -2,7 +2,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { buildSplitHunks } from "../split/hunk-model";
-import { buildSplitFileViewModels, isExpandableSplitEntry } from "../webview/split/view-model";
+import {
+  buildSplitFileViewModels,
+  hasExpandableSplitEntries,
+  isExpandableSplitEntry,
+  modeChangeOf,
+} from "../webview/split/view-model";
 import type { SplitViewFileEntry } from "../split-protocol";
 
 function modifiedEntry(path: string, left: string, right: string): SplitViewFileEntry {
@@ -177,5 +182,72 @@ describe("buildSplitFileViewModels Test Suite", () => {
     const [model] = buildSplitFileViewModels([modifiedEntry("same.txt", "a\n", "a\n")]);
     assert.equal(model.hunkGroups.length, 0);
     assert.equal(isExpandableSplitEntry(model.entry), true);
+  });
+
+  it("expands modified files with only a mode change", () => {
+    const [model] = buildSplitFileViewModels([
+      {
+        path: "f.sh",
+        status: "M",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "100644",
+        modeChangedTo: "100755",
+        leftText: "#!/bin/sh\n",
+        rightText: "#!/bin/sh\n",
+      },
+    ]);
+    // Identical contents leave no content hunks; the mode change is the only checkable.
+    assert.equal(isExpandableSplitEntry(model.entry), true);
+    assert.equal(hasExpandableSplitEntries(model), true);
+    assert.equal(modeChangeOf(model.entry), "100755");
+    assert.equal(model.hunkGroups.length, 0);
+  });
+
+  it("expands a mode change on top of content hunks and renames", () => {
+    const models = buildSplitFileViewModels([
+      {
+        path: "f.sh",
+        status: "M",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "100644",
+        modeChangedTo: "100755",
+        leftText: "a\n",
+        rightText: "b\n",
+      },
+      {
+        path: "new.sh",
+        renamedFrom: "old.sh",
+        status: "R",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "100755",
+        modeChangedTo: "100644",
+        leftText: "a\n",
+        rightText: "a\n",
+      },
+    ]);
+    assert.equal(modeChangeOf(models[0].entry), "100755");
+    assert.equal(models[0].hunkGroups.length, 1);
+    assert.equal(hasExpandableSplitEntries(models[0]), true);
+    assert.equal(modeChangeOf(models[1].entry), "100644");
+    assert.equal(models[1].hunkGroups.length, 0);
+    assert.equal(hasExpandableSplitEntries(models[1]), true);
+  });
+
+  it("offers no mode-change entry for files without a mode change or without both sides", () => {
+    const models = buildSplitFileViewModels([
+      modifiedEntry("same.txt", "a\n", "a\n"),
+      { path: "added.txt", status: "A", binary: false, conflict: false, rightText: "a\n" },
+      { path: "gone.txt", status: "D", binary: false, conflict: false, leftText: "a\n" },
+    ]);
+    for (const model of models) {
+      assert.equal(modeChangeOf(model.entry), undefined);
+      assert.equal(
+        hasExpandableSplitEntries(model),
+        model.entry.path === "added.txt" || model.entry.path === "gone.txt",
+      );
+    }
   });
 });

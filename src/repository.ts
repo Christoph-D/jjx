@@ -75,6 +75,7 @@ import type {
 } from "./types";
 import {
   buildSplitFileEntry,
+  reconstructRightModes,
   reconstructRightSides,
   type SplitCheckboxState,
   type SplitFileEntry,
@@ -822,11 +823,14 @@ export class JJRepository {
           renamedFrom: entry.renamedFrom,
           binary: entry.binary,
           conflict: entry.conflict,
+          modeChangedFrom: entry.modeChangedFrom,
+          modeChangedTo: entry.modeChangedTo,
           left: entry.leftBase64 !== undefined ? Buffer.from(entry.leftBase64, "base64") : undefined,
           right: entry.rightBase64 !== undefined ? Buffer.from(entry.rightBase64, "base64") : undefined,
         }),
       );
       const rightSides = reconstructRightSides(entries, state);
+      const rightModes = reconstructRightModes(entries, state);
 
       // The unchecked side is the parent state by construction: start from the left directory
       // and write the reconstructed right contents on top of it.
@@ -845,6 +849,12 @@ export class JJRepository {
         if (content !== undefined) {
           await fs.mkdir(path.dirname(target), { recursive: true });
           await fs.writeFile(target, content);
+        }
+        // A selected mode change (or the restored old mode of a deselected one) is applied on
+        // top; the permission bits carry it, the git-style type bits do not survive a chmod.
+        const mode = rightModes.get(relativePath);
+        if (mode !== undefined && content !== undefined) {
+          await fs.chmod(target, parseInt(mode, 8) & 0o777);
         }
       }
 
@@ -1760,7 +1770,10 @@ export class JJRepository {
    * pinned to the same commit across concurrent repo updates.
    */
   async getSplitFileEntries(commitId: string, token?: vscode.CancellationToken): Promise<SplitFileEntry[]> {
-    const { summary, leftFiles, rightFiles } = await this.runDiffToolSummary(["diff", "-r", commitId], []);
+    const { summary, leftFiles, rightFiles, leftModes, rightModes } = await this.runDiffToolSummary(
+      ["diff", "-r", commitId],
+      [],
+    );
     const fileStatuses = parseInterdiffSummary(summary, this.repositoryRoot);
 
     const conflictedPaths = new Set(
@@ -1782,9 +1795,17 @@ export class JJRepository {
       const rightText = rightBuffer !== undefined ? decodeFileText(rightBuffer) : undefined;
       const binary =
         (leftBuffer !== undefined && leftText === undefined) || (rightBuffer !== undefined && rightText === undefined);
+      // A mode change is only offered for modified and renamed files whose mode differs between
+      // the two sides (added/deleted files lack one side, so they never qualify). Modes are empty
+      // on platforms that cannot track them (see jj-diff-tool-main.ts).
+      const modeEligible = fileStatus.type === "M" || renamedFrom !== undefined;
+      const leftMode = modeEligible && leftPath !== undefined ? leftModes[leftPath] : undefined;
+      const rightMode = modeEligible && rightPath !== undefined ? rightModes[rightPath] : undefined;
+      const modeChanged =
+        leftMode !== undefined && rightMode !== undefined && leftMode !== rightMode ? rightMode : undefined;
       logger.trace(
         `[getSplitFileEntries] ${fileStatus.type} ${relativePath} left=${leftBase64 !== undefined} ` +
-          `right=${rightBase64 !== undefined} binary=${binary}`,
+          `right=${rightBase64 !== undefined} binary=${binary} modeChangedTo=${modeChanged ?? "<none>"}`,
       );
       return {
         status: fileStatus.type,
@@ -1792,6 +1813,8 @@ export class JJRepository {
         renamedFrom,
         binary,
         conflict: conflictedPaths.has(normalizePath(fileStatus.path)),
+        modeChangedFrom: modeChanged !== undefined ? leftMode : undefined,
+        modeChangedTo: modeChanged,
         leftBase64,
         rightBase64,
         leftText,
@@ -1828,6 +1851,8 @@ export class JJRepository {
     summary: string;
     leftFiles: Record<string, string>;
     rightFiles: Record<string, string>;
+    leftModes: Record<string, string>;
+    rightModes: Record<string, string>;
   }> {
     const diffConfigs = getDiffToolConfigs();
     if (!diffConfigs.length) {
@@ -1856,8 +1881,8 @@ export class JJRepository {
       // exits run before awaiting pathPromise — so the IPC handshake is only consumed when the
       // spawn actually ran the diff tool.
       const { stdout } = await collectProcessOutput(childProcess).catch(convertJJErrors);
-      const { leftFiles, rightFiles } = await pathPromise;
-      return { summary: stdout.toString(), leftFiles, rightFiles };
+      const { leftFiles, rightFiles, leftModes, rightModes } = await pathPromise;
+      return { summary: stdout.toString(), leftFiles, rightFiles, leftModes, rightModes };
     };
 
     return withDivergenceHandling(

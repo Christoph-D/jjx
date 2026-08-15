@@ -669,3 +669,108 @@ test("renamed files split their rename via the File Renamed checkbox", async ({ 
   // The second commit performs the rename of the already-edited file.
   expect(await diffSummary(testRepo, renameRest)).toBe("R {old.txt => new.txt}");
 });
+
+/** The `jj diff --git` output of a change, which spells out mode changes as old/new mode lines. */
+async function gitDiff(testRepo: TestRepo, changeId: string): Promise<string> {
+  return (await testRepo.jjCommand(["diff", "--git", "-r", changeId])).stdout;
+}
+
+test("file mode changes split via the File mode changed checkbox", async ({ graphFrame, testRepo, workbox }) => {
+  test.skip(process.platform === "win32", "Windows file systems do not track the executable bit");
+
+  await testRepo.commitFile("base.txt", "base\n", "Base");
+  await testRepo.commitFile("f.sh", "one\ntwo\n", "Add script");
+  await testRepo.jjCommand(["file", "chmod", "+x", "f.sh"]);
+  await testRepo.writeFile("keep.txt", "kept\n");
+  await testRepo.commit("Split me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(5);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+  // The mode change is the file's only entry: the unchanged content yields no hunks, so the
+  // file would stay a leaf without it.
+  const fRow = splitFileRow(splitFrame, "f.sh");
+  await expect(fRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
+  await expandSplitFile(fRow);
+  const modeRow = fRow.locator(".splitRename");
+  await expect(modeRow).toHaveCount(1);
+  await expect(modeRow).toContainText("File mode changed to 100755");
+  await expect(fRow.locator(".splitHunk")).toHaveCount(0);
+  const modeCheckbox = modeRow.locator("input.splitCheckbox");
+  await expect(modeCheckbox).toBeChecked();
+
+  // The mode entry is the file's only checkable, so the file checkbox mirrors it (like the
+  // "File Deleted" checkbox of a deleted file mirrors its full-removal hunk).
+  const fCheckbox = fRow.locator(".splitFileRow input.splitCheckbox");
+  await modeCheckbox.click();
+  await expect(modeCheckbox).not.toBeChecked();
+  await expect(fCheckbox).not.toBeChecked();
+  await modeCheckbox.click();
+  await expect(modeCheckbox).toBeChecked();
+  await expect(fCheckbox).toBeChecked();
+
+  // Keep the mode change out of the first commit: only keep.txt is split off.
+  await modeCheckbox.click();
+  await splitFrame.locator(".splitPrimaryButton").click();
+
+  await handleEditor(workbox, "", "Keep mode");
+  await handleEditor(workbox, "", "Mode change");
+
+  await expect(nodes).toHaveCount(6);
+
+  await expect(async () => {
+    const logEntries = await testRepo.log();
+    expect(getParents(logEntries, "Keep mode")).toEqual(["Add script"]);
+    expect(getParents(logEntries, "Mode change")).toEqual(["Keep mode"]);
+    expect(getParents(logEntries, "@")).toEqual(["Mode change"]);
+  }).toPass();
+
+  const keepMode = await changeIdFor(testRepo, "Keep mode");
+  const modeChange = await changeIdFor(testRepo, "Mode change");
+
+  // The first commit keeps the old mode; the second applies the mode change.
+  expect(await diffSummary(testRepo, keepMode)).toBe("A keep.txt");
+  expect(await gitDiff(testRepo, keepMode)).not.toContain("mode 100755");
+  expect(await diffSummary(testRepo, modeChange)).toBe("M f.sh");
+  expect(await gitDiff(testRepo, modeChange)).toContain("old mode 100644");
+  expect(await gitDiff(testRepo, modeChange)).toContain("new mode 100755");
+});
+
+test("a selected mode change lands in the first split commit", async ({ graphFrame, testRepo, workbox }) => {
+  test.skip(process.platform === "win32", "Windows file systems do not track the executable bit");
+
+  await testRepo.commitFile("base.txt", "base\n", "Base");
+  await testRepo.commitFile("f.sh", "one\ntwo\n", "Add script");
+  await testRepo.jjCommand(["file", "chmod", "+x", "f.sh"]);
+  await testRepo.writeFile("f.sh", "one\ntwo\nthree\n");
+  await testRepo.commit("Split me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  await expect(splitFrame.locator(".splitFile")).toHaveCount(1);
+
+  // The mode change entry sits at the top, above the content hunk.
+  const fRow = splitFileRow(splitFrame, "f.sh");
+  await expandSplitFile(fRow);
+  await expect(fRow.locator(".splitRename")).toContainText("File mode changed to 100755");
+  await expect(fRow.locator(".splitHunk")).toHaveCount(1);
+
+  // Everything stays selected, so the mode change and the edit both go into the first commit.
+  await splitFrame.locator(".splitPrimaryButton").click();
+
+  await handleEditor(workbox, "", "All selected");
+  await handleEditor(workbox, "", "All remaining");
+
+  await expect(nodes).toHaveCount(5);
+
+  const allSelected = await changeIdFor(testRepo, "All selected");
+  const gitDiffs = await gitDiff(testRepo, allSelected);
+  expect(gitDiffs).toContain("old mode 100644");
+  expect(gitDiffs).toContain("new mode 100755");
+  expect(await fileContent(testRepo, allSelected, "f.sh")).toBe("one\ntwo\nthree\n");
+});

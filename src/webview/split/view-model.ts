@@ -41,6 +41,25 @@ export function buildSplitFileViewModels(entries: readonly SplitViewFileEntry[])
   return entries.map(buildSplitFileViewModel);
 }
 
+/**
+ * The new mode offered by a file's "File mode changed to <mode>" entry, if any: only modified
+ * and renamed files whose mode actually changed get one (added/deleted files never do).
+ */
+export function modeChangeOf(entry: SplitViewFileEntry): string | undefined {
+  if (entry.modeChangedTo === undefined) {
+    return undefined;
+  }
+  return entry.status === "M" || entry.renamedFrom !== undefined ? entry.modeChangedTo : undefined;
+}
+
+/**
+ * True when a file has entries to expand into: content hunks or a mode change whose "File mode
+ * changed to <mode>" checkbox is picked separately from the whole-file checkbox.
+ */
+export function hasExpandableSplitEntries(file: SplitFileViewModel): boolean {
+  return file.hunkGroups.length > 0 || modeChangeOf(file.entry) !== undefined;
+}
+
 function buildSplitFileViewModel(entry: SplitViewFileEntry): SplitFileViewModel {
   if (!isExpandableSplitEntry(entry)) {
     return { entry, hunkGroups: [], contextCounts: [] };

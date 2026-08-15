@@ -1,15 +1,15 @@
 import { useEffect } from "preact/hooks";
 import { computed } from "@preact/signals";
 import { applyExtensionMessage, checkState, entries, metadata, postMessage, setAllFilesExpanded } from "./signals";
-import { buildSplitFileViewModels } from "./view-model";
+import { buildSplitFileViewModels, hasExpandableSplitEntries } from "./view-model";
 import { FileRow } from "./components/file-row";
 import type { SplitExtensionToWebviewMessage } from "../../split-protocol";
 
 const fileModels = computed(() => buildSplitFileViewModels(entries.value));
 
-// Paths of the files that have a hunk breakdown (the only ones that can be expanded).
+// Paths of the files that have a hunk or mode-change breakdown (the expandable ones).
 const expandablePaths = computed(() =>
-  fileModels.value.filter((file) => file.hunkGroups.length > 0).map((file) => file.entry.path),
+  fileModels.value.filter(hasExpandableSplitEntries).map((file) => file.entry.path),
 );
 
 export function App() {

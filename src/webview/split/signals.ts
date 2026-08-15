@@ -6,6 +6,7 @@ import {
   setFileChecked,
   setHunkChecked,
   setLineChecked,
+  setModeChecked,
   setRenameChecked,
 } from "../../split/hunk-model";
 import type {
@@ -80,7 +81,12 @@ export function toggleHunkCollapsed(path: string, index: number): void {
 
 /** Reassigns the signal with a shallow clone so mutations become visible to subscribers. */
 function commitStateChange(state: SplitCheckboxState): void {
-  checkState.value = { files: { ...state.files }, lines: { ...state.lines }, renames: { ...state.renames } };
+  checkState.value = {
+    files: { ...state.files },
+    lines: { ...state.lines },
+    renames: { ...state.renames },
+    modes: { ...state.modes },
+  };
   postCurrentState();
 }
 
@@ -105,6 +111,13 @@ export function setHunkCheckState(path: string, hunk: SplitHunk, checked: boolea
 export function setRenameCheckState(path: string, checked: boolean): void {
   const state = checkState.value;
   setRenameChecked(path, state, checked);
+  commitStateChange(state);
+}
+
+/** Toggles a file's "File mode changed" checkbox, independent of its content hunks. */
+export function setModeCheckState(path: string, checked: boolean): void {
+  const state = checkState.value;
+  setModeChecked(path, state, checked);
   commitStateChange(state);
 }
 

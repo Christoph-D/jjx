@@ -39,6 +39,8 @@ export function toSplitViewEntries(entries: readonly SplitFileEntry[]): SplitVie
     status: entry.status,
     binary: entry.binary,
     conflict: entry.conflict,
+    modeChangedFrom: entry.modeChangedFrom,
+    modeChangedTo: entry.modeChangedTo,
     leftText: entry.leftText,
     rightText: entry.rightText,
   }));

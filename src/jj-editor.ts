@@ -102,18 +102,30 @@ interface DiffToolRequest {
   // JSON IPC transport undistorted.
   leftFiles: Record<string, string>;
   rightFiles: Record<string, string>;
+  // Git-style octal file modes (e.g. "100755"), collected only where file modes are meaningful
+  // (see jj-diff-tool-main.ts); empty when the platform cannot track them.
+  leftModes?: Record<string, string>;
+  rightModes?: Record<string, string>;
 }
 
 interface PendingDiffRequest {
-  resolve: (data: { leftFiles: Record<string, string>; rightFiles: Record<string, string> }) => void;
+  resolve: (data: {
+    leftFiles: Record<string, string>;
+    rightFiles: Record<string, string>;
+    leftModes: Record<string, string>;
+    rightModes: Record<string, string>;
+  }) => void;
   reject: (error: Error) => void;
 }
 
 const pendingDiffRequests = new Map<string, PendingDiffRequest>();
 
-export function expectDiffToolRequest(
-  requestId: string,
-): Promise<{ leftFiles: Record<string, string>; rightFiles: Record<string, string> }> {
+export function expectDiffToolRequest(requestId: string): Promise<{
+  leftFiles: Record<string, string>;
+  rightFiles: Record<string, string>;
+  leftModes: Record<string, string>;
+  rightModes: Record<string, string>;
+}> {
   return new Promise((resolve, reject) => {
     pendingDiffRequests.set(requestId, { resolve, reject });
   });
@@ -346,7 +358,12 @@ export class JJDiffTool implements IIPCHandler {
       return Promise.resolve(false);
     }
     pendingDiffRequests.delete(request.requestId);
-    pending.resolve({ leftFiles: request.leftFiles, rightFiles: request.rightFiles });
+    pending.resolve({
+      leftFiles: request.leftFiles,
+      rightFiles: request.rightFiles,
+      leftModes: request.leftModes ?? {},
+      rightModes: request.rightModes ?? {},
+    });
     return Promise.resolve(true);
   }
 
