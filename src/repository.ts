@@ -1891,10 +1891,15 @@ export class JJRepository {
    * concurrent repo updates.
    */
   async getSplitFileEntries(commitId: string, token?: vscode.CancellationToken): Promise<SplitFileEntry[]> {
-    const { summary, data } = await this.runDiffTool(["diff", "-r", commitId], [], async ({ leftDir, rightDir }) => {
-      const [left, right] = await Promise.all([readSnapshotDir(leftDir), readSnapshotDir(rightDir)]);
-      return { left, right };
-    });
+    const { summary, data } = await this.runDiffTool(
+      ["diff", "-r", commitId],
+      [],
+      async ({ leftDir, rightDir }) => {
+        const [left, right] = await Promise.all([readSnapshotDir(leftDir), readSnapshotDir(rightDir)]);
+        return { left, right };
+      },
+      true,
+    );
     const fileStatuses = parseInterdiffSummary(summary, this.repositoryRoot);
     const { left: leftSnapshot, right: rightSnapshot } = data;
 
@@ -1960,7 +1965,7 @@ export class JJRepository {
   }
 
   /**
-   * Runs `jj <revArgs> --summary --tool=jjx-vscode-diff -- <filesetArgs>` and hands the
+   * Runs `jj <revArgs> [--summary] --tool=jjx-vscode-diff -- <filesetArgs>` and hands the
    * materialized left/right snapshot directories to `collect`, which reads the file contents it
    * needs directly from disk; no file contents travel over IPC. The tool subprocess (and with it
    * jj's snapshot directories) stays alive until `collect` finishes. Retries with
@@ -1970,6 +1975,7 @@ export class JJRepository {
     revArgs: string[],
     filesetArgs: string[],
     collect: (snapshot: { leftDir: string; rightDir: string }) => Promise<T>,
+    withSummary = false,
   ): Promise<{ summary: string; data: T }> {
     const diffConfigs = getDiffToolConfigs();
     if (!diffConfigs.length) {
@@ -1979,7 +1985,7 @@ export class JJRepository {
     const buildArgs = () =>
       [
         ...revArgs,
-        "--summary",
+        ...(withSummary ? ["--summary"] : []),
         "--tool=jjx-vscode-diff",
         ...diffConfigs.flatMap((c) => ["--config", c]),
         "--",
