@@ -288,19 +288,29 @@ body {
   cursor: pointer;
 }
 
-/* Changed lines take the diff editor's bright word-level highlight colors
-   (diffEditor.insertedTextBackground / removedTextBackground) rather than the dimmer
-   whole-line ones, matching the added/removed words of the jj file diff view. The fallbacks
-   are those tokens' VS Code defaults; insertedTextBackground's default differs per theme,
-   so the light default gets its own rule keyed on the webview's theme class. */
+/* The diff editor paints purely added lines with two stacked translucent backgrounds: the
+   word-level diffEditor.insertedTextBackground underneath and the whole-line
+   diffEditor.insertedLineBackground band on top (its diffWholeLineAddDecoration over
+   line-insert), which composites to a brighter green than either layer alone. Layer both to
+   match; a solid color cannot be stacked on background-color, so the line band is drawn as a
+   gradient over it. The fallbacks are the tokens' VS Code defaults; insertedTextBackground's
+   default differs per theme, so the light default gets its own rule keyed on the webview's
+   theme class. */
 .splitLineAdded {
   background-color: var(--vscode-diffEditor-insertedTextBackground, #9ccc2c33);
+  background-image: linear-gradient(
+    var(--vscode-diffEditor-insertedLineBackground, rgba(155, 185, 85, 0.2)),
+    var(--vscode-diffEditor-insertedLineBackground, rgba(155, 185, 85, 0.2))
+  );
 }
 
 .vscode-light .splitLineAdded {
   background-color: var(--vscode-diffEditor-insertedTextBackground, #9ccc2c40);
 }
 
+/* Removed lines stay a single removedTextBackground layer: the red line band's default
+   equals it, and stacking the two identical shades would double-darken the result beyond
+   what the diff view shows. */
 .splitLineRemoved {
   background-color: var(--vscode-diffEditor-removedTextBackground, #ff000033);
 }
