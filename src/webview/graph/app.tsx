@@ -201,7 +201,6 @@ export function App() {
       }
     });
 
-    document.addEventListener("click", closeAllMenus);
     window.addEventListener("blur", closeAllMenus);
 
     let resizeTimeout: ReturnType<typeof setTimeout>;

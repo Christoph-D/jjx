@@ -2,6 +2,7 @@ import { createContext } from "preact";
 import type { ComponentChildren, HTMLAttributes } from "preact";
 import { useCallback, useContext, useEffect, useId, useRef, useState } from "preact/hooks";
 import { cx } from "../utils";
+import { closeAllMenus } from "../signals";
 import styles from "./context-menu.module.css";
 
 interface SubmenuPosition {
@@ -66,6 +67,25 @@ export function Menu({ state, children, ...rest }: MenuProps) {
       setPositions(measureSubmenus(registrations.current));
     });
   }, [state]);
+
+  useEffect(() => {
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) {
+        closeAllMenus();
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeAllMenus();
+      }
+    };
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <MenuContext.Provider value={{ activeId, setActiveId, positions, register }}>
@@ -155,21 +175,23 @@ export function MenuSeparator() {
   return <div class={styles.contextMenuSeparator}></div>;
 }
 
+const ANCHOR_OFFSET = 2;
+
 function positionMenu(menu: HTMLElement, pageX: number, pageY: number): void {
   const menuRect = menu.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const scrollY = window.scrollY || window.pageYOffset;
 
-  let left = pageX;
-  let top = pageY;
+  let left = pageX + ANCHOR_OFFSET;
+  let top = pageY + ANCHOR_OFFSET;
 
   if (left + menuRect.width > viewportWidth - 10) {
-    left = pageX - menuRect.width;
+    left = pageX - ANCHOR_OFFSET - menuRect.width;
   }
 
   if (top + menuRect.height > viewportHeight + scrollY - 10) {
-    top = pageY - menuRect.height;
+    top = pageY - ANCHOR_OFFSET - menuRect.height;
   }
 
   if (left < 10) {

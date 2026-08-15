@@ -43,6 +43,8 @@ export function killAllProcesses(): void {
   activeProcesses.clear();
 }
 
+const STDIO_DRAIN_GRACE_MS = 2000;
+
 export function collectProcessOutput(
   childProcess: ChildProcess,
   token?: vscode.CancellationToken,
@@ -51,6 +53,31 @@ export function collectProcessOutput(
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
     let settled = false;
+    let drainTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const cancelDrainTimer = () => {
+      if (drainTimer) {
+        clearTimeout(drainTimer);
+        drainTimer = null;
+      }
+    };
+
+    const settle = (code: number | null, signal: string | null) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cancelDrainTimer();
+      const stdoutBuf = Buffer.concat(stdout);
+      const stderrBuf = Buffer.concat(stderr);
+      if (code) {
+        reject(new ProcessError(code, null, stdoutBuf.toString(), stderrBuf.toString()));
+      } else if (signal) {
+        reject(new ProcessError(null, signal, stdoutBuf.toString(), stderrBuf.toString()));
+      } else {
+        resolve({ stdout: stdoutBuf, stderr: stderrBuf });
+      }
+    };
 
     childProcess.stdout?.on("data", (data: Buffer) => {
       stdout.push(data);
@@ -63,29 +90,25 @@ export function collectProcessOutput(
     childProcess.on("error", (error: Error) => {
       if (!settled) {
         settled = true;
+        cancelDrainTimer();
         reject(new Error(`Spawning command failed: ${error.message}`));
       }
     });
 
     childProcess.on("close", (code, signal) => {
-      if (!settled) {
-        settled = true;
-        const stdoutBuf = Buffer.concat(stdout);
-        const stderrBuf = Buffer.concat(stderr);
-        if (code) {
-          reject(new ProcessError(code, null, stdoutBuf.toString(), stderrBuf.toString()));
-        } else if (signal) {
-          reject(new ProcessError(null, signal, stdoutBuf.toString(), stderrBuf.toString()));
-        } else {
-          resolve({ stdout: stdoutBuf, stderr: stderrBuf });
-        }
-      }
+      settle(code, signal);
+    });
+
+    childProcess.on("exit", (code, signal) => {
+      cancelDrainTimer();
+      drainTimer = setTimeout(() => settle(code, signal), STDIO_DRAIN_GRACE_MS);
     });
 
     if (token) {
       token.onCancellationRequested(() => {
         if (!settled) {
           settled = true;
+          cancelDrainTimer();
           childProcess.kill();
           reject(new CancelledError());
         }
