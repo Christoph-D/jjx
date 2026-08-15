@@ -210,15 +210,15 @@ describe("buildSplitFileEntry Test Suite", () => {
     assert.equal(entry.binary, false);
     assert.equal(entry.conflict, false);
     assert.equal(entry.hunks?.length, 1);
-    assert.equal(entry.leftBase64, Buffer.from("a\n", "utf8").toString("base64"));
-    assert.equal(entry.rightBase64, Buffer.from("b\n", "utf8").toString("base64"));
+    assert.deepEqual(entry.left, Buffer.from("a\n", "utf8"));
+    assert.deepEqual(entry.right, Buffer.from("b\n", "utf8"));
   });
 
   it("falls back to whole-file contents for empty add, binary delete, pure rename, binary, and conflict leaves", () => {
     const addedEmpty = buildSplitFileEntry({ path: "added-empty.txt", status: "A", right: Buffer.from("") });
     assert.equal(addedEmpty.hunks, undefined);
-    assert.equal(addedEmpty.leftBase64, undefined);
-    assert.equal(addedEmpty.rightBase64, Buffer.from("").toString("base64"));
+    assert.equal(addedEmpty.left, undefined);
+    assert.deepEqual(addedEmpty.right, Buffer.from(""));
 
     const deletedBinary = buildSplitFileEntry({
       path: "old.dat",
@@ -227,7 +227,7 @@ describe("buildSplitFileEntry Test Suite", () => {
       left: Buffer.from([0x00]),
     });
     assert.equal(deletedBinary.hunks, undefined);
-    assert.equal(deletedBinary.rightBase64, undefined);
+    assert.equal(deletedBinary.right, undefined);
 
     const deletedEmpty = buildSplitFileEntry({ path: "empty.txt", status: "D", left: Buffer.from("") });
     assert.equal(deletedEmpty.hunks, undefined);
@@ -266,7 +266,7 @@ describe("buildSplitFileEntry Test Suite", () => {
 
   it("builds a single full-removal hunk for deleted text files", () => {
     const deleted = buildSplitFileEntry({ path: "old.txt", status: "D", left: Buffer.from("a\nb\n") });
-    assert.equal(deleted.rightBase64, undefined);
+    assert.equal(deleted.right, undefined);
     assert.equal(deleted.hunks?.length, 1);
     assert.deepEqual(
       deleted.hunks[0].lines.map((l) => [l.kind, l.oldLine, l.text]),
@@ -279,7 +279,7 @@ describe("buildSplitFileEntry Test Suite", () => {
 
   it("builds a single full-addition hunk for added text files", () => {
     const added = buildSplitFileEntry({ path: "new.txt", status: "A", right: Buffer.from("a\nb\n") });
-    assert.equal(added.leftBase64, undefined);
+    assert.equal(added.left, undefined);
     assert.equal(added.hunks?.length, 1);
     assert.deepEqual(
       added.hunks[0].lines.map((l) => [l.kind, l.newLine, l.text]),

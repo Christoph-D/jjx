@@ -1,11 +1,11 @@
 import type { SplitCheckboxState, SplitFileEntry } from "./split/hunk-model";
 
 /**
- * A {@link SplitFileEntry} reduced to the data the Split view needs. The base64 contents
+ * A {@link SplitFileEntry} reduced to the data the Split view needs. The raw contents
  * (used for reconstruction on the extension side) are stripped to keep IPC messages small;
  * the decoded text is kept so the view can build the hunk model.
  */
-export type SplitViewFileEntry = Omit<SplitFileEntry, "hunks" | "leftBase64" | "rightBase64">;
+export type SplitViewFileEntry = Omit<SplitFileEntry, "hunks" | "left" | "right">;
 
 export interface SplitCommitMetadata {
   // Short, human-readable change id of the commit being split.

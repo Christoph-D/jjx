@@ -862,8 +862,8 @@ export class JJRepository {
           conflict: entry.conflict,
           modeChangedFrom: entry.modeChangedFrom,
           modeChangedTo: entry.modeChangedTo,
-          left: entry.leftBase64 !== undefined ? Buffer.from(entry.leftBase64, "base64") : undefined,
-          right: entry.rightBase64 !== undefined ? Buffer.from(entry.rightBase64, "base64") : undefined,
+          left: entry.left,
+          right: entry.right,
         }),
       );
       const rightSides = reconstructRightSides(entries, state);
@@ -1911,8 +1911,6 @@ export class JJRepository {
       const rightPath = fileStatus.type === "D" ? undefined : relativePath;
       const leftBuffer = leftPath !== undefined ? leftSnapshot.files.get(leftPath) : undefined;
       const rightBuffer = rightPath !== undefined ? rightSnapshot.files.get(rightPath) : undefined;
-      const leftBase64 = leftBuffer?.toString("base64");
-      const rightBase64 = rightBuffer?.toString("base64");
       const leftText = leftBuffer !== undefined ? decodeFileText(leftBuffer) : undefined;
       const rightText = rightBuffer !== undefined ? decodeFileText(rightBuffer) : undefined;
       const binary =
@@ -1929,8 +1927,8 @@ export class JJRepository {
           ? rightMode
           : undefined;
       logger.trace(
-        `[getSplitFileEntries] ${fileStatus.type} ${relativePath} left=${leftBase64 !== undefined} ` +
-          `right=${rightBase64 !== undefined} binary=${binary} modeChangedTo=${modeChanged ?? "<none>"}`,
+        `[getSplitFileEntries] ${fileStatus.type} ${relativePath} left=${leftBuffer !== undefined} ` +
+          `right=${rightBuffer !== undefined} binary=${binary} modeChangedTo=${modeChanged ?? "<none>"}`,
       );
       return {
         status: fileStatus.type,
@@ -1940,8 +1938,8 @@ export class JJRepository {
         conflict: conflictedPaths.has(normalizePath(fileStatus.path)),
         modeChangedFrom: modeChanged !== undefined ? leftMode : undefined,
         modeChangedTo: modeChanged,
-        leftBase64,
-        rightBase64,
+        left: leftBuffer,
+        right: rightBuffer,
         leftText,
         rightText,
       };

@@ -30,8 +30,10 @@ export interface SplitFileEntry {
   modeChangedFrom?: string;
   modeChangedTo?: string;
   hunks?: SplitHunk[];
-  leftBase64?: string;
-  rightBase64?: string;
+  // Raw left/right contents (undefined for files absent on that side); used on the extension
+  // side to reconstruct the two split commits.
+  left?: Buffer;
+  right?: Buffer;
   // Decoded left text, ready for hunk splitting; undefined for binary files
   // and files absent on the left side.
   leftText?: string;
@@ -323,8 +325,8 @@ export function buildSplitFileEntry(options: {
     conflict,
     modeChangedFrom: options.modeChangedFrom,
     modeChangedTo: options.modeChangedTo,
-    leftBase64: options.left?.toString("base64"),
-    rightBase64: options.right?.toString("base64"),
+    left: options.left,
+    right: options.right,
   };
   if (!binary && !conflict) {
     if (
@@ -535,10 +537,6 @@ export function reconstructRightSides(
   return result;
 }
 
-function decodeBase64(base64: string | undefined): Buffer | undefined {
-  return base64 !== undefined ? Buffer.from(base64, "base64") : undefined;
-}
-
 function reconstructEntry(
   entry: SplitFileEntry,
   state: SplitCheckboxState,
@@ -552,8 +550,8 @@ function reconstructEntry(
     // old path so the rename falls to the second commit. Selected content hunks apply to
     // whichever path the file lives on.
     const renameChecked = getRenameChecked(path, state);
-    const content = entry.hunks !== undefined ? reconstructHunkModel(entry, state) : decodeBase64(entry.rightBase64);
-    const oldContent = entry.hunks !== undefined ? content : decodeBase64(entry.leftBase64);
+    const content = entry.hunks !== undefined ? reconstructHunkModel(entry, state) : entry.right;
+    const oldContent = entry.hunks !== undefined ? content : entry.left;
     result.set(entry.renamedFrom, renameChecked ? undefined : oldContent);
     result.set(path, renameChecked ? content : undefined);
     return;
@@ -573,19 +571,19 @@ function reconstructEntry(
   const checked = fileState ?? true;
   switch (entry.status) {
     case "A":
-      result.set(path, checked ? decodeBase64(entry.rightBase64) : undefined);
+      result.set(path, checked ? entry.right : undefined);
       return;
     case "D":
-      result.set(path, checked ? undefined : decodeBase64(entry.leftBase64));
+      result.set(path, checked ? undefined : entry.left);
       return;
     default:
-      result.set(path, checked ? decodeBase64(entry.rightBase64) : decodeBase64(entry.leftBase64));
+      result.set(path, checked ? entry.right : entry.left);
       return;
   }
 }
 
 function reconstructHunkModel(entry: SplitFileEntry, state: SplitCheckboxState): Buffer {
-  const leftLines = splitFileLines(decodeBase64(entry.leftBase64)?.toString("utf8") ?? "");
+  const leftLines = splitFileLines(entry.left?.toString("utf8") ?? "");
   const out: string[] = [];
   let leftCount = 0;
   let rightCount = 0;
