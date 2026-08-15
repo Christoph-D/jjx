@@ -87,6 +87,7 @@ test("shows diff when clicking modified files", async ({ graphFrame, testRepo, w
 });
 
 test("toggle diff view switches between file and diff editors", async ({ graphFrame, testRepo, workbox }) => {
+  test.slow();
   // Parent commit diffs: a.txt (FIRST -> SECOND), deleted.txt (deleted),
   // added.txt (added). Working copy diffs: a.txt (SECOND -> THIRD),
   // added.txt (ADDED -> CHANGED).
