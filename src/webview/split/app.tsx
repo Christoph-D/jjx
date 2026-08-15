@@ -86,7 +86,11 @@ export function App() {
         </div>
       </div>
       <div class="splitContent">
-        <div class="splitRow splitSelectAllRow" title="Select Everything">
+        <div
+          class="splitRow splitSelectAllRow"
+          title="Select Everything"
+          onClick={() => setAllFilesCheckState(entries.value, allFilesState.value !== true)}
+        >
           <TriStateCheckbox
             state={allFilesState.value}
             title="Select Everything"

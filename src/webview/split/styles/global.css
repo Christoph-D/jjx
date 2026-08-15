@@ -99,7 +99,11 @@ body {
   padding-top: 2px;
   padding-bottom: 2px;
   font-weight: 500;
-  cursor: default;
+  cursor: pointer;
+}
+
+.splitSelectAllRow:hover {
+  background-color: var(--vscode-list-hoverBackground);
 }
 
 .splitSelectAllLabel {
