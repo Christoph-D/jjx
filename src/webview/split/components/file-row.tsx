@@ -7,7 +7,6 @@ import {
   getLineChecked,
   getModeChecked,
   getRenameChecked,
-  splitFileLines,
 } from "../../../split/hunk-model";
 import type { SplitLine } from "../../../split/hunk-model";
 import {
@@ -25,8 +24,8 @@ import {
   toggleModeChecked,
   toggleRenameChecked,
 } from "../signals";
-import type { SplitFileViewModel, SplitHunkGroup } from "../view-model";
-import { hasExpandableSplitEntries, modeChangeOf } from "../view-model";
+import type { SplitChangeCounts, SplitFileViewModel, SplitHunkGroup } from "../view-model";
+import { hasExpandableSplitEntries, modeChangeOf, splitFileChangeCounts } from "../view-model";
 import { TriStateCheckbox } from "./tri-state-checkbox";
 
 const STATUS_COLORS: Record<FileStatusType, string> = {
@@ -61,6 +60,24 @@ function wasDragSelection(e: MouseEvent): boolean {
 
 function lineCount(count: number): string {
   return `${count} ${count === 1 ? "line" : "lines"}`;
+}
+
+/**
+ * The `+N -M` added/removed line counts shared by the "Select Everything" row and the file
+ * header rows, styled like the hunk header counts; a count of 0 is omitted, and files with
+ * no counted changes show no numbers at all.
+ */
+export function ChangeCounts({ counts }: { counts: SplitChangeCounts }) {
+  if (counts.added <= 0 && counts.removed <= 0) {
+    return null;
+  }
+  return (
+    <span class="splitLeafDetail">
+      {counts.added > 0 && <span class="splitAdded">+{counts.added}</span>}
+      {counts.added > 0 && counts.removed > 0 && " "}
+      {counts.removed > 0 && <span class="splitRemoved">-{counts.removed}</span>}
+    </span>
+  );
 }
 
 /**
@@ -114,23 +131,12 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
           </span>
         )}
         {entry.binary && <span class="splitLeafDetail">binary</span>}
-        {!expandable && !entry.binary && leafSummary(entry) !== undefined && (
-          <span class="splitLeafDetail">{leafSummary(entry)}</span>
-        )}
+        <ChangeCounts counts={splitFileChangeCounts(file)} />
       </div>
       {expandable && expanded && <HunkList file={file} />}
     </div>
   );
 });
-
-function leafSummary(entry: SplitFileViewModel["entry"]): string | undefined {
-  const text = entry.status === "A" ? entry.rightText : entry.status === "D" ? entry.leftText : undefined;
-  if (text === undefined) {
-    return undefined;
-  }
-  const count = splitFileLines(text).length;
-  return entry.status === "A" ? `+${lineCount(count)}` : `-${lineCount(count)}`;
-}
 
 function HunkList({ file }: { file: SplitFileViewModel }) {
   const children: ComponentChild[] = [];

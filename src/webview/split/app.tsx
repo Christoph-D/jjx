@@ -9,9 +9,9 @@ import {
   setAllFilesCheckState,
   setAllFilesExpanded,
 } from "./signals";
-import { buildSplitFileViewModels, hasExpandableSplitEntries } from "./view-model";
+import { buildSplitFileViewModels, hasExpandableSplitEntries, splitChangeCountsTotal } from "./view-model";
 import { getAllFilesCheckState } from "../../split/hunk-model";
-import { FileRow } from "./components/file-row";
+import { ChangeCounts, FileRow } from "./components/file-row";
 import { TriStateCheckbox } from "./components/tri-state-checkbox";
 import type { SplitExtensionToWebviewMessage } from "../../split-protocol";
 
@@ -29,6 +29,9 @@ const allFilesState = computed(() =>
     checkState.value,
   ),
 );
+
+// Aggregate added/removed line counts shown on the "Select Everything" row.
+const allFilesCounts = computed(() => splitChangeCountsTotal(fileModels.value));
 
 export function App() {
   useEffect(() => {
@@ -102,6 +105,7 @@ export function App() {
             onChange={(checked) => setAllFilesCheckState(entries.value, checked)}
           />
           <span class="splitSelectAllLabel">Select Everything</span>
+          <ChangeCounts counts={allFilesCounts.value} />
         </div>
         {fileModels.value.map((file) => (
           <FileRow key={file.entry.path} file={file} />

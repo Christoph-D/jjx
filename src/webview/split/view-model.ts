@@ -8,6 +8,7 @@ import {
   setHunkChecked,
   setModeChecked,
   setRenameChecked,
+  splitFileLines,
   type SplitCheckState,
   type SplitCheckboxState,
   type SplitFileEntry,
@@ -30,6 +31,53 @@ export interface SplitFileViewModel {
   // Counts of unchanged lines before, between, and after the hunks (length is
   // hunkGroups.length + 1).
   contextCounts: number[];
+}
+
+/** Added and removed line counts of a change, rendered as `+N -M` with zeros omitted. */
+export interface SplitChangeCounts {
+  added: number;
+  removed: number;
+}
+
+/**
+ * A file's total added/removed line counts for its header row: the sum over its hunk groups,
+ * falling back to the one-sided line count of whole-file adds/deletes without hunks. Binary
+ * and conflicted files have no counts.
+ */
+export function splitFileChangeCounts(file: SplitFileViewModel): SplitChangeCounts {
+  if (file.entry.binary) {
+    return { added: 0, removed: 0 };
+  }
+  let added = 0;
+  let removed = 0;
+  for (const group of file.hunkGroups) {
+    added += group.addedCount;
+    removed += group.removedCount;
+  }
+  if (added === 0 && removed === 0) {
+    // Entries that expand into no hunks (empty or non-expandable adds/deletes) still count
+    // their one-sided contents, like the whole-file summary they replace.
+    const text =
+      file.entry.status === "A" ? file.entry.rightText : file.entry.status === "D" ? file.entry.leftText : undefined;
+    const count = text === undefined ? 0 : splitFileLines(text).length;
+    if (file.entry.status === "A") {
+      added += count;
+    } else {
+      removed += count;
+    }
+  }
+  return { added, removed };
+}
+
+/** Sums per-file counts into the aggregate shown on the "Select Everything" row. */
+export function splitChangeCountsTotal(files: readonly SplitFileViewModel[]): SplitChangeCounts {
+  const total: SplitChangeCounts = { added: 0, removed: 0 };
+  for (const file of files) {
+    const counts = splitFileChangeCounts(file);
+    total.added += counts.added;
+    total.removed += counts.removed;
+  }
+  return total;
 }
 
 /**

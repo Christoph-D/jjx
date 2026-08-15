@@ -16,6 +16,8 @@ import {
   hasExpandableSplitEntries,
   isExpandableSplitEntry,
   modeChangeOf,
+  splitChangeCountsTotal,
+  splitFileChangeCounts,
   toggleSplitFileChecked,
   toggleSplitHunkChecked,
   toggleSplitModeChecked,
@@ -263,6 +265,86 @@ describe("buildSplitFileViewModels Test Suite", () => {
         model.entry.path === "added.txt" || model.entry.path === "gone.txt",
       );
     }
+  });
+});
+
+describe("split change counts Test Suite", () => {
+  it("sums a modified file's hunk group counts into +N -M totals", () => {
+    const [model] = buildSplitFileViewModels([
+      modifiedEntry("f.txt", "a\nb\nc\nd\ne\nf\ng\nh\n", "a\nB\nc\nd\ne\nf\nG\nh\nX\n"),
+    ]);
+    assert.deepEqual(splitFileChangeCounts(model), { added: 3, removed: 2 });
+  });
+
+  it("counts an added file as additions only", () => {
+    const [model] = buildSplitFileViewModels([
+      { path: "new.txt", status: "A", binary: false, conflict: false, rightText: "x\ny\n" },
+    ]);
+    assert.deepEqual(splitFileChangeCounts(model), { added: 2, removed: 0 });
+  });
+
+  it("counts a deleted file as removals only", () => {
+    const [model] = buildSplitFileViewModels([
+      { path: "gone.txt", status: "D", binary: false, conflict: false, leftText: "x\ny\nz\n" },
+    ]);
+    assert.deepEqual(splitFileChangeCounts(model), { added: 0, removed: 3 });
+  });
+
+  it("counts whole-file adds and deletes that expand into no hunks from their contents", () => {
+    const models = buildSplitFileViewModels([
+      { path: "empty-added.txt", status: "A", binary: false, conflict: false, rightText: "" },
+      // A delete carrying both sides (unexpected per the protocol) expands into no hunks; the
+      // counts still summarize the removed left-side lines.
+      { path: "gone.txt", status: "D", binary: false, conflict: false, leftText: "x\n", rightText: "" },
+    ]);
+    assert.deepEqual(
+      models.every((model) => model.hunkGroups.length === 0),
+      true,
+    );
+    assert.deepEqual(splitFileChangeCounts(models[0]), { added: 0, removed: 0 });
+    assert.deepEqual(splitFileChangeCounts(models[1]), { added: 0, removed: 1 });
+  });
+
+  it("counts a rename's content changes but not a pure rename", () => {
+    const [changed, pure] = buildSplitFileViewModels([
+      {
+        path: "new.txt",
+        renamedFrom: "old.txt",
+        status: "R",
+        binary: false,
+        conflict: false,
+        leftText: "a\nb\n",
+        rightText: "a\nB\n",
+      },
+      {
+        path: "moved.txt",
+        renamedFrom: "old.txt",
+        status: "R",
+        binary: false,
+        conflict: false,
+        leftText: "a\nb\n",
+        rightText: "a\nb\n",
+      },
+    ]);
+    assert.deepEqual(splitFileChangeCounts(changed), { added: 1, removed: 1 });
+    assert.deepEqual(splitFileChangeCounts(pure), { added: 0, removed: 0 });
+  });
+
+  it("offers no counts for binary files", () => {
+    const [model] = buildSplitFileViewModels([
+      { path: "bin.dat", status: "M", binary: true, conflict: false, leftText: "a\n", rightText: "b\nc\n" },
+    ]);
+    assert.deepEqual(splitFileChangeCounts(model), { added: 0, removed: 0 });
+  });
+
+  it("sums per-file counts into the Select Everything aggregate", () => {
+    const models = buildSplitFileViewModels([
+      modifiedEntry("f.txt", "a\nb\n", "a\nB\n"),
+      { path: "new.txt", status: "A", binary: false, conflict: false, rightText: "x\ny\n" },
+      { path: "gone.txt", status: "D", binary: false, conflict: false, leftText: "z\n" },
+      { path: "bin.dat", status: "M", binary: true, conflict: false },
+    ]);
+    assert.deepEqual(splitChangeCountsTotal(models), { added: 3, removed: 2 });
   });
 });
 
