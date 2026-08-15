@@ -479,7 +479,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             if (!state) {
               return;
             }
-            await repo.splitChange({ commitId: change.commitId, state });
+            await repo.splitChangeRetryImmutable({ commitId: change.commitId, state });
           });
           break;
         }

@@ -775,6 +775,16 @@ export class JJRepository {
     await jjExit;
   }
 
+  async splitChangeRetryImmutable({ commitId, state }: { commitId: string; state: SplitCheckboxState }) {
+    return this.retryWithImmutable(
+      commitId as FullChangeId,
+      () => this.splitChange({ commitId, state }),
+      () => this.splitChange({ commitId, state, ignoreImmutable: true }),
+      undefined,
+      "Split Immutable Change",
+    );
+  }
+
   /**
    * Splits the commit `commitId` into two commits: the changes selected in the Split view
    * (`state`) go into the first commit and the remainder into the second. The interactive
@@ -785,8 +795,17 @@ export class JJRepository {
    * @param options.commitId - Full commit id of the commit to split, pinning the content the
    * selection was made against.
    * @param options.state - Checkbox state confirmed in the Split view.
+   * @param options.ignoreImmutable - Retry flag allowing the split of an immutable commit.
    */
-  async splitChange({ commitId, state }: { commitId: string; state: SplitCheckboxState }): Promise<void> {
+  async splitChange({
+    commitId,
+    state,
+    ignoreImmutable = false,
+  }: {
+    commitId: string;
+    state: SplitCheckboxState;
+    ignoreImmutable?: boolean;
+  }): Promise<void> {
     const splitConfigs = getSplitToolConfigs();
     if (!splitConfigs.length) {
       throw new Error("Split tool not initialized.");
@@ -796,7 +815,14 @@ export class JJRepository {
     const pathPromise = expectSplitToolRequest(requestId);
 
     const childProcess = this.spawnJJ(
-      ["split", "-r", commitId, "--tool=jjx-vscode-split", ...splitConfigs.flatMap((c) => ["--config", c])],
+      [
+        "split",
+        "-r",
+        commitId,
+        ...(ignoreImmutable ? ["--ignore-immutable"] : []),
+        "--tool=jjx-vscode-split",
+        ...splitConfigs.flatMap((c) => ["--config", c]),
+      ],
       {
         timeout: TIMEOUTS.SPLIT_TOOL,
         cwd: this.repositoryRoot,

@@ -742,6 +742,87 @@ async function gitDiff(testRepo: TestRepo, changeId: string): Promise<string> {
   return (await testRepo.jjCommand(["diff", "--git", "-r", changeId])).stdout;
 }
 
+test.describe("with immutable commits visible", () => {
+  test.use({ customSettings: { "jjx.elideImmutableCommits": false } });
+
+  test("splitting an immutable commit prompts for confirmation", async ({ graphFrame, testRepo, workbox }) => {
+    test.slow();
+    await testRepo.commitFile("base.txt", "base\n", "Base");
+    await testRepo.writeFile("f1.txt", "one\n");
+    await testRepo.writeFile("f2.txt", "two\n");
+    const splitMe = await testRepo.commit("Split me");
+    await testRepo.commitFile("child.txt", "child\n", "Child");
+
+    // The tag makes "Split me" an immutable head, so splitting it needs confirmation.
+    await testRepo.createTag("immutable-tag", splitMe);
+
+    const nodes = graphFrame.locator("#nodes > div");
+    await expect(nodes).toHaveCount(5);
+
+    // @, Child, "Split me", Base and the root commit, newest first.
+    const splitMeNode = nodes.nth(2);
+
+    await test.step("cancelling the immutable warning leaves the repository unchanged", async () => {
+      const before = await testRepo.log();
+
+      const splitFrame = await openSplitView(workbox, graphFrame, splitMeNode);
+      await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+      await expect(splitFrame.locator(".splitHeaderDescription")).toHaveText("Split me");
+
+      // Keep only f1.txt in the first commit.
+      const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator(".splitFileRow input.splitCheckbox");
+      await f2Checkbox.click();
+      await expect(f2Checkbox).not.toBeChecked();
+
+      await splitFrame.locator(".splitPrimaryButton").click();
+
+      const dialog = workbox.locator(".monaco-dialog-box");
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText("is immutable, are you sure?");
+      await workbox.keyboard.press("Escape");
+      await expect(dialog).not.toBeVisible();
+
+      const after = await testRepo.log();
+      expect(after.map((e) => [e.change_id, e.commit_id, e.description])).toEqual(
+        before.map((e) => [e.change_id, e.commit_id, e.description]),
+      );
+      await expect(nodes).toHaveCount(5);
+    });
+
+    await test.step("confirming retries the split with --ignore-immutable", async () => {
+      const splitFrame = await openSplitView(workbox, graphFrame, splitMeNode);
+      await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+      const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator(".splitFileRow input.splitCheckbox");
+      await f2Checkbox.click();
+      await expect(f2Checkbox).not.toBeChecked();
+
+      await splitFrame.locator(".splitPrimaryButton").click();
+
+      const dialog = workbox.locator(".monaco-dialog-box");
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText("is immutable, are you sure?");
+      await dialog.getByRole("button", { name: "Split Immutable Change" }).click();
+      await expect(dialog).not.toBeVisible();
+
+      await handleEditor(workbox, "", "Selected part");
+      await handleEditor(workbox, "", "Remaining part");
+
+      await expect(nodes).toHaveCount(6);
+
+      await expect(async () => {
+        const logEntries = await testRepo.log();
+        expect(getParents(logEntries, "Selected part")).toEqual(["Base"]);
+        expect(getParents(logEntries, "Remaining part")).toEqual(["Selected part"]);
+        expect(getParents(logEntries, "Child")).toEqual(["Remaining part"]);
+      }).toPass();
+
+      expect(await diffSummary(testRepo, await changeIdFor(testRepo, "Selected part"))).toBe("A f1.txt");
+      expect(await diffSummary(testRepo, await changeIdFor(testRepo, "Remaining part"))).toBe("A f2.txt");
+    });
+  });
+});
+
 test("file mode changes split between the resulting commits", async ({ graphFrame, testRepo, workbox }) => {
   test.skip(process.platform === "win32", "Windows file systems do not track the executable bit");
   test.slow();

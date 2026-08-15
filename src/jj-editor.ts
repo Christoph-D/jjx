@@ -182,6 +182,9 @@ export function completeSplitToolRequest(requestId: string, success: boolean): v
   const pending = pendingSplitRequests.get(requestId);
   if (pending) {
     pending.complete(success);
+    // When the tool request never arrived (e.g. jj exited early), `complete` is still the
+    // placeholder no-op and would leave the entry behind, so remove it explicitly.
+    pendingSplitRequests.delete(requestId);
   }
 }
 
