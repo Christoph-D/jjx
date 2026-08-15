@@ -13,7 +13,6 @@ import {
   checkState,
   collapsedHunks,
   expandedFiles,
-  selectSplitRow,
   selectedRow,
   setModeCheckState,
   setRenameCheckState,
@@ -135,10 +134,7 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
         aria-checked={ariaChecked(fileState)}
         aria-label={label}
         title={label}
-        onClick={() => {
-          selectSplitRow(id);
-          toggleFileChecked(file);
-        }}
+        onClick={() => toggleFileChecked(file)}
       >
         {expandable ? (
           <Chevron
@@ -219,10 +215,7 @@ function RenameRow({ path, renamedFrom }: { path: string; renamedFrom: string })
         aria-checked={ariaChecked(checked)}
         aria-label={`File Renamed: ${renamedFrom} → ${path}`}
         title={`${renamedFrom} → ${path}`}
-        onClick={() => {
-          selectSplitRow(id);
-          toggleRenameChecked(path);
-        }}
+        onClick={() => toggleRenameChecked(path)}
       >
         <ChevronPlaceholder />
         <TriStateCheckbox
@@ -250,10 +243,7 @@ function ModeRow({ path, mode }: { path: string; mode: string }) {
         aria-checked={ariaChecked(checked)}
         aria-label={title}
         title={title}
-        onClick={() => {
-          selectSplitRow(id);
-          toggleModeChecked(path);
-        }}
+        onClick={() => toggleModeChecked(path)}
       >
         <ChevronPlaceholder />
         <TriStateCheckbox
@@ -279,10 +269,7 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
         aria-checked={ariaChecked(hunkState)}
         aria-label={`Section ${index + 1}`}
         title={hunkState === false ? "Include section" : "Exclude section"}
-        onClick={() => {
-          selectSplitRow(id);
-          toggleHunkChecked(path, group.hunk);
-        }}
+        onClick={() => toggleHunkChecked(path, group.hunk)}
       >
         <Chevron
           expanded={!collapsed}
@@ -341,7 +328,6 @@ function LineRow({
         // Double/triple clicks select a word/line incidentally; drop such (possibly stale)
         // selections so rapid clicks always toggle the line.
         window.getSelection()?.removeAllRanges();
-        selectSplitRow(id);
         toggleLineChecked(path, line);
       }}
     >

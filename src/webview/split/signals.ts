@@ -61,8 +61,8 @@ export const expandedFiles = signal<Set<string>>(new Set());
 export const collapsedHunks = signal<Set<string>>(new Set());
 
 // The row currently selected by arrow-key navigation, outlined on screen; null until the
-// first keypress or row click. Tracked by the app instead of DOM focus, so the outline does
-// not depend on focus order.
+// first keypress. Tracked by the app instead of DOM focus, so the outline does not depend
+// on focus order.
 export const selectedRow = signal<SplitRowId | null>(null);
 
 /** Selects `id` (or clears the selection with null), the single source of truth for the outline. */

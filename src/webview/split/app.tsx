@@ -251,10 +251,7 @@ export function App() {
           aria-checked={ariaChecked(allFilesState.value)}
           aria-label="Select Everything"
           title="Select Everything"
-          onClick={() => {
-            selectSplitRow(allRowId);
-            setAllFilesCheckState(entries.value, allFilesState.value !== true);
-          }}
+          onClick={() => setAllFilesCheckState(entries.value, allFilesState.value !== true)}
         >
           <TriStateCheckbox
             state={allFilesState.value}
