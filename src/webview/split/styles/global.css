@@ -155,7 +155,7 @@ body {
 .splitHunks {
   position: relative;
   /* Room for the file's vertical collapse line to the left of every row of its contents. */
-  padding-left: 32px;
+  padding-left: 20px;
 }
 
 .splitHunk {
@@ -267,8 +267,8 @@ body {
 }
 
 .splitLineRow {
-  /* Indent line rows so their checkboxes sit right of the per-hunk checkboxes. */
-  padding-left: 40px;
+  margin-left: 20px;
+  padding-left: 24px;
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
   cursor: pointer;
