@@ -281,15 +281,28 @@ body {
   padding-left: 24px;
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
+  font-weight: var(--vscode-editor-font-weight, normal);
+  /* Line content is diff text, so it must carry the editor's content text color instead of
+     the UI foreground the rest of the body inherits, or it looks dimmer than the diff view. */
+  color: var(--vscode-editor-foreground, var(--vscode-foreground));
   cursor: pointer;
 }
 
+/* Changed lines take the diff editor's bright word-level highlight colors
+   (diffEditor.insertedTextBackground / removedTextBackground) rather than the dimmer
+   whole-line ones, matching the added/removed words of the jj file diff view. The fallbacks
+   are those tokens' VS Code defaults; insertedTextBackground's default differs per theme,
+   so the light default gets its own rule keyed on the webview's theme class. */
 .splitLineAdded {
-  background-color: var(--vscode-diffEditor-insertedTextBackground, rgba(168, 236, 7, 0.2));
+  background-color: var(--vscode-diffEditor-insertedTextBackground, #9ccc2c33);
+}
+
+.vscode-light .splitLineAdded {
+  background-color: var(--vscode-diffEditor-insertedTextBackground, #9ccc2c40);
 }
 
 .splitLineRemoved {
-  background-color: var(--vscode-diffEditor-removedTextBackground, rgba(255, 0, 0, 0.2));
+  background-color: var(--vscode-diffEditor-removedTextBackground, #ff000033);
 }
 
 .splitLinePrefix {
