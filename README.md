@@ -114,6 +114,7 @@ system.
 
 - Show workspace labels in the graph view  
   ![workspaces](images/workspaces.png)
+- Right-click a workspace pill to forget the workspace (with or without deleting its directory) or copy its path
 - Automatically update stale workspaces (can be disabled with `jjx.autoUpdateStaleWorkspace`, in which case the user
   will be prompted to update a stale workspace)
 
