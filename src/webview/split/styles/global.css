@@ -252,5 +252,10 @@ body {
 
 .splitCheckbox {
   flex: none;
+  /* Pin one size so every checkbox renders identically: the native default follows the
+     inherited font size, which differs between line rows (editor font size) and the other
+     rows (UI font size). Matches the 14px codicons used alongside them. */
+  width: 14px;
+  height: 14px;
   margin: 0;
 }
