@@ -76,7 +76,9 @@ export function App() {
             Collapse All
           </button>
           <span class="splitHint">
-            Selected changes will be put into the first commit, the rest into the second commit.
+            Selected changes will be put into the first commit,
+            <br />
+            the rest into the second commit.
           </span>
         </div>
         <div class="splitHeaderInfo">

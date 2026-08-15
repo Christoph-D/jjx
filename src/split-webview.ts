@@ -30,7 +30,7 @@ export class SplitWebview {
 
     const panel = vscode.window.createWebviewPanel(
       "jjSplitView",
-      `Split ${shortChangeId} — ${truncateDescription(descriptionFirstLine)}`,
+      `Split ${shortChangeId}: ${truncateDescription(descriptionFirstLine)}`,
       vscode.ViewColumn.Active,
       {
         enableScripts: true,
