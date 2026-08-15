@@ -63,9 +63,9 @@ function lineCount(count: number): string {
 }
 
 /**
- * The `+N -M` added/removed line counts shared by the "Select Everything" row and the file
- * header rows, styled like the hunk header counts; a count of 0 is omitted, and files with
- * no counted changes show no numbers at all.
+ * The `+N -M` added/removed line counts shared by the "Select Everything" row, the file
+ * header rows, and the section header rows; a count of 0 is omitted, and rows with no
+ * counted changes show no numbers at all.
  */
 export function ChangeCounts({ counts }: { counts: SplitChangeCounts }) {
   if (counts.added <= 0 && counts.removed <= 0) {
@@ -229,12 +229,12 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
     <div class="splitHunk">
       <div
         class="splitRow splitHunkRow"
-        title={hunkState === false ? "Include hunk" : "Exclude hunk"}
+        title={hunkState === false ? "Include section" : "Exclude section"}
         onClick={() => toggleHunkChecked(path, group.hunk)}
       >
         <i
           class={collapsed ? "codicon codicon-chevron-right" : "codicon codicon-chevron-down"}
-          title={collapsed ? "Expand hunk" : "Collapse hunk"}
+          title={collapsed ? "Expand section" : "Collapse section"}
           onClick={(e) => {
             // The chevron is the dedicated collapse/expand affordance; the row itself toggles
             // the selection, so the click must not reach the row handler.
@@ -244,16 +244,15 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
         />
         <TriStateCheckbox
           state={hunkState}
-          title={`Hunk ${index + 1}`}
+          title={`Section ${index + 1}`}
           onChange={() => toggleHunkChecked(path, group.hunk)}
         />
-        <span class="splitHunkHeader">
-          @@ <span class="splitAdded">+{group.addedCount}</span> <span class="splitRemoved">-{group.removedCount}</span>
-        </span>
+        <span class="splitHunkHeader">Section {index + 1}</span>
+        <ChangeCounts counts={{ added: group.addedCount, removed: group.removedCount }} />
       </div>
       {!collapsed && (
         <div class="splitLines">
-          <CollapseLine label="hunk" onClick={() => toggleHunkCollapsed(path, index)} />
+          <CollapseLine label="section" onClick={() => toggleHunkCollapsed(path, index)} />
           {group.hunk.lines.map((line, lineIndex) => (
             <LineRow key={lineIndex} path={path} line={line} />
           ))}

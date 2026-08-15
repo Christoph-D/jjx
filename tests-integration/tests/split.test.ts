@@ -100,6 +100,12 @@ test("partial split of a multi-file multi-hunk commit with tri-state checkboxes"
   await expect(hunk1Checkbox).toBeChecked();
   await expect(hunk2Checkbox).toBeChecked();
 
+  // The hunks are numbered per file as sections.
+  await expect(hunk1.locator(".splitHunkHeader")).toHaveText("Section 1");
+  await expect(hunk2.locator(".splitHunkHeader")).toHaveText("Section 2");
+  await expect(hunk1.locator(".splitHunkRow .splitLeafDetail")).toHaveText("+2 -2");
+  await expect(hunk2.locator(".splitHunkRow .splitLeafDetail")).toHaveText("+1 -1");
+
   // Unchecking a hunk propagates up: the file checkbox becomes indeterminate.
   await hunk2Checkbox.click();
   await expect(hunk2Checkbox).not.toBeChecked();
@@ -482,7 +488,7 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
   await expandSplitFile(doomedRow);
   await expect(doomedRow.locator(".splitFileRow input.splitCheckbox")).toBeChecked();
   await expect(doomedRow.locator(".splitStatus")).toHaveText("D");
-  await expect(doomedRow.locator(".splitLeafDetail")).toHaveCount(0);
+  await expect(doomedRow.locator(".splitFileRow .splitLeafDetail")).toHaveText("-2");
   await expect(doomedRow.locator(".splitHunk")).toHaveCount(1);
   await expect(doomedRow.locator(".splitLineRow")).toHaveCount(2);
 
@@ -490,7 +496,8 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
   await expect(addedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
   await expandSplitFile(addedRow);
   await expect(addedRow.locator(".splitHunk")).toHaveCount(1);
-  await expect(addedRow.locator(".splitHunkHeader")).toHaveText("@@ +1 -0");
+  await expect(addedRow.locator(".splitHunkHeader")).toHaveText("Section 1");
+  await expect(addedRow.locator(".splitHunkRow .splitLeafDetail")).toHaveText("+1");
   await expect(addedRow.locator(".splitLineRow")).toHaveCount(1);
   await expect(addedRow.locator(".splitLineRow")).toContainText("added");
 
@@ -553,7 +560,7 @@ test("special file entries split via their dedicated checkboxes", async ({ graph
     const fileDeletedCheckbox = doomedRow.locator(".splitFileRow input.splitCheckbox");
     await expect(fileDeletedCheckbox).toBeChecked();
     await expect(doomedRow.locator(".splitStatus")).toHaveText("D");
-    await expect(doomedRow.locator(".splitLeafDetail")).toHaveCount(0);
+    await expect(doomedRow.locator(".splitFileRow .splitLeafDetail")).toHaveText("-3");
 
     const hunk = doomedRow.locator(".splitHunk");
     await expect(hunk).toHaveCount(1);
@@ -618,7 +625,8 @@ test("special file entries split via their dedicated checkboxes", async ({ graph
 
     const hunk = newRow.locator(".splitHunk");
     await expect(hunk).toHaveCount(1);
-    await expect(hunk.locator(".splitHunkHeader")).toHaveText("@@ +3 -0");
+    await expect(hunk.locator(".splitHunkHeader")).toHaveText("Section 1");
+    await expect(hunk.locator(".splitHunkRow .splitLeafDetail")).toHaveText("+3");
     const hunkCheckbox = hunk.locator(".splitHunkRow input.splitCheckbox");
     await expect(hunkCheckbox).toBeChecked();
     await expect(hunk.locator(".splitLineRow")).toHaveCount(3);

@@ -225,10 +225,6 @@ body {
   cursor: pointer;
 }
 
-.splitHunkHeader {
-  font-family: var(--vscode-editor-font-family, monospace);
-}
-
 /* The vertical collapse lines of the file and hunk sections: the button is the line's hit
    area (the line itself is drawn by ::before), and clicking it toggles the section like the
    header chevrons. Every section row starts with a 16px chevron slot (codicon.css sizes the
