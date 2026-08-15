@@ -317,6 +317,14 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
 });
 
+export function canonicalPath(filepath: string): string {
+  try {
+    return fs.realpathSync.native(filepath);
+  } catch {
+    return filepath;
+  }
+}
+
 export async function runCommand(workbox: Page, commandName: string) {
   await workbox.keyboard.press(`${mod}+Shift+P`);
   const quickInput = workbox.locator(".quick-input-widget input").first();

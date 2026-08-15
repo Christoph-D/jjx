@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { test, expect, TestRepo, clickPillMenuItem } from "./base-test";
+import { test, expect, TestRepo, clickPillMenuItem, canonicalPath } from "./base-test";
 
 test.describe("auto-update disabled", () => {
   test.use({ customSettings: { "jjx.autoUpdateStaleWorkspace": false } });
@@ -55,7 +55,7 @@ test("workspace pill context menu", async ({ graphFrame, testRepo, workbox, elec
   test.slow();
   await testRepo.commit("initial commit");
 
-  const workspace2Path = path.join(testRepo.repoPath, "workspace2");
+  const workspace2Path = path.join(canonicalPath(testRepo.repoPath), "workspace2");
   const addWorkspace2 = async () => {
     // A forgotten workspace leaves its (now stale) .jj directory behind, and
     // `jj workspace add` requires an empty destination.
