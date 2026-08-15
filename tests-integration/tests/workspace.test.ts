@@ -51,7 +51,7 @@ test("stale workspace auto-updates if enabled", async ({ graphFrame, testRepo })
   await expect(nodes).toHaveCount(4);
 });
 
-test("workspace pill context menu", async ({ graphFrame, testRepo, workbox }) => {
+test("workspace pill context menu", async ({ graphFrame, testRepo, workbox, electronApp }) => {
   test.slow();
   await testRepo.commit("initial commit");
 
@@ -168,9 +168,10 @@ test("workspace pill context menu", async ({ graphFrame, testRepo, workbox }) =>
 
     await clickPillMenuItem(graphFrame, workspace2Pill, "Copy Workspace Path");
 
-    const toast = workbox
-      .locator(".notifications-toasts .notification-list-item")
-      .filter({ hasText: `Copied workspace path: ${workspace2Path}` });
-    await expect(toast.first()).toBeVisible();
+    await expect
+      .poll(() =>
+        electronApp.evaluate(({ clipboard }: { clipboard: { readText: () => string } }) => clipboard.readText()),
+      )
+      .toBe(workspace2Path);
   });
 });

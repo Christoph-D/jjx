@@ -3,6 +3,7 @@ import {
   type Page,
   type Frame,
   type TestInfo,
+  type ElectronApplication,
   _electron,
   expect as pwExpect,
   Locator,
@@ -29,6 +30,7 @@ export type TestOptions = {
 
 type TestFixtures = TestOptions & {
   cachePath: string;
+  electronApp: ElectronApplication;
   workbox: Page;
   graphFrame: Frame;
   scmView: Locator;
@@ -192,7 +194,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(userDataDir);
   },
 
-  workbox: async ({ cachePath, vscodePath, workspaceFolders, userDataDir, xvfbDisplay }, use, testInfo) => {
+  electronApp: async ({ cachePath, vscodePath, workspaceFolders, userDataDir, xvfbDisplay }, use, testInfo) => {
     const extensionPath = path.resolve(__dirname, "..", "..");
 
     let workspaceArg = workspaceFolders[0];
@@ -232,16 +234,20 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       env: { ...process.env, DISPLAY: xvfbDisplay },
     });
 
-    const workbox = await electronApp.firstWindow();
-    if (process.platform === "win32" || process.platform === "darwin") {
-      await workbox.setViewportSize({ width: 1920, height: 1080 });
-    }
-    await use(workbox);
+    await use(electronApp);
     await electronApp.close();
 
     if (testInfo.status !== "passed") {
       await dumpExtensionLogs(userDataDir, testInfo);
     }
+  },
+
+  workbox: async ({ electronApp }, use) => {
+    const workbox = await electronApp.firstWindow();
+    if (process.platform === "win32" || process.platform === "darwin") {
+      await workbox.setViewportSize({ width: 1920, height: 1080 });
+    }
+    await use(workbox);
   },
 
   scmView: async ({ workbox }, use) => {
