@@ -153,10 +153,13 @@ body {
 }
 
 .splitHunks {
-  padding-left: 20px;
+  position: relative;
+  /* Room for the file's vertical collapse line to the left of every row of its contents. */
+  padding-left: 32px;
 }
 
 .splitHunk {
+  position: relative;
   margin: 2px 0;
 }
 
@@ -205,6 +208,56 @@ body {
 
 .splitHunkHeader {
   font-family: var(--vscode-editor-font-family, monospace);
+}
+
+/* The vertical collapse lines of the file and hunk sections: the button is the line's hit
+   area (the line itself is drawn by ::before), and clicking it toggles the section like the
+   header chevrons. The file line spans the file's contents; each hunk line reaches into the
+   file's gutter so it spans its whole hunk, staying visible (and clickable) next to the hunk
+   header even when the hunk is collapsed. */
+.splitCollapseLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.splitHunks > .splitCollapseLine {
+  left: 0;
+}
+
+.splitHunk > .splitCollapseLine {
+  left: -12px;
+}
+
+.splitCollapseLine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 1px;
+  background-color: var(
+    --vscode-editorIndentGuide-background1,
+    var(--vscode-editorIndentGuide-background, rgba(128, 128, 128, 0.4))
+  );
+}
+
+.splitCollapseLine:hover::before,
+.splitCollapseLine:focus-visible::before {
+  background-color: var(
+    --vscode-editorIndentGuide-hoverBackground1,
+    var(--vscode-editorIndentGuide-hoverBackground, var(--vscode-focusBorder))
+  );
+}
+
+.splitCollapseLine:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .splitSeparator {

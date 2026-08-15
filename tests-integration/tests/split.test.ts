@@ -170,6 +170,54 @@ test("partial split of a multi-file multi-hunk commit with tri-state checkboxes"
   expect(await fileContent(testRepo, child, "child.txt")).toBe("child\n");
 });
 
+test("vertical collapse lines collapse and expand files and hunks", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("f1.txt", "line1\nline2\nline3\n", "Base");
+  await testRepo.writeFile("f1.txt", "line1\nchanged\nline3\n");
+  await testRepo.commit("Split me");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4);
+
+  const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+  const f1Row = splitFileRow(splitFrame, "f1.txt");
+  await expandSplitFile(f1Row);
+
+  const hunk = f1Row.locator(".splitHunk");
+  await expect(hunk).toHaveCount(1);
+  const lines = hunk.locator(".splitLineRow");
+  await expect(lines).toHaveCount(2);
+
+  // The file's line runs down the left of the file's contents, left of the hunk's own line,
+  // and its gutter pushes the line checkboxes right of the hunk checkbox.
+  const fileLine = f1Row.locator(".splitHunks > .splitCollapseLine");
+  const hunkLine = hunk.locator(".splitCollapseLine");
+  expect(await fileLine.boundingBox()).toBeDefined();
+  expect(await hunkLine.boundingBox()).toBeDefined();
+  expect((await fileLine.boundingBox())!.x).toBeLessThan((await hunkLine.boundingBox())!.x);
+  const hunkCheckbox = hunk.locator(".splitHunkRow input.splitCheckbox");
+  const lineCheckbox = lines.first().locator("input.splitCheckbox");
+  expect((await lineCheckbox.boundingBox())!.x).toBeGreaterThan((await hunkCheckbox.boundingBox())!.x);
+
+  // Clicking the hunk's line collapses (and re-expands) just the hunk's lines.
+  await expect(hunkLine).toHaveAttribute("aria-expanded", "true");
+  await hunkLine.click();
+  await expect(lines).toHaveCount(0);
+  await expect(hunkLine).toHaveAttribute("aria-expanded", "false");
+  await hunkLine.click();
+  await expect(lines).toHaveCount(2);
+
+  // Unlike the chevrons, the collapse line is a real button and works with the keyboard.
+  await hunkLine.focus();
+  await workbox.keyboard.press("Enter");
+  await expect(lines).toHaveCount(0);
+
+  // Clicking the file's line collapses the whole file contents; the chevron re-expands them.
+  await fileLine.click();
+  await expect(f1Row.locator(".splitHunks")).toHaveCount(0);
+  await expandSplitFile(f1Row);
+  await expect(hunk).toHaveCount(1);
+});
+
 test("split with nothing selected creates an empty first commit", async ({ graphFrame, testRepo, workbox }) => {
   await testRepo.commitFile("base.txt", "base\n", "Base");
   await testRepo.writeFile("a.txt", "a\n");
