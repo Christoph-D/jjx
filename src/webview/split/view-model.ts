@@ -2,8 +2,12 @@ import {
   buildSplitLines,
   getFileCheckState,
   getHunkCheckState,
+  getModeChecked,
+  getRenameChecked,
   setFileChecked,
   setHunkChecked,
+  setModeChecked,
+  setRenameChecked,
   type SplitCheckState,
   type SplitCheckboxState,
   type SplitFileEntry,
@@ -107,6 +111,20 @@ export function toggleSplitFileChecked(file: SplitFileViewModel, state: SplitChe
  */
 export function toggleSplitHunkChecked(path: string, hunk: SplitHunk, state: SplitCheckboxState): void {
   setHunkChecked(path, hunk, state, toggleTargetOf(getHunkCheckState(path, hunk, state)));
+}
+
+/**
+ * Toggles a renamed file's rename selection in `state`, independent of its content hunks.
+ */
+export function toggleSplitRenameChecked(path: string, state: SplitCheckboxState): void {
+  setRenameChecked(path, state, toggleTargetOf(getRenameChecked(path, state)));
+}
+
+/**
+ * Toggles a file's mode-change selection in `state`, independent of its content hunks.
+ */
+export function toggleSplitModeChecked(path: string, state: SplitCheckboxState): void {
+  setModeChecked(path, state, toggleTargetOf(getModeChecked(path, state)));
 }
 
 /**

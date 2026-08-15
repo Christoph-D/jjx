@@ -16,7 +16,12 @@ import type {
 } from "../../split-protocol";
 import type { SplitHunk, SplitLine } from "../../split/hunk-model";
 import type { SplitFileViewModel } from "./view-model";
-import { toggleSplitFileChecked, toggleSplitHunkChecked } from "./view-model";
+import {
+  toggleSplitFileChecked,
+  toggleSplitHunkChecked,
+  toggleSplitModeChecked,
+  toggleSplitRenameChecked,
+} from "./view-model";
 
 export interface VSCodeAPI {
   postMessage(message: unknown): void;
@@ -113,6 +118,20 @@ export function setRenameCheckState(path: string, checked: boolean): void {
 export function setModeCheckState(path: string, checked: boolean): void {
   const state = checkState.value;
   setModeChecked(path, state, checked);
+  commitStateChange(state);
+}
+
+/** Toggles a renamed file's "File Renamed" checkbox like a row click, independent of its content hunks. */
+export function toggleRenameChecked(path: string): void {
+  const state = checkState.value;
+  toggleSplitRenameChecked(path, state);
+  commitStateChange(state);
+}
+
+/** Toggles a file's "File mode changed" checkbox like a row click, independent of its content hunks. */
+export function toggleModeChecked(path: string): void {
+  const state = checkState.value;
+  toggleSplitModeChecked(path, state);
   commitStateChange(state);
 }
 

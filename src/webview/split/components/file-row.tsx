@@ -22,6 +22,8 @@ import {
   toggleHunkChecked,
   toggleHunkCollapsed,
   toggleLineChecked,
+  toggleModeChecked,
+  toggleRenameChecked,
 } from "../signals";
 import type { SplitFileViewModel, SplitHunkGroup } from "../view-model";
 import { hasExpandableSplitEntries, modeChangeOf } from "../view-model";
@@ -158,7 +160,11 @@ function RenameRow({ path, renamedFrom }: { path: string; renamedFrom: string })
   const checked = getRenameChecked(path, checkState.value);
   return (
     <div class="splitRename">
-      <div class="splitRow splitHunkRow splitRenameRow" title={`${renamedFrom} → ${path}`}>
+      <div
+        class="splitRow splitHunkRow splitRenameRow"
+        title={`${renamedFrom} → ${path}`}
+        onClick={() => toggleRenameChecked(path)}
+      >
         <TriStateCheckbox
           state={checked}
           title="File Renamed"
@@ -176,7 +182,11 @@ function ModeRow({ path, mode }: { path: string; mode: string }) {
   const checked = getModeChecked(path, checkState.value);
   return (
     <div class="splitRename">
-      <div class="splitRow splitHunkRow splitRenameRow" title={`File mode changed to ${mode}`}>
+      <div
+        class="splitRow splitHunkRow splitRenameRow"
+        title={`File mode changed to ${mode}`}
+        onClick={() => toggleModeChecked(path)}
+      >
         <TriStateCheckbox
           state={checked}
           title={`File mode changed to ${mode}`}

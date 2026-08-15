@@ -18,6 +18,8 @@ import {
   modeChangeOf,
   toggleSplitFileChecked,
   toggleSplitHunkChecked,
+  toggleSplitModeChecked,
+  toggleSplitRenameChecked,
 } from "../webview/split/view-model";
 import type { SplitCheckboxState } from "../split/hunk-model";
 import type { SplitViewFileEntry } from "../split-protocol";
@@ -368,6 +370,60 @@ describe("split file/hunk toggle Test Suite", () => {
     assert.equal(getRenameChecked("new.sh", state), true);
     assert.equal(getModeChecked("new.sh", state), true);
     assert.equal(getHunkCheckState("new.sh", model.hunkGroups[0].hunk, state), true);
+  });
+
+  it("toggling a rename row flips only the rename, leaving content hunks and the mode change checked", () => {
+    const [model] = buildSplitFileViewModels([
+      {
+        path: "new.sh",
+        renamedFrom: "old.sh",
+        status: "R",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "100644",
+        modeChangedTo: "100755",
+        leftText: "a\n",
+        rightText: "b\n",
+      },
+    ]);
+    const state: SplitCheckboxState = createSplitCheckboxState();
+
+    toggleSplitRenameChecked("new.sh", state);
+    assert.equal(getRenameChecked("new.sh", state), false);
+    assert.equal(getModeChecked("new.sh", state), true);
+    assert.equal(getHunkCheckState("new.sh", model.hunkGroups[0].hunk, state), true);
+    assert.equal(getFileCheckState(model.entry, state), "indeterminate");
+
+    toggleSplitRenameChecked("new.sh", state);
+    assert.equal(getRenameChecked("new.sh", state), true);
+    assert.equal(getFileCheckState(model.entry, state), true);
+  });
+
+  it("toggling a mode-change row flips only the mode change, leaving content hunks and the rename checked", () => {
+    const [model] = buildSplitFileViewModels([
+      {
+        path: "new.sh",
+        renamedFrom: "old.sh",
+        status: "R",
+        binary: false,
+        conflict: false,
+        modeChangedFrom: "100644",
+        modeChangedTo: "100755",
+        leftText: "a\n",
+        rightText: "b\n",
+      },
+    ]);
+    const state: SplitCheckboxState = createSplitCheckboxState();
+
+    toggleSplitModeChecked("new.sh", state);
+    assert.equal(getModeChecked("new.sh", state), false);
+    assert.equal(getRenameChecked("new.sh", state), true);
+    assert.equal(getHunkCheckState("new.sh", model.hunkGroups[0].hunk, state), true);
+    assert.equal(getFileCheckState(model.entry, state), "indeterminate");
+
+    toggleSplitModeChecked("new.sh", state);
+    assert.equal(getModeChecked("new.sh", state), true);
+    assert.equal(getFileCheckState(model.entry, state), true);
   });
 
   it("toggling a whole-file leaf records the file-level state", () => {
