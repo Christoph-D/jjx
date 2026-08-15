@@ -88,7 +88,7 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
         title={entry.renamedFrom ? `${entry.renamedFrom} → ${entry.path}` : entry.path}
         onClick={() => toggleFileChecked(file)}
       >
-        {expandable && (
+        {expandable ? (
           <i
             class={expanded ? "codicon codicon-chevron-down" : "codicon codicon-chevron-right"}
             title={expanded ? "Collapse file" : "Expand file"}
@@ -99,6 +99,8 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
               toggleFileExpanded(entry.path);
             }}
           />
+        ) : (
+          <ChevronPlaceholder />
         )}
         <TriStateCheckbox state={fileState} onChange={() => toggleFileChecked(file)} />
         <span class="splitStatus" style={`color: ${STATUS_COLORS[entry.status]}`}>
