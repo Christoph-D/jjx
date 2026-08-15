@@ -84,13 +84,15 @@ test("workspace pill context menu", async ({ graphFrame, testRepo, workbox }) =>
     await workspace2Pill.click({ button: "right" });
     const menu = graphFrame.locator("#pill-context-menu");
     await expect(menu).toBeVisible();
+    await expect(menu.locator("[data-action='forgetAndDeleteWorkspace']")).toHaveText(
+      "Forget Workspace and Delete Directory",
+    );
     await expect(menu.locator("[data-action='forgetWorkspace']")).toHaveText("Forget Workspace");
-    await expect(menu.locator("[data-action='forgetAndDeleteWorkspace']")).toHaveText("Forget and Delete Workspace");
     await expect(menu.locator("[data-action='copyWorkspacePath']")).toHaveText("Copy Workspace Path");
     const actions = await menu
       .locator("[data-action]")
       .evaluateAll((els) => els.map((el) => el.getAttribute("data-action")));
-    expect(actions).toEqual(["forgetWorkspace", "forgetAndDeleteWorkspace", "copyWorkspacePath"]);
+    expect(actions).toEqual(["forgetAndDeleteWorkspace", "forgetWorkspace", "copyWorkspacePath"]);
     // The only non-item child is the divider between the forget actions and the copy action.
     await expect(menu.locator(":scope > *:not([data-action])")).toHaveCount(1);
     await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
@@ -116,17 +118,20 @@ test("workspace pill context menu", async ({ graphFrame, testRepo, workbox }) =>
     await addWorkspace2();
     await expect(workspace2Pill).toBeVisible();
 
-    await clickPillMenuItem(graphFrame, workspace2Pill, "Forget and Delete Workspace");
+    await clickPillMenuItem(graphFrame, workspace2Pill, "Forget Workspace and Delete Directory");
 
     const dialog = workbox.locator(".monaco-dialog-box");
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(`delete the workspace "workspace2" and its directory "${workspace2Path}"`);
+    await expect(dialog).toContainText(
+      `forget the workspace "workspace2" and delete its directory "${workspace2Path}"`,
+    );
+    await expect(dialog).toContainText("The directory will be deleted, but all jj-recorded changes will be kept.");
     // Cancelling keeps the workspace.
     await workbox.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
     await expect(workspace2Pill).toBeVisible();
 
-    await clickPillMenuItem(graphFrame, workspace2Pill, "Forget and Delete Workspace");
+    await clickPillMenuItem(graphFrame, workspace2Pill, "Forget Workspace and Delete Directory");
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: "Forget and Delete" }).click();
     await expect(dialog).not.toBeVisible();
@@ -144,7 +149,7 @@ test("workspace pill context menu", async ({ graphFrame, testRepo, workbox }) =>
     // becomes stale, so jj can no longer report it.
     fs.rmSync(workspace2Path, { recursive: true, force: true });
 
-    await clickPillMenuItem(graphFrame, workspace2Pill, "Forget and Delete Workspace");
+    await clickPillMenuItem(graphFrame, workspace2Pill, "Forget Workspace and Delete Directory");
 
     const dialog = workbox.locator(".monaco-dialog-box");
     await expect(dialog).toBeVisible();

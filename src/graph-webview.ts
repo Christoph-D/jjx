@@ -276,7 +276,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             // Degrade gracefully: forget the workspace without deleting its
             // directory instead of aborting entirely.
             await this.confirmAndExecute(
-              `The root path of workspace "${message.workspace}" could not be determined, so its directory cannot be deleted. Forget the workspace without deleting its directory?`,
+              `The root path of workspace "${message.workspace}" could not be determined, so its directory cannot be deleted.\n\nForget the workspace without deleting its directory?`,
               "Forget Workspace",
               "forget workspace",
               () => repo.forgetWorkspace(message.workspace),
@@ -285,7 +285,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           const root = workspaceRoot;
           await this.confirmAndExecute(
-            `Are you sure you want to delete the workspace "${message.workspace}" and its directory "${root}"?`,
+            `Are you sure you want to forget the workspace "${message.workspace}" and delete its directory "${root}"?\n\n` +
+              `The directory will be deleted, but all jj-recorded changes will be kept.`,
             "Forget and Delete",
             "forget and delete workspace",
             async () => {

@@ -11,6 +11,15 @@ export function PillContextMenu() {
     return (
       <Menu id="pill-context-menu" state={state} onClick={(e) => e.stopPropagation()}>
         <MenuItem
+          action="forgetAndDeleteWorkspace"
+          onClick={() => {
+            postMessage({ command: "forgetAndDeleteWorkspace", workspace: state.name });
+            pillContextMenu.value = null;
+          }}
+        >
+          Forget Workspace and Delete Directory
+        </MenuItem>
+        <MenuItem
           action="forgetWorkspace"
           onClick={() => {
             postMessage({ command: "forgetWorkspace", workspace: state.name });
@@ -18,15 +27,6 @@ export function PillContextMenu() {
           }}
         >
           Forget Workspace
-        </MenuItem>
-        <MenuItem
-          action="forgetAndDeleteWorkspace"
-          onClick={() => {
-            postMessage({ command: "forgetAndDeleteWorkspace", workspace: state.name });
-            pillContextMenu.value = null;
-          }}
-        >
-          Forget and Delete Workspace
         </MenuItem>
         <MenuSeparator />
         <MenuItem

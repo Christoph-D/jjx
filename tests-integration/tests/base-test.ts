@@ -396,11 +396,15 @@ export async function waitForSCMView(
   return scmView;
 }
 
+function exactText(text: string) {
+  return new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+}
+
 export async function clickPillMenuItem(graphFrame: Frame, pill: Locator, text: string) {
   await expect(async () => {
     await pill.click({ button: "right" });
     const menu = graphFrame.locator("#pill-context-menu");
-    const item = menu.locator("[data-action]").filter({ hasText: text });
+    const item = menu.locator("[data-action]").filter({ hasText: exactText(text) });
     await expect(item).toBeVisible();
     await item.click();
     await expect(menu).not.toBeVisible();
@@ -411,7 +415,7 @@ export async function clickRemoteRefMenuItem(graphFrame: Frame, pill: Locator, t
   await expect(async () => {
     await pill.click({ button: "right" });
     const menu = graphFrame.locator("#remote-ref-context-menu");
-    const item = menu.locator("[data-action]").filter({ hasText: text });
+    const item = menu.locator("[data-action]").filter({ hasText: exactText(text) });
     await expect(item).toBeVisible();
     await item.click();
     await expect(menu).not.toBeVisible();
