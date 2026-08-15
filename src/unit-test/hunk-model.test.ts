@@ -12,6 +12,7 @@ import {
   getLineChecked,
   getModeChecked,
   getRenameChecked,
+  isSplitCheckboxStatePristine,
   lineKey,
   reconstructRightModes,
   reconstructRightSides,
@@ -1016,5 +1017,30 @@ describe("lineKey Test Suite", () => {
       lines.map((l) => lineKey(l)),
       ["context:1-1", "del:2", "add:2"],
     );
+  });
+});
+
+describe("isSplitCheckboxStatePristine Test Suite", () => {
+  it("holds for a freshly created state", () => {
+    assert.equal(isSplitCheckboxStatePristine(createSplitCheckboxState()), true);
+  });
+
+  it("fails once any checkable was recorded, even with its default value", () => {
+    let state = createSplitCheckboxState();
+    setFileChecked("f.txt", state, true);
+    assert.equal(isSplitCheckboxStatePristine(state), false);
+
+    state = createSplitCheckboxState();
+    const lines = buildSplitLines("a\nb\n", "a\nx\n");
+    setLineChecked("f.txt", lines[1], state, true);
+    assert.equal(isSplitCheckboxStatePristine(state), false);
+
+    state = createSplitCheckboxState();
+    setRenameChecked("new.txt", state, true);
+    assert.equal(isSplitCheckboxStatePristine(state), false);
+
+    state = createSplitCheckboxState();
+    setModeChecked("f.sh", state, true);
+    assert.equal(isSplitCheckboxStatePristine(state), false);
   });
 });

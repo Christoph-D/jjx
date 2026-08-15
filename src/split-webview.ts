@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import type { JJRepository } from "./repository";
-import { createSplitCheckboxState, type SplitCheckboxState } from "./split/hunk-model";
+import { createSplitCheckboxState, isSplitCheckboxStatePristine, type SplitCheckboxState } from "./split/hunk-model";
 import { toSplitViewEntries } from "./split-protocol";
 import type { SplitExtensionToWebviewMessage, SplitWebviewToExtensionMessage } from "./split-protocol";
 import { formatChangeIdShort } from "./utils";
@@ -45,6 +45,8 @@ export class SplitWebview {
       // Mirror of the webview's checkbox selection, updated on every toggle, so the latest
       // state is at hand even when the panel is closed without confirming.
       let latestState: SplitCheckboxState = createSplitCheckboxState();
+      // Whether the user ever deviated from the freshly initialized (all-checked) selection.
+      let selectionTouched = false;
       const settle = (result: SplitCheckboxState | undefined) => {
         if (settled) {
           return;
@@ -70,6 +72,9 @@ export class SplitWebview {
           }
           case "stateChanged":
             latestState = message.state;
+            if (!isSplitCheckboxStatePristine(message.state)) {
+              selectionTouched = true;
+            }
             break;
           case "split":
             settle(message.state);
@@ -85,13 +90,16 @@ export class SplitWebview {
       // VS Code cannot veto a panel close (onDidDispose fires after the panel is gone), so
       // closing the view without confirming can only be handled after the fact: ask whether
       // the latest selection should be applied after all. When the split was already settled
-      // via Split/Cancel (which dispose the panel themselves), stay silent. Closing the whole
-      // window or reloading cannot wait for the answer, so the split is then discarded.
-      // "Discard" is marked as the close affordance so VS Code does not add a third
+      // via Split/Cancel (which dispose the panel themselves), stay silent; likewise when the
+      // selection was never touched, confirming would just apply a full split (an empty second
+      // commit) the user almost certainly did not intend, so the split is discarded silently.
+      // Closing the whole window or reloading cannot wait for the answer, so the split is then
+      // discarded. "Discard" is marked as the close affordance so VS Code does not add a third
       // "Cancel" button to the dialog (Escape then discards, just like "Discard").
       panel.onDidDispose(() => {
         messageListener.dispose();
-        if (settled) {
+        if (settled || !selectionTouched) {
+          settle(undefined);
           return;
         }
         void vscode.window

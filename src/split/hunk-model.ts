@@ -356,6 +356,16 @@ export function createSplitCheckboxState(): SplitCheckboxState {
   return { files: {}, lines: {}, renames: {}, modes: {} };
 }
 
+/** True when the state holds no entry at all, i.e. the user never toggled any checkable. */
+export function isSplitCheckboxStatePristine(state: SplitCheckboxState): boolean {
+  return (
+    Object.keys(state.files).length === 0 &&
+    Object.keys(state.lines).length === 0 &&
+    Object.keys(state.renames).length === 0 &&
+    Object.keys(state.modes).length === 0
+  );
+}
+
 /** Stable key identifying a checkable (non-context) line within its file. */
 export function lineKey(line: SplitLine): string {
   if (line.kind === "del") {

@@ -393,12 +393,29 @@ test("closing and cancelling the split view", async ({ graphFrame, testRepo, wor
       const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
       await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
 
+      const f2Checkbox = splitFileRow(splitFrame, "f2.txt").locator("input.splitCheckbox");
+      await f2Checkbox.click();
+      await expect(f2Checkbox).not.toBeChecked();
+
       await tabCloseButton(splitTab).click();
       const dialog = workbox.locator(".monaco-dialog-box");
       await expect(dialog).toBeVisible();
       await workbox.keyboard.press("Escape");
       await expect(dialog).not.toBeVisible();
       await expect(splitTab).toBeHidden();
+    }
+
+    await expectLogUnchanged(before);
+    await expect(nodes).toHaveCount(4);
+
+    // Third close: an untouched selection is discarded without asking.
+    {
+      const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
+      await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
+
+      await tabCloseButton(splitTab).click();
+      await expect(splitTab).toBeHidden();
+      await expect(workbox.locator(".monaco-dialog-box")).toBeHidden();
     }
 
     await expectLogUnchanged(before);
