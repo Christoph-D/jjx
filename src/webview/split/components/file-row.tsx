@@ -80,8 +80,6 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
   const expandable = hasExpandableSplitEntries(file);
   const expanded = expandedFiles.value.has(entry.path);
   const fileState = getFileCheckState(entry, checkState.value);
-  const deleted = entry.status === "D";
-  const renamed = entry.renamedFrom !== undefined;
 
   return (
     <div class="splitFile">
@@ -102,11 +100,7 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
             }}
           />
         )}
-        <TriStateCheckbox
-          state={fileState}
-          title={deleted ? "File Deleted" : renamed && !expandable ? "File Renamed" : undefined}
-          onChange={() => toggleFileChecked(file)}
-        />
+        <TriStateCheckbox state={fileState} onChange={() => toggleFileChecked(file)} />
         <span class="splitStatus" style={`color: ${STATUS_COLORS[entry.status]}`}>
           {entry.status}
         </span>
@@ -118,8 +112,6 @@ export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewMode
           </span>
         )}
         {entry.binary && <span class="splitLeafDetail">binary</span>}
-        {expandable && deleted && <span class="splitLeafDetail">File Deleted</span>}
-        {!expandable && renamed && <span class="splitLeafDetail">File Renamed</span>}
         {!expandable && !entry.binary && leafSummary(entry) !== undefined && (
           <span class="splitLeafDetail">{leafSummary(entry)}</span>
         )}

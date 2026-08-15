@@ -746,10 +746,10 @@ describe("reconstructRightSides Test Suite", () => {
   it("reconstructs deleted text files with the deletion applied only when selected", () => {
     const deleted = buildSplitFileEntry({ path: "old.txt", status: "D", left: Buffer.from("a\nb\n") });
 
-    // Default ("File Deleted" checked): the file is absent on the reconstructed right side.
+    // Default (deletion checked): the file is absent on the reconstructed right side.
     assert.equal(reconstructRightSides([deleted], createSplitCheckboxState()).get("old.txt"), undefined);
 
-    // Unchecking "File Deleted" keeps the file in the first commit.
+    // Unchecking the deletion keeps the file in the first commit.
     let state = createSplitCheckboxState();
     setFileChecked("old.txt", state, false);
     assert.deepEqual(reconstructRightSides([deleted], state).get("old.txt"), Buffer.from("a\nb\n", "utf8"));

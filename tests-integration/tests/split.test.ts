@@ -467,7 +467,7 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
   await expect(splitFrame.locator(".splitFile")).toHaveCount(4);
 
   // None of the leaves is expandable: no chevron, no hunks, just a whole-file checkbox.
-  // doomed.txt is deleted text, so it expands into a "File Deleted" checkbox plus one
+  // doomed.txt is deleted text, so it expands into a deletion checkbox plus one
   // full-removal hunk instead; its deletion stays selected and lands in the first commit.
   // added.txt is added text, so it expands into a single hunk adding all of its lines.
   for (const path of ["file1.txt", "new.txt"]) {
@@ -481,7 +481,8 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
   await expect(doomedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
   await expandSplitFile(doomedRow);
   await expect(doomedRow.locator(".splitFileRow input.splitCheckbox")).toBeChecked();
-  await expect(doomedRow.locator(".splitLeafDetail")).toHaveText("File Deleted");
+  await expect(doomedRow.locator(".splitStatus")).toHaveText("D");
+  await expect(doomedRow.locator(".splitLeafDetail")).toHaveCount(0);
   await expect(doomedRow.locator(".splitHunk")).toHaveCount(1);
   await expect(doomedRow.locator(".splitLineRow")).toHaveCount(2);
 
@@ -495,11 +496,11 @@ test("renamed and conflicted files only offer whole-file checkboxes", async ({ g
 
   await expect(splitFileRow(splitFrame, "file1.txt").locator(".splitConflict")).toContainText("conflicted");
   // A pure rename has no content hunks, so it stays a leaf whose whole-file checkbox is the
-  // "File Renamed" checkbox.
+  // rename checkbox.
   const renamedRow = splitFileRow(splitFrame, "new.txt");
+  await expect(renamedRow.locator(".splitStatus")).toHaveText("R");
   await expect(renamedRow.locator(".splitLeafDetail", { hasText: "←" })).toContainText("← old.txt");
-  await expect(renamedRow.locator(".splitLeafDetail", { hasText: "File Renamed" })).toHaveCount(1);
-  await expect(renamedRow.locator(".splitFileRow input.splitCheckbox")).toHaveAttribute("title", "File Renamed");
+  await expect(renamedRow.locator(".splitFileRow input.splitCheckbox")).not.toHaveAttribute("title");
 
   // Split off the added file; conflict, rename and deletion stay in the first commit.
   const addedCheckbox = splitFileRow(splitFrame, "added.txt").locator(".splitFileRow input.splitCheckbox");
@@ -533,7 +534,7 @@ test("special file entries split via their dedicated checkboxes", async ({ graph
 
   const nodes = graphFrame.locator("#nodes > div");
 
-  await test.step("deleted text files split their deletion via the File Deleted checkbox", async () => {
+  await test.step("deleted text files split their deletion via the deletion checkbox", async () => {
     await testRepo.commitFile("base.txt", "base\n", "Base");
     await testRepo.commitFile("doomed.txt", "d1\nd2\nd3\n", "Add doomed");
     await testRepo.deleteFile("doomed.txt");
@@ -545,13 +546,14 @@ test("special file entries split via their dedicated checkboxes", async ({ graph
     const splitFrame = await openSplitView(workbox, graphFrame, nodes.nth(1));
     await expect(splitFrame.locator(".splitFile")).toHaveCount(2);
 
-    // The deleted file shows a "File Deleted" checkbox and a single hunk removing all lines.
+    // The deleted file shows a deletion checkbox and a single hunk removing all lines.
     const doomedRow = splitFileRow(splitFrame, "doomed.txt");
     await expect(doomedRow.locator(".splitFileRow")).toHaveClass(/splitExpandable/);
     await expandSplitFile(doomedRow);
     const fileDeletedCheckbox = doomedRow.locator(".splitFileRow input.splitCheckbox");
     await expect(fileDeletedCheckbox).toBeChecked();
-    await expect(doomedRow.locator(".splitLeafDetail")).toHaveText("File Deleted");
+    await expect(doomedRow.locator(".splitStatus")).toHaveText("D");
+    await expect(doomedRow.locator(".splitLeafDetail")).toHaveCount(0);
 
     const hunk = doomedRow.locator(".splitHunk");
     await expect(hunk).toHaveCount(1);
@@ -560,12 +562,12 @@ test("special file entries split via their dedicated checkboxes", async ({ graph
     await expect(hunk.locator(".splitLineRow")).toHaveCount(3);
     await expect(hunk.locator(".splitLineRow").first()).toContainText("d1");
 
-    // Unchecking "File Deleted" unchecks the full hunk with it.
+    // Unchecking the deletion unchecks the full hunk with it.
     await fileDeletedCheckbox.click();
     await expect(fileDeletedCheckbox).not.toBeChecked();
     await expect(hunkCheckbox).not.toBeChecked();
 
-    // Re-checking the hunk re-checks "File Deleted": the two cannot diverge.
+    // Re-checking the hunk re-checks the deletion: the two cannot diverge.
     await hunkCheckbox.click();
     await expect(hunkCheckbox).toBeChecked();
     await expect(fileDeletedCheckbox).toBeChecked();
@@ -771,7 +773,7 @@ test("file mode changes split between the resulting commits", async ({ graphFram
     await expect(modeCheckbox).toBeChecked();
 
     // The mode entry is the file's only checkable, so the file checkbox mirrors it (like the
-    // "File Deleted" checkbox of a deleted file mirrors its full-removal hunk).
+    // checkbox of a deleted file mirrors its full-removal hunk).
     const fCheckbox = fRow.locator(".splitFileRow input.splitCheckbox");
     await modeCheckbox.click();
     await expect(modeCheckbox).not.toBeChecked();

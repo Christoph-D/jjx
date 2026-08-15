@@ -142,7 +142,7 @@ describe("buildSplitFileViewModels Test Suite", () => {
       },
     ]);
     // Both sides are present, so the entry qualifies as expandable, but the identical
-    // contents leave nothing to pick beyond the "File Renamed" checkbox.
+    // contents leave nothing to pick beyond the rename checkbox.
     assert.equal(isExpandableSplitEntry(model.entry), true);
     assert.equal(model.hunkGroups.length, 0);
     assert.equal(model.entry.hunks, undefined);
