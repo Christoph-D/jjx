@@ -148,7 +148,7 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
     x: clip.x,
     y: clip.y,
     width: 320,
-    height: 400,
+    height: 440,
   });
 
   // Make the jj graph horizontally larger
@@ -159,7 +159,7 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
     const sashCenterY = sashBox.y + sashBox.height / 2;
     await workbox.mouse.move(sashCenterX, sashCenterY);
     await workbox.mouse.down();
-    await workbox.mouse.move(sashCenterX + 30, sashCenterY);
+    await workbox.mouse.move(sashCenterX + 50, sashCenterY);
     await workbox.mouse.up();
     await workbox.mouse.move(0, 0);
   }
@@ -180,7 +180,7 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
   await screenshot(workbox, "rebase-menu.png", {
     x: clip.x,
     y: clip.y,
-    width: 390,
+    width: 410,
     height: 390,
   });
 });
