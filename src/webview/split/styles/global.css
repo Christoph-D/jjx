@@ -159,8 +159,13 @@ body {
 }
 
 .splitHunk {
-  position: relative;
   margin: 2px 0;
+}
+
+/* The line rows of an expanded hunk; the hunk's vertical collapse line runs down their left
+   edge, starting under the hunk row's chevron. */
+.splitLines {
+  position: relative;
 }
 
 .splitHunkRow {
@@ -212,26 +217,21 @@ body {
 
 /* The vertical collapse lines of the file and hunk sections: the button is the line's hit
    area (the line itself is drawn by ::before), and clicking it toggles the section like the
-   header chevrons. The file line spans the file's contents; each hunk line reaches into the
-   file's gutter so it spans its whole hunk, staying visible (and clickable) next to the hunk
-   header even when the hunk is collapsed. */
+   header chevrons. Every section row starts with a 16px chevron slot (codicon.css sizes the
+   icons at 16px, outspecifying the 14px font-size rules below), and the button covers exactly
+   that slot so the line is centered under the chevron: the file line spans the file's
+   contents, while a hunk line starts below the hunk's header row and spans the hunk's
+   lines. */
 .splitCollapseLine {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 12px;
+  left: 0;
+  width: 16px;
   padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
-}
-
-.splitHunks > .splitCollapseLine {
-  left: 0;
-}
-
-.splitHunk > .splitCollapseLine {
-  left: -12px;
 }
 
 .splitCollapseLine::before {
@@ -239,7 +239,7 @@ body {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 5px;
+  left: calc(50% - 0.5px);
   width: 1px;
   background-color: var(
     --vscode-editorIndentGuide-background1,

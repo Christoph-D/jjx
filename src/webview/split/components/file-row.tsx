@@ -64,22 +64,15 @@ function lineCount(count: number): string {
 }
 
 /**
- * The vertical line running down the left edge of a collapsible section. Clicking it toggles
- * the section's collapse state (the same toggle as its header chevron); being a real button,
- * it also works with the keyboard, which the chevrons do not.
+ * The vertical line running down a section's contents, horizontally centered under the
+ * section's chevron. Clicking it toggles the section's collapse state (the same toggle as its
+ * header chevron); being a real button, it also works with the keyboard, which the chevrons
+ * do not. Only rendered while the section is expanded: a collapsed section has no contents
+ * for the line to span.
  */
-function CollapseLine({ label, expanded, onClick }: { label: string; expanded: boolean; onClick: () => void }) {
-  const title = `${expanded ? "Collapse" : "Expand"} ${label}`;
-  return (
-    <button
-      type="button"
-      class="splitCollapseLine"
-      title={title}
-      aria-label={title}
-      aria-expanded={expanded}
-      onClick={onClick}
-    />
-  );
+function CollapseLine({ label, onClick }: { label: string; onClick: () => void }) {
+  const title = `Collapse ${label}`;
+  return <button type="button" class="splitCollapseLine" title={title} aria-label={title} onClick={onClick} />;
 }
 
 export const FileRow = memo(function FileRow({ file }: { file: SplitFileViewModel }) {
@@ -169,7 +162,7 @@ function HunkList({ file }: { file: SplitFileViewModel }) {
   }
   return (
     <div class="splitHunks">
-      <CollapseLine label="file" expanded onClick={() => toggleFileExpanded(file.entry.path)} />
+      <CollapseLine label="file" onClick={() => toggleFileExpanded(file.entry.path)} />
       {children}
     </div>
   );
@@ -234,7 +227,6 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
   const collapsed = collapsedHunks.value.has(hunkKey(path, index));
   return (
     <div class="splitHunk">
-      <CollapseLine label="hunk" expanded={!collapsed} onClick={() => toggleHunkCollapsed(path, index)} />
       <div
         class="splitRow splitHunkRow"
         title={hunkState === false ? "Include hunk" : "Exclude hunk"}
@@ -259,7 +251,14 @@ function HunkRow({ path, group, index }: { path: string; group: SplitHunkGroup; 
           @@ <span class="splitAdded">+{group.addedCount}</span> <span class="splitRemoved">-{group.removedCount}</span>
         </span>
       </div>
-      {!collapsed && group.hunk.lines.map((line, lineIndex) => <LineRow key={lineIndex} path={path} line={line} />)}
+      {!collapsed && (
+        <div class="splitLines">
+          <CollapseLine label="hunk" onClick={() => toggleHunkCollapsed(path, index)} />
+          {group.hunk.lines.map((line, lineIndex) => (
+            <LineRow key={lineIndex} path={path} line={line} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

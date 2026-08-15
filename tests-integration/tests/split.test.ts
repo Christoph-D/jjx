@@ -187,24 +187,42 @@ test("vertical collapse lines collapse and expand files and hunks", async ({ gra
   const lines = hunk.locator(".splitLineRow");
   await expect(lines).toHaveCount(2);
 
-  // The file's line runs down the left of the file's contents, left of the hunk's own line,
-  // and its gutter pushes the line checkboxes right of the hunk checkbox.
+  // Each collapse line is horizontally centered under its section's chevron: the file line
+  // under the file row's chevron, the hunk line under the hunk row's chevron.
   const fileLine = f1Row.locator(".splitHunks > .splitCollapseLine");
   const hunkLine = hunk.locator(".splitCollapseLine");
-  expect(await fileLine.boundingBox()).toBeDefined();
-  expect(await hunkLine.boundingBox()).toBeDefined();
-  expect((await fileLine.boundingBox())!.x).toBeLessThan((await hunkLine.boundingBox())!.x);
+  const centerXOf = async (locator: Locator): Promise<number> => {
+    const box = await locator.boundingBox();
+    expect(box).toBeDefined();
+    return box!.x + box!.width / 2;
+  };
+  expect(await centerXOf(fileLine)).toBeCloseTo(await centerXOf(f1Row.locator(".splitFileRow > i.codicon")), 0);
+  expect(await centerXOf(hunkLine)).toBeCloseTo(await centerXOf(hunk.locator(".splitHunkRow > i.codicon")), 0);
+
+  // The hunk line starts under the hunk row's chevron (below the header row) and spans the
+  // hunk's lines; the file line starts under the file row and spans the file's contents.
+  const hunkRowBox = (await hunk.locator(".splitHunkRow").boundingBox())!;
+  const hunkLineBox = (await hunkLine.boundingBox())!;
+  expect(hunkLineBox.y).toBeGreaterThanOrEqual(hunkRowBox.y + hunkRowBox.height - 0.5);
+  const lastLineBox = (await lines.last().boundingBox())!;
+  expect(hunkLineBox.y + hunkLineBox.height).toBeCloseTo(lastLineBox.y + lastLineBox.height, 0);
+  const fileRowBox = (await f1Row.locator(".splitFileRow").boundingBox())!;
+  const fileLineBox = (await fileLine.boundingBox())!;
+  expect(fileLineBox.y).toBeGreaterThanOrEqual(fileRowBox.y + fileRowBox.height - 0.5);
+
+  // The file's gutter pushes the line checkboxes right of the hunk checkbox.
   const hunkCheckbox = hunk.locator(".splitHunkRow input.splitCheckbox");
   const lineCheckbox = lines.first().locator("input.splitCheckbox");
   expect((await lineCheckbox.boundingBox())!.x).toBeGreaterThan((await hunkCheckbox.boundingBox())!.x);
 
-  // Clicking the hunk's line collapses (and re-expands) just the hunk's lines.
-  await expect(hunkLine).toHaveAttribute("aria-expanded", "true");
+  // Clicking the hunk's line collapses just the hunk's lines; the line spans only those
+  // lines, so it disappears with them and the chevron expands the hunk again.
   await hunkLine.click();
   await expect(lines).toHaveCount(0);
-  await expect(hunkLine).toHaveAttribute("aria-expanded", "false");
-  await hunkLine.click();
+  await expect(hunkLine).toHaveCount(0);
+  await hunk.locator(".splitHunkRow > i.codicon-chevron-right").click();
   await expect(lines).toHaveCount(2);
+  await expect(hunkLine).toHaveCount(1);
 
   // Unlike the chevrons, the collapse line is a real button and works with the keyboard.
   await hunkLine.focus();
