@@ -6,7 +6,7 @@ import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
-import { formatChangeIdShort, formatDiffTitle, formatWorkingCopyTitle, normalizePath } from "./utils";
+import { formatAtRevTitle, formatChangeIdShort, formatDiffTitle, formatWorkingCopyTitle, normalizePath } from "./utils";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -1090,7 +1090,7 @@ function computeFallbackCommand(
     return {
       title: "Open",
       command: "vscode.open",
-      arguments: [afterUri, {}],
+      arguments: [afterUri, {} satisfies vscode.TextDocumentShowOptions, formatAtRevTitle(fileStatus.file, toRev)],
     };
   }
   if (fileClickAction === "working-copy") {

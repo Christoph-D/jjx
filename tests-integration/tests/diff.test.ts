@@ -179,3 +179,39 @@ test("toggle diff view switches between file and diff editors", async ({ graphFr
   await runCommand(workbox, "Toggle Diff View");
   await expectDiff("", "ADDED");
 });
+
+test.describe("with the at-revision file click action", () => {
+  test.use({ customSettings: { "jjx.fileClickAction": "at-revision" } });
+
+  test("clicking a parent file opens it at that revision with a short change ID tab title", async ({
+    graphFrame,
+    testRepo,
+    workbox,
+  }) => {
+    await testRepo.commitFile("a.txt", "FIRST", "First commit");
+    await testRepo.writeFile("a.txt", "SECOND");
+    await testRepo.commit("Second commit");
+    await testRepo.writeFile("a.txt", "THIRD");
+
+    await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
+    const scmView = await waitForSCMView(workbox, ["a.txt"], ["a.txt"]);
+
+    const aFileItems = scmView.getByRole("treeitem", { name: /a\.txt/ });
+    await expect(aFileItems).toHaveCount(2);
+
+    await aFileItems.nth(1).click();
+
+    await expect(
+      workbox.locator(".monaco-editor .view-lines").getByText("SECOND", { exact: true }).first(),
+    ).toBeVisible();
+
+    // The tab title names the revision with the same short change ID form the
+    // diff title uses, not the full change ID.
+    const tab = workbox.getByRole("tab", { name: /a\.txt \([a-z0-9]+\)/ });
+    await expect(tab).toBeVisible();
+    const label = await tab.getAttribute("aria-label");
+    const shortChangeId = label!.match(/a\.txt \(([a-z0-9]+)\)/)![1];
+    const parent = (await testRepo.log("@-"))[0];
+    expect(parent.change_id.startsWith(shortChangeId)).toBe(true);
+  });
+});
