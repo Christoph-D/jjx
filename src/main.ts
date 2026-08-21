@@ -32,7 +32,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const distDir = vscode.Uri.joinPath(context.extensionUri, "dist").fsPath;
     const jjEditor = new JJEditor(ipcServer, distDir);
     context.subscriptions.push(jjEditor);
-    const jjMergeEditor = new JJMergeEditor(ipcServer, distDir);
+    const jjMergeEditor = new JJMergeEditor(ipcServer, distDir, () => state);
     context.subscriptions.push(jjMergeEditor);
     const jjDiffTool = new JJDiffTool(ipcServer, distDir);
     context.subscriptions.push(jjDiffTool);

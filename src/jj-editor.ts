@@ -2,10 +2,11 @@ import fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
 import { commands, TabInputText, Uri, window, workspace } from "vscode";
+import type { ExtensionState } from "./extension-state";
 import { parseJJError } from "./errors";
 import { IIPCHandler, IPCServer } from "./ipc/ipc-server";
 import { EmptyDisposable } from "./vscode-utils";
-import { escapeTomlString } from "./utils";
+import { escapeTomlString, formatChangeIdShort } from "./utils";
 
 interface JJEditorRequest {
   descriptionPath?: string;
@@ -94,6 +95,31 @@ function parseConflictLabels(content: string): { left?: ConflictSideLabels; righ
     }
   }
   return result;
+}
+
+/**
+ * Resolves the fixed-width change ID prefix parsed from a conflict marker label to the same
+ * shortest (padded) change ID representation used in diff titles and the graph view.
+ *
+ * Only data already loaded in the graph webview is consulted: resolving a merge-editor side
+ * title must not spawn a jj process. When the change isn't in the cache (or the graph is
+ * showing a different repository), the raw marker label is returned as-is.
+ */
+function resolveConflictSideTitle(
+  state: ExtensionState | undefined,
+  outputUri: Uri,
+  labels: ConflictSideLabels,
+): string {
+  if (state) {
+    const repositoryRoot = state.workspaceSCM.getRepositoryFromUri(outputUri)?.repositoryRoot;
+    const changeId = repositoryRoot
+      ? state.graphWebview?.findChangeIdByPrefix(labels.changeIdShort, repositoryRoot)
+      : undefined;
+    if (changeId) {
+      return formatChangeIdShort(changeId);
+    }
+  }
+  return labels.changeIdShort;
 }
 
 interface DiffToolRequest {
@@ -246,7 +272,11 @@ export class JJEditor implements IIPCHandler {
 export class JJMergeEditor implements IIPCHandler {
   private disposable = EmptyDisposable;
 
-  constructor(ipc: IPCServer, extensionDir: string) {
+  constructor(
+    ipc: IPCServer,
+    extensionDir: string,
+    private readonly getExtensionState: () => ExtensionState | undefined,
+  ) {
     this.disposable = ipc.registerHandler("jj-merge-editor", this);
 
     const mainJsPath = path.join(extensionDir, "jj-merge-editor-main.js");
@@ -294,7 +324,7 @@ export class JJMergeEditor implements IIPCHandler {
         const desc = labels.left.description.split("\n")[0] || "(no description)";
         input1 = {
           uri: leftCopyUri,
-          title: labels.left.changeIdShort,
+          title: resolveConflictSideTitle(this.getExtensionState(), outputUri, labels.left),
           description: desc,
           detail: `commit ${labels.left.commitIdShort}`,
         };
@@ -303,7 +333,7 @@ export class JJMergeEditor implements IIPCHandler {
         const desc = labels.right.description.split("\n")[0] || "(no description)";
         input2 = {
           uri: rightCopyUri,
-          title: labels.right.changeIdShort,
+          title: resolveConflictSideTitle(this.getExtensionState(), outputUri, labels.right),
           description: desc,
           detail: `commit ${labels.right.commitIdShort}`,
         };
