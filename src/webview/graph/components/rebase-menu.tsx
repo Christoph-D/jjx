@@ -20,6 +20,7 @@ export function RebaseMenu() {
   const afterImmutableIcon = hasImmutableChild || isSourceImmutable ? <ImmutableIcon /> : null;
   const sourceImmutableIcon = isSourceImmutable ? <ImmutableIcon /> : null;
   const isMultiSource = sourceIds.length > 1;
+  const allLabel = isMultiSource ? " All" : "";
 
   const sendCommand = (
     command:
@@ -48,7 +49,7 @@ export function RebaseMenu() {
 
   return (
     <Menu id="rebase-menu" state={state} onClick={(e) => e.stopPropagation()}>
-      <Submenu action="rebase" label="Rebase">
+      <Submenu action="rebase" label={`Rebase${allLabel}`}>
         <SubmenuItem action="rebaseOnto" onClick={() => sendCommand("rebaseOnto")}>
           Onto{sourceImmutableIcon}
         </SubmenuItem>
@@ -59,7 +60,7 @@ export function RebaseMenu() {
           Before{immutableIcon}
         </SubmenuItem>
       </Submenu>
-      <Submenu action="rebaseWithDescendants" label="Rebase With Descendants">
+      <Submenu action="rebaseWithDescendants" label={`Rebase${allLabel} With Descendants`}>
         <SubmenuItem action="rebaseOntoWithDescendants" onClick={() => sendCommand("rebaseOnto", true)}>
           Onto{sourceImmutableIcon}
         </SubmenuItem>
@@ -82,9 +83,9 @@ export function RebaseMenu() {
       </Submenu>
       <MenuSeparator />
       <MenuItem action="squashInto" onClick={() => sendCommand("squashInto")}>
-        Squash Into{immutableIcon}
+        Squash{allLabel} Into{immutableIcon}
       </MenuItem>
-      <Submenu action="duplicate" label="Duplicate">
+      <Submenu action="duplicate" label={`Duplicate${allLabel}`}>
         <SubmenuItem action="duplicateOnto" onClick={() => sendCommand("duplicateOnto")}>
           Onto{sourceImmutableIcon}
         </SubmenuItem>
@@ -95,7 +96,7 @@ export function RebaseMenu() {
           Before{immutableIcon}
         </SubmenuItem>
       </Submenu>
-      <Submenu action="revert" label="Revert">
+      <Submenu action="revert" label={`Revert${allLabel}`}>
         <SubmenuItem action="revertOnto" onClick={() => sendCommand("revertOnto")}>
           Onto{sourceImmutableIcon}
         </SubmenuItem>

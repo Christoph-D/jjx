@@ -56,13 +56,13 @@ system.
 
 ### ✋ Drag & drop operations
 
-- Rebase a change (with or without descendants) onto/after/before any other change  
-  ![rebase menu](images/rebase-menu.png)
-- Squash a change into any other change
-- Duplicate a change onto/after/before any other change
-- Apply the reverse of change (revert) onto/after/before any other change
-- Add or remove parents of a change
 - Move bookmarks by dragging them onto a target change
+- Rebase one or more changes (with or without descendants) onto/after/before any other change  
+  ![rebase menu](images/rebase-menu.png)
+- Squash one or more changes into any other change
+- Duplicate one or more changes onto/after/before any other change
+- Apply the reverse of one or more changes (revert) onto/after/before any other change
+- Add or remove parents of a change
 
 ### 📁 File management
 
