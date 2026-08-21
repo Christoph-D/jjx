@@ -63,6 +63,12 @@ export function RebaseMenu() {
         <SubmenuItem action="rebaseOntoWithDescendants" onClick={() => sendCommand("rebaseOnto", true)}>
           Onto{sourceImmutableIcon}
         </SubmenuItem>
+        <SubmenuItem action="rebaseAfterWithDescendants" onClick={() => sendCommand("rebaseAfter", true)}>
+          After{afterImmutableIcon}
+        </SubmenuItem>
+        <SubmenuItem action="rebaseBeforeWithDescendants" onClick={() => sendCommand("rebaseBefore", true)}>
+          Before{immutableIcon}
+        </SubmenuItem>
         {!isMultiSource && !isTargetAlreadyParent && (
           <SubmenuItem action="rebaseAddParentWithDescendants" onClick={() => sendCommand("rebaseAddParent")}>
             Add Parent{sourceImmutableIcon}
@@ -73,12 +79,6 @@ export function RebaseMenu() {
             Remove Parent{sourceImmutableIcon}
           </SubmenuItem>
         )}
-        <SubmenuItem action="rebaseAfterWithDescendants" onClick={() => sendCommand("rebaseAfter", true)}>
-          After{afterImmutableIcon}
-        </SubmenuItem>
-        <SubmenuItem action="rebaseBeforeWithDescendants" onClick={() => sendCommand("rebaseBefore", true)}>
-          Before{immutableIcon}
-        </SubmenuItem>
       </Submenu>
       <MenuSeparator />
       <MenuItem action="squashInto" onClick={() => sendCommand("squashInto")}>
