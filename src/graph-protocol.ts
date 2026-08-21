@@ -158,7 +158,8 @@ export type WebviewToExtensionMessage =
       renamedFrom?: string;
     }
   | { command: "updateStale" }
-  | { command: "reportError"; message: string; stack?: string };
+  | { command: "reportError"; message: string; stack?: string }
+  | { command: "showWarning"; message: string };
 
 export type ExtensionToWebviewMessage =
   | {

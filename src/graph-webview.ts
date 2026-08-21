@@ -93,7 +93,12 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
     }
 
     webviewView.webview.onDidReceiveMessage(async (message: Message) => {
-      if (!this.repository && message.command !== "selectChange" && message.command !== "reportError") {
+      if (
+        !this.repository &&
+        message.command !== "selectChange" &&
+        message.command !== "reportError" &&
+        message.command !== "showWarning"
+      ) {
         return;
       }
       const repo = this.repository!;
@@ -612,6 +617,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         }
         case "reportError":
           logger.error(`Webview error: ${message.message}${message.stack ? `\n${message.stack}` : ""}`);
+          break;
+        case "showWarning":
+          vscode.window.showWarningMessage(message.message);
           break;
       }
     });

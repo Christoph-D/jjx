@@ -33,8 +33,10 @@ system.
 - Elided commits  
   ![elided commits](images/elided-commits.gif)
 - Select a change to see its affected files and diffs
-- Select two changes (shift-click) to compare them with diff or interdiff
-- Create merge changes with shift-select and then pressing the "+" button
+- Select multiple changes with shift-click (contiguous range from the last clicked change) or ctrl-click (individual
+  changes, cmd-click on macOS)
+- Compare two selected changes with a diff or interdiff
+- Create merge changes by selecting multiple changes and then pressing the "+" button
 - Drag & drop changes onto other changes
 - Optionally show each commit's changed files inline in the graph (like `jj log -s`), with one-click diff opening (⚠️
   experimental, enable with `jjx.showChangedFiles`)
@@ -50,7 +52,7 @@ system.
 - Copy the full change ID
 - Absorb the change into its parents
 - Split the change into two changes
-- Abandon one or more changes (shift-click to select multiple)
+- Abandon one or more changes (select multiple with shift-click or ctrl-click)
 
 ### ✋ Drag & drop operations
 

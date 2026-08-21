@@ -31,7 +31,9 @@ import {
   hoveredChangeId,
   currentChanges,
   connectedHighlight,
+  selectionAnchorId,
 } from "../signals";
+import { computeSelection } from "../selection";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import { getUniqueId, type LaneNode, type ChangeNode, type RegularChangeNode } from "../../../graph-protocol";
 import { abbreviateName, cx, escapeInvisibleChars } from "../utils";
@@ -59,7 +61,7 @@ interface Props {
   showingFiles: boolean;
 }
 
-export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, compact, showingFiles }: Props) {
+export function ChangeNodeRow({ change, index, nodeData, changeIdRef, compact, showingFiles }: Props) {
   const dragProps = useDragDrop(change);
   const { startHoverTimers, clearHoverTimers, clearHideTimer, scheduleHideTooltip } = useTooltipTimers();
   const isElided = change.branchType === "~";
@@ -69,26 +71,23 @@ export function ChangeNodeRow({ change, index: _index, nodeData, changeIdRef, co
     if (isDragging.value || justFinishedDrag.value) {
       return;
     }
-    if (isElided) {
+    if (isElided && !e.shiftKey) {
       return;
     }
 
-    const changeId = change.id.changeId;
-    const newSelected = new Set(selectedNodes.value);
-    if (e.shiftKey) {
-      if (newSelected.has(changeId)) {
-        newSelected.delete(changeId);
-      } else {
-        newSelected.add(changeId);
-      }
-    } else {
-      newSelected.clear();
-      newSelected.add(changeId);
+    const outcome = computeSelection(currentChanges.value, index, selectionAnchorId.value, selectedNodes.value, {
+      shiftKey: e.shiftKey,
+      toggleKey: e.ctrlKey || e.metaKey,
+    });
+    if (outcome.kind === "warning") {
+      postMessage({ command: "showWarning", message: outcome.message });
+      return;
     }
-    selectedNodes.value = newSelected;
+    selectedNodes.value = outcome.selection;
+    selectionAnchorId.value = outcome.anchor;
     postMessage({
       command: "selectChange",
-      selectedNodes: Array.from(newSelected),
+      selectedNodes: Array.from(outcome.selection),
     });
   };
 
