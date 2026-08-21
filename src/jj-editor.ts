@@ -102,8 +102,10 @@ function parseConflictLabels(content: string): { left?: ConflictSideLabels; righ
  * shortest (padded) change ID representation used in diff titles and the graph view.
  *
  * Only data already loaded in the graph webview is consulted: resolving a merge-editor side
- * title must not spawn a jj process. When the change isn't in the cache (or the graph is
- * showing a different repository), the raw marker label is returned as-is.
+ * title must not spawn a jj process. The commit ID prefix from the conflict marker is used to
+ * disambiguate divergent changes that share the same change ID. When the change isn't in the
+ * cache (or the graph is showing a different repository), the raw marker label is returned
+ * as-is.
  */
 function resolveConflictSideTitle(
   state: ExtensionState | undefined,
@@ -113,7 +115,7 @@ function resolveConflictSideTitle(
   if (state) {
     const repositoryRoot = state.workspaceSCM.getRepositoryFromUri(outputUri)?.repositoryRoot;
     const changeId = repositoryRoot
-      ? state.graphWebview?.findChangeIdByPrefix(labels.changeIdShort, repositoryRoot)
+      ? state.graphWebview?.findChangeIdByPrefix(labels.changeIdShort, labels.commitIdShort, repositoryRoot)
       : undefined;
     if (changeId) {
       return formatChangeIdShort(changeId);

@@ -647,16 +647,21 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   /**
    * Like {@link findChangeId}, but matches a loaded node by a change ID *prefix* (as jj emits
    * them in conflict markers) instead of a full change ID. The prefix only has to match the
-   * change ID itself, not a possible `/offset` suffix of divergent changes. Returns `undefined`
-   * if the graph is showing a different repository or no loaded node matches; callers should
-   * then fall back to the raw prefix.
+   * change ID itself, not a possible `/offset` suffix of divergent changes. A commit ID prefix
+   * (also emitted in conflict markers) must match the node's commit ID as well; it disambiguates
+   * divergent changes that share the same change ID but differ in their `/offset` suffix.
+   * Returns `undefined` if the graph is showing a different repository or no loaded node
+   * matches; callers should then fall back to the raw prefix.
    */
-  findChangeIdByPrefix(changeIdPrefix: string, repositoryRoot: string): ChangeId | undefined {
+  findChangeIdByPrefix(changeIdPrefix: string, commitIdPrefix: string, repositoryRoot: string): ChangeId | undefined {
     if (this.repository?.repositoryRoot !== repositoryRoot) {
       return undefined;
     }
     const node = this.currentChanges.find(
-      (c): c is RegularChangeNode => c.branchType !== "~" && c.id.changeId.split("/")[0].startsWith(changeIdPrefix),
+      (c): c is RegularChangeNode =>
+        c.branchType !== "~" &&
+        c.id.changeId.split("/")[0].startsWith(changeIdPrefix) &&
+        c.commitId.startsWith(commitIdPrefix),
     );
     return node?.id;
   }
