@@ -70,8 +70,8 @@ interface ConflictSideLabels {
   description: string;
 }
 
-const conflictToRe = /^\\{7}\s+to:\s+(\S+)\s+(\S+)\s+"(.*)"/;
-const conflictAddRe = /^\+{7}\s+(\S+)\s+(\S+)\s+"(.*)"/;
+const conflictToRe = /^\\{7}\s+to:\s+(\S+)\s+(\S+)(?:\s+"(.*)")?/;
+const conflictAddRe = /^\+{7}\s+(\S+)\s+(\S+)(?:\s+"(.*)")?/;
 
 function parseConflictLabels(content: string): { left?: ConflictSideLabels; right?: ConflictSideLabels } {
   const result: { left?: ConflictSideLabels; right?: ConflictSideLabels } = {};
@@ -79,14 +79,14 @@ function parseConflictLabels(content: string): { left?: ConflictSideLabels; righ
     if (!result.left) {
       const m = line.match(conflictToRe);
       if (m) {
-        result.left = { changeIdShort: m[1], commitIdShort: m[2], description: m[3] };
+        result.left = { changeIdShort: m[1], commitIdShort: m[2], description: m[3] ?? "" };
         continue;
       }
     }
     if (!result.right) {
       const m = line.match(conflictAddRe);
       if (m) {
-        result.right = { changeIdShort: m[1], commitIdShort: m[2], description: m[3] };
+        result.right = { changeIdShort: m[1], commitIdShort: m[2], description: m[3] ?? "" };
         continue;
       }
     }
