@@ -185,7 +185,7 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
   });
 });
 
-test("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, testRepo, workbox }) => {
+test.only("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, testRepo, workbox }) => {
   const sash = scmView.locator(".monaco-sash.horizontal").first();
   const sashBox = await sash.boundingBox();
   if (!sashBox) {
@@ -202,16 +202,14 @@ test("take screenshot of conflicts", async ({ userDataDir, scmView, graphFrame, 
   await workbox.setViewportSize({ width: 1920, height: 1080 });
   await initializeSettings(userDataDir, ZOOM_LEVEL);
 
-  const initialCommit = await testRepo.commit("initial commit");
-  const commitA = await testRepo.commitFile("file.txt", "content: A", "write A");
-  await testRepo.jjCommand(["new", initialCommit]);
+  await testRepo.commitFile("file.txt", "content: A", "write A");
+  await testRepo.jjCommand(["new", "root()"]);
   await testRepo.commitFile("file.txt", "content: B", "write B");
-  await testRepo.jjCommand(["rebase", "-o", commitA]);
-  await testRepo.jjCommand(["abandon", initialCommit]);
+  await testRepo.jjCommand(["new", "root()+", "-m", "merge A+B"]);
 
   const nodes = graphFrame.locator("#nodes > div");
   await expect(nodes).toHaveCount(4);
-  await expect(nodes.locator('[data-role="conflict-indicator"]')).toHaveCount(2);
+  await expect(nodes.locator('[data-role="conflict-indicator"]')).toHaveCount(1);
 
   const conflicts = scmView.getByRole("treeitem").filter({ hasText: "file.txt" });
   await expect(conflicts).toHaveCount(2);
