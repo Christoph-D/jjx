@@ -61,6 +61,15 @@ export function formatChangeIdShort(changeId: ChangeId): string {
   return changeId.changeOffset ? `${short}/${changeId.changeOffset}` : short;
 }
 
+/**
+ * Like {@link formatChangeIdShort}, but prints `/?` in place of the offset. Used when a change was
+ * matched by change ID alone (e.g. because the commit ID in the conflict markers is stale), so the
+ * matched node may be at the wrong commit/offset.
+ */
+export function formatChangeIdShortWithUnknownOffset(changeId: ChangeId): string {
+  return `${changeId.changeIdPrefix}${changeId.changeIdSuffix}/?`;
+}
+
 // A readable label for the SCM view.
 export function formatWorkingCopyLabel(): string {
   return "Working Copy";

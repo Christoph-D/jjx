@@ -7,6 +7,7 @@ import {
   filepathToRootFileset,
   formatAtRevTitle,
   formatChangeIdShort,
+  formatChangeIdShortWithUnknownOffset,
   formatDiffTitle,
   formatWorkingCopyLabel,
   formatWorkingCopyTitle,
@@ -82,6 +83,42 @@ describe("Rev Label Test Suite", () => {
         changeOffset: null,
       }),
       "xy1234",
+    );
+  });
+
+  it("formats a change ID label with a real offset", () => {
+    assert.equal(
+      formatChangeIdShort({
+        changeId: "xy1234/2" as FullChangeId,
+        changeIdPrefix: "xy",
+        changeIdSuffix: "1234",
+        changeOffset: "2",
+      }),
+      "xy1234/2",
+    );
+  });
+
+  it("formats a change ID label with an unknown offset", () => {
+    assert.equal(
+      formatChangeIdShortWithUnknownOffset({
+        changeId: "xy1234/2" as FullChangeId,
+        changeIdPrefix: "xy",
+        changeIdSuffix: "1234",
+        changeOffset: "2",
+      }),
+      "xy1234/?",
+    );
+  });
+
+  it("prints an unknown offset even when the matched change has none", () => {
+    assert.equal(
+      formatChangeIdShortWithUnknownOffset({
+        changeId: "xy1234" as FullChangeId,
+        changeIdPrefix: "xy",
+        changeIdSuffix: "1234",
+        changeOffset: null,
+      }),
+      "xy1234/?",
     );
   });
 });

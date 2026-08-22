@@ -6,7 +6,7 @@ import type { ExtensionState } from "./extension-state";
 import { parseJJError } from "./errors";
 import { IIPCHandler, IPCServer } from "./ipc/ipc-server";
 import { EmptyDisposable } from "./vscode-utils";
-import { escapeTomlString, formatChangeIdShort } from "./utils";
+import { escapeTomlString, formatChangeIdShort, formatChangeIdShortWithUnknownOffset } from "./utils";
 
 interface JJEditorRequest {
   descriptionPath?: string;
@@ -103,9 +103,11 @@ function parseConflictLabels(content: string): { left?: ConflictSideLabels; righ
  *
  * Only data already loaded in the graph webview is consulted: resolving a merge-editor side
  * title must not spawn a jj process. The commit ID prefix from the conflict marker is used to
- * disambiguate divergent changes that share the same change ID. When the change isn't in the
- * cache (or the graph is showing a different repository), the raw marker label is returned
- * as-is.
+ * disambiguate divergent changes that share the same change ID. When that lookup fails because
+ * the commit ID is stale (e.g. after a rewrite), the change is matched by change ID prefix
+ * alone; the matched node may then be at the wrong offset, which is shown as `/?`. When the
+ * change isn't in the cache at all (or the graph is showing a different repository), the raw
+ * marker label is returned as-is.
  */
 function resolveConflictSideTitle(
   state: ExtensionState | undefined,
@@ -114,11 +116,22 @@ function resolveConflictSideTitle(
 ): string {
   if (state) {
     const repositoryRoot = state.workspaceSCM.getRepositoryFromUri(outputUri)?.repositoryRoot;
-    const changeId = repositoryRoot
-      ? state.graphWebview?.findChangeIdByPrefix(labels.changeIdShort, labels.commitIdShort, repositoryRoot)
-      : undefined;
-    if (changeId) {
-      return formatChangeIdShort(changeId);
+    if (repositoryRoot) {
+      const changeId = state.graphWebview?.findChangeIdByPrefix(
+        labels.changeIdShort,
+        labels.commitIdShort,
+        repositoryRoot,
+      );
+      if (changeId) {
+        return formatChangeIdShort(changeId);
+      }
+      const changeIdWithoutCommit = state.graphWebview?.findChangeIdByChangeIdPrefix(
+        labels.changeIdShort,
+        repositoryRoot,
+      );
+      if (changeIdWithoutCommit) {
+        return formatChangeIdShortWithUnknownOffset(changeIdWithoutCommit);
+      }
     }
   }
   return labels.changeIdShort;
