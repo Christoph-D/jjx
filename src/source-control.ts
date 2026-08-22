@@ -7,12 +7,12 @@ import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-p
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
 import { formatAtRevTitle, formatChangeIdShort, formatDiffTitle, formatWorkingCopyTitle, normalizePath } from "./utils";
-import { toRealPathSpelling, toWorkspaceSpelling } from "./workspace-paths";
+import { toWorkspaceSpelling } from "./workspace-paths";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
 import { extensionDir } from "./config";
-import { JJRepository } from "./repository";
+import { JJRepository, resolveRealpath } from "./repository";
 import { StaleWorkingCopyError } from "./errors";
 import type { ChangeId, FileStatus, FullChangeId, RepositoryStatus, Show, Change } from "./types";
 import { TIMEOUTS, MINIMUM_JJ_VERSION, type JJVersion } from "./constants";
@@ -308,15 +308,7 @@ export class WorkspaceSourceControlManager {
   }
 
   getRepositorySourceControlManagerFromUri(uri: vscode.Uri) {
-    let fsPath = uri.fsPath;
-    try {
-      fsPath = fs.realpathSync.native(fsPath);
-    } catch {
-      // The file may not exist on disk (e.g. a jj:// URI for a deleted file). Re-spell the
-      // path via the workspace folders so it still matches the resolved repository root.
-      fsPath = toRealPathSpelling(fsPath);
-    }
-    const realFsPath = fsPath;
+    const realFsPath = resolveRealpath(uri.fsPath);
     return this.repoSCMs.find((repo) => {
       return !path.relative(repo.repositoryRoot, realFsPath).startsWith("..");
     });
@@ -513,12 +505,7 @@ class RepositorySourceControlManager {
     const repoChangedWatchEvent = filterEvent(
       anyEvent(repoWatcher.onDidCreate, repoWatcher.onDidChange, repoWatcher.onDidDelete),
       (uri) => {
-        let realFsPath = uri.fsPath;
-        try {
-          realFsPath = fs.realpathSync.native(realFsPath);
-        } catch {
-          // File may have been deleted
-        }
+        const realFsPath = resolveRealpath(uri.fsPath);
         const relativePath = path.relative(this.repositoryRoot, realFsPath);
         const segments = relativePath.split(path.sep);
         return !segments.includes(".jj") && !segments.includes(".git");
