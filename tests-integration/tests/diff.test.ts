@@ -132,8 +132,24 @@ test("toggle diff view switches between file and diff editors", async ({ graphFr
   // Diff at revision -> file at that revision
   await aFileItems.nth(1).click();
   await expectDiff("FIRST", "SECOND");
+  // Capture the diff title's short change ID so the single-editor title can be
+  // compared against it after toggling.
+  const diffTab = workbox.getByRole("tab", { name: /a\.txt \(Parent →/ });
+  await expect(diffTab).toBeVisible();
+  const diffLabel = await diffTab.getAttribute("aria-label");
+  const diffChangeId = diffLabel!.match(/a\.txt \(Parent → ([a-z0-9]+)\)/)![1];
   await runCommand(workbox, "Toggle Diff View");
   await expectFile("SECOND");
+
+  // The single editor must name the revision with the same short change ID the
+  // diff editor title used.
+  const singleEditorTab = workbox.getByRole("tab", { name: /a\.txt \([a-z0-9]+\)/ });
+  await expect(singleEditorTab).toBeVisible();
+  const singleEditorLabel = await singleEditorTab.getAttribute("aria-label");
+  const shortChangeId = singleEditorLabel!.match(/a\.txt \(([a-z0-9]+)\)/)![1];
+  expect(shortChangeId).toBe(diffChangeId);
+  const parent = (await testRepo.log("@-"))[0];
+  expect(parent.change_id.startsWith(shortChangeId)).toBe(true);
 
   // File at revision -> diff at that revision
   await runCommand(workbox, "Toggle Diff View");

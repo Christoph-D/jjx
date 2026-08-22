@@ -19,6 +19,7 @@ import {
   changeIdFromLogEntry,
   formatAtRevTitle,
   formatChangeIdShort,
+  formatChangeIdShortStandalone,
   formatDiffTitle,
   formatWorkingCopyTitle,
   fullChangeIdFromString,
@@ -247,7 +248,9 @@ async function resolveDisplayTitle(state: ExtensionState, repo: JJRepository, re
   if (rev !== "@") {
     const changeId = state.graphWebview?.findChangeId(fullChangeIdFromString(rev), repo.repositoryRoot);
     if (changeId) {
-      return formatChangeIdShort(changeId);
+      // The graph pads change ID suffixes to its global prefix width; use the standalone
+      // (per-change) width so the title matches the form diff editor titles use.
+      return formatChangeIdShortStandalone(changeId);
     }
   }
   return repo.resolveRevSuffix(rev);

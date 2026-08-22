@@ -7,6 +7,7 @@ import {
   filepathToRootFileset,
   formatAtRevTitle,
   formatChangeIdShort,
+  formatChangeIdShortStandalone,
   formatChangeIdShortWithUnknownOffset,
   formatDiffTitle,
   formatWorkingCopyLabel,
@@ -194,6 +195,44 @@ describe("Rev Label Test Suite", () => {
         changeOffset: null,
       }),
       "xy1234/?",
+    );
+  });
+
+  it("ignores a graph-padded suffix and renders at the per-change width", () => {
+    // The graph pads suffixes to its global prefix width (here 6), which would render
+    // "xy1234" even though a standalone lookup of this change only needs "xy".
+    assert.equal(
+      formatChangeIdShortStandalone({
+        changeId: "xy1234567890" as FullChangeId,
+        changeIdPrefix: "xy",
+        changeIdSuffix: "1234",
+        changeOffset: null,
+      }),
+      "xy12",
+    );
+  });
+
+  it("keeps a suffix that is shorter than the minimum width", () => {
+    assert.equal(
+      formatChangeIdShortStandalone({
+        changeId: "xy1234567890" as FullChangeId,
+        changeIdPrefix: "xy123456",
+        changeIdSuffix: "",
+        changeOffset: null,
+      }),
+      "xy123456",
+    );
+  });
+
+  it("keeps the offset of a divergent change and ignores it when deriving affixes", () => {
+    assert.equal(
+      formatChangeIdShortStandalone({
+        changeId: "xy1234567890/2" as FullChangeId,
+        changeIdPrefix: "xy",
+        changeIdSuffix: "1234",
+        changeOffset: "2",
+      }),
+      "xy12/2",
     );
   });
 });

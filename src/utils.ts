@@ -84,6 +84,23 @@ export function formatChangeIdShortWithUnknownOffset(changeId: ChangeId): string
   return `${changeId.changeIdPrefix}${changeId.changeIdSuffix}/?`;
 }
 
+/**
+ * Like {@link formatChangeIdShort}, but ignores the precomputed suffix and re-derives the affixes
+ * at the width a standalone lookup of just this change would use (see
+ * {@link maxChangeIdPrefixLength}).
+ */
+export function formatChangeIdShortStandalone(changeId: ChangeId): string {
+  // The change ID of a divergent change carries a `/offset` suffix, which is not part of the
+  // prefix-matching ID the affixes are derived from.
+  const rawChangeId = changeId.changeId.split("/")[0];
+  const affixes = changeIdAffixes(
+    rawChangeId,
+    changeId.changeIdPrefix,
+    maxChangeIdPrefixLength([changeId.changeIdPrefix]),
+  );
+  return formatChangeIdShort({ ...changeId, ...affixes });
+}
+
 // A readable label for the SCM view.
 export function formatWorkingCopyLabel(): string {
   return "Working Copy";
