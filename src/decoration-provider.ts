@@ -4,6 +4,11 @@ import { resolveRev, toJJUri, getParams, type JJUriParams } from "./uri";
 import { normalizePath } from "./utils";
 import { toRealPathSpelling, toWorkspaceSpelling } from "./workspace-paths";
 
+/**
+ * A key identifying a file decoration: the JSON encoding of a decorated path and revision.
+ */
+type DecorationKey = string & { readonly __brand: "DecorationKey" };
+
 export function interdiffKey(from: ChangeId, to: ChangeId): string {
   return `interdiff:${JSON.stringify([from, to])}`;
 }
@@ -34,9 +39,9 @@ const colorOfType = (type: FileStatusType) => {
 export class JJDecorationProvider implements FileDecorationProvider {
   private readonly _onDidChangeDecorations = new EventEmitter<Uri[]>();
   readonly onDidChangeFileDecorations: Event<Uri[]> = this._onDidChangeDecorations.event;
-  private decorations = new Map<string, FileDecoration>();
+  private decorations = new Map<DecorationKey, FileDecoration>();
   private trackedFiles = new Set<string>();
-  private decorationKeysByRepository = new Map<string, Set<string>>();
+  private decorationKeysByRepository = new Map<string, Set<DecorationKey>>();
   private trackedFilesByRepository = new Map<string, Set<string>>();
   private hasData = false;
 
@@ -63,7 +68,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     const repositoryKey = normalizePath(repositoryRoot);
 
     const oldKeys = this.decorationKeysByRepository.get(repositoryKey);
-    const oldBadges = new Map<string, string>();
+    const oldBadges = new Map<DecorationKey, string>();
     if (oldKeys) {
       for (const key of oldKeys) {
         const decoration = this.decorations.get(key);
@@ -74,7 +79,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
       }
     }
 
-    const newKeys = new Set<string>();
+    const newKeys = new Set<DecorationKey>();
     for (const [changeId, fileStatuses] of fileStatusesByChange) {
       for (const fileStatus of fileStatuses) {
         const key = getKey(Uri.file(fileStatus.path).fsPath, changeId);
@@ -132,7 +137,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
       return;
     }
 
-    const changedKeys = new Set<string>();
+    const changedKeys = new Set<DecorationKey>();
     if (oldKeys) {
       for (const key of oldKeys) {
         if (!newKeys.has(key)) {
@@ -155,7 +160,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
 
   removeStaleRepositories(repositoryRoots: Iterable<RealPath>) {
     const activeRepositoryKeys = new Set([...repositoryRoots].map(normalizePath));
-    const changedKeys = new Set<string>();
+    const changedKeys = new Set<DecorationKey>();
     const changedTrackedFiles = new Set<string>();
 
     for (const repoKey of [...this.decorationKeysByRepository.keys()]) {
@@ -256,7 +261,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     return false;
   }
 
-  private fireChanged(changedKeys: Set<string>, changedTrackedFiles: Set<string>) {
+  private fireChanged(changedKeys: Set<DecorationKey>, changedTrackedFiles: Set<string>) {
     const changedUris: Uri[] = [];
     // URIs are keyed by resolved repository paths, but VS Code may know the same file under the
     // workspace folder's path spelling, so decoration changes are announced for both.
@@ -294,11 +299,11 @@ export class JJDecorationProvider implements FileDecorationProvider {
   }
 }
 
-function getKey(fsPath: string, rev: string) {
-  return JSON.stringify({ fsPath: normalizePath(fsPath), rev });
+function getKey(fsPath: string, rev: string): DecorationKey {
+  return JSON.stringify({ fsPath: normalizePath(fsPath), rev }) as DecorationKey;
 }
 
-function parseKey(key: string) {
+function parseKey(key: DecorationKey) {
   return JSON.parse(key) as { fsPath: string; rev: string };
 }
 
