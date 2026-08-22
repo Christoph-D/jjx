@@ -38,6 +38,7 @@ test("SCM view shows repo-relative paths when the workspace root is a symlink", 
   test.skip(process.platform === "win32", "Creating directory symlinks needs privileges on Windows");
 
   const repo = new TestRepo(symlinkedRepoPath);
+  await repo.writeFile("doomed.txt", "doomed content");
   await repo.commitFile("root.txt", "base", "base commit");
   await repo.writeFile("modified.txt", "modified");
   await repo.writeFile("subdir/nested.txt", "nested");
@@ -84,4 +85,16 @@ test("SCM view shows repo-relative paths when the workspace root is a symlink", 
   await nestedItem.first().click();
   const modifiedPane = workbox.locator(".editor-instance .editor.modified .view-lines");
   await expect(modifiedPane.getByText("nested", { exact: true })).toBeVisible();
+
+  // Clicking a deleted file also opens a diff. The file no longer exists on disk, so its
+  // workspace spelling cannot be realpath-resolved onto the repository root spelling.
+  await repo.deleteFile("doomed.txt");
+  const doomedItem = scmView.getByRole("treeitem", { name: /^doomed\.txt/ });
+  // The file is listed once in the Working Copy group (deleted) and once in the Parent Commit
+  // group (added). The working-copy entry comes first in the tree.
+  await expect(doomedItem).toHaveCount(2);
+  await doomedItem.first().click();
+  const originalPane = workbox.locator(".editor-instance .editor.original .view-lines");
+  await expect(originalPane.getByText("doomed content", { exact: true })).toBeVisible();
+  await expect(modifiedPane).toHaveText(/^\s*$/);
 });

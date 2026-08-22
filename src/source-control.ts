@@ -7,7 +7,7 @@ import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-p
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
 import { formatAtRevTitle, formatChangeIdShort, formatDiffTitle, formatWorkingCopyTitle, normalizePath } from "./utils";
-import { toWorkspaceSpelling } from "./workspace-paths";
+import { toRealPathSpelling, toWorkspaceSpelling } from "./workspace-paths";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -312,7 +312,9 @@ export class WorkspaceSourceControlManager {
     try {
       fsPath = fs.realpathSync.native(fsPath);
     } catch {
-      // File may not exist on disk (e.g., jj:// URI)
+      // The file may not exist on disk (e.g. a jj:// URI for a deleted file). Re-spell the
+      // path via the workspace folders so it still matches the resolved repository root.
+      fsPath = toRealPathSpelling(fsPath);
     }
     const realFsPath = fsPath;
     return this.repoSCMs.find((repo) => {
