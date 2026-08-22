@@ -14,6 +14,12 @@ export type RealPath = string & { readonly __brand: "RealPath" };
  */
 export type WorkspacePath = string & { readonly __brand: "WorkspacePath" };
 
+/**
+ * An absolute path in its resolved (realpath) spelling after case normalization
+ * (`normalizePath`), as used for path-keyed comparisons on case-insensitive platforms.
+ */
+export type NormalizedPath = string & { readonly __brand: "NormalizedPath" };
+
 export interface ChangeId {
   // Internal only: A full-length change ID.
   // This ID is meant to be used in jj commands

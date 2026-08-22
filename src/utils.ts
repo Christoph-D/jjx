@@ -1,6 +1,6 @@
 import { basename, isAbsolute, join, relative, sep } from "path";
 
-import type { ChangeId, FileStatusType, FullChangeId } from "./types";
+import type { ChangeId, FileStatusType, FullChangeId, NormalizedPath } from "./types";
 
 export function fullChangeIdFromString(value: string): FullChangeId {
   return value as FullChangeId;
@@ -149,14 +149,14 @@ export function toForwardSlashes(p: string): string {
   return isWindows ? p.replace(/\\/g, "/") : p;
 }
 
-export function normalizePath(path: string): string {
+export function normalizePath(path: string): NormalizedPath {
   // Windows & Mac are currently being handled
   // as case insensitive file systems in VS Code.
   if (isWindows || isMacintosh) {
-    return path.toLowerCase();
+    return path.toLowerCase() as NormalizedPath;
   }
 
-  return path;
+  return path as NormalizedPath;
 }
 
 export function isDescendant(parent: string, descendant: string): boolean {

@@ -1,5 +1,5 @@
 import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, ThemeColor } from "vscode";
-import { ChangeId, FileStatus, FileStatusType, type RealPath } from "./types";
+import { ChangeId, FileStatus, FileStatusType, NormalizedPath, type RealPath } from "./types";
 import { resolveRev, toJJUri, getParams, type JJUriParams } from "./uri";
 import { normalizePath } from "./utils";
 import { toRealPathSpelling, toWorkspaceSpelling } from "./workspace-paths";
@@ -40,9 +40,9 @@ export class JJDecorationProvider implements FileDecorationProvider {
   private readonly _onDidChangeDecorations = new EventEmitter<Uri[]>();
   readonly onDidChangeFileDecorations: Event<Uri[]> = this._onDidChangeDecorations.event;
   private decorations = new Map<DecorationKey, FileDecoration>();
-  private trackedFiles = new Set<string>();
-  private decorationKeysByRepository = new Map<string, Set<DecorationKey>>();
-  private trackedFilesByRepository = new Map<string, Set<string>>();
+  private trackedFiles = new Set<NormalizedPath>();
+  private decorationKeysByRepository = new Map<NormalizedPath, Set<DecorationKey>>();
+  private trackedFilesByRepository = new Map<NormalizedPath, Set<NormalizedPath>>();
   private hasData = false;
 
   /**
@@ -59,12 +59,10 @@ export class JJDecorationProvider implements FileDecorationProvider {
   onRefresh(
     repositoryRoot: RealPath,
     fileStatusesByChange: Map<string, FileStatus[]>,
-    trackedFiles: Set<string>,
+    trackedFiles: Set<NormalizedPath>,
     conflictedFiles: Map<string, Set<string>>,
     untrackedFiles: FileStatus[],
   ) {
-    trackedFiles = new Set([...trackedFiles].map(normalizePath));
-
     const repositoryKey = normalizePath(repositoryRoot);
 
     const oldKeys = this.decorationKeysByRepository.get(repositoryKey);
@@ -161,7 +159,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
   removeStaleRepositories(repositoryRoots: Iterable<RealPath>) {
     const activeRepositoryKeys = new Set([...repositoryRoots].map(normalizePath));
     const changedKeys = new Set<DecorationKey>();
-    const changedTrackedFiles = new Set<string>();
+    const changedTrackedFiles = new Set<NormalizedPath>();
 
     for (const repoKey of [...this.decorationKeysByRepository.keys()]) {
       if (activeRepositoryKeys.has(repoKey)) {
@@ -231,8 +229,8 @@ export class JJDecorationProvider implements FileDecorationProvider {
     return this.decorations.get(key);
   }
 
-  private updateTrackedFiles(repositoryKey: string, newTracked: Set<string>) {
-    const changed = new Set<string>();
+  private updateTrackedFiles(repositoryKey: NormalizedPath, newTracked: Set<NormalizedPath>) {
+    const changed = new Set<NormalizedPath>();
     const oldTracked = this.trackedFilesByRepository.get(repositoryKey);
     if (oldTracked) {
       for (const file of oldTracked) {
@@ -252,7 +250,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     return changed;
   }
 
-  private isTrackedElsewhere(excludeRepoKey: string, file: string) {
+  private isTrackedElsewhere(excludeRepoKey: NormalizedPath, file: NormalizedPath) {
     for (const [repoKey, tracked] of this.trackedFilesByRepository) {
       if (repoKey !== excludeRepoKey && tracked.has(file)) {
         return true;
@@ -261,7 +259,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     return false;
   }
 
-  private fireChanged(changedKeys: Set<DecorationKey>, changedTrackedFiles: Set<string>) {
+  private fireChanged(changedKeys: Set<DecorationKey>, changedTrackedFiles: Set<NormalizedPath>) {
     const changedUris: Uri[] = [];
     // URIs are keyed by resolved repository paths, but VS Code may know the same file under the
     // workspace folder's path spelling, so decoration changes are announced for both.
@@ -304,7 +302,7 @@ function getKey(fsPath: string, rev: string): DecorationKey {
 }
 
 function parseKey(key: DecorationKey) {
-  return JSON.parse(key) as { fsPath: string; rev: string };
+  return JSON.parse(key) as { fsPath: NormalizedPath; rev: string };
 }
 
 function parseComparisonRev(rev: string): { from: ChangeId; to: ChangeId; kind: "diff" | "interdiff" } | undefined {

@@ -25,6 +25,7 @@ import type {
   ChangeId,
   FileStatus,
   FullChangeId,
+  NormalizedPath,
   RealPath,
   RepositoryStatus,
   Show,
@@ -451,7 +452,7 @@ class RepositorySourceControlManager {
   operationId: string | undefined;
   fileStatusesByChange: Map<string, FileStatus[]> = new Map();
   conflictedFilesByChange: Map<string, Set<string>> = new Map();
-  trackedFiles: Set<string> = new Set();
+  trackedFiles: Set<NormalizedPath> = new Set();
   status: RepositoryStatus | undefined;
   parentShowResults: Map<string, Show> = new Map();
   private watcherDebounceTimer: NodeJS.Timeout | undefined;
@@ -641,7 +642,7 @@ class RepositorySourceControlManager {
   }
 
   async updateState(status: RepositoryStatus, token: vscode.CancellationToken, operationId?: string) {
-    const newTrackedFiles = new Set<string>();
+    const newTrackedFiles = new Set<NormalizedPath>();
     const newParentShowResults = new Map<string, Show>();
     const newFileStatusesByChange = new Map<string, FileStatus[]>([["@", status.fileStatuses]]);
     const newConflictedFilesByChange = new Map<string, Set<string>>([["@", status.conflictedFiles]]);
@@ -655,7 +656,7 @@ class RepositorySourceControlManager {
       let currentPath = this.repositoryRoot + path.sep;
       for (const p of pathParts) {
         currentPath += p;
-        newTrackedFiles.add(currentPath);
+        newTrackedFiles.add(normalizePath(currentPath));
         currentPath += path.sep;
       }
     }
