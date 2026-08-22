@@ -1,5 +1,59 @@
 # Change Log
 
+## 1.14.0
+
+### New Features
+
+- **Range in the graph view** - Shift+click now selects a range of changes. Selecting individual changes moved to
+  Ctrl+click (Cmd+click on macOS)
+- **Editable working-copy side for parent-commit diffs** - Opening the diff of a parent-commit file that is unchanged in
+  the working copy now shows the editable working-copy file on the right side
+
+### Bug Fixes
+
+**Conflict handling**
+
+- Fall back to a plain editor for conflicts with more than 2 sides
+- Perform the standard click action instead of opening the merge editor for conflicted files in a selected commit
+  because such conflicts cannot be merged in the working copy
+- Show conflicted file status correctly in the selected commit
+- Show conflicted file status correctly in the graph view for changed files
+- Show the conflict badge for files whose path casing differs on case-insensitive file systems
+
+**Merge editor side titles**
+
+- Use the shortest change IDs in merge editor side titles
+- Disambiguate divergent changes in merge editor side titles
+- Parse conflict marker labels for changes without a description
+
+**Editor titles**
+
+- Show the short change ID in file-at-revision editor titles so they match the corresponding diff editor titles
+
+**File paths**
+
+- Fix path case normalization on macOS for file decorations
+- Preserve file names containing literal backslashes on macOS and Linux instead
+
+**Graph view and menus**
+
+- Move Add/Remove Parent items to the end of the Rebase With Descendants submenu
+- Show "All" in rebase menu labels for multi-selection
+- Better align the status letters of changed files
+
+**SCM view**
+
+- Show repo-relative paths instead of absolute paths when the workspace root is a symlinked directory
+
+**Performance**
+
+- Memoize `show()`/`showAll()` results per (revset, operation id) so concurrent resolution of the same revision spawns
+  at most one `jj log` process
+
+### Internal
+
+- **More robust path handling** - Distinguish resolved and workspace-folder paths in the type system
+
 ## 1.13.0
 
 ### New Features
