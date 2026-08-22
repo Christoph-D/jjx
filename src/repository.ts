@@ -58,7 +58,7 @@ import {
 } from "./jj-editor";
 import { TIMEOUTS, type JJVersion, versionAtLeast, JJ_VERSION_WITH_TAG_TRACKING } from "./constants";
 import { withDivergenceHandling } from "./divergence-handling";
-import { resolveRepositoryPath } from "./workspace-paths";
+import { resolveRepositoryPath, toWorkspaceUri } from "./workspace-paths";
 import type {
   FileStatus,
   FileStatusType,
@@ -1430,7 +1430,7 @@ export class JJRepository {
 
   async getCommitUrl(changeId: FullChangeId): Promise<string | null> {
     try {
-      const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
+      const config = vscode.workspace.getConfiguration("jjx", toWorkspaceUri(this.repositoryRoot));
       const baseWebURL = config.get<string>("baseWebURL") ?? "";
 
       if (baseWebURL) {
@@ -1756,7 +1756,7 @@ export class JJRepository {
   }
 
   async tryAutoUpdateStale(token?: vscode.CancellationToken): Promise<boolean> {
-    const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(this.repositoryRoot));
+    const config = vscode.workspace.getConfiguration("jjx", toWorkspaceUri(this.repositoryRoot));
     if (!config.get<boolean>("autoUpdateStaleWorkspace")) {
       return false;
     }

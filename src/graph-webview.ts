@@ -30,6 +30,7 @@ import { getLogRevset, getElidedVisibleImmutableParents } from "./config";
 import { DEFAULT_LOG_LIMIT } from "./constants";
 import { SplitWebview } from "./split-webview";
 import { toJJUri } from "./uri";
+import { joinRepositoryPath, repositoryRelativePath, toWorkspaceUri } from "./workspace-paths";
 
 const rootChangeId = "z".repeat(32);
 
@@ -305,7 +306,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             "forget and delete workspace",
             async () => {
               await repo.forgetWorkspace(message.workspace);
-              await vscode.workspace.fs.delete(vscode.Uri.file(root), { useTrash: false, recursive: true });
+              await vscode.workspace.fs.delete(toWorkspaceUri(root), { useTrash: false, recursive: true });
             },
           );
           break;
@@ -594,8 +595,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           break;
         case "openFileDiff": {
           const { changeId, path: relPath, status, renamedFrom } = message;
-          const absPath = path.join(repo.repositoryRoot, relPath);
-          const fileUri = vscode.Uri.file(absPath);
+          const absPath = joinRepositoryPath(repo.repositoryRoot, relPath);
+          const fileUri = toWorkspaceUri(absPath);
 
           let beforeParams: Parameters<typeof toJJUri>[1];
           let afterParams: Parameters<typeof toJJUri>[1];
@@ -1092,7 +1093,7 @@ function parseJJLogJson(
       repositoryRoot !== undefined && entry.fileStatuses
         ? entry.fileStatuses.map((f) => ({
             type: f.type,
-            path: toForwardSlashes(path.relative(repositoryRoot, f.path)),
+            path: toForwardSlashes(repositoryRelativePath(repositoryRoot, f.path)),
             ...(f.renamedFrom ? { renamedFrom: toForwardSlashes(f.renamedFrom) } : {}),
             conflict: f.isConflict ?? f.type === "X",
           }))

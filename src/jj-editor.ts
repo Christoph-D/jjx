@@ -7,6 +7,7 @@ import { parseJJError } from "./errors";
 import { IIPCHandler, IPCServer } from "./ipc/ipc-server";
 import { EmptyDisposable } from "./vscode-utils";
 import { escapeTomlString, formatChangeIdShort, formatChangeIdShortWithUnknownOffset } from "./utils";
+import { toWorkspaceUri } from "./workspace-paths";
 
 interface JJEditorRequest {
   descriptionPath?: string;
@@ -259,7 +260,7 @@ export class JJEditor implements IIPCHandler {
 
   async handle({ descriptionPath, sessionId }: JJEditorRequest): Promise<boolean> {
     if (descriptionPath) {
-      const uri = Uri.file(descriptionPath);
+      const uri = toWorkspaceUri(descriptionPath);
       const doc = await workspace.openTextDocument(uri);
       await window.showTextDocument(doc, { preview: false });
 
@@ -303,7 +304,7 @@ export class JJMergeEditor implements IIPCHandler {
   }
 
   async handle(request: MergeEditorRequest): Promise<boolean> {
-    const outputUri = Uri.file(request.realPath);
+    const outputUri = toWorkspaceUri(request.realPath);
 
     const leftBasename = path.basename(request.left);
     const baseBasename = path.basename(request.base);
@@ -319,9 +320,9 @@ export class JJMergeEditor implements IIPCHandler {
       fs.copyFile(request.right, rightCopy),
     ]);
 
-    const leftCopyUri = Uri.file(leftCopy);
-    const baseCopyUri = Uri.file(baseCopy);
-    const rightCopyUri = Uri.file(rightCopy);
+    const leftCopyUri = toWorkspaceUri(leftCopy);
+    const baseCopyUri = toWorkspaceUri(baseCopy);
+    const rightCopyUri = toWorkspaceUri(rightCopy);
 
     let input1: { uri: Uri; title: string; description?: string; detail?: string } = {
       uri: leftCopyUri,

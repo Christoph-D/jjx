@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
 import type { JJRepository } from "./repository";
-import { resolveRepositoryPath, toRealPathSpelling } from "./workspace-paths";
+import { repositoryRelativePath, resolveRepositoryPath, toRealPathSpelling, toWorkspaceUri } from "./workspace-paths";
 import type { ExtensionState } from "./extension-state";
 import type { ChangeId, FileStatus, FullChangeId } from "./types";
 import { OperationTreeItem } from "./operation-log-tree-view";
@@ -259,30 +259,30 @@ async function resolveDisplayTitle(state: ExtensionState, repo: JJRepository, re
 async function openFileDiff(repo: JJRepository, filePath: string, changeId: FullChangeId | "@"): Promise<void> {
   // File statuses hold resolved repository paths, while the given path may use the workspace
   // folder's path spelling.
-  filePath = toRealPathSpelling(filePath);
+  const resolvedPath = toRealPathSpelling(filePath);
   const { change, fileStatuses } = await repo.show(changeId);
-  const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
+  const fileStatus = fileStatuses.find((file) => pathEquals(file.path, resolvedPath));
   const useWorkingCopyRight =
     changeId !== "@" &&
     shouldOpenWorkingCopyRightSide(
       changeId,
       fileStatus?.type,
-      await repo.isFileUnchangedInWorkingCopy(changeId, filePath),
+      await repo.isFileUnchangedInWorkingCopy(changeId, resolvedPath),
     );
 
   const beforeUri =
     fileStatus?.type === "A"
-      ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
-      : toJJUri(vscode.Uri.file(filePath), {
+      ? toJJUri(toWorkspaceUri(filePath), { deleted: true })
+      : toJJUri(toWorkspaceUri(filePath), {
           diffOriginalRev: changeId,
           ...(fileStatus?.renamedFrom ? { renamedFrom: fileStatus.renamedFrom } : {}),
         });
   const afterUri =
     fileStatus?.type === "D"
-      ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
+      ? toJJUri(toWorkspaceUri(filePath), { deleted: true })
       : changeId === "@" || useWorkingCopyRight
-        ? vscode.Uri.file(filePath)
-        : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
+        ? toWorkspaceUri(filePath)
+        : toJJUri(toWorkspaceUri(filePath), { rev: changeId });
 
   const toRev = changeId === "@" ? formatWorkingCopyTitle() : formatChangeIdShort(change.changeId);
 
@@ -309,7 +309,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
       await vscode.commands.executeCommand("workbench.action.openSettings", {
         query: "git.enabled",
       });
-      await vscode.commands.executeCommand("_workbench.action.openFolderSettings", vscode.Uri.file(repoPath));
+      await vscode.commands.executeCommand("_workbench.action.openFolderSettings", toWorkspaceUri(repoPath));
     }),
   );
 
@@ -317,7 +317,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
     context,
     "jj.openFileInWorkingCopyResourceState",
     async (resourceState: vscode.SourceControlResourceState) => {
-      await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(resourceState.resourceUri.fsPath), {});
+      await vscode.commands.executeCommand("vscode.open", toWorkspaceUri(resourceState.resourceUri.fsPath), {});
     },
     { errorPrefix: "Failed to open file" },
   );
@@ -354,7 +354,10 @@ export function registerPreInitCommands(state: ExtensionState): void {
     if (!repo) {
       throw new Error("Repository not found");
     }
-    const relativePath = path.relative(repo.repositoryRoot, toRealPathSpelling(resourceState.resourceUri.fsPath));
+    const relativePath = repositoryRelativePath(
+      repo.repositoryRoot,
+      toRealPathSpelling(resourceState.resourceUri.fsPath),
+    );
     await vscode.env.clipboard.writeText(relativePath);
   });
 
@@ -366,7 +369,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
       if (!uri) {
         return;
       }
-      await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(uri.fsPath), {});
+      await vscode.commands.executeCommand("vscode.open", toWorkspaceUri(uri.fsPath), {});
     },
     { errorPrefix: "Failed to open file" },
   );
@@ -396,7 +399,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
       throw new Error("Merge editor not initialized");
     }
     const fsPath = resolveRepositoryPath(uri.fsPath);
-    const relativePath = path.relative(repo.repositoryRoot, fsPath);
+    const relativePath = repositoryRelativePath(repo.repositoryRoot, fsPath);
     const args = ["resolve", "--tool=jjx-vscode-merge", ...configs.flatMap((c) => ["--config", c])];
     if (changeId) {
       args.push("-r", changeId);
@@ -424,7 +427,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
         const cause = stderr.match(/Caused by: (.+)/)?.[1];
         const message = cause ?? "The conflict has more than 2 sides. At most 2 sides are supported.";
         void vscode.window.showWarningMessage(`${message} Please edit the conflict markers manually.`);
-        await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(fsPath), {});
+        await vscode.commands.executeCommand("vscode.open", toWorkspaceUri(fsPath), {});
         return;
       }
       throw e;
@@ -457,7 +460,7 @@ export function registerInitCommands(state: ExtensionState): void {
     context,
     "jj.openFileResourceState",
     async (resourceState: vscode.SourceControlResourceState) => {
-      await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(resourceState.resourceUri.fsPath), {
+      await vscode.commands.executeCommand("vscode.open", toWorkspaceUri(resourceState.resourceUri.fsPath), {
         preserveFocus: false,
         preview: false,
         viewColumn: vscode.ViewColumn.Active,
@@ -622,7 +625,7 @@ export function registerInitCommands(state: ExtensionState): void {
       const fileCount = resourceStates.length;
       const confirmMessage =
         fileCount === 1
-          ? `Are you sure you want to discard changes in '${path.relative(repository.repositoryRoot, statuses[0].path)}'?`
+          ? `Are you sure you want to discard changes in '${repositoryRelativePath(repository.repositoryRoot, statuses[0].path)}'?`
           : `Are you sure you want to discard changes in ${fileCount} files?`;
       const confirm = await vscode.window.showWarningMessage(confirmMessage, { modal: true }, "Discard");
       if (confirm !== "Discard") {
@@ -942,7 +945,7 @@ export function registerInitCommands(state: ExtensionState): void {
         if (!(item instanceof OperationTreeItem)) {
           throw new Error("OperationTreeItem expected");
         }
-        const repository = state.workspaceSCM.getRepositoryFromUri(vscode.Uri.file(item.repositoryRoot));
+        const repository = state.workspaceSCM.getRepositoryFromUri(toWorkspaceUri(item.repositoryRoot));
         if (!repository) {
           throw new Error("Repository not found");
         }
@@ -986,7 +989,7 @@ export function registerInitCommands(state: ExtensionState): void {
         throw new Error("Repository not found");
       }
       const filepath = resolveRepositoryPath(resourceState.resourceUri.fsPath);
-      const relativePath = path.relative(scm.repositoryRoot, filepath);
+      const relativePath = repositoryRelativePath(scm.repositoryRoot, filepath);
       const isDirectory = await fs.promises.stat(filepath).then(
         (stat) => stat.isDirectory(),
         () => false,

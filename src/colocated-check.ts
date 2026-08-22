@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import type { ExtensionState } from "./extension-state";
+import { toWorkspaceUri } from "./workspace-paths";
 
 async function fileExists(uri: vscode.Uri): Promise<boolean> {
   try {
@@ -31,11 +32,11 @@ export async function registerColocatedCheck(
         continue;
       }
 
-      const jjDirExists = await fileExists(vscode.Uri.joinPath(vscode.Uri.file(repoRoot), ".jj"));
-      const gitDirExists = await fileExists(vscode.Uri.joinPath(vscode.Uri.file(repoRoot), ".git"));
+      const jjDirExists = await fileExists(vscode.Uri.joinPath(toWorkspaceUri(repoRoot), ".jj"));
+      const gitDirExists = await fileExists(vscode.Uri.joinPath(toWorkspaceUri(repoRoot), ".git"));
 
       if (jjDirExists && gitDirExists) {
-        const isGitEnabled = vscode.workspace.getConfiguration("git", vscode.Uri.file(repoRoot)).get("enabled");
+        const isGitEnabled = vscode.workspace.getConfiguration("git", toWorkspaceUri(repoRoot)).get("enabled");
 
         if (isGitEnabled) {
           colocatedRepos.push(repoRoot);

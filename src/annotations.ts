@@ -3,6 +3,7 @@ import type { ChangeWithDetails } from "./types";
 import { resolveRev } from "./uri";
 import type { ExtensionState } from "./extension-state";
 import { relativeTime } from "./relative-time";
+import { toWorkspaceUri } from "./workspace-paths";
 
 export function registerAnnotations(state: ExtensionState): void {
   const context = state.context;
@@ -29,7 +30,7 @@ export function registerAnnotations(state: ExtensionState): void {
     if (!repository) {
       return;
     }
-    const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repository.repositoryRoot));
+    const config = vscode.workspace.getConfiguration("jjx", toWorkspaceUri(repository.repositoryRoot));
     if (!config.get("enableAnnotations")) {
       editor.setDecorations(annotationDecoration, []);
       return;
@@ -99,7 +100,7 @@ export function registerAnnotations(state: ExtensionState): void {
     if (!repository) {
       return;
     }
-    const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repository.repositoryRoot));
+    const config = vscode.workspace.getConfiguration("jjx", toWorkspaceUri(repository.repositoryRoot));
     if (!config.get("enableAnnotations")) {
       annotateInfo = undefined;
       return;

@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import * as vscode from "vscode";
 import { remapPathSpelling, type PathSpellingMapping } from "./utils";
 import type { RealPath, WorkspacePath } from "./types";
@@ -77,4 +78,27 @@ export function resolveRepositoryPath(fsPath: string): RealPath {
  */
 export function toWorkspaceSpelling(fsPath: string): WorkspacePath {
   return (remapPathSpelling(fsPath, workspaceFolderMappings().byRealPath) ?? fsPath) as WorkspacePath;
+}
+
+/**
+ * Constructs a `file://` URI with the workspace folder's path spelling so it matches the URIs
+ * VS Code itself uses for editors, tabs, and decorations.
+ */
+export function toWorkspaceUri(fsPath: string): vscode.Uri {
+  return vscode.Uri.file(toWorkspaceSpelling(fsPath));
+}
+
+/**
+ * Returns `fsPath` relative to `repositoryRoot`.
+ */
+export function repositoryRelativePath(repositoryRoot: RealPath, fsPath: RealPath): string {
+  return path.relative(repositoryRoot, fsPath);
+}
+
+/**
+ * Joins a repository-relative path onto the resolved repository root, keeping the resolved
+ * spelling.
+ */
+export function joinRepositoryPath(repositoryRoot: RealPath, relativePath: string): RealPath {
+  return asRealPath(path.join(repositoryRoot, relativePath));
 }

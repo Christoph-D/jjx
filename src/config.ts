@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import * as os from "os";
 import which from "which";
 import { TIMEOUTS } from "./constants";
+import { toWorkspaceUri } from "./workspace-paths";
 
 export let extensionDir = "";
 
@@ -23,7 +24,7 @@ export function getCommandTimeout(repositoryRoot: string, defaultTimeout: number
   if (defaultTimeout === 0) {
     return 0;
   }
-  const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
+  const config = vscode.workspace.getConfiguration("jjx", toWorkspaceUri(repositoryRoot));
   const configuredTimeout = config.get<number | null>("commandTimeout");
   if (configuredTimeout !== null && configuredTimeout !== undefined) {
     return configuredTimeout;
@@ -40,7 +41,7 @@ export async function getJJPath(
 ): Promise<{ filepath: string; source: "configured" | "path" | "common" }> {
   const config = vscode.workspace.getConfiguration(
     "jjx",
-    workspaceFolder !== undefined ? vscode.Uri.file(workspaceFolder) : undefined,
+    workspaceFolder !== undefined ? toWorkspaceUri(workspaceFolder) : undefined,
   );
   const configuredPath = config.get<string>("jjPath");
 
@@ -86,6 +87,6 @@ export function getLogRevset(): string {
 }
 
 export function getElidedVisibleImmutableParents(repositoryRoot: string): number {
-  const config = vscode.workspace.getConfiguration("jjx", vscode.Uri.file(repositoryRoot));
+  const config = vscode.workspace.getConfiguration("jjx", toWorkspaceUri(repositoryRoot));
   return config.get<number>("elidedVisibleImmutableParents") ?? 1;
 }
