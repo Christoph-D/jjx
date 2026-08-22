@@ -790,7 +790,7 @@ class RepositorySourceControlManager {
             changeId,
             toRev: formatChangeIdShort(this.selectedCommitShowResult.change.changeId),
             fileClickAction,
-            conflictedFiles: this.conflictedFilesByChange.get(changeId),
+            conflictedFiles: this.selectedCommitShowResult.conflictedFiles,
           },
         );
       }
@@ -829,10 +829,15 @@ class RepositorySourceControlManager {
     }
 
     const combinedFileStatusesByChange = new Map(this.fileStatusesByChange);
+    const combinedConflictedFilesByChange = new Map(this.conflictedFilesByChange);
     if (this.selectedCommitShowResult && this.selectedCommitChangeId) {
       combinedFileStatusesByChange.set(
         this.selectedCommitShowResult.change.changeId.changeId,
         this.selectedCommitShowResult.fileStatuses,
+      );
+      combinedConflictedFilesByChange.set(
+        this.selectedCommitShowResult.change.changeId.changeId,
+        this.selectedCommitShowResult.conflictedFiles,
       );
     }
     if (this.diffSelection && this.diffFileStatuses) {
@@ -847,7 +852,7 @@ class RepositorySourceControlManager {
       this.repositoryRoot,
       combinedFileStatusesByChange,
       this.trackedFiles,
-      this.conflictedFilesByChange,
+      combinedConflictedFilesByChange,
       this.status.untrackedFiles,
     );
   }
