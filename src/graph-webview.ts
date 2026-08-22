@@ -1093,7 +1093,7 @@ function parseJJLogJson(
             type: f.type,
             path: path.relative(repositoryRoot, f.path).replace(/\\/g, "/"),
             ...(f.renamedFrom ? { renamedFrom: f.renamedFrom.replace(/\\/g, "/") } : {}),
-            conflict: f.type === "X",
+            conflict: f.isConflict ?? f.type === "X",
           }))
         : undefined;
 

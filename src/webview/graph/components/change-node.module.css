@@ -166,7 +166,7 @@
 
 .changedFileStatus {
   display: inline-block;
-  width: 1.2em;
+  min-width: 1.2em;
   font-weight: bold;
   text-align: left;
   margin-right: 6px;
@@ -189,7 +189,8 @@
   color: var(--vscode-jjDecoration-renamedResourceForeground, var(--vscode-gitDecoration-renamedResourceForeground));
 }
 
-.changedFile[data-status="x"] {
+.changedFile[data-status="x"],
+.changedFile[data-conflict] {
   color: var(
     --vscode-jjDecoration-conflictingResourceForeground,
     var(--vscode-gitDecoration-conflictingResourceForeground)

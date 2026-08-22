@@ -29,6 +29,10 @@ export type FileStatus = {
   file: string;
   path: string;
   renamedFrom?: string;
+  // True when the file is listed in the change's conflicted files, even if it
+  // also has a regular diff entry (e.g. in merges). Synthesized conflict
+  // ("X") entries always carry this flag.
+  isConflict?: boolean;
 };
 
 export interface Change {

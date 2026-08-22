@@ -21,6 +21,8 @@ function normalizePath(p: string): string {
  * Parses `jj` diff file entries into structured {@link FileStatus} objects.
  * Files present in `conflictedPaths` but absent from `diffFiles` are
  * synthesized as conflict (`X`) entries, mirroring `jj`'s status output.
+ * Every file listed in `conflictedPaths` — including ones that also appear in
+ * `diffFiles` with a plain status letter — is flagged via `isConflict`.
  */
 export function parseFileStatuses(
   diffFiles: DiffFileEntry[],
@@ -30,11 +32,19 @@ export function parseFileStatuses(
   const fileStatuses: FileStatus[] = [];
   const fileStatusesByPath = new Map<string, FileStatus>();
 
+  const conflictedFiles = new Set<string>();
+  for (const conflictedPath of conflictedPaths || []) {
+    const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
+    const fullPath = path.join(repositoryRoot, normalizedPath);
+    conflictedFiles.add(normalizePath(fullPath));
+  }
+
   for (const diffFile of diffFiles) {
     const statusChar = diffFile.status_char as FileStatusType;
     const targetPath = path.normalize(diffFile.target_path).replace(/\\/g, "/");
     const sourcePath = path.normalize(diffFile.source_path).replace(/\\/g, "/");
     const fullPath = path.join(repositoryRoot, targetPath);
+    const isConflict = conflictedFiles.has(normalizePath(fullPath));
 
     let fileStatus: FileStatus;
     if (statusChar === "R" || statusChar === "C") {
@@ -43,32 +53,34 @@ export function parseFileStatuses(
         file: path.basename(targetPath),
         path: fullPath,
         renamedFrom: sourcePath,
+        isConflict,
       };
     } else {
       fileStatus = {
         type: statusChar,
         file: path.basename(targetPath),
         path: fullPath,
+        isConflict,
       };
     }
     fileStatuses.push(fileStatus);
     fileStatusesByPath.set(normalizePath(fullPath), fileStatus);
   }
 
-  const conflictedFiles = new Set<string>();
   for (const conflictedPath of conflictedPaths || []) {
     const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
     const fullPath = path.join(repositoryRoot, normalizedPath);
-    conflictedFiles.add(normalizePath(fullPath));
 
     const normalizedFullPath = normalizePath(fullPath);
     if (!fileStatusesByPath.has(normalizedFullPath)) {
-      fileStatuses.push({
+      const fileStatus: FileStatus = {
         type: "X",
         file: path.basename(normalizedPath),
         path: fullPath,
-      });
-      fileStatusesByPath.set(normalizedFullPath, fileStatuses[fileStatuses.length - 1]);
+        isConflict: true,
+      };
+      fileStatuses.push(fileStatus);
+      fileStatusesByPath.set(normalizedFullPath, fileStatus);
     }
   }
 

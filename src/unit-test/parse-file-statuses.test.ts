@@ -74,6 +74,7 @@ describe("parseFileStatuses Test Suite", () => {
     const synth = fileStatuses.find((f) => f.type === "X");
     assert.ok(synth, "expected synthesized X entry");
     assert.equal(synth.file, "conflict-only.txt");
+    assert.equal(synth.isConflict, true);
     assert.equal(conflictedFiles.size, 1);
   });
 
@@ -86,6 +87,25 @@ describe("parseFileStatuses Test Suite", () => {
 
     assert.equal(fileStatuses.length, 1);
     assert.equal(fileStatuses[0].type, "M");
+    // The conflict flag is carried even though the entry keeps its plain letter.
+    assert.equal(fileStatuses[0].isConflict, true);
+  });
+
+  it("flags conflicted paths appearing in diff with a plain status letter", () => {
+    const { fileStatuses } = parseFileStatuses(
+      [
+        diffFile({ status_char: "A", target_path: "merge-conflict.txt" }),
+        diffFile({ status_char: "M", target_path: "plain.txt" }),
+      ],
+      ["merge-conflict.txt"],
+      repoRoot,
+    );
+
+    assert.equal(fileStatuses.length, 2);
+    assert.equal(fileStatuses[0].type, "A");
+    assert.equal(fileStatuses[0].isConflict, true);
+    assert.equal(fileStatuses[1].type, "M");
+    assert.equal(fileStatuses[1].isConflict, false);
   });
 
   it("returns empty results for empty input", () => {

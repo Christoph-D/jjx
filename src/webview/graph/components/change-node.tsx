@@ -555,6 +555,7 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Regu
           data-role="changed-file"
           data-path={f.path}
           data-status={f.type.toLowerCase()}
+          data-conflict={f.conflict ? "" : undefined}
           onClick={(e) => {
             e.stopPropagation();
             postMessage({
@@ -566,7 +567,10 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Regu
             });
           }}
         >
-          <span class={styles.changedFileStatus}>{f.type}</span>
+          <span class={styles.changedFileStatus}>
+            {f.type}
+            {f.conflict && f.type !== "X" ? "!" : ""}
+          </span>
           <span class={styles.changedFilePath}>{f.path}</span>
         </div>
       ))}
