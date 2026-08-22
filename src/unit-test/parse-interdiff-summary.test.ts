@@ -31,6 +31,14 @@ describe("parseInterdiffSummary Test Suite", () => {
     assert.equal(fileStatuses[1].file, "b.ts");
   });
 
+  it("preserves literal backslashes in file names on macOS/Linux", () => {
+    const output = "M literal\\backslash.txt";
+    const fileStatuses = parseInterdiffSummary(output, repoRoot);
+
+    assert.equal(fileStatuses.length, 1);
+    assert.equal(fileStatuses[0].file, process.platform === "win32" ? "backslash.txt" : "literal\\backslash.txt");
+  });
+
   it("ignores blank lines and trims whitespace", () => {
     const output = "\n  M a.txt  \n\n";
     const fileStatuses = parseInterdiffSummary(output, repoRoot);

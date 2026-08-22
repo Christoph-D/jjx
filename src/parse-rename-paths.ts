@@ -1,4 +1,5 @@
 import path from "path";
+import { toForwardSlashes } from "./utils";
 
 const renameRegex = /^(.*)\{\s*(.*?)\s*=>\s*(.*?)\s*\}(.*)$/;
 
@@ -8,8 +9,8 @@ export function parseRenamePaths(file: string): { fromPath: string; toPath: stri
     const [_, prefix, fromPart, toPart, suffix] = renameMatch;
     const rawFromPath = prefix + fromPart + suffix;
     const rawToPath = prefix + toPart + suffix;
-    const fromPath = path.normalize(rawFromPath).replace(/\\/g, "/");
-    const toPath = path.normalize(rawToPath).replace(/\\/g, "/");
+    const fromPath = toForwardSlashes(path.normalize(rawFromPath));
+    const toPath = toForwardSlashes(path.normalize(rawToPath));
     return { fromPath, toPath };
   }
   return null;

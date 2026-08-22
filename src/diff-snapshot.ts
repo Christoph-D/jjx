@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import { toForwardSlashes } from "./utils";
 
 // Windows file systems don't track the Unix executable bit, so file modes cannot be collected
 // reliably there; the Split view's mode-change entries stay disabled on Windows.
@@ -73,7 +74,7 @@ async function readDirRecursive(
   }
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-    const relativePath = path.relative(base, fullPath).replace(/\\/g, "/");
+    const relativePath = toForwardSlashes(path.relative(base, fullPath));
     if (entry.isDirectory()) {
       await readDirRecursive(fullPath, base, files, modes);
     } else if (entry.isSymbolicLink()) {

@@ -13,6 +13,7 @@ import {
   fullChangeId,
   maxChangeIdPrefixLength,
   shouldOpenWorkingCopyRightSide,
+  toForwardSlashes,
 } from "./utils";
 import type { ChangeId, FullChangeId } from "./types";
 import { assignLanes } from "./lane-assigner";
@@ -1091,8 +1092,8 @@ function parseJJLogJson(
       repositoryRoot !== undefined && entry.fileStatuses
         ? entry.fileStatuses.map((f) => ({
             type: f.type,
-            path: path.relative(repositoryRoot, f.path).replace(/\\/g, "/"),
-            ...(f.renamedFrom ? { renamedFrom: f.renamedFrom.replace(/\\/g, "/") } : {}),
+            path: toForwardSlashes(path.relative(repositoryRoot, f.path)),
+            ...(f.renamedFrom ? { renamedFrom: toForwardSlashes(f.renamedFrom) } : {}),
             conflict: f.isConflict ?? f.type === "X",
           }))
         : undefined;

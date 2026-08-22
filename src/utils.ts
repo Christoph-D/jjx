@@ -142,6 +142,13 @@ export function changeIdFromLogEntry(
 const isMacintosh = process.platform === "darwin";
 export const isWindows = process.platform === "win32";
 
+/**
+ * Converts OS path separators to the forward slashes jj uses for repo-relative paths.
+ */
+export function toForwardSlashes(p: string): string {
+  return isWindows ? p.replace(/\\/g, "/") : p;
+}
+
 export function normalizePath(path: string): string {
   // Windows & Mac are currently being handled
   // as case insensitive file systems in VS Code.

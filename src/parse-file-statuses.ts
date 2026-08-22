@@ -1,5 +1,5 @@
 import path from "path";
-import { normalizePath } from "./utils";
+import { normalizePath, toForwardSlashes } from "./utils";
 import type { DiffFileEntry, FileStatus, FileStatusType } from "./types";
 
 export type ParsedFileStatuses = {
@@ -25,15 +25,15 @@ export function parseFileStatuses(
 
   const conflictedFiles = new Set<string>();
   for (const conflictedPath of conflictedPaths || []) {
-    const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
+    const normalizedPath = toForwardSlashes(path.normalize(conflictedPath));
     const fullPath = path.join(repositoryRoot, normalizedPath);
     conflictedFiles.add(normalizePath(fullPath));
   }
 
   for (const diffFile of diffFiles) {
     const statusChar = diffFile.status_char as FileStatusType;
-    const targetPath = path.normalize(diffFile.target_path).replace(/\\/g, "/");
-    const sourcePath = path.normalize(diffFile.source_path).replace(/\\/g, "/");
+    const targetPath = toForwardSlashes(path.normalize(diffFile.target_path));
+    const sourcePath = toForwardSlashes(path.normalize(diffFile.source_path));
     const fullPath = path.join(repositoryRoot, targetPath);
     const isConflict = conflictedFiles.has(normalizePath(fullPath));
 
@@ -59,7 +59,7 @@ export function parseFileStatuses(
   }
 
   for (const conflictedPath of conflictedPaths || []) {
-    const normalizedPath = path.normalize(conflictedPath).replace(/\\/g, "/");
+    const normalizedPath = toForwardSlashes(path.normalize(conflictedPath));
     const fullPath = path.join(repositoryRoot, normalizedPath);
 
     const normalizedFullPath = normalizePath(fullPath);
@@ -97,7 +97,7 @@ export function parseUntrackedFileStatuses(statusOutput: string, repositoryRoot:
       continue;
     }
     if (line.startsWith("? ")) {
-      const relativePath = path.normalize(line.slice(2).trim()).replace(/\\/g, "/");
+      const relativePath = toForwardSlashes(path.normalize(line.slice(2).trim()));
       if (!relativePath) {
         continue;
       }

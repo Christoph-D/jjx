@@ -1,5 +1,6 @@
 import path from "path";
 import { parseRenamePaths } from "./parse-rename-paths";
+import { toForwardSlashes } from "./utils";
 import type { FileStatus, FileStatusType } from "./types";
 
 /**
@@ -15,7 +16,7 @@ export function parseInterdiffSummary(output: string, repositoryRoot: string): F
       continue;
     }
     const type = line.charAt(0) as FileStatusType;
-    const rest = line.slice(2).trim().replace(/\\/g, "/");
+    const rest = toForwardSlashes(line.slice(2).trim());
     if (type === "R" || type === "C") {
       const parseResult = parseRenamePaths(rest);
       if (!parseResult) {

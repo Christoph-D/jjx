@@ -42,6 +42,7 @@ import {
   maxChangeIdPrefixLength,
   normalizePath,
   pathEquals,
+  toForwardSlashes,
 } from "./utils";
 import {
   getDiffToolConfigs,
@@ -467,7 +468,7 @@ export class JJRepository {
    */
   async fileTrack(filepaths: string[]): Promise<Buffer> {
     const relativePaths = filepaths.map((filepath) =>
-      filepathToRootFileset(path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/")),
+      filepathToRootFileset(toForwardSlashes(path.relative(this.repositoryRoot, filepath))),
     );
     return this.jjCommand(["file", "track", "--include-ignored", "--", ...relativePaths]);
   }
@@ -592,7 +593,7 @@ export class JJRepository {
 
   readFile(rev: string, filepath: string) {
     filepath = resolveRealpath(filepath);
-    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     return this.jjCommandRead(["file", "show", "--revision", rev, filepathToFileset(relativePath)]);
   }
 
@@ -698,7 +699,7 @@ export class JJRepository {
           ...(message ? ["-m", message] : []),
           ...(filepaths
             ? filepaths.map((filepath) =>
-                filepathToFileset(path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/")),
+                filepathToFileset(toForwardSlashes(path.relative(this.repositoryRoot, filepath))),
               )
             : []),
           ...(ignoreImmutable ? ["--ignore-immutable"] : []),
@@ -926,9 +927,9 @@ export class JJRepository {
         recursive: true,
       });
       for (const [filePath, content] of rightSides) {
-        const relativePath = (
-          path.isAbsolute(filePath) ? path.relative(this.repositoryRoot, filePath) : filePath
-        ).replace(/\\/g, "/");
+        const relativePath = toForwardSlashes(
+          path.isAbsolute(filePath) ? path.relative(this.repositoryRoot, filePath) : filePath,
+        );
         const target = path.join(rightFolderAbsolutePath, relativePath);
         // jj creates the diff-edit files read-only, so replace them instead of truncating.
         await fs.rm(target, { force: true });
@@ -1615,9 +1616,7 @@ export class JJRepository {
       "--changes-in",
       rev ? rev : "@",
       ...(filepaths
-        ? filepaths.map((filepath) =>
-            filepathToFileset(path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/")),
-          )
+        ? filepaths.map((filepath) => filepathToFileset(toForwardSlashes(path.relative(this.repositoryRoot, filepath))))
         : []),
       ...(ignoreImmutable ? ["--ignore-immutable"] : []),
     ]);
@@ -1786,7 +1785,7 @@ export class JJRepository {
 
   async annotate(filepath: string, rev: string): Promise<string[]> {
     filepath = resolveRealpath(filepath);
-    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     const output = (
       await this.jjCommandRead(
         [
@@ -1850,9 +1849,9 @@ export class JJRepository {
     logger.trace(`[getDiffOriginal] enter: rev=${rev} filepath=${filepath} renamedFrom=${renamedFrom ?? "<none>"}`);
     filepath = resolveRealpath(filepath);
 
-    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     const filesetArgs = renamedFrom
-      ? [filepathToFileset(renamedFrom.replace(/\\/g, "/")), filepathToFileset(relativePath)]
+      ? [filepathToFileset(toForwardSlashes(renamedFrom)), filepathToFileset(relativePath)]
       : [filepathToFileset(relativePath)];
     logger.trace(`[getDiffOriginal] relativePath=${relativePath} filesetArgs=${JSON.stringify(filesetArgs)}`);
 
@@ -1860,7 +1859,7 @@ export class JJRepository {
     // renames. jj materializes only changed files into the snapshot, so an absent snapshot file
     // means the file was not modified in `rev` (or was added there).
     const { data } = await this.runDiffTool(["diff", "-r", rev], filesetArgs, ({ leftDir }) =>
-      readSnapshotFile(leftDir, renamedFrom ? renamedFrom.replace(/\\/g, "/") : relativePath),
+      readSnapshotFile(leftDir, renamedFrom ? toForwardSlashes(renamedFrom) : relativePath),
     );
     logger.trace(
       `[getDiffOriginal] relativePath=${relativePath} original=${
@@ -1890,7 +1889,7 @@ export class JJRepository {
    */
   async isFileUnchangedInWorkingCopy(changeId: FullChangeId, filepath: string): Promise<boolean> {
     filepath = resolveRealpath(filepath);
-    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     try {
       const summary = (
         await this.jjCommandRead([
@@ -1932,14 +1931,14 @@ export class JJRepository {
     );
     filepath = resolveRealpath(filepath);
 
-    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     logger.trace(`[getComparisonDiff] relativePath=${relativePath}`);
 
     // For renames, both the pre- and post-rename paths must be in the fileset: a target-only
     // fileset still reports `R {from => to}` in the summary but materializes an empty left
     // snapshot, hiding the pre-rename content (see getDiffOriginal for the same workaround).
     const filesetArgs = renamedFrom
-      ? [filepathToFileset(renamedFrom.replace(/\\/g, "/")), filepathToFileset(relativePath)]
+      ? [filepathToFileset(toForwardSlashes(renamedFrom)), filepathToFileset(relativePath)]
       : [filepathToFileset(relativePath)];
 
     const { data } = await this.runDiffTool(
@@ -1947,7 +1946,7 @@ export class JJRepository {
       filesetArgs,
       async ({ leftDir, rightDir }) => {
         const [left, right] = await Promise.all([
-          readSnapshotFile(leftDir, renamedFrom ? renamedFrom.replace(/\\/g, "/") : relativePath),
+          readSnapshotFile(leftDir, renamedFrom ? toForwardSlashes(renamedFrom) : relativePath),
           readSnapshotFile(rightDir, relativePath),
         ]);
         return { left, right };
@@ -1984,13 +1983,13 @@ export class JJRepository {
 
     const conflictedPaths = new Set(
       (await this.getConflictedFilePaths(commitId, token)).map((conflictedPath) =>
-        normalizePath(path.join(this.repositoryRoot, conflictedPath.replace(/\\/g, "/"))),
+        normalizePath(path.join(this.repositoryRoot, toForwardSlashes(conflictedPath))),
       ),
     );
 
     return fileStatuses.map((fileStatus) => {
-      const relativePath = path.relative(this.repositoryRoot, fileStatus.path).replace(/\\/g, "/");
-      const renamedFrom = fileStatus.renamedFrom?.replace(/\\/g, "/");
+      const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, fileStatus.path));
+      const renamedFrom = fileStatus.renamedFrom !== undefined ? toForwardSlashes(fileStatus.renamedFrom) : undefined;
       const leftPath = fileStatus.type === "A" ? undefined : (renamedFrom ?? relativePath);
       const rightPath = fileStatus.type === "D" ? undefined : relativePath;
       const leftBuffer = leftPath !== undefined ? leftSnapshot.files.get(leftPath) : undefined;
