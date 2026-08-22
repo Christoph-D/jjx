@@ -7,6 +7,7 @@ import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-p
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
 import { formatAtRevTitle, formatChangeIdShort, formatDiffTitle, formatWorkingCopyTitle, normalizePath } from "./utils";
+import { toWorkspaceSpelling } from "./workspace-paths";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -947,27 +948,30 @@ function buildResourceStates(
   const diffOriginalRev = changeId ?? "@";
 
   return fileStatuses.map((fileStatus) => {
-    const workingCopyUri = vscode.Uri.file(fileStatus.path);
     const isConflicted = conflictedFiles?.has(normalizePath(fileStatus.path)) ?? false;
     // A path listed under a parent group can still be conflicted in the working copy, so
     // the working-copy conflict set must be consulted for those groups too.
     const isWorkingCopyConflicted = workingCopyConflictedFiles?.has(normalizePath(fileStatus.path)) ?? false;
+    // VS Code derives the path shown after the file name from the resource URI, so URIs must
+    // use the workspace folder's path spelling.
+    const uriFileStatus = { ...fileStatus, path: toWorkspaceSpelling(fileStatus.path) };
+    const workingCopyUri = vscode.Uri.file(uriFileStatus.path);
     const beforeUri =
-      fileStatus.type === "A"
-        ? toJJUri(vscode.Uri.file(fileStatus.path), { deleted: true })
-        : toJJUri(vscode.Uri.file(fileStatus.path), {
+      uriFileStatus.type === "A"
+        ? toJJUri(vscode.Uri.file(uriFileStatus.path), { deleted: true })
+        : toJJUri(vscode.Uri.file(uriFileStatus.path), {
             diffOriginalRev,
-            ...(fileStatus.renamedFrom ? { renamedFrom: fileStatus.renamedFrom } : {}),
+            ...(uriFileStatus.renamedFrom ? { renamedFrom: uriFileStatus.renamedFrom } : {}),
           });
-    const afterUri = changeId ? toJJUri(vscode.Uri.file(fileStatus.path), { rev: changeId }) : workingCopyUri;
+    const afterUri = changeId ? toJJUri(vscode.Uri.file(uriFileStatus.path), { rev: changeId }) : workingCopyUri;
     return {
       resourceUri: afterUri,
       decorations: {
-        strikeThrough: fileStatus.type === "D",
-        tooltip: path.basename(fileStatus.file),
+        strikeThrough: uriFileStatus.type === "D",
+        tooltip: path.basename(uriFileStatus.file),
       },
       command: getResourceStateCommand(
-        fileStatus,
+        uriFileStatus,
         beforeUri,
         afterUri,
         toRev,
@@ -983,7 +987,8 @@ function buildResourceStates(
 
 function buildUntrackedResourceStates(fileStatuses: FileStatus[]): vscode.SourceControlResourceState[] {
   return fileStatuses.map((fileStatus) => {
-    const fileUri = vscode.Uri.file(fileStatus.path);
+    // See buildResourceStates for why the workspace folder's path spelling is used here.
+    const fileUri = vscode.Uri.file(toWorkspaceSpelling(fileStatus.path));
     return {
       resourceUri: fileUri,
       decorations: {
@@ -1012,7 +1017,8 @@ function buildComparisonDiffResourceStates(
   const fromShort = fromIsWorkingCopy ? formatWorkingCopyTitle() : formatChangeIdShort(from);
   const toShort = toIsWorkingCopy ? formatWorkingCopyTitle() : formatChangeIdShort(to);
   return fileStatuses.map((fileStatus) => {
-    const fileUri = vscode.Uri.file(fileStatus.path);
+    // See buildResourceStates for why the workspace folder's path spelling is used here.
+    const fileUri = vscode.Uri.file(toWorkspaceSpelling(fileStatus.path));
     // renamedFrom rides along so the file-system provider can key the left side of a rename by
     // its pre-rename path when reading the comparison diff.
     const renameParams = fileStatus.renamedFrom ? { renamedFrom: fileStatus.renamedFrom } : {};

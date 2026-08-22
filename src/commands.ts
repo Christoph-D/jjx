@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
 import { resolveRealpath, type JJRepository } from "./repository";
+import { toRealPathSpelling } from "./workspace-paths";
 import type { ExtensionState } from "./extension-state";
 import type { ChangeId, FileStatus, FullChangeId } from "./types";
 import { OperationTreeItem } from "./operation-log-tree-view";
@@ -253,6 +254,9 @@ async function resolveDisplayTitle(state: ExtensionState, repo: JJRepository, re
 }
 
 async function openFileDiff(repo: JJRepository, filePath: string, changeId: FullChangeId | "@"): Promise<void> {
+  // File statuses hold resolved repository paths, while the given path may use the workspace
+  // folder's path spelling.
+  filePath = toRealPathSpelling(filePath);
   const { change, fileStatuses } = await repo.show(changeId);
   const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
   const useWorkingCopyRight =
@@ -347,7 +351,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
     if (!repo) {
       throw new Error("Repository not found");
     }
-    const relativePath = path.relative(repo.repositoryRoot, resourceState.resourceUri.fsPath);
+    const relativePath = path.relative(repo.repositoryRoot, toRealPathSpelling(resourceState.resourceUri.fsPath));
     await vscode.env.clipboard.writeText(relativePath);
   });
 
@@ -370,7 +374,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
     async (fileUri: vscode.Uri, fallback: { command: string; args: unknown[] }) => {
       const repoSCM = state.workspaceSCM.getRepositorySourceControlManagerFromUri(fileUri);
       const conflictedFiles = repoSCM?.status?.conflictedFiles;
-      if (conflictedFiles?.has(normalizePath(fileUri.fsPath))) {
+      if (conflictedFiles?.has(normalizePath(toRealPathSpelling(fileUri.fsPath)))) {
         await vscode.commands.executeCommand("jj.openMergeEditor", fileUri);
       } else {
         await vscode.commands.executeCommand(fallback.command, ...fallback.args);
@@ -579,7 +583,7 @@ export function registerInitCommands(state: ExtensionState): void {
 
         statuses = resourceStates.map((resourceState) => {
           const foundStatus = repositoryStatus.fileStatuses.find((status) =>
-            pathEquals(status.path, resourceState.resourceUri.fsPath),
+            pathEquals(status.path, toRealPathSpelling(resourceState.resourceUri.fsPath)),
           );
           if (!foundStatus) {
             throw new Error("No file status found for the resource in the working copy change");
@@ -594,7 +598,7 @@ export function registerInitCommands(state: ExtensionState): void {
 
         statuses = resourceStates.map((resourceState) => {
           const foundStatus = show.fileStatuses.find((status) =>
-            pathEquals(status.path, resourceState.resourceUri.fsPath),
+            pathEquals(status.path, toRealPathSpelling(resourceState.resourceUri.fsPath)),
           );
           if (!foundStatus) {
             throw new Error("No file status found for the resource in the parent change");

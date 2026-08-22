@@ -11,6 +11,7 @@ import {
   formatDiffTitle,
   formatWorkingCopyLabel,
   formatWorkingCopyTitle,
+  remapPathSpelling,
   shouldOpenWorkingCopyRightSide,
 } from "../utils";
 import type { FullChangeId } from "../types";
@@ -32,6 +33,49 @@ describe("filepathToRootFileset Test Suite", () => {
 
   it("escapes backslashes and double quotes", () => {
     assert.equal(filepathToRootFileset('a"b\\c'), 'root:"a\\"b\\\\c"');
+  });
+});
+
+describe("remapPathSpelling Test Suite", () => {
+  it("re-spells a path under a mapped prefix", () => {
+    const mappings = [{ from: "/var/folders/ab/repo", to: "/private/var/folders/ab/repo" }];
+    assert.equal(
+      remapPathSpelling("/var/folders/ab/repo/sub/file.txt", mappings),
+      "/private/var/folders/ab/repo/sub/file.txt",
+    );
+  });
+
+  it("maps a path that is the prefix itself", () => {
+    const mappings = [{ from: "/var/folders/ab/repo", to: "/private/var/folders/ab/repo" }];
+    assert.equal(remapPathSpelling("/var/folders/ab/repo", mappings), "/private/var/folders/ab/repo");
+  });
+
+  it("returns undefined for paths outside all mapped prefixes", () => {
+    const mappings = [{ from: "/var/folders/ab/repo", to: "/private/var/folders/ab/repo" }];
+    assert.equal(remapPathSpelling("/var/folders/ab/other/file.txt", mappings), undefined);
+    assert.equal(remapPathSpelling("/home/user/repo/file.txt", mappings), undefined);
+  });
+
+  it("prefers the most specific mapping", () => {
+    const mappings = [
+      { from: "/ws", to: "/real/ws" },
+      { from: "/ws/repo", to: "/real/ws/repo" },
+    ];
+    assert.equal(remapPathSpelling("/ws/repo/file.txt", mappings), "/real/ws/repo/file.txt");
+  });
+
+  it("skips mappings whose from side only matches case-insensitively", () => {
+    const mappings = [{ from: "/Users/John/repo", to: "/Users/john/repo" }];
+    if (process.platform === "win32") {
+      // path.win32.relative is case-insensitive, so the mapping applies.
+      assert.equal(remapPathSpelling("/Users/john/repo/file.txt", mappings), "/Users/john/repo/file.txt");
+    } else {
+      assert.equal(remapPathSpelling("/Users/john/repo/file.txt", mappings), undefined);
+    }
+  });
+
+  it("returns undefined when no mappings exist", () => {
+    assert.equal(remapPathSpelling("/any/file.txt", []), undefined);
   });
 });
 

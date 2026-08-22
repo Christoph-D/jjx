@@ -58,6 +58,7 @@ import {
 } from "./jj-editor";
 import { TIMEOUTS, type JJVersion, versionAtLeast, JJ_VERSION_WITH_TAG_TRACKING } from "./constants";
 import { withDivergenceHandling } from "./divergence-handling";
+import { toRealPathSpelling } from "./workspace-paths";
 import type {
   FileStatus,
   FileStatusType,
@@ -2108,6 +2109,9 @@ export function resolveRealpath(filepath: string): string {
   try {
     return realFs.realpathSync.native(filepath);
   } catch {
-    return filepath;
+    // Paths of files that no longer exist on disk (e.g. deleted in the working copy) cannot be
+    // resolved here; fall back to re-spelling the path via the workspace folders so it still
+    // matches the resolved repository root.
+    return toRealPathSpelling(filepath);
   }
 }

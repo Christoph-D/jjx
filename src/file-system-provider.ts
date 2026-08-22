@@ -17,6 +17,7 @@ import type { WorkspaceSourceControlManager } from "./source-control";
 import type { JJRepository } from "./repository";
 import { eventToPromise, filterEvent } from "./vscode-utils";
 import { createThrottledAsyncFn, isDescendant } from "./utils";
+import { toRealPathSpelling } from "./workspace-paths";
 
 interface CacheRow {
   uri: Uri;
@@ -82,7 +83,8 @@ export class JJFileSystemProvider implements FileSystemProvider {
 
     for (const { uri } of this.cache.values()) {
       for (const root of this.changedRepositoryRoots) {
-        if (isDescendant(root, uri.fsPath)) {
+        // Cached URIs may use the workspace folder's path spelling while roots are resolved.
+        if (isDescendant(root, toRealPathSpelling(uri.fsPath))) {
           events.push({ type: FileChangeType.Changed, uri });
           break;
         }

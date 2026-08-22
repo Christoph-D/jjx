@@ -2,6 +2,7 @@ import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, Theme
 import { ChangeId, FileStatus, FileStatusType } from "./types";
 import { resolveRev, toJJUri, getParams, type JJUriParams } from "./uri";
 import { normalizePath } from "./utils";
+import { toRealPathSpelling, toWorkspaceSpelling } from "./workspace-paths";
 
 export function interdiffKey(from: ChangeId, to: ChangeId): string {
   return `interdiff:${JSON.stringify([from, to])}`;
@@ -192,6 +193,9 @@ export class JJDecorationProvider implements FileDecorationProvider {
     if (!this.hasData) {
       throw new Error("provideFileDecoration was called before data was available");
     }
+    // Decorations are keyed by resolved repository paths, while URIs from VS Code (and from
+    // resource states built for the SCM view) may use the workspace folder's path spelling.
+    const fsPath = toRealPathSpelling(uri.fsPath);
     if (uri.scheme === "jj") {
       let params: JJUriParams;
       try {
@@ -203,20 +207,19 @@ export class JJDecorationProvider implements FileDecorationProvider {
         return undefined;
       }
       if ("interdiffFrom" in params) {
-        return this.decorations.get(getKey(uri.fsPath, interdiffKey(params.interdiffFrom, params.interdiffTo)));
+        return this.decorations.get(getKey(fsPath, interdiffKey(params.interdiffFrom, params.interdiffTo)));
       }
       if ("diffFrom" in params) {
-        return this.decorations.get(getKey(uri.fsPath, diffKey(params.diffFrom, params.diffTo)));
+        return this.decorations.get(getKey(fsPath, diffKey(params.diffFrom, params.diffTo)));
       }
     }
     const rev = resolveRev(uri, { diffOriginalRevBehavior: "exclude", excludeSpecial: true });
     if (rev === undefined) {
       return undefined;
     }
-    const key = getKey(uri.fsPath, rev);
+    const key = getKey(fsPath, rev);
     if (rev === "@" && !this.decorations.has(key)) {
-      const fsPath = process.platform === "win32" ? uri.fsPath.toLowerCase() : uri.fsPath;
-      if (!this.trackedFiles.has(fsPath)) {
+      if (!this.trackedFiles.has(process.platform === "win32" ? fsPath.toLowerCase() : fsPath)) {
         return {
           color: new ThemeColor("jjDecoration.ignoredResourceForeground"),
         };
@@ -257,27 +260,37 @@ export class JJDecorationProvider implements FileDecorationProvider {
 
   private fireChanged(changedKeys: Set<string>, changedTrackedFiles: Set<string>) {
     const changedUris: Uri[] = [];
+    // URIs are keyed by resolved repository paths, but VS Code may know the same file under the
+    // workspace folder's path spelling, so decoration changes are announced for both.
+    const spellings = (fsPath: string): string[] => {
+      const workspacePath = toWorkspaceSpelling(fsPath);
+      return workspacePath === fsPath ? [fsPath] : [fsPath, workspacePath];
+    };
     for (const key of changedKeys) {
       const { fsPath, rev } = parseKey(key);
       const comparison = parseComparisonRev(rev);
-      if (comparison) {
-        // Two-revision comparison (interdiff or from/to diff) resource states are keyed by
-        // {from, to, side}, so emit those URIs (rather than a synthetic {rev}) so VS Code
-        // refreshes their badges.
-        const sideParams =
-          comparison.kind === "interdiff"
-            ? { interdiffFrom: comparison.from, interdiffTo: comparison.to, side: "right" as const }
-            : { diffFrom: comparison.from, diffTo: comparison.to, side: "right" as const };
-        changedUris.push(toJJUri(Uri.file(fsPath), sideParams));
-      } else {
-        changedUris.push(toJJUri(Uri.file(fsPath), { rev }));
-        if (rev === "@") {
-          changedUris.push(Uri.file(fsPath));
+      for (const spelling of spellings(fsPath)) {
+        if (comparison) {
+          // Two-revision comparison (interdiff or from/to diff) resource states are keyed by
+          // {from, to, side}, so emit those URIs (rather than a synthetic {rev}) so VS Code
+          // refreshes their badges.
+          const sideParams =
+            comparison.kind === "interdiff"
+              ? { interdiffFrom: comparison.from, interdiffTo: comparison.to, side: "right" as const }
+              : { diffFrom: comparison.from, diffTo: comparison.to, side: "right" as const };
+          changedUris.push(toJJUri(Uri.file(spelling), sideParams));
+        } else {
+          changedUris.push(toJJUri(Uri.file(spelling), { rev }));
+          if (rev === "@") {
+            changedUris.push(Uri.file(spelling));
+          }
         }
       }
     }
     for (const file of changedTrackedFiles) {
-      changedUris.push(Uri.file(file));
+      for (const spelling of spellings(file)) {
+        changedUris.push(Uri.file(spelling));
+      }
     }
     this._onDidChangeDecorations.fire(changedUris);
   }

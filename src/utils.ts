@@ -1,4 +1,4 @@
-import { basename, sep } from "path";
+import { basename, isAbsolute, join, relative, sep } from "path";
 
 import type { ChangeId, FileStatusType, FullChangeId } from "./types";
 
@@ -149,6 +149,33 @@ export function isDescendant(parent: string, descendant: string): boolean {
 
 export function pathEquals(a: string, b: string): boolean {
   return normalizePath(a) === normalizePath(b);
+}
+
+export interface PathSpellingMapping {
+  from: string;
+  to: string;
+}
+
+/**
+ * Re-spells `fsPath` from the `from` side to the `to` side of the first mapping whose `from`
+ * side contains it. Used to translate between the path spelling VS Code shows for a workspace
+ * folder (which keeps symlinks, e.g. /var/folders on macOS) and its resolved `realpath`
+ * spelling (which jj reports). Returns undefined when no mapping contains the path.
+ */
+export function remapPathSpelling(fsPath: string, mappings: PathSpellingMapping[]): string | undefined {
+  for (const { from, to } of mappings) {
+    if (!isDescendant(from, fsPath)) {
+      continue;
+    }
+    const relativePath = relative(from, fsPath);
+    // On case-insensitive file systems the spellings can differ in case only, which makes the
+    // string-based relative path escape the prefix. Leave such paths alone.
+    if (relativePath.split(sep)[0] === ".." || isAbsolute(relativePath)) {
+      continue;
+    }
+    return join(to, relativePath);
+  }
+  return undefined;
 }
 
 /**
