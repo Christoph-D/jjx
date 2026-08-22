@@ -1,6 +1,6 @@
 import { basename, isAbsolute, join, relative, sep } from "path";
 
-import type { ChangeId, FileStatusType, FullChangeId, NormalizedPath } from "./types";
+import type { ChangeId, FileStatusType, FullChangeId, NormalizedPath, RealPath } from "./types";
 
 export function fullChangeIdFromString(value: string): FullChangeId {
   return value as FullChangeId;
@@ -149,16 +149,19 @@ export function toForwardSlashes(p: string): string {
   return isWindows ? p.replace(/\\/g, "/") : p;
 }
 
-export function normalizePath(path: string): NormalizedPath {
-  // Windows & Mac are currently being handled
-  // as case insensitive file systems in VS Code.
-  if (isWindows || isMacintosh) {
-    return path.toLowerCase() as NormalizedPath;
-  }
-
-  return path as NormalizedPath;
+// Windows & Mac are currently being handled
+// as case insensitive file systems in VS Code.
+function foldCase(path: string): string {
+  return isWindows || isMacintosh ? path.toLowerCase() : path;
 }
 
+export function normalizePath(path: RealPath): NormalizedPath {
+  return foldCase(path) as NormalizedPath;
+}
+
+/**
+ * Compares paths in any spelling (workspace or resolved) for containment.
+ */
 export function isDescendant(parent: string, descendant: string): boolean {
   if (parent === descendant) {
     return true;
@@ -168,10 +171,10 @@ export function isDescendant(parent: string, descendant: string): boolean {
     parent += sep;
   }
 
-  return normalizePath(descendant).startsWith(normalizePath(parent));
+  return foldCase(descendant).startsWith(foldCase(parent));
 }
 
-export function pathEquals(a: string, b: string): boolean {
+export function pathEquals(a: RealPath, b: RealPath): boolean {
   return normalizePath(a) === normalizePath(b);
 }
 

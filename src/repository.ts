@@ -58,7 +58,7 @@ import {
 } from "./jj-editor";
 import { TIMEOUTS, type JJVersion, versionAtLeast, JJ_VERSION_WITH_TAG_TRACKING } from "./constants";
 import { withDivergenceHandling } from "./divergence-handling";
-import { resolveRepositoryPath, toWorkspaceUri } from "./workspace-paths";
+import { joinRepositoryPath, resolveRepositoryPath, toWorkspaceUri } from "./workspace-paths";
 import type {
   FileStatus,
   FileStatusType,
@@ -1978,7 +1978,7 @@ export class JJRepository {
 
     const conflictedPaths = new Set(
       (await this.getConflictedFilePaths(commitId, token)).map((conflictedPath) =>
-        normalizePath(path.join(this.repositoryRoot, toForwardSlashes(conflictedPath))),
+        normalizePath(joinRepositoryPath(this.repositoryRoot, toForwardSlashes(conflictedPath))),
       ),
     );
 

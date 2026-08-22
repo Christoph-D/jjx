@@ -2,7 +2,7 @@ import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, Theme
 import { ChangeId, FileStatus, FileStatusType, NormalizedPath, type RealPath } from "./types";
 import { resolveRev, toJJUri, getParams, type JJUriParams } from "./uri";
 import { normalizePath } from "./utils";
-import { toRealPathSpelling, toWorkspaceSpelling } from "./workspace-paths";
+import { asRealPath, toRealPathSpelling, toWorkspaceSpelling } from "./workspace-paths";
 
 /**
  * A key identifying a file decoration: the JSON encoding of a decorated path and revision.
@@ -80,7 +80,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     const newKeys = new Set<DecorationKey>();
     for (const [changeId, fileStatuses] of fileStatusesByChange) {
       for (const fileStatus of fileStatuses) {
-        const key = getKey(Uri.file(fileStatus.path).fsPath, changeId);
+        const key = getKey(asRealPath(Uri.file(fileStatus.path).fsPath), changeId);
         newKeys.add(key);
         this.decorations.set(key, {
           badge: fileStatus.type,
@@ -98,7 +98,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
         if (!files.has(normalizePath(fileStatus.path))) {
           continue;
         }
-        const key = getKey(Uri.file(fileStatus.path).fsPath, changeId);
+        const key = getKey(asRealPath(Uri.file(fileStatus.path).fsPath), changeId);
         const existingDecoration = this.decorations.get(key);
         if (!existingDecoration) {
           newKeys.add(key);
@@ -117,7 +117,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     }
 
     for (const fileStatus of untrackedFiles) {
-      const key = getKey(Uri.file(fileStatus.path).fsPath, "@");
+      const key = getKey(asRealPath(Uri.file(fileStatus.path).fsPath), "@");
       newKeys.add(key);
       this.decorations.set(key, {
         badge: fileStatus.type,
@@ -297,7 +297,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
   }
 }
 
-function getKey(fsPath: string, rev: string): DecorationKey {
+function getKey(fsPath: RealPath, rev: string): DecorationKey {
   return JSON.stringify({ fsPath: normalizePath(fsPath), rev }) as DecorationKey;
 }
 

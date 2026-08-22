@@ -26,7 +26,7 @@ export function parseFileStatuses(
   const conflictedFiles = new Set<NormalizedPath>();
   for (const conflictedPath of conflictedPaths || []) {
     const normalizedPath = toForwardSlashes(path.normalize(conflictedPath));
-    const fullPath = path.join(repositoryRoot, normalizedPath);
+    const fullPath = path.join(repositoryRoot, normalizedPath) as RealPath;
     conflictedFiles.add(normalizePath(fullPath));
   }
 

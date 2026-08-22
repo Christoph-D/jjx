@@ -14,7 +14,7 @@ import {
   isDescendant,
   normalizePath,
 } from "./utils";
-import { resolveRepositoryPath, toWorkspaceSpelling } from "./workspace-paths";
+import { asRealPath, resolveRepositoryPath, toWorkspaceSpelling } from "./workspace-paths";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
@@ -656,7 +656,7 @@ class RepositorySourceControlManager {
       let currentPath = this.repositoryRoot + path.sep;
       for (const p of pathParts) {
         currentPath += p;
-        newTrackedFiles.add(normalizePath(currentPath));
+        newTrackedFiles.add(normalizePath(asRealPath(currentPath)));
         currentPath += path.sep;
       }
     }
