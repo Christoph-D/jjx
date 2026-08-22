@@ -1050,13 +1050,8 @@ function getResourceStateCommand(
   isConflicted: boolean,
   changeId?: FullChangeId | "@",
 ): vscode.Command {
-  if (isConflicted && changeId !== undefined) {
-    return {
-      title: "Resolve Conflict",
-      command: "jj.openMergeEditor",
-      arguments: [workingCopyUri, changeId],
-    };
-  }
+  // Resolving conflicts only makes sense in the working copy; conflicted files in other
+  // changes (parent/selected commit) use the standard file click action.
   const fallback = computeFallbackCommand(fileStatus, beforeUri, afterUri, toRev, fileClickAction, workingCopyUri);
   if (changeId === undefined) {
     return {

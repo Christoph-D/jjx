@@ -158,16 +158,24 @@ test("selecting a conflicted non-parent change shows conflict status", async ({ 
     expect(await sectionFileBadges(workbox, "Selected Commit")).toEqual({ "conflict.txt": "A!" });
   }).toPass();
 
-  // Clicking the conflicted file opens the merge editor (left shows B's content,
-  // right shows C's content), not a plain diff.
+  // Clicking the conflicted file performs the standard click action (a diff), not
+  // the merge editor: resolving conflicts only makes sense in the working copy.
   const conflictItem = scmView.getByRole("treeitem", { name: /conflict\.txt/ }).last();
   await conflictItem.click();
 
-  const mergeEditorLeft = workbox.locator('.monaco-editor[role="code"][data-uri*="left_conflict.txt"]');
-  await expect(mergeEditorLeft).toBeVisible();
-  await expect(mergeEditorLeft.locator(".view-line")).toContainText("B");
+  // The merge editor never opens; instead a diff editor shows the added file with
+  // its materialized conflict content (both sides of the merge) on the right.
+  await expect(workbox.locator('.monaco-editor[role="code"][data-uri*="left_conflict.txt"]')).toBeHidden();
+  await expect(workbox.locator('.monaco-editor[role="code"][data-uri*="right_conflict.txt"]')).toBeHidden();
 
-  const mergeEditorRight = workbox.locator('.monaco-editor[role="code"][data-uri*="right_conflict.txt"]');
-  await expect(mergeEditorRight).toBeVisible();
-  await expect(mergeEditorRight.locator(".view-line")).toContainText("C");
+  const diffEditor = workbox.locator(".editor-instance");
+  await expect(diffEditor).toBeVisible();
+  const originalPane = diffEditor.locator(".editor.original .view-lines");
+  const modifiedPane = diffEditor.locator(".editor.modified .view-lines");
+  // The file is added in this change, so the original side is empty and the modified
+  // side shows the file at the selected revision: jj's materialized conflict markers
+  // containing both sides of the merge ("+B" and "C").
+  await expect(originalPane).toHaveText(/^\s*$/);
+  await expect(modifiedPane.getByText("+B", { exact: true }).first()).toBeVisible();
+  await expect(modifiedPane.getByText("C", { exact: true }).first()).toBeVisible();
 });
