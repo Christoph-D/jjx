@@ -1,4 +1,5 @@
 import path from "path";
+import { normalizePath } from "./utils";
 import type { DiffFileEntry, FileStatus, FileStatusType } from "./types";
 
 export type ParsedFileStatuses = {
@@ -6,16 +7,6 @@ export type ParsedFileStatuses = {
   fileStatusesByPath: Map<string, FileStatus>;
   conflictedFiles: Set<string>;
 };
-
-const isWindows = process.platform === "win32";
-const isMacintosh = process.platform === "darwin";
-
-function normalizePath(p: string): string {
-  if (isWindows || isMacintosh) {
-    return p.toLowerCase();
-  }
-  return p;
-}
 
 /**
  * Parses `jj` diff file entries into structured {@link FileStatus} objects.

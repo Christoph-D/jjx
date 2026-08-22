@@ -2,8 +2,6 @@ import path from "path";
 import { parseRenamePaths } from "./parse-rename-paths";
 import type { FileStatus, FileStatusType } from "./types";
 
-const isWindows = process.platform === "win32";
-
 /**
  * Parses the textual output of `jj interdiff --summary` (or `jj diff --summary`)
  * into structured {@link FileStatus} objects. Each summary line is `<status> <path>`,
@@ -17,7 +15,7 @@ export function parseInterdiffSummary(output: string, repositoryRoot: string): F
       continue;
     }
     const type = line.charAt(0) as FileStatusType;
-    const rest = isWindows ? line.slice(2).trim().replace(/\\/g, "/") : line.slice(2).trim();
+    const rest = line.slice(2).trim().replace(/\\/g, "/");
     if (type === "R" || type === "C") {
       const parseResult = parseRenamePaths(rest);
       if (!parseResult) {
