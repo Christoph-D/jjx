@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
-import { resolveRealpath, type JJRepository } from "./repository";
-import { toRealPathSpelling } from "./workspace-paths";
+import type { JJRepository } from "./repository";
+import { resolveRepositoryPath, toRealPathSpelling } from "./workspace-paths";
 import type { ExtensionState } from "./extension-state";
 import type { ChangeId, FileStatus, FullChangeId } from "./types";
 import { OperationTreeItem } from "./operation-log-tree-view";
@@ -395,7 +395,7 @@ export function registerPreInitCommands(state: ExtensionState): void {
     if (!configs.length) {
       throw new Error("Merge editor not initialized");
     }
-    const fsPath = resolveRealpath(uri.fsPath);
+    const fsPath = resolveRepositoryPath(uri.fsPath);
     const relativePath = path.relative(repo.repositoryRoot, fsPath);
     const args = ["resolve", "--tool=jjx-vscode-merge", ...configs.flatMap((c) => ["--config", c])];
     if (changeId) {
@@ -649,7 +649,7 @@ export function registerInitCommands(state: ExtensionState): void {
       await repository.squashRetryImmutable({
         fromRevs: ["@"],
         toRev: destinationParentChange.changeId.changeId,
-        filepaths: resourceStates.map((rs) => resolveRealpath(rs.resourceUri.fsPath)),
+        filepaths: resourceStates.map((rs) => resolveRepositoryPath(rs.resourceUri.fsPath)),
       });
     },
     { errorPrefix: "Failed to squash" },
@@ -675,7 +675,7 @@ export function registerInitCommands(state: ExtensionState): void {
       await repository.squashRetryImmutable({
         fromRevs: [resourceGroup.id as FullChangeId | "@"],
         toRev: "@",
-        filepaths: resourceStates.map((rs) => resolveRealpath(rs.resourceUri.fsPath)),
+        filepaths: resourceStates.map((rs) => resolveRepositoryPath(rs.resourceUri.fsPath)),
       });
     },
     { errorPrefix: "Failed to squash" },
@@ -970,7 +970,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!scm) {
         throw new Error("Repository not found");
       }
-      const filepath = resolveRealpath(resourceState.resourceUri.fsPath);
+      const filepath = resolveRepositoryPath(resourceState.resourceUri.fsPath);
       await scm.repository.fileTrack([filepath]);
       await scm.checkForUpdates(undefined, "force");
     },
@@ -985,7 +985,7 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!scm) {
         throw new Error("Repository not found");
       }
-      const filepath = resolveRealpath(resourceState.resourceUri.fsPath);
+      const filepath = resolveRepositoryPath(resourceState.resourceUri.fsPath);
       const relativePath = path.relative(scm.repositoryRoot, filepath);
       const isDirectory = await fs.promises.stat(filepath).then(
         (stat) => stat.isDirectory(),

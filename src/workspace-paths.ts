@@ -56,6 +56,21 @@ export function toRealPathSpelling(fsPath: string): RealPath {
 }
 
 /**
+ * Resolves `fsPath` to its canonical (realpath) spelling so it can be compared against the
+ * resolved paths jj reports (repository roots, file statuses).
+ *
+ * This is the single spell-proof resolver: no other code should combine
+ * `realpathSync.native` with its own ad-hoc fallback.
+ */
+export function resolveRepositoryPath(fsPath: string): RealPath {
+  try {
+    return asRealPath(fs.realpathSync.native(fsPath));
+  } catch {
+    return toRealPathSpelling(fsPath);
+  }
+}
+
+/**
  * Maps a resolved (realpath) path onto the spelling VS Code uses for the workspace folder
  * containing it. Returns the input unchanged when the path lives outside the workspace folders
  * or no workspace folder resolves to it.

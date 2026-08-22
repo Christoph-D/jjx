@@ -2,7 +2,6 @@ import path from "path";
 import * as crypto from "crypto";
 import * as vscode from "vscode";
 import fs from "fs/promises";
-import realFs from "fs";
 import {
   SHOW_TEMPLATE,
   STATUS_TEMPLATE,
@@ -59,7 +58,7 @@ import {
 } from "./jj-editor";
 import { TIMEOUTS, type JJVersion, versionAtLeast, JJ_VERSION_WITH_TAG_TRACKING } from "./constants";
 import { withDivergenceHandling } from "./divergence-handling";
-import { asRealPath, toRealPathSpelling } from "./workspace-paths";
+import { resolveRepositoryPath } from "./workspace-paths";
 import type {
   FileStatus,
   FileStatusType,
@@ -594,7 +593,7 @@ export class JJRepository {
   }
 
   readFile(rev: string, filepath: string) {
-    filepath = resolveRealpath(filepath);
+    filepath = resolveRepositoryPath(filepath);
     const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     return this.jjCommandRead(["file", "show", "--revision", rev, filepathToFileset(relativePath)]);
   }
@@ -766,7 +765,7 @@ export class JJRepository {
     content: string;
     ignoreImmutable?: boolean;
   }): Promise<void> {
-    filepath = resolveRealpath(filepath);
+    filepath = resolveRepositoryPath(filepath);
 
     const squashConfigs = getSquashToolConfigs();
     if (!squashConfigs.length) {
@@ -1742,17 +1741,11 @@ export class JJRepository {
       if (!workspace.root) {
         continue;
       }
-      if (pathEquals(workspace.root, this.repositoryRoot)) {
+      // The recorded root may use a different spelling than the (canonicalized) repository
+      // root, e.g. through symlinks like /tmp vs /private/tmp on macOS. Unresolvable roots
+      // (e.g. the workspace directory was moved) simply won't match.
+      if (pathEquals(resolveRepositoryPath(workspace.root), this.repositoryRoot)) {
         return workspace.name;
-      }
-      // The recorded root may contain symlinks that the (canonicalized)
-      // repository root doesn't, e.g. /tmp vs /private/tmp on macOS.
-      try {
-        if (pathEquals(realFs.realpathSync.native(workspace.root), this.repositoryRoot)) {
-          return workspace.name;
-        }
-      } catch {
-        // Unresolvable path (e.g. the workspace directory was moved) — skip.
       }
     }
     return undefined;
@@ -1786,7 +1779,7 @@ export class JJRepository {
   }
 
   async annotate(filepath: string, rev: string): Promise<string[]> {
-    filepath = resolveRealpath(filepath);
+    filepath = resolveRepositoryPath(filepath);
     const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     const output = (
       await this.jjCommandRead(
@@ -1849,7 +1842,7 @@ export class JJRepository {
    */
   async getDiffOriginal(rev: string, filepath: string, renamedFrom?: string): Promise<Buffer | undefined> {
     logger.trace(`[getDiffOriginal] enter: rev=${rev} filepath=${filepath} renamedFrom=${renamedFrom ?? "<none>"}`);
-    filepath = resolveRealpath(filepath);
+    filepath = resolveRepositoryPath(filepath);
 
     const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     const filesetArgs = renamedFrom
@@ -1890,7 +1883,7 @@ export class JJRepository {
    * real (editable) working-copy file, which is content-identical in that case.
    */
   async isFileUnchangedInWorkingCopy(changeId: FullChangeId, filepath: string): Promise<boolean> {
-    filepath = resolveRealpath(filepath);
+    filepath = resolveRepositoryPath(filepath);
     const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     try {
       const summary = (
@@ -1931,7 +1924,7 @@ export class JJRepository {
     logger.trace(
       `[getComparisonDiff] enter: mode=${mode} from=${fromRev} to=${toRev} filepath=${filepath} renamedFrom=${renamedFrom ?? "<none>"}`,
     );
-    filepath = resolveRealpath(filepath);
+    filepath = resolveRepositoryPath(filepath);
 
     const relativePath = toForwardSlashes(path.relative(this.repositoryRoot, filepath));
     logger.trace(`[getComparisonDiff] relativePath=${relativePath}`);
@@ -2103,16 +2096,5 @@ export class JJRepository {
       () => run((args, options) => this.spawnJJ(["--ignore-working-copy", ...args], options)),
       (maxDelayMs) => this.jitteredDelay(maxDelayMs),
     );
-  }
-}
-
-export function resolveRealpath(filepath: string): RealPath {
-  try {
-    return asRealPath(realFs.realpathSync.native(filepath));
-  } catch {
-    // Paths of files that no longer exist on disk (e.g. deleted in the working copy) cannot be
-    // resolved here; fall back to re-spelling the path via the workspace folders so it still
-    // matches the resolved repository root.
-    return toRealPathSpelling(filepath);
   }
 }

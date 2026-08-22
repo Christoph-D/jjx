@@ -6,13 +6,20 @@ import { resolveRev, toJJUri } from "./uri";
 import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-provider";
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
-import { formatAtRevTitle, formatChangeIdShort, formatDiffTitle, formatWorkingCopyTitle, normalizePath } from "./utils";
-import { asRealPath, toWorkspaceSpelling } from "./workspace-paths";
+import {
+  formatAtRevTitle,
+  formatChangeIdShort,
+  formatDiffTitle,
+  formatWorkingCopyTitle,
+  isDescendant,
+  normalizePath,
+} from "./utils";
+import { resolveRepositoryPath, toWorkspaceSpelling } from "./workspace-paths";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
 import { extensionDir } from "./config";
-import { JJRepository, resolveRealpath } from "./repository";
+import { JJRepository } from "./repository";
 import { StaleWorkingCopyError } from "./errors";
 import type {
   ChangeId,
@@ -160,9 +167,9 @@ export class WorkspaceSourceControlManager {
         }
         const jjConfigArgs = getConfigArgs(extensionDir);
 
-        // jj reports the root in its resolved spelling; realpathSync resolves any symlinks
-        // the workspace folder was opened through, so both branches keep that spelling.
-        let repoRoot = asRealPath(
+        // jj reports the root in its resolved spelling; resolveRepositoryPath keeps that
+        // spelling while resolving any symlinks the workspace folder was opened through.
+        const repoRoot = resolveRepositoryPath(
           (
             await collectProcessOutput(
               spawnJJ(jjPath.filepath, ["--ignore-working-copy", "root"], {
@@ -175,11 +182,6 @@ export class WorkspaceSourceControlManager {
             .toString()
             .trim(),
         );
-        try {
-          repoRoot = asRealPath(fs.realpathSync.native(repoRoot));
-        } catch {
-          // Fall back to original path if realpath fails
-        }
         if (effectiveToken.isCancellationRequested) {
           return false;
         }
@@ -321,16 +323,14 @@ export class WorkspaceSourceControlManager {
   }
 
   getRepositorySourceControlManagerFromUri(uri: vscode.Uri) {
-    return this.getRepositorySourceControlManagerFromRealPath(resolveRealpath(uri.fsPath));
+    return this.getRepositorySourceControlManagerFromRealPath(resolveRepositoryPath(uri.fsPath));
   }
 
   /**
    * Finds the repository containing `fsPath`.
    */
   getRepositorySourceControlManagerFromRealPath(fsPath: RealPath) {
-    return this.repoSCMs.find((repo) => {
-      return !path.relative(repo.repositoryRoot, fsPath).startsWith("..");
-    });
+    return this.repoSCMs.find((repo) => isDescendant(repo.repositoryRoot, fsPath));
   }
 
   getRepositoryFromUri(uri: vscode.Uri) {
@@ -524,7 +524,7 @@ class RepositorySourceControlManager {
     const repoChangedWatchEvent = filterEvent(
       anyEvent(repoWatcher.onDidCreate, repoWatcher.onDidChange, repoWatcher.onDidDelete),
       (uri) => {
-        const realFsPath = resolveRealpath(uri.fsPath);
+        const realFsPath = resolveRepositoryPath(uri.fsPath);
         const relativePath = path.relative(this.repositoryRoot, realFsPath);
         const segments = relativePath.split(path.sep);
         return !segments.includes(".jj") && !segments.includes(".git");
