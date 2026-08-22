@@ -569,7 +569,7 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Regu
         >
           <span class={styles.changedFileStatus}>
             {f.type}
-            {f.conflict && f.type !== "X" ? "!" : ""}
+            {f.conflict ? "!" : ""}
           </span>
           <span class={styles.changedFilePath}>{f.path}</span>
         </div>
