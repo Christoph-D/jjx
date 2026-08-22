@@ -792,7 +792,6 @@ class RepositorySourceControlManager {
             toRev: formatChangeIdShort(this.selectedCommitShowResult.change.changeId),
             fileClickAction,
             conflictedFiles: this.selectedCommitShowResult.conflictedFiles,
-            workingCopyConflictedFiles: this.status.conflictedFiles,
           },
         );
       }
@@ -950,8 +949,7 @@ function buildResourceStates(
   return fileStatuses.map((fileStatus) => {
     const workingCopyUri = vscode.Uri.file(fileStatus.path);
     const isConflicted = conflictedFiles?.has(normalizePath(fileStatus.path)) ?? false;
-    // A path listed under a parent/selected-commit group can still be conflicted in the
-    // working copy (e.g. a synthesized conflict entry with no working-copy diff hunks), so
+    // A path listed under a parent group can still be conflicted in the working copy, so
     // the working-copy conflict set must be consulted for those groups too.
     const isWorkingCopyConflicted = workingCopyConflictedFiles?.has(normalizePath(fileStatus.path)) ?? false;
     const beforeUri =
@@ -1060,11 +1058,9 @@ function getResourceStateCommand(
   isWorkingCopyConflicted = false,
 ): vscode.Command {
   // Resolving conflicts only makes sense in the working copy, but a file listed under a
-  // parent/selected-commit group may still be conflicted in the working copy (e.g. when its
-  // conflicted content matches the parent's side, so it has no working-copy diff hunks and
-  // only shows up in the parent's section). Route those clicks through
-  // jj.openWorkingCopyFile, which opens the merge editor for working-copy conflicts and
-  // otherwise runs the fallback (the standard file click action).
+  // parent group may still be conflicted in the working copy. For usability, clicking
+  // a conflicted file in a parent group opens the merge editor if it's still conflicted
+  // in the working copy.
   const fallback = computeFallbackCommand(fileStatus, beforeUri, afterUri, toRev, fileClickAction, workingCopyUri);
   if (changeId === undefined || isWorkingCopyConflicted) {
     return {
