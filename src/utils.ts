@@ -1,6 +1,6 @@
 import { basename, sep } from "path";
 
-import type { ChangeId, FullChangeId } from "./types";
+import type { ChangeId, FileStatusType, FullChangeId } from "./types";
 
 export function fullChangeIdFromString(value: string): FullChangeId {
   return value as FullChangeId;
@@ -50,6 +50,20 @@ export function formatDiffTitle(
   const fromName = renamedFrom ? basename(renamedFrom) : undefined;
   const diffPart = from === undefined ? `${label}Parent → ${to}` : `${label}${from} → ${to}`;
   return (fromName ? `${fromName} → ` : "") + `${baseName} (${diffPart})`;
+}
+
+/**
+ * Decides whether a diff opened for a file in commit `changeId` can use the real (editable)
+ * working-copy file as its right side: the clicked commit must not be the working copy itself,
+ * the file must not be deleted in it, and the working copy must not change the file relative
+ * to the commit, so the working-copy content is identical to the commit's version.
+ */
+export function shouldOpenWorkingCopyRightSide(
+  changeId: FullChangeId | "@",
+  status: FileStatusType | undefined,
+  fileUnchangedInWorkingCopy: boolean,
+): boolean {
+  return changeId !== "@" && status !== "D" && fileUnchangedInWorkingCopy;
 }
 
 export function formatAtRevTitle(baseName: string, rev: string): string {

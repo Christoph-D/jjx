@@ -5,7 +5,15 @@ import { BookmarkBackwardsError, StaleWorkingCopyError } from "./errors";
 import { CancelledError } from "./process";
 import path from "path";
 import { showErrorMessage } from "./vscode-utils";
-import { changeIdAffixes, formatChangeIdShort, formatDiffTitle, fullChangeId, maxChangeIdPrefixLength } from "./utils";
+import {
+  changeIdAffixes,
+  formatChangeIdShort,
+  formatDiffTitle,
+  formatWorkingCopyTitle,
+  fullChangeId,
+  maxChangeIdPrefixLength,
+  shouldOpenWorkingCopyRightSide,
+} from "./utils";
 import type { ChangeId, FullChangeId } from "./types";
 import { assignLanes } from "./lane-assigner";
 import {
@@ -604,11 +612,18 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
             afterParams = { rev: changeId };
           }
           const beforeUri = toJJUri(fileUri, beforeParams);
-          const afterUri = toJJUri(fileUri, afterParams);
-          const node = this.findRegularChange(changeId);
-          const toRev = node ? formatChangeIdShort(node.id) : await repo.resolveRevSuffix(changeId);
-          const title = formatDiffTitle(renamedFrom, path.basename(relPath), undefined, toRev);
           try {
+            const node = this.findRegularChange(changeId);
+            const toRev = node ? formatChangeIdShort(node.id) : await repo.resolveRevSuffix(changeId);
+            const useWorkingCopyRight = shouldOpenWorkingCopyRightSide(
+              changeId,
+              status,
+              await repo.isFileUnchangedInWorkingCopy(changeId, absPath),
+            );
+            const afterUri = useWorkingCopyRight ? fileUri : toJJUri(fileUri, afterParams);
+            const title = useWorkingCopyRight
+              ? formatDiffTitle(renamedFrom, path.basename(relPath), `${toRev} Parent`, formatWorkingCopyTitle())
+              : formatDiffTitle(renamedFrom, path.basename(relPath), undefined, toRev);
             await vscode.commands.executeCommand("vscode.diff", beforeUri, afterUri, title);
           } catch (error: unknown) {
             showErrorMessage("Failed to open diff", error);

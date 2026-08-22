@@ -1882,6 +1882,36 @@ export class JJRepository {
   }
 
   /**
+   * Returns whether the working copy does not change `filepath` relative to `changeId`: the
+   * file content is identical in `changeId` and the working-copy commit (`@`), and `changeId` is
+   * an ancestor of `@`. Diff-open paths use this to swap a read-only `jj://` right side for the
+   * real (editable) working-copy file, which is content-identical in that case.
+   */
+  async isFileUnchangedInWorkingCopy(changeId: FullChangeId, filepath: string): Promise<boolean> {
+    filepath = resolveRealpath(filepath);
+    const relativePath = path.relative(this.repositoryRoot, filepath).replace(/\\/g, "/");
+    try {
+      const summary = (
+        await this.jjCommandRead([
+          "diff",
+          "--summary",
+          "--from",
+          `present(${changeId} & ::@)`,
+          "--to",
+          "@",
+          "--",
+          filepathToFileset(relativePath),
+        ])
+      ).toString();
+      // An empty summary means the file is untouched between the commit and @. The revset
+      // resolves to nothing (jj errors) when the commit is not an ancestor of @.
+      return !summary.trim();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Returns the left (from-rev) and right (to-rev) content of a single file's two-revision
    * comparison, captured via the `jjx-vscode-diff` diff tool (mirrors {@link getDiffOriginal} but
    * for an arbitrary two-revision diff or interdiff). `left`/`right` are undefined when the file

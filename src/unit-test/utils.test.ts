@@ -11,6 +11,7 @@ import {
   formatDiffTitle,
   formatWorkingCopyLabel,
   formatWorkingCopyTitle,
+  shouldOpenWorkingCopyRightSide,
 } from "../utils";
 import type { FullChangeId } from "../types";
 
@@ -56,6 +57,36 @@ describe("formatDiffTitle Test Suite", () => {
       formatDiffTitle(undefined, "new.ts", "rev-a", "rev-b", "interdiff"),
       "new.ts (Interdiff rev-a → rev-b)",
     );
+  });
+
+  it("formats a commit-parent to working-copy diff title", () => {
+    assert.equal(formatDiffTitle(undefined, "new.ts", "xy1234 Parent", "@"), "new.ts (xy1234 Parent → @)");
+  });
+});
+
+describe("shouldOpenWorkingCopyRightSide Test Suite", () => {
+  it("opens the editable working-copy right side for a file unchanged in the working copy", () => {
+    assert.equal(shouldOpenWorkingCopyRightSide("xy1234" as FullChangeId, "M", true), true);
+  });
+
+  it("opens the editable working-copy right side for an added file unchanged in the working copy", () => {
+    assert.equal(shouldOpenWorkingCopyRightSide("xy1234" as FullChangeId, "A", true), true);
+  });
+
+  it("keeps the read-only revision right side when the working copy changes the file", () => {
+    assert.equal(shouldOpenWorkingCopyRightSide("xy1234" as FullChangeId, "M", false), false);
+  });
+
+  it("keeps the read-only revision right side for deleted files", () => {
+    assert.equal(shouldOpenWorkingCopyRightSide("xy1234" as FullChangeId, "D", true), false);
+  });
+
+  it("keeps the existing behavior when the clicked commit is the working copy", () => {
+    assert.equal(shouldOpenWorkingCopyRightSide("@", "M", true), false);
+  });
+
+  it("opens the editable working-copy right side for an unknown file status", () => {
+    assert.equal(shouldOpenWorkingCopyRightSide("xy1234" as FullChangeId, undefined, true), true);
   });
 });
 

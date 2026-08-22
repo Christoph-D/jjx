@@ -24,6 +24,7 @@ import {
   maxChangeIdPrefixLength,
   normalizePath,
   pathEquals,
+  shouldOpenWorkingCopyRightSide,
 } from "./utils";
 import { getMergeEditorConfigs } from "./jj-editor";
 import { handleJJCommand } from "./process";
@@ -254,6 +255,13 @@ async function resolveDisplayTitle(state: ExtensionState, repo: JJRepository, re
 async function openFileDiff(repo: JJRepository, filePath: string, changeId: FullChangeId | "@"): Promise<void> {
   const { change, fileStatuses } = await repo.show(changeId);
   const fileStatus = fileStatuses.find((file) => pathEquals(file.path, filePath));
+  const useWorkingCopyRight =
+    changeId !== "@" &&
+    shouldOpenWorkingCopyRightSide(
+      changeId,
+      fileStatus?.type,
+      await repo.isFileUnchangedInWorkingCopy(changeId, filePath),
+    );
 
   const beforeUri =
     fileStatus?.type === "A"
@@ -265,7 +273,7 @@ async function openFileDiff(repo: JJRepository, filePath: string, changeId: Full
   const afterUri =
     fileStatus?.type === "D"
       ? toJJUri(vscode.Uri.file(filePath), { deleted: true })
-      : changeId === "@"
+      : changeId === "@" || useWorkingCopyRight
         ? vscode.Uri.file(filePath)
         : toJJUri(vscode.Uri.file(filePath), { rev: changeId });
 
@@ -275,7 +283,9 @@ async function openFileDiff(repo: JJRepository, filePath: string, changeId: Full
     "vscode.diff",
     beforeUri,
     afterUri,
-    formatDiffTitle(fileStatus?.renamedFrom, path.basename(filePath), undefined, toRev),
+    useWorkingCopyRight
+      ? formatDiffTitle(fileStatus?.renamedFrom, path.basename(filePath), `${toRev} Parent`, formatWorkingCopyTitle())
+      : formatDiffTitle(fileStatus?.renamedFrom, path.basename(filePath), undefined, toRev),
   );
 }
 
