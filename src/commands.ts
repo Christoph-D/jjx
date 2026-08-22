@@ -412,6 +412,14 @@ export function registerPreInitCommands(state: ExtensionState): void {
         //   Caused by: The output file is either unchanged or empty after the editor quit (run with --debug to see the exact invocation).
         return;
       }
+      if (typeof stderr === "string" && stderr.includes("At most 2 sides are supported")) {
+        // `jj resolve` only supports 2-sided conflicts.
+        const cause = stderr.match(/Caused by: (.+)/)?.[1];
+        const message = cause ?? "The conflict has more than 2 sides. At most 2 sides are supported.";
+        void vscode.window.showWarningMessage(`${message} Please edit the conflict markers manually.`);
+        await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(fsPath), {});
+        return;
+      }
       throw e;
     }
   });
