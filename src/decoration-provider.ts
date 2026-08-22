@@ -60,7 +60,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     repositoryRoot: RealPath,
     fileStatusesByChange: Map<string, FileStatus[]>,
     trackedFiles: Set<NormalizedPath>,
-    conflictedFiles: Map<string, Set<string>>,
+    conflictedFiles: Map<string, Set<NormalizedPath>>,
     untrackedFiles: FileStatus[],
   ) {
     const repositoryKey = normalizePath(repositoryRoot);

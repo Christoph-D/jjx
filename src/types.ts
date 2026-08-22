@@ -129,13 +129,13 @@ export type RepositoryStatus = {
   untrackedFiles: FileStatus[];
   workingCopy: Change;
   parentChanges: Change[];
-  conflictedFiles: Set<string>;
+  conflictedFiles: Set<NormalizedPath>;
 };
 
 export type Show = {
   change: ChangeWithDetails;
   fileStatuses: FileStatus[];
-  conflictedFiles: Set<string>;
+  conflictedFiles: Set<NormalizedPath>;
 };
 
 export type Operation = {

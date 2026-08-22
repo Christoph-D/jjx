@@ -1,11 +1,11 @@
 import path from "path";
 import { normalizePath, toForwardSlashes } from "./utils";
-import type { DiffFileEntry, FileStatus, FileStatusType, RealPath } from "./types";
+import type { DiffFileEntry, FileStatus, FileStatusType, NormalizedPath, RealPath } from "./types";
 
 export type ParsedFileStatuses = {
   fileStatuses: FileStatus[];
   fileStatusesByPath: Map<string, FileStatus>;
-  conflictedFiles: Set<string>;
+  conflictedFiles: Set<NormalizedPath>;
 };
 
 /**
@@ -23,7 +23,7 @@ export function parseFileStatuses(
   const fileStatuses: FileStatus[] = [];
   const fileStatusesByPath = new Map<string, FileStatus>();
 
-  const conflictedFiles = new Set<string>();
+  const conflictedFiles = new Set<NormalizedPath>();
   for (const conflictedPath of conflictedPaths || []) {
     const normalizedPath = toForwardSlashes(path.normalize(conflictedPath));
     const fullPath = path.join(repositoryRoot, normalizedPath);

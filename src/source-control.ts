@@ -451,7 +451,7 @@ class RepositorySourceControlManager {
 
   operationId: string | undefined;
   fileStatusesByChange: Map<string, FileStatus[]> = new Map();
-  conflictedFilesByChange: Map<string, Set<string>> = new Map();
+  conflictedFilesByChange: Map<string, Set<NormalizedPath>> = new Map();
   trackedFiles: Set<NormalizedPath> = new Set();
   status: RepositoryStatus | undefined;
   parentShowResults: Map<string, Show> = new Map();
@@ -645,7 +645,7 @@ class RepositorySourceControlManager {
     const newTrackedFiles = new Set<NormalizedPath>();
     const newParentShowResults = new Map<string, Show>();
     const newFileStatusesByChange = new Map<string, FileStatus[]>([["@", status.fileStatuses]]);
-    const newConflictedFilesByChange = new Map<string, Set<string>>([["@", status.conflictedFiles]]);
+    const newConflictedFilesByChange = new Map<string, Set<NormalizedPath>>([["@", status.conflictedFiles]]);
 
     const trackedFilesList = await this.repository.fileList(token, operationId);
     if (token.isCancellationRequested) {
@@ -951,8 +951,8 @@ function buildResourceStates(
     changeId?: FullChangeId | "@";
     toRev: string;
     fileClickAction: "diff" | "at-revision" | "working-copy";
-    conflictedFiles: Set<string> | undefined;
-    workingCopyConflictedFiles?: Set<string> | undefined;
+    conflictedFiles: Set<NormalizedPath> | undefined;
+    workingCopyConflictedFiles?: Set<NormalizedPath> | undefined;
   },
 ): vscode.SourceControlResourceState[] {
   const { changeId, toRev, fileClickAction, conflictedFiles, workingCopyConflictedFiles } = options;
