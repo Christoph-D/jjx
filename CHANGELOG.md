@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.14.1
+
+### Internal
+
+- Split the release workflow into parallel GitHub Release and Marketplace publishing jobs so they can be retried
+  independently
+
 ## 1.14.0
 
 ### New Features
