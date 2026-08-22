@@ -87,9 +87,16 @@ export class JJDecorationProvider implements FileDecorationProvider {
         });
       }
     }
-    for (const [changeId, files] of conflictedFiles) {
-      for (const file of files) {
-        const key = getKey(Uri.file(file).fsPath, changeId);
+    for (const [changeId, fileStatuses] of fileStatusesByChange) {
+      const files = conflictedFiles.get(changeId);
+      if (!files) {
+        continue;
+      }
+      for (const fileStatus of fileStatuses) {
+        if (!files.has(normalizePath(fileStatus.path))) {
+          continue;
+        }
+        const key = getKey(Uri.file(fileStatus.path).fsPath, changeId);
         const existingDecoration = this.decorations.get(key);
         if (!existingDecoration) {
           newKeys.add(key);
