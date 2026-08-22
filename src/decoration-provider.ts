@@ -1,5 +1,5 @@
 import { FileDecorationProvider, FileDecoration, Uri, EventEmitter, Event, ThemeColor } from "vscode";
-import { ChangeId, FileStatus, FileStatusType } from "./types";
+import { ChangeId, FileStatus, FileStatusType, type RealPath } from "./types";
 import { resolveRev, toJJUri, getParams, type JJUriParams } from "./uri";
 import { normalizePath } from "./utils";
 import { toRealPathSpelling, toWorkspaceSpelling } from "./workspace-paths";
@@ -52,7 +52,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
    * Otherwise, fires an event to notify vscode of the updated decorations.
    */
   onRefresh(
-    repositoryRoot: string,
+    repositoryRoot: RealPath,
     fileStatusesByChange: Map<string, FileStatus[]>,
     trackedFiles: Set<string>,
     conflictedFiles: Map<string, Set<string>>,
@@ -153,7 +153,7 @@ export class JJDecorationProvider implements FileDecorationProvider {
     }
   }
 
-  removeStaleRepositories(repositoryRoots: Iterable<string>) {
+  removeStaleRepositories(repositoryRoots: Iterable<RealPath>) {
     const activeRepositoryKeys = new Set([...repositoryRoots].map(normalizePath));
     const changedKeys = new Set<string>();
     const changedTrackedFiles = new Set<string>();
