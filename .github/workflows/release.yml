@@ -11,12 +11,13 @@ jobs:
     with:
       report-name: playwright-artifacts
 
-  release:
+  build:
     needs: ci
     if: ${{ success() }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
+    outputs:
+      vsix_name: ${{ steps.version.outputs.vsix_name }}
 
     steps:
       - uses: actions/checkout@v6
@@ -50,13 +51,59 @@ jobs:
         run: |
           awk '/^## /{if(p) exit; p=1; next} p{if(NF || started) print; if(NF) started=1}' CHANGELOG.md > release-notes.md
 
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-artifacts
+          path: |
+            ${{ steps.version.outputs.vsix_name }}
+            release-notes.md
+
+  github-release:
+    needs: build
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: release-artifacts
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.version.outputs.vsix_name }}
+          files: ${{ needs.build.outputs.vsix_name }}
           body_path: release-notes.md
 
+  marketplace-release:
+    needs: build
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+        with:
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: release-artifacts
+
       - name: Publish to VS Code Marketplace
-        run: pnpm run publish
+        run: pnpm exec vsce publish --packagePath ${{ needs.build.outputs.vsix_name }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
