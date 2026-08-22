@@ -1,6 +1,7 @@
 import fs from "fs";
 import * as vscode from "vscode";
 import { remapPathSpelling, type PathSpellingMapping } from "./utils";
+import type { RealPath, WorkspacePath } from "./types";
 
 // Mappings between workspace folder paths as spelled by VS Code and their resolved (realpath)
 // spellings, cached per set of workspace folders. VS Code keeps the spelling a folder was
@@ -36,13 +37,22 @@ function workspaceFolderMappings(): { byWorkspacePath: PathSpellingMapping[]; by
 }
 
 /**
+ * Brands a path that is known to already use the resolved (realpath) spelling, e.g. the output
+ * of `fs.realpathSync.native`, jj's stdout, or a join of an already-resolved root with a
+ * relative path. This is a no-op assertion.
+ */
+export function asRealPath(fsPath: string): RealPath {
+  return fsPath as RealPath;
+}
+
+/**
  * Maps a path spelled relative to a VS Code workspace folder onto its resolved (realpath)
  * spelling, so it matches paths derived from the canonical repository root. Returns the input
  * unchanged when the path lives outside the workspace folders or already uses the resolved
  * spelling.
  */
-export function toRealPathSpelling(fsPath: string): string {
-  return remapPathSpelling(fsPath, workspaceFolderMappings().byWorkspacePath) ?? fsPath;
+export function toRealPathSpelling(fsPath: string): RealPath {
+  return asRealPath(remapPathSpelling(fsPath, workspaceFolderMappings().byWorkspacePath) ?? fsPath);
 }
 
 /**
@@ -50,6 +60,6 @@ export function toRealPathSpelling(fsPath: string): string {
  * containing it. Returns the input unchanged when the path lives outside the workspace folders
  * or no workspace folder resolves to it.
  */
-export function toWorkspaceSpelling(fsPath: string): string {
-  return remapPathSpelling(fsPath, workspaceFolderMappings().byRealPath) ?? fsPath;
+export function toWorkspaceSpelling(fsPath: string): WorkspacePath {
+  return (remapPathSpelling(fsPath, workspaceFolderMappings().byRealPath) ?? fsPath) as WorkspacePath;
 }

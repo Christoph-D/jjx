@@ -7,14 +7,23 @@ import { diffKey, interdiffKey, type JJDecorationProvider } from "./decoration-p
 import { logger } from "./logger";
 import { anyEvent, filterEvent } from "./vscode-utils";
 import { formatAtRevTitle, formatChangeIdShort, formatDiffTitle, formatWorkingCopyTitle, normalizePath } from "./utils";
-import { toWorkspaceSpelling } from "./workspace-paths";
+import { asRealPath, toWorkspaceSpelling } from "./workspace-paths";
 import { JJFileSystemProvider } from "./file-system-provider";
 import { getConfigArgs, getJJPath } from "./config";
 import { collectProcessOutput, spawnJJ, CancelledError } from "./process";
 import { extensionDir } from "./config";
 import { JJRepository, resolveRealpath } from "./repository";
 import { StaleWorkingCopyError } from "./errors";
-import type { ChangeId, FileStatus, FullChangeId, RepositoryStatus, Show, Change } from "./types";
+import type {
+  ChangeId,
+  FileStatus,
+  FullChangeId,
+  RealPath,
+  RepositoryStatus,
+  Show,
+  Change,
+  WorkspacePath,
+} from "./types";
 import { TIMEOUTS, MINIMUM_JJ_VERSION, type JJVersion } from "./constants";
 
 const checkedJjVersions = new Map<string, JJVersion | undefined>();
@@ -65,7 +74,7 @@ export class WorkspaceSourceControlManager {
     {
       jjPath: Awaited<ReturnType<typeof getJJPath>>;
       jjConfigArgs: string[];
-      repoRoot: string;
+      repoRoot: RealPath;
       jjVersion: JJVersion | undefined;
     }
   > = new Map();
@@ -131,7 +140,7 @@ export class WorkspaceSourceControlManager {
       {
         jjPath: Awaited<ReturnType<typeof getJJPath>>;
         jjConfigArgs: string[];
-        repoRoot: string;
+        repoRoot: RealPath;
         jjVersion: JJVersion | undefined;
       }
     >();
@@ -151,19 +160,23 @@ export class WorkspaceSourceControlManager {
         }
         const jjConfigArgs = getConfigArgs(extensionDir);
 
-        let repoRoot = (
-          await collectProcessOutput(
-            spawnJJ(jjPath.filepath, ["--ignore-working-copy", "root"], {
-              timeout: TIMEOUTS.DEFAULT,
-              cwd: workspaceFolder.uri.fsPath,
-            }),
-            effectiveToken,
-          )
-        ).stdout
-          .toString()
-          .trim();
+        // jj reports the root in its resolved spelling; realpathSync resolves any symlinks
+        // the workspace folder was opened through, so both branches keep that spelling.
+        let repoRoot = asRealPath(
+          (
+            await collectProcessOutput(
+              spawnJJ(jjPath.filepath, ["--ignore-working-copy", "root"], {
+                timeout: TIMEOUTS.DEFAULT,
+                cwd: workspaceFolder.uri.fsPath,
+              }),
+              effectiveToken,
+            )
+          ).stdout
+            .toString()
+            .trim(),
+        );
         try {
-          repoRoot = fs.realpathSync.native(repoRoot);
+          repoRoot = asRealPath(fs.realpathSync.native(repoRoot));
         } catch {
           // Fall back to original path if realpath fails
         }
@@ -308,9 +321,15 @@ export class WorkspaceSourceControlManager {
   }
 
   getRepositorySourceControlManagerFromUri(uri: vscode.Uri) {
-    const realFsPath = resolveRealpath(uri.fsPath);
+    return this.getRepositorySourceControlManagerFromRealPath(resolveRealpath(uri.fsPath));
+  }
+
+  /**
+   * Finds the repository containing `fsPath`.
+   */
+  getRepositorySourceControlManagerFromRealPath(fsPath: RealPath) {
     return this.repoSCMs.find((repo) => {
-      return !path.relative(repo.repositoryRoot, realFsPath).startsWith("..");
+      return !path.relative(repo.repositoryRoot, fsPath).startsWith("..");
     });
   }
 
@@ -438,7 +457,7 @@ class RepositorySourceControlManager {
   private watcherDebounceTimer: NodeJS.Timeout | undefined;
 
   constructor(
-    public repositoryRoot: string,
+    public repositoryRoot: RealPath,
     private decorationProvider: JJDecorationProvider,
     private fileSystemProvider: JJFileSystemProvider,
     jjPath: string,
@@ -923,6 +942,8 @@ class RepositorySourceControlManager {
   }
 }
 
+type WorkspaceFileStatus = Omit<FileStatus, "path"> & { path: WorkspacePath };
+
 function buildResourceStates(
   fileStatuses: FileStatus[],
   options: {
@@ -943,7 +964,7 @@ function buildResourceStates(
     const isWorkingCopyConflicted = workingCopyConflictedFiles?.has(normalizePath(fileStatus.path)) ?? false;
     // VS Code derives the path shown after the file name from the resource URI, so URIs must
     // use the workspace folder's path spelling.
-    const uriFileStatus = { ...fileStatus, path: toWorkspaceSpelling(fileStatus.path) };
+    const uriFileStatus: WorkspaceFileStatus = { ...fileStatus, path: toWorkspaceSpelling(fileStatus.path) };
     const workingCopyUri = vscode.Uri.file(uriFileStatus.path);
     const beforeUri =
       uriFileStatus.type === "A"
@@ -1042,7 +1063,7 @@ function buildComparisonDiffResourceStates(
 }
 
 function getResourceStateCommand(
-  fileStatus: FileStatus,
+  fileStatus: WorkspaceFileStatus,
   beforeUri: vscode.Uri,
   afterUri: vscode.Uri,
   toRev: string,
@@ -1068,7 +1089,7 @@ function getResourceStateCommand(
 }
 
 function computeFallbackCommand(
-  fileStatus: FileStatus,
+  fileStatus: WorkspaceFileStatus,
   beforeUri: vscode.Uri,
   afterUri: vscode.Uri,
   toRev: string,

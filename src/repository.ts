@@ -59,7 +59,7 @@ import {
 } from "./jj-editor";
 import { TIMEOUTS, type JJVersion, versionAtLeast, JJ_VERSION_WITH_TAG_TRACKING } from "./constants";
 import { withDivergenceHandling } from "./divergence-handling";
-import { toRealPathSpelling } from "./workspace-paths";
+import { asRealPath, toRealPathSpelling } from "./workspace-paths";
 import type {
   FileStatus,
   FileStatusType,
@@ -75,6 +75,7 @@ import type {
   Operation,
   DiffFileEntry,
   FullChangeId,
+  RealPath,
 } from "./types";
 import {
   SYMLINK_FILE_MODE,
@@ -134,7 +135,8 @@ export class JJRepository {
   >();
 
   constructor(
-    public repositoryRoot: string,
+    // The repository root as resolved via realpath, matching the paths jj reports.
+    public repositoryRoot: RealPath,
     private jjPath: string,
     private jjConfigArgs: string[],
     private jjVersion: JJVersion | undefined,
@@ -2104,9 +2106,9 @@ export class JJRepository {
   }
 }
 
-export function resolveRealpath(filepath: string): string {
+export function resolveRealpath(filepath: string): RealPath {
   try {
-    return realFs.realpathSync.native(filepath);
+    return asRealPath(realFs.realpathSync.native(filepath));
   } catch {
     // Paths of files that no longer exist on disk (e.g. deleted in the working copy) cannot be
     // resolved here; fall back to re-spelling the path via the workspace folders so it still

@@ -3,9 +3,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { parseFileStatuses, parseUntrackedFileStatuses } from "../parse-file-statuses";
-import type { DiffFileEntry } from "../types";
+import type { DiffFileEntry, RealPath } from "../types";
 
-const repoRoot = process.platform === "win32" ? "C:\\repo" : "/repo";
+const repoRoot = (process.platform === "win32" ? "C:\\repo" : "/repo") as RealPath;
 
 function diffFile(partial: Partial<DiffFileEntry> & Pick<DiffFileEntry, "status_char" | "target_path">): DiffFileEntry {
   return {

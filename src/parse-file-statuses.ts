@@ -1,6 +1,6 @@
 import path from "path";
 import { normalizePath, toForwardSlashes } from "./utils";
-import type { DiffFileEntry, FileStatus, FileStatusType } from "./types";
+import type { DiffFileEntry, FileStatus, FileStatusType, RealPath } from "./types";
 
 export type ParsedFileStatuses = {
   fileStatuses: FileStatus[];
@@ -18,7 +18,7 @@ export type ParsedFileStatuses = {
 export function parseFileStatuses(
   diffFiles: DiffFileEntry[],
   conflictedPaths: string[] | undefined,
-  repositoryRoot: string,
+  repositoryRoot: RealPath,
 ): ParsedFileStatuses {
   const fileStatuses: FileStatus[] = [];
   const fileStatusesByPath = new Map<string, FileStatus>();
@@ -34,7 +34,7 @@ export function parseFileStatuses(
     const statusChar = diffFile.status_char as FileStatusType;
     const targetPath = toForwardSlashes(path.normalize(diffFile.target_path));
     const sourcePath = toForwardSlashes(path.normalize(diffFile.source_path));
-    const fullPath = path.join(repositoryRoot, targetPath);
+    const fullPath = path.join(repositoryRoot, targetPath) as RealPath;
     const isConflict = conflictedFiles.has(normalizePath(fullPath));
 
     let fileStatus: FileStatus;
@@ -60,7 +60,7 @@ export function parseFileStatuses(
 
   for (const conflictedPath of conflictedPaths || []) {
     const normalizedPath = toForwardSlashes(path.normalize(conflictedPath));
-    const fullPath = path.join(repositoryRoot, normalizedPath);
+    const fullPath = path.join(repositoryRoot, normalizedPath) as RealPath;
 
     const normalizedFullPath = normalizePath(fullPath);
     if (!fileStatusesByPath.has(normalizedFullPath)) {
@@ -85,7 +85,7 @@ const UNTRACKED_SECTION_HEADER = "Untracked paths:";
  * {@link FileStatus} objects with type `?`. Untracked files only ever appear
  * for the working copy, so this is only relevant when inspecting `@`.
  */
-export function parseUntrackedFileStatuses(statusOutput: string, repositoryRoot: string): FileStatus[] {
+export function parseUntrackedFileStatuses(statusOutput: string, repositoryRoot: RealPath): FileStatus[] {
   const lines = statusOutput.split("\n");
   const result: FileStatus[] = [];
   let inUntrackedSection = false;
@@ -101,7 +101,7 @@ export function parseUntrackedFileStatuses(statusOutput: string, repositoryRoot:
       if (!relativePath) {
         continue;
       }
-      const fullPath = path.join(repositoryRoot, relativePath);
+      const fullPath = path.join(repositoryRoot, relativePath) as RealPath;
       result.push({
         type: "?",
         file: path.basename(relativePath),

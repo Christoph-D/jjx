@@ -2,6 +2,18 @@ export type FileStatusType = "A" | "M" | "D" | "R" | "C" | "X" | "?";
 
 export type FullChangeId = string & { readonly __brand: "FullChangeId" };
 
+/**
+ * An absolute path in its resolved (realpath) spelling, as reported by jj (repository roots,
+ * file statuses) and by `fs.realpathSync`.
+ */
+export type RealPath = string & { readonly __brand: "RealPath" };
+
+/**
+ * An absolute path in the spelling VS Code uses for the workspace folder, as needed for SCM
+ * resource URIs and display.
+ */
+export type WorkspacePath = string & { readonly __brand: "WorkspacePath" };
+
 export interface ChangeId {
   // Internal only: A full-length change ID.
   // This ID is meant to be used in jj commands
@@ -27,7 +39,7 @@ export interface ChangeId {
 export type FileStatus = {
   type: FileStatusType;
   file: string;
-  path: string;
+  path: RealPath;
   renamedFrom?: string;
   // True when the file is listed in the change's conflicted files, even if it
   // also has a regular diff entry (e.g. in merges). Synthesized conflict

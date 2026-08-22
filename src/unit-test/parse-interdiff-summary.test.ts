@@ -3,8 +3,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { parseInterdiffSummary } from "../parse-interdiff-summary";
+import type { RealPath } from "../types";
 
-const repoRoot = process.platform === "win32" ? "C:\\repo" : "/repo";
+const repoRoot = (process.platform === "win32" ? "C:\\repo" : "/repo") as RealPath;
 
 describe("parseInterdiffSummary Test Suite", () => {
   it("parses Added/Modified/Deleted lines", () => {

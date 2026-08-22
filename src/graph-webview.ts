@@ -15,7 +15,7 @@ import {
   shouldOpenWorkingCopyRightSide,
   toForwardSlashes,
 } from "./utils";
-import type { ChangeId, FullChangeId } from "./types";
+import type { ChangeId, FullChangeId, RealPath } from "./types";
 import { assignLanes } from "./lane-assigner";
 import {
   getUniqueId,
@@ -1013,7 +1013,7 @@ function description(entry: LogEntry) {
 function parseJJLogJson(
   entries: LogEntry[],
   style: string = "full",
-  repositoryRoot?: string,
+  repositoryRoot?: RealPath,
 ): { changes: ChangeNode[]; maxPrefixLength: number; offsetWidth: number } {
   const nonSyntheticEntries = entries.filter((e) => !getUniqueEntryId(e).startsWith("~"));
 
