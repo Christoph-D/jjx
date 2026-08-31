@@ -1,5 +1,17 @@
 # Change Log
 
+## 1.14.2
+
+### New Features
+
+- **Changed-file context menu in the graph view** - Right-clicking a changed file in the graph view now opens a context
+  menu similar to the files in the SCM view
+
+### Bug Fixes
+
+- Hide the commit detail popup while a context menu is open
+- Omit the Open File menu entry for deleted files outside the working copy
+
 ## 1.14.1
 
 ### Internal
