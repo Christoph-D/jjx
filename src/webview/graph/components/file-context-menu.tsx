@@ -3,7 +3,9 @@ import { Menu, MenuItem, MenuSeparator } from "./menu-container";
 
 // Mirrors the scm/resourceState/context menu contributions in package.json:
 // the working-copy group shows "Open File" (the working-copy file itself) while
-// other groups additionally offer "Open File in Working Copy".
+// other groups additionally offer "Open File in Working Copy". "Open File" is
+// omitted for deleted files outside the working copy because they do not exist
+// at their own revision.
 export function FileContextMenu() {
   const state = fileContextMenu.value;
   if (!state) {
@@ -30,15 +32,17 @@ export function FileContextMenu() {
       >
         View as Diff
       </MenuItem>
-      <MenuItem
-        action="openFileAtRevision"
-        onClick={() => {
-          postMessage({ command: "openFileAtRevision", changeId: change.id.changeId, path: file.path });
-          fileContextMenu.value = null;
-        }}
-      >
-        Open File
-      </MenuItem>
+      {(isWorkingCopy || file.type !== "D") && (
+        <MenuItem
+          action="openFileAtRevision"
+          onClick={() => {
+            postMessage({ command: "openFileAtRevision", changeId: change.id.changeId, path: file.path });
+            fileContextMenu.value = null;
+          }}
+        >
+          Open File
+        </MenuItem>
+      )}
       {!isWorkingCopy && (
         <MenuItem
           action="openFileInWorkingCopy"

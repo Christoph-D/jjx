@@ -977,6 +977,9 @@ function buildResourceStates(
     const afterUri = changeId ? toJJUri(vscode.Uri.file(uriFileStatus.path), { rev: changeId }) : workingCopyUri;
     return {
       resourceUri: afterUri,
+      // Encodes the file status so menu `when` clauses in package.json can target e.g.
+      // deleted files, which cannot be opened at the change's own revision.
+      contextValue: `status-${uriFileStatus.type.toLowerCase()}`,
       decorations: {
         strikeThrough: uriFileStatus.type === "D",
         tooltip: path.basename(uriFileStatus.file),

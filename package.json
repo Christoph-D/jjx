@@ -505,7 +505,7 @@
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && (scmResourceGroup == @ || scmResourceState != 'status-d') && jj.jjBinaryFound",
           "group": "1_modification@2"
         },
         {
@@ -540,7 +540,7 @@
         },
         {
           "command": "jj.openFileAtRevision",
-          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && config.jjx.fileClickAction != 'at-revision' && jj.jjBinaryFound",
+          "when": "scmProvider == jj && scmResourceGroup != @ && scmResourceGroup != interdiff && scmResourceGroup != diff && scmResourceGroup != untracked && scmResourceState != 'status-d' && config.jjx.fileClickAction != 'at-revision' && jj.jjBinaryFound",
           "group": "inline@2"
         },
         {
