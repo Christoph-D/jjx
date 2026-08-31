@@ -7,6 +7,7 @@ import path from "path";
 import { showErrorMessage } from "./vscode-utils";
 import {
   changeIdAffixes,
+  formatAtRevTitle,
   formatChangeIdShort,
   formatDiffTitle,
   formatWorkingCopyTitle,
@@ -630,6 +631,50 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           } catch (error: unknown) {
             showErrorMessage("Failed to open diff", error);
           }
+          break;
+        }
+        case "openFileAtRevision": {
+          const absPath = joinRepositoryPath(repo.repositoryRoot, message.path);
+          try {
+            const node = this.findRegularChange(message.changeId);
+            // Working-copy files open live from disk, mirroring the SCM view where the
+            // working-copy resource URI is the real file.
+            const uri = node?.currentWorkingCopy
+              ? toWorkspaceUri(absPath)
+              : toJJUri(toWorkspaceUri(absPath), { rev: message.changeId });
+            const revForDisplay = node
+              ? node.currentWorkingCopy
+                ? formatWorkingCopyTitle()
+                : formatChangeIdShort(node.id)
+              : await repo.resolveRevSuffix(message.changeId);
+            await vscode.commands.executeCommand(
+              "vscode.open",
+              uri,
+              {},
+              formatAtRevTitle(path.basename(message.path), revForDisplay),
+            );
+          } catch (error: unknown) {
+            showErrorMessage("Failed to open file", error);
+          }
+          break;
+        }
+        case "openFileInWorkingCopy": {
+          const absPath = joinRepositoryPath(repo.repositoryRoot, message.path);
+          try {
+            await vscode.commands.executeCommand("vscode.open", toWorkspaceUri(absPath), {});
+          } catch (error: unknown) {
+            showErrorMessage("Failed to open file", error);
+          }
+          break;
+        }
+        case "copyPath":
+          await vscode.env.clipboard.writeText(
+            toWorkspaceUri(joinRepositoryPath(repo.repositoryRoot, message.path)).fsPath,
+          );
+          break;
+        case "copyRelativePath": {
+          const absPath = joinRepositoryPath(repo.repositoryRoot, message.path);
+          await vscode.env.clipboard.writeText(repositoryRelativePath(repo.repositoryRoot, absPath));
           break;
         }
         case "reportError":

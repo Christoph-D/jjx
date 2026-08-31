@@ -14,7 +14,7 @@ export interface LogEntryRemoteRef {
   remote: string;
 }
 
-interface ChangedFile {
+export interface ChangedFile {
   type: FileStatusType;
   path: string;
   renamedFrom?: string;
@@ -157,6 +157,10 @@ export type WebviewToExtensionMessage =
       status: FileStatusType;
       renamedFrom?: string;
     }
+  | { command: "openFileAtRevision"; changeId: FullChangeId; path: string }
+  | { command: "openFileInWorkingCopy"; path: string }
+  | { command: "copyPath"; path: string }
+  | { command: "copyRelativePath"; path: string }
   | { command: "updateStale" }
   | { command: "reportError"; message: string; stack?: string }
   | { command: "showWarning"; message: string };

@@ -22,6 +22,7 @@ import {
   pillContextMenu,
   currentWorkspace,
   remoteRefContextMenu,
+  fileContextMenu,
   closeAllMenus,
   pushingBookmarks,
   pushingTags,
@@ -565,6 +566,19 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Regu
               status: f.type,
               ...(f.renamedFrom ? { renamedFrom: f.renamedFrom } : {}),
             });
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            clearAllTooltipTimers();
+            tooltip.value = null;
+            closeAllMenus();
+            fileContextMenu.value = {
+              change,
+              file: f,
+              pageX: e.pageX,
+              pageY: e.pageY,
+            };
           }}
         >
           <span class={styles.changedFileStatus}>

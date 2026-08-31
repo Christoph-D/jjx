@@ -7,6 +7,7 @@ import type {
   RegularChangeNode,
   WebviewToExtensionMessage,
   FullChangeId,
+  ChangedFile,
 } from "../../graph-protocol";
 
 declare function acquireVsCodeApi(): VSCodeAPI;
@@ -128,6 +129,15 @@ interface RemoteRefContextMenuState {
 
 export const remoteRefContextMenu = signal<RemoteRefContextMenuState | null>(null);
 
+interface FileContextMenuState {
+  change: RegularChangeNode;
+  file: ChangedFile;
+  pageX: number;
+  pageY: number;
+}
+
+export const fileContextMenu = signal<FileContextMenuState | null>(null);
+
 export const pendingGraphUpdate = signal<PendingGraphUpdate | null>(null);
 
 export const pushingBookmarks = signal<Set<string>>(new Set());
@@ -140,4 +150,5 @@ export function closeAllMenus() {
   rebaseMenu.value = null;
   pillContextMenu.value = null;
   remoteRefContextMenu.value = null;
+  fileContextMenu.value = null;
 }
