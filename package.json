@@ -6,7 +6,7 @@
   "icon": "images/logo.png",
   "version": "1.14.2",
   "engines": {
-    "vscode": "^1.110.0",
+    "vscode": "^1.125.0",
     "node": ">=20"
   },
   "categories": [
@@ -1031,7 +1031,7 @@
     "@playwright/test": "^1.62.1",
     "@types/cross-spawn": "^6.0.6",
     "@types/node": "^26.4.0",
-    "@types/vscode": "1.110.0",
+    "@types/vscode": "1.125.0",
     "@types/which": "^3.0.4",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
