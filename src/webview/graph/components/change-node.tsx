@@ -9,7 +9,6 @@ import {
   selectedNodes,
   changeDoubleClickAction,
   contextMenu,
-  rebaseMenu,
   tooltip,
   isDragging,
   justFinishedDrag,
@@ -24,6 +23,8 @@ import {
   remoteRefContextMenu,
   fileContextMenu,
   closeAllMenus,
+  isAnyMenuOpen,
+  clearAllTooltipTimers,
   pushingBookmarks,
   pushingTags,
   deletingBookmarks,
@@ -38,14 +39,9 @@ import { computeSelection } from "../selection";
 import { SWIMLANE_WIDTH, CHANGE_ID_RIGHT_PADDING, rootChangeId } from "../types";
 import { getUniqueId, type LaneNode, type ChangeNode, type RegularChangeNode } from "../../../graph-protocol";
 import { abbreviateName, cx, escapeInvisibleChars } from "../utils";
-import { clearAllTooltipTimers } from "../hooks/use-tooltip-timers";
 
 function shouldShowTooltip(change: ChangeNode): change is RegularChangeNode {
   return change.branchType !== "~" && change.id.changeId !== rootChangeId;
-}
-
-function isMenuOpen(): boolean {
-  return contextMenu.value !== null || rebaseMenu.value !== null;
 }
 
 function isOverTooltipTarget(e: MouseEvent): boolean {
@@ -109,8 +105,6 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef, compact, s
     if (isElided || change.id.changeId === rootChangeId) {
       return;
     }
-    clearHoverTimers();
-    tooltip.value = null;
     closeAllMenus();
     contextMenu.value = {
       change,
@@ -122,7 +116,7 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef, compact, s
 
   const tryStartTooltip = (e: MouseEvent) => {
     clearHideTimer();
-    if (isDragging.value || isMenuOpen() || !showTooltips.value) {
+    if (isDragging.value || isAnyMenuOpen() || !showTooltips.value) {
       return;
     }
     if (shouldShowTooltip(change) && isOverTooltipTarget(e)) {
@@ -570,8 +564,6 @@ const ChangedFileList = memo(function ChangedFileList({ change }: { change: Regu
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            clearAllTooltipTimers();
-            tooltip.value = null;
             closeAllMenus();
             fileContextMenu.value = {
               change,

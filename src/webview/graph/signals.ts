@@ -145,10 +145,40 @@ export const pushingTags = signal<Set<string>>(new Set());
 export const deletingBookmarks = signal<Set<string>>(new Set());
 export const deletingTags = signal<Set<string>>(new Set());
 
+export function clearAllTooltipTimers() {
+  if (diffStatsPrefetchTimeout.value) {
+    clearTimeout(diffStatsPrefetchTimeout.value);
+    diffStatsPrefetchTimeout.value = null;
+  }
+  if (tooltipTimeout.value) {
+    clearTimeout(tooltipTimeout.value);
+    tooltipTimeout.value = null;
+  }
+  if (tooltipHideTimeout.value) {
+    clearTimeout(tooltipHideTimeout.value);
+    tooltipHideTimeout.value = null;
+  }
+}
+
+export function isAnyMenuOpen(): boolean {
+  return (
+    contextMenu.value !== null ||
+    rebaseMenu.value !== null ||
+    pillContextMenu.value !== null ||
+    remoteRefContextMenu.value !== null ||
+    fileContextMenu.value !== null
+  );
+}
+
 export function closeAllMenus() {
   contextMenu.value = null;
   rebaseMenu.value = null;
   pillContextMenu.value = null;
   remoteRefContextMenu.value = null;
   fileContextMenu.value = null;
+  // The commit detail popup must never be visible alongside an open menu, and
+  // pending tooltip timers must not fire while a menu is open, so hide the
+  // popup and cancel its timers whenever menus are closed or swapped out.
+  tooltip.value = null;
+  clearAllTooltipTimers();
 }

@@ -5,27 +5,13 @@ import {
   tooltip,
   postMessage,
   diffStatsCache,
+  clearAllTooltipTimers,
 } from "../signals";
 import type { RegularChangeNode } from "../../../graph-protocol";
 
 const TOOLTIP_DELAY_MS = 300;
 const TOOLTIP_HIDE_DELAY_MS = 100;
 const DIFF_STATS_PREFETCH_DELAY_MS = 100;
-
-export function clearAllTooltipTimers() {
-  if (diffStatsPrefetchTimeout.value) {
-    clearTimeout(diffStatsPrefetchTimeout.value);
-    diffStatsPrefetchTimeout.value = null;
-  }
-  if (tooltipTimeout.value) {
-    clearTimeout(tooltipTimeout.value);
-    tooltipTimeout.value = null;
-  }
-  if (tooltipHideTimeout.value) {
-    clearTimeout(tooltipHideTimeout.value);
-    tooltipHideTimeout.value = null;
-  }
-}
 
 export function useTooltipTimers() {
   const startHoverTimers = (change: RegularChangeNode, pageX: number, pageY: number) => {
