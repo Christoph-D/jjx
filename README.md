@@ -173,7 +173,19 @@ If you encounter any problems, please [report them on GitHub](https://github.com
 If you see annotations like "M, M" next to files, this is caused by VS Code's built-in Git extension running alongside
 JJX. To disable Git, disable `git.enabled` in your VS Code settings.
 
-### Performance issues
+### Slow diff
+
+Some file diffs or merges load very slowly. This is a known VS Code issue where VS Code's internal diff algorithm takes
+an unusually long time for certain diffs.
+
+You can verify that it's VS Code and not Jujutsu X by opening the same diff with `code --diff <file-a> <file-b>`.
+
+Workarounds:
+
+- Wait a few seconds; VS Code automatically stops the diff early after 5 seconds
+- Set `diffEditor.diffAlgorithm` and `mergeEditor.diffAlgorithm` to "legacy"
+
+### Other performance issues
 
 If you experience performance issues, try these steps:
 
