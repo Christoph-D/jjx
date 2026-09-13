@@ -45,6 +45,19 @@ export function killAllProcesses(): void {
 
 const STDIO_DRAIN_GRACE_MS = 2000;
 
+const COMMAND_SUMMARY_MAX_ARG_LENGTH = 48;
+const COMMAND_SUMMARY_MAX_LENGTH = 160;
+
+function summarizeCommand(args: string[]): string {
+  const shortenedArgs = args.map((arg) =>
+    arg.length > COMMAND_SUMMARY_MAX_ARG_LENGTH ? `${arg.slice(0, COMMAND_SUMMARY_MAX_ARG_LENGTH - 3)}...` : arg,
+  );
+  const command = shortenedArgs.join(" ");
+  return command.length > COMMAND_SUMMARY_MAX_LENGTH
+    ? `${command.slice(0, COMMAND_SUMMARY_MAX_LENGTH - 3)}...`
+    : command;
+}
+
 export function collectProcessOutput(
   childProcess: ChildProcess,
   token?: vscode.CancellationToken,
@@ -127,9 +140,23 @@ export function spawnJJ(jjPath: string, args: string[], options: SpawnOptions) {
 
   logger.trace(`spawn: ${JSON.stringify([jjPath, ...args])} ${JSON.stringify({ spawnOptions: finalOptions })}`);
 
+  const startTime = performance.now();
   const childProcess = spawn(jjPath, args, finalOptions);
+  const command = summarizeCommand(args);
   activeProcesses.add(childProcess);
-  childProcess.on("close", () => activeProcesses.delete(childProcess));
+  childProcess.on("close", (code, signal) => {
+    activeProcesses.delete(childProcess);
+    logger.trace(
+      `spawn done: pid=${childProcess.pid} code=${code} signal=${signal ?? "none"} duration=${(
+        performance.now() - startTime
+      ).toFixed(1)}ms jj ${command}`,
+    );
+  });
+  childProcess.on("error", (error: Error) => {
+    logger.trace(
+      `spawn failed: pid=${childProcess.pid} duration=${(performance.now() - startTime).toFixed(1)}ms jj ${command} error=${error.message}`,
+    );
+  });
   return childProcess;
 }
 
