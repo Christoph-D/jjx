@@ -1,5 +1,27 @@
 # Change Log
 
+## 1.15.0
+
+### New Features
+
+- **Details view for selected change** - Add a commit details view similar to `jj show`, reachable by clicking the info
+  icon at the top of the graph view or by pressing `i` in the graph view
+- **Keyboard shortcuts in the graph view**: See README.md for the list of shortcuts
+- **Shortest change ID in annotations** - Blame annotations now include a short change ID
+
+### Bug Fixes
+
+- **Split**: Fix splitting a change with a modified executable file so it no longer produces rogue mode changes
+- **Repository**: Store rename sources as absolute paths so operations such as discard work when the extension host runs
+  from a different working directory
+
+### Internal
+
+- Update dependencies
+- Update the minimum required VS Code version to 1.125
+- Update the Playwright devcontainer image to 1.62.1
+- Remove the unused `change_id_short` template field and unused template aliases from `config.toml`
+
 ## 1.14.2
 
 ### New Features
