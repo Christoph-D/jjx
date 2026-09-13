@@ -12,13 +12,13 @@ import {
 import { ChangeNodeRow } from "./change-node";
 import { NodeCircles } from "./node-circle";
 import { ConnectionLines } from "./connection-lines";
-import { useKeyboardSelection } from "../hooks/use-keyboard-selection";
+import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts";
 import { getUniqueId } from "../../../graph-protocol";
 
 export function Graph() {
   const firstChangeIdRef = useRef<HTMLDivElement>(null);
 
-  useKeyboardSelection();
+  useKeyboardShortcuts();
 
   useEffect(() => {
     document.fonts.ready.then(() => {
