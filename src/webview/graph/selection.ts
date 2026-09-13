@@ -1,4 +1,4 @@
-import type { ChangeNode, FullChangeId } from "../../graph-protocol";
+import type { ChangeNode, FullChangeId, RegularChangeNode } from "../../graph-protocol";
 
 export const elidedRangeSelectionWarning =
   "Shift+click doesn't support selecting a range that includes elided commits.";
@@ -69,4 +69,47 @@ export function computeSelection(
   }
 
   return { kind: "applied", selection: new Set([clickedId]), anchor: clickedId };
+}
+
+/**
+ * Computes the graph selection resulting from pressing ArrowUp (`direction`
+ * -1) or ArrowDown (`direction` 1):
+ * - The selection moves one selectable row from the last selected change,
+ *   skipping elided ("~") rows. Elided rows after the last change mean there
+ *   is nothing further to select.
+ * - With no selection (or a selection that is no longer part of the graph),
+ *   ArrowDown selects the top-most change and ArrowUp the bottom-most one.
+ * - The selection never wraps: moving past the first or last change leaves
+ *   everything unchanged, as does an all-elided graph. In those cases `null`
+ *   is returned.
+ *
+ * The last selected change is the most recently added id in the selection
+ * that is still present in the graph, so a multi-selection behaves exactly
+ * like a single selection of its last member.
+ */
+export function computeArrowKeySelection(
+  changes: ChangeNode[],
+  currentSelection: ReadonlySet<FullChangeId>,
+  direction: 1 | -1,
+): { selection: Set<FullChangeId>; anchor: FullChangeId } | null {
+  const selectable = changes.filter((c): c is RegularChangeNode => c.branchType !== "~");
+  if (selectable.length === 0) {
+    return null;
+  }
+
+  let referencePos = -1;
+  for (const id of Array.from(currentSelection).reverse()) {
+    const pos = selectable.findIndex((c) => c.id.changeId === id);
+    if (pos !== -1) {
+      referencePos = pos;
+      break;
+    }
+  }
+
+  const targetPos = referencePos === -1 ? (direction === 1 ? 0 : selectable.length - 1) : referencePos + direction;
+  if (targetPos < 0 || targetPos >= selectable.length) {
+    return null;
+  }
+  const anchor = selectable[targetPos].id.changeId;
+  return { selection: new Set([anchor]), anchor };
 }

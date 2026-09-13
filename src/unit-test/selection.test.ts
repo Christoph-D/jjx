@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { computeSelection, elidedRangeSelectionWarning } from "../webview/graph/selection";
+import { computeArrowKeySelection, computeSelection, elidedRangeSelectionWarning } from "../webview/graph/selection";
 import type { ChangeNode, FullChangeId, RegularChangeNode } from "../graph-protocol";
 
 function full(id: string): FullChangeId {
@@ -167,5 +167,98 @@ describe("computeSelection", () => {
       assert.deepEqual(ids(outcome.selection), ["b"]);
       assert.equal(outcome.anchor, full("b"));
     }
+  });
+});
+
+describe("computeArrowKeySelection", () => {
+  it("moves the selection down one row", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("b")]), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("c")]), anchor: full("c") });
+  });
+
+  it("moves the selection up one row", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("b")]), -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a")]), anchor: full("a") });
+  });
+
+  it("skips elided rows when moving down", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), elided("e2"), regular("d")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("a")]), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("d")]), anchor: full("d") });
+  });
+
+  it("skips elided rows when moving up", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), elided("e2"), regular("d")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("d")]), -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a")]), anchor: full("a") });
+  });
+
+  it("selects the top-most change on ArrowDown without a selection", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), regular("c")];
+    const outcome = computeArrowKeySelection(changes, new Set(), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a")]), anchor: full("a") });
+  });
+
+  it("selects the bottom-most change on ArrowUp without a selection", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), regular("c")];
+    const outcome = computeArrowKeySelection(changes, new Set(), -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("c")]), anchor: full("c") });
+  });
+
+  it("uses the last selected change as the reference for a multi-selection", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c"), regular("d")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("a"), full("c")]), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("d")]), anchor: full("d") });
+  });
+
+  it("uses the last selected change still in the graph as the reference", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("b"), full("gone")]), -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a")]), anchor: full("a") });
+  });
+
+  it("starts from the top when no selected change is in the graph", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("gone")]), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a")]), anchor: full("a") });
+  });
+
+  it("does nothing on ArrowUp at the top-most change", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("a")]), -1);
+
+    assert.equal(outcome, null);
+  });
+
+  it("does nothing on ArrowDown at the bottom-most change", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("c")]), 1);
+
+    assert.equal(outcome, null);
+  });
+
+  it("does nothing on ArrowDown at the last change followed by elided rows", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), elided("e1")];
+    const outcome = computeArrowKeySelection(changes, new Set([full("b")]), 1);
+
+    assert.equal(outcome, null);
+  });
+
+  it("does nothing for a graph without selectable changes", () => {
+    const changes: ChangeNode[] = [elided("e1"), elided("e2")];
+    const outcome = computeArrowKeySelection(changes, new Set(), 1);
+
+    assert.equal(outcome, null);
   });
 });
