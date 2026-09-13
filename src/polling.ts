@@ -92,7 +92,7 @@ export function createPolling(
   checkRepos: (specificFolders?: string[]) => Promise<void>,
 ): {
   throttledPoll: (forceRefresh: ForceRefresh) => Promise<void>;
-  scheduleNextPoll: () => Promise<void>;
+  scheduleNextPoll: () => void;
 } {
   const context = state.context;
 
@@ -112,22 +112,21 @@ export function createPolling(
 
   let isPollingCanceled = false;
   let pollTimeoutId: NodeJS.Timeout | undefined;
-  const scheduleNextPoll = async () => {
+  const scheduleNextPoll = () => {
     if (isPollingCanceled) {
       return;
     }
-    try {
-      await throttledPoll("if-changed");
-    } catch (err) {
+    void throttledPoll("if-changed").catch((err) => {
       logger.error(`Error during background poll: ${String(err)}`);
-    } finally {
-      if (state.workspaceSCM.repoSCMs.length === 0) {
-        pollTimeoutId = setTimeout(() => void scheduleNextPoll(), 5000);
-      } else {
-        const pollIntervalSeconds = vscode.workspace.getConfiguration("jjx").get<number>("pollIntervalSeconds");
-        if (pollIntervalSeconds !== undefined && pollIntervalSeconds > 0) {
-          pollTimeoutId = setTimeout(() => void scheduleNextPoll(), pollIntervalSeconds * 1000);
-        }
+    });
+    // Re-arm immediately instead of after the poll settles: a poll stuck on a stalled jj
+    // subprocess must not stop future ticks. Overlapping ticks are coalesced by the throttle.
+    if (state.workspaceSCM.repoSCMs.length === 0) {
+      pollTimeoutId = setTimeout(scheduleNextPoll, 5000);
+    } else {
+      const pollIntervalSeconds = vscode.workspace.getConfiguration("jjx").get<number>("pollIntervalSeconds");
+      if (pollIntervalSeconds !== undefined && pollIntervalSeconds > 0) {
+        pollTimeoutId = setTimeout(scheduleNextPoll, pollIntervalSeconds * 1000);
       }
     }
   };

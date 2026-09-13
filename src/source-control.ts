@@ -577,18 +577,45 @@ class RepositorySourceControlManager {
       }
       this.forceRefreshPending = false;
       const refreshForce: ForceRefresh = pendingForce ? "force" : "if-changed";
-      this.checkForUpdatesPromise = this.checkForUpdatesUnsafe(effectiveToken, refreshForce).catch((e) => {
-        if (e instanceof CancelledError) {
-          return;
-        }
-        throw e;
-      });
+      this.checkForUpdatesPromise = this.checkForUpdatesWithDeadline(effectiveToken, refreshForce);
       try {
         await this.checkForUpdatesPromise;
       } finally {
         this.checkForUpdatesPromise = undefined;
       }
       observedRefresh = true;
+    }
+  }
+
+  /**
+   * Wraps checkForUpdatesUnsafe in a watchdog: a refresh that has not completed within
+   * TIMEOUTS.REFRESH_DEADLINE is cancelled so checkForUpdatesPromise (the coalescing lock)
+   * is released again. Without this, a single stalled jj subprocess would silently stop all
+   * polling for the repository.
+   */
+  private async checkForUpdatesWithDeadline(
+    token: vscode.CancellationToken,
+    forceRefresh: ForceRefresh,
+  ): Promise<void> {
+    const deadlineCancellation = new vscode.CancellationTokenSource();
+    const parentCancellation = token.onCancellationRequested(() => deadlineCancellation.cancel());
+    const deadlineTimer = setTimeout(() => {
+      logger.error(
+        `Repository refresh for ${this.repositoryRoot} did not complete within ` +
+          `${TIMEOUTS.REFRESH_DEADLINE}ms, cancelling it`,
+      );
+      deadlineCancellation.cancel();
+    }, TIMEOUTS.REFRESH_DEADLINE);
+    try {
+      await this.checkForUpdatesUnsafe(deadlineCancellation.token, forceRefresh);
+    } catch (e) {
+      if (!(e instanceof CancelledError)) {
+        throw e;
+      }
+    } finally {
+      clearTimeout(deadlineTimer);
+      parentCancellation.dispose();
+      deadlineCancellation.dispose();
     }
   }
 
@@ -625,7 +652,6 @@ class RepositorySourceControlManager {
       return;
     }
     if (this.operationId !== latestOperationId || forceRefresh === "force") {
-      this.operationId = latestOperationId;
       const status = await this.repository.getStatus(false, token, latestOperationId);
 
       if (token.isCancellationRequested) {
@@ -636,6 +662,9 @@ class RepositorySourceControlManager {
         return;
       }
       this.render();
+      // Commit the operation id only after the refresh completed so a cancelled refresh (e.g.
+      // watchdog aborted) retries the same operation on the next poll.
+      this.operationId = latestOperationId;
 
       this._onDidUpdate.fire({ operationId: latestOperationId });
     }
