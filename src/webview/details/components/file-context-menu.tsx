@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useRef } from "preact/hooks";
+import { useMenuBehavior } from "../../common/use-menu-behavior";
 import { closeFileContextMenu, fileContextMenu, formatShortChangeId, postMessage } from "../signals";
-import { positionMenu } from "./position-menu";
 
 // Mirrors the graph view's changed-file context menu (which in turn mirrors the
 // scm/resourceState/context menu contributions): the working-copy change shows "Open File"
@@ -11,44 +11,7 @@ export function FileContextMenu() {
   const state = fileContextMenu.value;
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!state) {
-      return;
-    }
-    const menu = ref.current;
-    let raf: number | undefined;
-    if (menu) {
-      menu.style.visibility = "hidden";
-      raf = requestAnimationFrame(() => {
-        if (!ref.current) {
-          return;
-        }
-        positionMenu(ref.current, state.clientX, state.clientY);
-        ref.current.style.visibility = "";
-      });
-    }
-    const handlePointerDown = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) {
-        closeFileContextMenu();
-      }
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        closeFileContextMenu();
-      }
-    };
-    window.addEventListener("pointerdown", handlePointerDown, true);
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("blur", closeFileContextMenu);
-    return () => {
-      if (raf !== undefined) {
-        cancelAnimationFrame(raf);
-      }
-      window.removeEventListener("pointerdown", handlePointerDown, true);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("blur", closeFileContextMenu);
-    };
-  }, [state]);
+  useMenuBehavior(ref, state, closeFileContextMenu);
 
   if (!state) {
     return null;
