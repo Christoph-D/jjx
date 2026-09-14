@@ -106,7 +106,7 @@ export type WebviewToExtensionMessage =
   | { command: "fetchDiffStats"; changeId: FullChangeId }
   | { command: "editChange"; changeId: FullChangeId }
   | { command: "editChangeDirect"; changeId: FullChangeId }
-  | { command: "newChildChange"; changeId: FullChangeId }
+  | { command: "newChildChange"; changeIds: FullChangeId[] }
   | { command: "selectChange"; selectedNodes: FullChangeId[] }
   | { command: "moveBookmark"; bookmark: string; targetChangeId: FullChangeId }
   | { command: "createBookmark"; targetChangeId: FullChangeId }

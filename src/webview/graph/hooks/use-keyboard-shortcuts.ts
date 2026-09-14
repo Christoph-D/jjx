@@ -1,6 +1,8 @@
 import { useEffect } from "preact/hooks";
+import { editChange } from "../edit-change";
 import { currentChanges, isAnyMenuOpen, isDragging, postMessage, selectedNodes, selectionAnchorId } from "../signals";
 import { computeArrowKeySelection } from "../selection";
+import type { RegularChangeNode } from "../../../graph-protocol";
 
 /**
  * The keyboard support. The rows themselves are not focusable, so the keys are
@@ -10,6 +12,10 @@ import { computeArrowKeySelection } from "../selection";
  * - Delete abandons the selected changes exactly like the "Abandon Change" and
  *   "Abandon All Selected Changes" context menu items; the extension side asks
  *   for confirmation before abandoning anything.
+ * - Enter opens a single selected change exactly like a double click (the
+ *   working copy only reacts to the "new" action and when it has content), and
+ *   with several selected changes it creates a new change on top with all of
+ *   them as parents.
  *
  * Modified keys (e.g. Shift+Arrow for range selection) are left alone, as are
  * keys pressed while a menu is open or a drag is in progress.
@@ -45,6 +51,27 @@ export function useKeyboardShortcuts() {
       }
     };
 
+    const activateSelection = (e: KeyboardEvent) => {
+      const selection = Array.from(selectedNodes.value);
+      if (selection.length === 0) {
+        return;
+      }
+      if (selection.length === 1) {
+        const change = currentChanges.value.find(
+          (c): c is RegularChangeNode => c.branchType !== "~" && c.id.changeId === selection[0],
+        );
+        if (change === undefined) {
+          return;
+        }
+        if (editChange(change)) {
+          e.preventDefault();
+        }
+        return;
+      }
+      e.preventDefault();
+      postMessage({ command: "newChildChange", changeIds: selection });
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
         return;
@@ -61,6 +88,9 @@ export function useKeyboardShortcuts() {
           return;
         case "Delete":
           abandonSelection(e);
+          return;
+        case "Enter":
+          activateSelection(e);
           return;
       }
     };

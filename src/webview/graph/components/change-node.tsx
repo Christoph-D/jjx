@@ -1,5 +1,6 @@
 import { type HTMLAttributes, type RefObject } from "preact";
 import { memo } from "preact/compat";
+import { editChange } from "../edit-change";
 import { useDragDrop } from "../hooks/use-drag-drop";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import dragGhostStyles from "./drag-ghost.module.css";
@@ -92,12 +93,7 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef, compact, s
     if (isElided) {
       return;
     }
-    if (change.currentWorkingCopy) {
-      if (changeDoubleClickAction.value !== "new" || change.isEmpty) {
-        return;
-      }
-    }
-    postMessage({ command: "editChange", changeId: change.id.changeId });
+    editChange(change);
   };
 
   const handleContextMenu = (e: MouseEvent) => {

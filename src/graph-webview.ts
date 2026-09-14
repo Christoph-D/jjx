@@ -150,7 +150,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           }
           break;
         case "newChildChange":
-          await this.withRefresh("create new child change", () => repo.new(undefined, [message.changeId]));
+          await this.withRefresh("create new child change", () => repo.new(undefined, message.changeIds));
           break;
         case "selectChange": {
           // Elided ("~") nodes can never be selected.

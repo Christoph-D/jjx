@@ -37,7 +37,7 @@ export function ContextMenu() {
         action="newChild"
         title="Create a New Child Change"
         onClick={() => {
-          postMessage({ command: "newChildChange", changeId: change.id.changeId });
+          postMessage({ command: "newChildChange", changeIds: [change.id.changeId] });
           contextMenu.value = null;
         }}
       >

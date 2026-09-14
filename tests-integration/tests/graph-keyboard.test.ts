@@ -152,3 +152,86 @@ test("Delete abandons the selected changes like the context menu", async ({ grap
     }).toPass();
   });
 });
+
+test("Enter opens the selected changes", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("a.txt", "content a", "A");
+  await testRepo.commitFile("b.txt", "content b", "B");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4); // @, B, A, root
+
+  await test.step("Enter on a change creates a new change on top of it (default action)", async () => {
+    // Clicking the row both selects it and gives the webview keyboard focus.
+    await nodes.nth(1).click(); // B
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+
+    await workbox.keyboard.press("Enter");
+
+    // A new empty working copy is created on top of B (the previous empty
+    // working copy is abandoned), so the graph keeps 4 rows.
+    await expect(async () => {
+      expect(getParents(await testRepo.log(), "@")).toEqual(["B"]);
+    }).toPass();
+    await expect(nodes).toHaveCount(4);
+  });
+
+  await test.step("Enter on an empty working copy does nothing", async () => {
+    await nodes.nth(0).click(); // @
+    await workbox.keyboard.press("Enter");
+
+    // Had a new change been created, the working copy's parent would be the
+    // abandoned (descriptionless) previous working copy instead of B.
+    await expect(async () => {
+      expect(getParents(await testRepo.log(), "@")).toEqual(["B"]);
+    }).toPass();
+  });
+
+  await test.step("Enter on another change moves the new change there", async () => {
+    await nodes.nth(2).click(); // A
+    await workbox.keyboard.press("Enter");
+
+    await expect(async () => {
+      expect(getParents(await testRepo.log(), "@")).toEqual(["A"]);
+    }).toPass();
+    await expect(nodes).toHaveCount(4);
+  });
+
+  await test.step("Enter with multiple selected changes creates a new change with them as parents", async () => {
+    // The graph still holds @, B, A, root. Select B and A as a range; Enter
+    // creates a new change with both as parents.
+    await nodes.nth(1).click(); // B
+    await nodes.nth(2).click({ modifiers: ["Shift"] }); // A
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(2)).toHaveAttribute("data-selected");
+
+    await workbox.keyboard.press("Enter");
+
+    await expect(async () => {
+      const parents = getParents(await testRepo.log(), "@");
+      expect(parents.sort()).toEqual(["A", "B"]);
+    }).toPass();
+  });
+});
+
+test.describe("double click action set to edit", () => {
+  test.use({ customSettings: { "jjx.changeDoubleClickAction": "edit" } });
+
+  test("Enter edits the selected change", async ({ graphFrame, testRepo, workbox }) => {
+    await testRepo.commitFile("a.txt", "content a", "A");
+    await testRepo.commitFile("b.txt", "content b", "B");
+
+    const nodes = graphFrame.locator("#nodes > div");
+    await expect(nodes).toHaveCount(4); // @, B, A, root
+
+    await nodes.nth(1).click(); // B
+    await workbox.keyboard.press("Enter");
+
+    // The working copy moves to B (the previous empty working copy is
+    // abandoned), like a double click with the "edit" action.
+    await expect(async () => {
+      const entry = (await testRepo.log()).find((e) => e.description.trim() === "B");
+      expect(entry?.current_working_copy).toBe(true);
+      expect(getParents(await testRepo.log(), "@")).toEqual(["A"]);
+    }).toPass();
+  });
+});
