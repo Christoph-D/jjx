@@ -210,7 +210,9 @@ export function App() {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         requestAnimationFrame(() => {
-          currentGraph.value = { ...currentGraph.value! };
+          if (currentGraph.value) {
+            currentGraph.value = { ...currentGraph.value };
+          }
         });
       }, 100);
     };

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useSignalEffect } from "@preact/signals";
+import { useRef } from "preact/hooks";
 import {
   currentChanges,
   currentGraph,
@@ -20,8 +21,15 @@ export function Graph() {
 
   useKeyboardShortcuts();
 
-  useEffect(() => {
+  useSignalEffect(() => {
+    const changes = currentChanges.value;
     document.fonts.ready.then(() => {
+      // A newer graph update may have queued its own callback while we were
+      // waiting for fonts; a superseded callback must do nothing so the most
+      // recent measurements and scroll position win.
+      if (changes !== currentChanges.value) {
+        return;
+      }
       if (firstChangeIdRef.current) {
         changeIdHorizontalOffset.value = firstChangeIdRef.current.offsetWidth;
       }
@@ -29,7 +37,7 @@ export function Graph() {
         window.scrollTo(0, scrollY.value);
       }
     });
-  }, [currentChanges.value]);
+  });
 
   const changes = currentChanges.value;
   const graph = currentGraph.value;
