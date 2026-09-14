@@ -1,8 +1,8 @@
 import { useEffect } from "preact/hooks";
 import { editChange } from "../edit-change";
 import { currentChanges, isAnyMenuOpen, isDragging, postMessage, selectedNodes, selectionAnchorId } from "../signals";
-import { computeArrowKeySelection } from "../selection";
-import type { RegularChangeNode } from "../../../graph-protocol";
+import { computeArrowKeySelection, lastSelectedChangeId } from "../selection";
+import type { FullChangeId, RegularChangeNode } from "../../../graph-protocol";
 
 /**
  * The keyboard support. The rows themselves are not focusable, so the keys are
@@ -17,6 +17,10 @@ import type { RegularChangeNode } from "../../../graph-protocol";
  *   with several selected changes it creates a new change on top with all of
  *   them as parents.
  * - "i" opens the commit details view for the current selection.
+ * - "d", "e", "b", "t" and "s" act on the last selected change (the most
+ *   recently added id in the selection) exactly like the corresponding context
+ *   menu items: Describe..., Edit This Change, Create Bookmark..., Create
+ *   Tag... and Split... .
  *
  * Modified keys (e.g. Shift+Arrow for range selection) are left alone, as are
  * keys pressed while a menu is open or a drag is in progress.
@@ -78,6 +82,15 @@ export function useKeyboardShortcuts() {
       postMessage({ command: "openDetailsView" });
     };
 
+    const actOnLastSelected = (e: KeyboardEvent, send: (changeId: FullChangeId) => void) => {
+      const changeId = lastSelectedChangeId(currentChanges.value, selectedNodes.value);
+      if (changeId === null) {
+        return;
+      }
+      e.preventDefault();
+      send(changeId);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
         return;
@@ -100,6 +113,21 @@ export function useKeyboardShortcuts() {
           return;
         case "i":
           openDetailsView(e);
+          return;
+        case "d":
+          actOnLastSelected(e, (changeId) => postMessage({ command: "describeChange", changeId }));
+          return;
+        case "e":
+          actOnLastSelected(e, (changeId) => postMessage({ command: "editChangeDirect", changeId }));
+          return;
+        case "b":
+          actOnLastSelected(e, (targetChangeId) => postMessage({ command: "createBookmark", targetChangeId }));
+          return;
+        case "t":
+          actOnLastSelected(e, (targetChangeId) => postMessage({ command: "createTag", targetChangeId }));
+          return;
+        case "s":
+          actOnLastSelected(e, (changeId) => postMessage({ command: "splitChange", changeId }));
           return;
       }
     };

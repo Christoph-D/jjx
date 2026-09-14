@@ -72,6 +72,23 @@ export function computeSelection(
 }
 
 /**
+ * Returns the last selected change: the most recently added id in the
+ * selection that is still present in the graph as a selectable (non-elided)
+ * row, or null when the selection is empty or none of its ids remain.
+ */
+export function lastSelectedChangeId(
+  changes: ChangeNode[],
+  currentSelection: ReadonlySet<FullChangeId>,
+): FullChangeId | null {
+  for (const id of Array.from(currentSelection).reverse()) {
+    if (changes.some((c) => c.branchType !== "~" && c.id.changeId === id)) {
+      return id;
+    }
+  }
+  return null;
+}
+
+/**
  * Computes the graph selection resulting from pressing ArrowUp (`direction`
  * -1) or ArrowDown (`direction` 1):
  * - The selection moves one selectable row from the last selected change,
@@ -97,14 +114,8 @@ export function computeArrowKeySelection(
     return null;
   }
 
-  let referencePos = -1;
-  for (const id of Array.from(currentSelection).reverse()) {
-    const pos = selectable.findIndex((c) => c.id.changeId === id);
-    if (pos !== -1) {
-      referencePos = pos;
-      break;
-    }
-  }
+  const lastId = lastSelectedChangeId(changes, currentSelection);
+  const referencePos = lastId === null ? -1 : selectable.findIndex((c) => c.id.changeId === lastId);
 
   const targetPos = referencePos === -1 ? (direction === 1 ? 0 : selectable.length - 1) : referencePos + direction;
   if (targetPos < 0 || targetPos >= selectable.length) {

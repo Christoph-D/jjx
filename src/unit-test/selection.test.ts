@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { computeArrowKeySelection, computeSelection, elidedRangeSelectionWarning } from "../webview/graph/selection";
+import {
+  computeArrowKeySelection,
+  computeSelection,
+  elidedRangeSelectionWarning,
+  lastSelectedChangeId,
+} from "../webview/graph/selection";
 import type { ChangeNode, FullChangeId, RegularChangeNode } from "../graph-protocol";
 
 function full(id: string): FullChangeId {
@@ -260,5 +265,43 @@ describe("computeArrowKeySelection", () => {
     const outcome = computeArrowKeySelection(changes, new Set(), 1);
 
     assert.equal(outcome, null);
+  });
+});
+
+describe("lastSelectedChangeId", () => {
+  it("returns null for an empty selection", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b")];
+
+    assert.equal(lastSelectedChangeId(changes, new Set()), null);
+  });
+
+  it("returns the single selected change", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b")];
+
+    assert.equal(lastSelectedChangeId(changes, new Set([full("b")])), full("b"));
+  });
+
+  it("returns the most recently added id of a multi-selection", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+
+    assert.equal(lastSelectedChangeId(changes, new Set([full("a"), full("c"), full("b")])), full("b"));
+  });
+
+  it("skips selected ids that are no longer in the graph", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b")];
+
+    assert.equal(lastSelectedChangeId(changes, new Set([full("a"), full("gone")])), full("a"));
+  });
+
+  it("returns null when no selected id is in the graph", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b")];
+
+    assert.equal(lastSelectedChangeId(changes, new Set([full("gone")])), null);
+  });
+
+  it("ignores elided rows", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1")];
+
+    assert.equal(lastSelectedChangeId(changes, new Set([full("e1"), full("a")])), full("a"));
   });
 });
