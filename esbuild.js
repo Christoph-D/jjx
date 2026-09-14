@@ -16,15 +16,48 @@ function copyFile(src, dest) {
   fs.copyFileSync(src, dest);
 }
 
+const staticAssets = [
+  ["src/webview/graph.html", "dist/webview/graph.html"],
+  ["src/webview/split.html", "dist/webview/split.html"],
+  ["src/webview/details.html", "dist/webview/details.html"],
+  ["src/config.toml", "dist/config.toml"],
+];
+
 function copyAssets() {
-  fs.copyFileSync("src/webview/graph.html", "dist/webview/graph.html");
-  fs.copyFileSync("src/webview/split.html", "dist/webview/split.html");
-  fs.copyFileSync("src/webview/details.html", "dist/webview/details.html");
-  copyFile("src/config.toml", "dist/config.toml");
+  for (const [src, dest] of staticAssets) {
+    copyFile(src, dest);
+  }
 
   fs.rmSync("dist/codicons", { recursive: true, force: true });
   copyFile("node_modules/@vscode/codicons/dist/codicon.css", "dist/codicons/codicon.css");
   copyFile("node_modules/@vscode/codicons/dist/codicon.ttf", "dist/codicons/codicon.ttf");
+}
+
+function watchStaticAssets() {
+  const fileNamesByDir = new Map();
+  for (const [src] of staticAssets) {
+    const dir = path.dirname(src);
+    if (!fileNamesByDir.has(dir)) {
+      fileNamesByDir.set(dir, new Set());
+    }
+    fileNamesByDir.get(dir).add(path.basename(src));
+  }
+
+  let copyTimer = undefined;
+  for (const [dir, fileNames] of fileNamesByDir) {
+    fs.watch(dir, (_event, filename) => {
+      if (filename !== null && !fileNames.has(path.basename(filename))) {
+        return;
+      }
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(() => {
+        for (const [src, dest] of staticAssets) {
+          copyFile(src, dest);
+        }
+        console.log("[watch] static assets copied");
+      }, 100);
+    });
+  }
 }
 
 /**
@@ -96,6 +129,7 @@ async function main() {
 
   if (watch) {
     copyAssets();
+    watchStaticAssets();
     await Promise.all(contexts.map((ctx) => ctx.watch()));
   } else {
     await Promise.all(contexts.map((ctx) => ctx.rebuild()));
