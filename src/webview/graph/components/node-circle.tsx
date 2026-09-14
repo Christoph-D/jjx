@@ -13,7 +13,7 @@ import { getLaneColor, getLaneX } from "../svg-utils";
 import { cx } from "../utils";
 import styles from "./node-circle.module.css";
 
-function Circle({ change, colorIndex: _colorIndex }: { change: ChangeNode; colorIndex: number }) {
+function Circle({ change }: { change: ChangeNode }) {
   if (change.branchType === "~") {
     return (
       <g>
@@ -120,7 +120,7 @@ export function NodeCircles() {
             style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}
             transform={pos ? `translate(${pos.x}, ${pos.y})` : undefined}
           >
-            <Circle change={change} colorIndex={nodeData?.colorIndex ?? 0} />
+            <Circle change={change} />
           </g>
         );
       })}
