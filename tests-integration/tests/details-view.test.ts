@@ -1,26 +1,5 @@
-import { test, expect, mod } from "./base-test";
-import type { Frame, Page } from "@playwright/test";
+import { test, expect, mod, findDetailsFrame } from "./base-test";
 import { changeIdFromLogEntry, formatChangeIdShort, maxChangeIdPrefixLength } from "../../src/utils.js";
-
-async function findDetailsFrame(workbox: Page): Promise<Frame> {
-  let detailsFrame: Frame | undefined;
-  await expect(async () => {
-    for (const frame of workbox.frames()) {
-      try {
-        const content = await frame.content();
-        if (content.includes('id="details"')) {
-          detailsFrame = frame;
-          return;
-        }
-      } catch {
-        // The frame can be mid-navigation while the webview (re)loads; the
-        // content read throws while it is settling, so just try the next.
-      }
-    }
-    throw new Error("Details frame not ready");
-  }).toPass();
-  return detailsFrame!;
-}
 
 test("details view shows the selected change and follows the graph selection", async ({
   scmView,

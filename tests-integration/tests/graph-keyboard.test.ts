@@ -1,4 +1,5 @@
-import { test, expect, mod } from "./base-test";
+import { test, expect, mod, handleEditor, findDetailsFrame } from "./base-test";
+import type { Frame } from "@playwright/test";
 import { getParents } from "../test-repo";
 import { changeIdFromLogEntry, formatChangeIdShort, maxChangeIdPrefixLength } from "../../src/utils.js";
 
@@ -291,6 +292,130 @@ test("Enter opens the selected changes", async ({ graphFrame, testRepo, workbox 
       const parents = getParents(await testRepo.log(), "@");
       expect(parents.sort()).toEqual(["A", "B"]);
     }).toPass();
+  });
+});
+
+test("letter shortcuts act on the single selected change", async ({ graphFrame, testRepo, workbox }) => {
+  test.slow();
+  await testRepo.commitFile("a.txt", "content a", "commit A");
+  await testRepo.commitFile("b.txt", "content b", "commit B");
+  await testRepo.commitFile("c.txt", "content c", "commit C");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(5); // @, commit C, commit B, commit A, root
+
+  // Clicking the change-id area of a row both selects it and gives the webview
+  // keyboard focus; unlike the row's center it never lands on a bookmark/tag
+  // pill once later steps add those.
+  const selectNode = async (index: number) => {
+    const node = nodes.nth(index);
+    await node.locator("[data-role='change-id']").click();
+    await expect(node).toHaveAttribute("data-selected");
+  };
+
+  await test.step("i opens the details view for the selected change", async () => {
+    await selectNode(2); // commit B
+    await workbox.keyboard.press("i");
+
+    const detailsFrame = await findDetailsFrame(workbox);
+    await expect(detailsFrame.locator(".detailsDescription")).toHaveText("commit B");
+  });
+
+  await test.step("n creates a new change on top of the selected change", async () => {
+    await selectNode(3); // commit A
+    await workbox.keyboard.press("n");
+
+    // The empty working copy moves on top of commit A (the previous empty
+    // working copy is abandoned), so the graph keeps 5 rows.
+    await expect(async () => {
+      expect(getParents(await testRepo.log(), "@")).toEqual(["commit A"]);
+    }).toPass();
+    await expect(nodes).toHaveCount(5);
+  });
+
+  await test.step("d describes the selected change", async () => {
+    await selectNode(2); // commit B
+    await workbox.keyboard.press("d");
+
+    await handleEditor(workbox, "", "Described via keyboard");
+
+    await expect(async () => {
+      const logEntries = await testRepo.log();
+      expect(logEntries.find((e) => e.description.trim() === "Described via keyboard")).toBeDefined();
+    }).toPass();
+  });
+
+  await test.step("e edits the selected change", async () => {
+    await selectNode(1); // commit C
+    await workbox.keyboard.press("e");
+
+    // The working copy becomes commit C (the previous empty working copy is
+    // abandoned), leaving @, commit B, commit A, root. Commit B now carries the
+    // description the "d" step gave it.
+    await expect(async () => {
+      expect(getParents(await testRepo.log(), "@")).toEqual(["Described via keyboard"]);
+      const wc = (await testRepo.log()).find((e) => e.current_working_copy);
+      expect(wc?.description.trim()).toBe("commit C");
+    }).toPass();
+    await expect(nodes).toHaveCount(4);
+  });
+
+  await test.step("b creates a bookmark on the selected change", async () => {
+    await selectNode(1); // commit B
+    await workbox.keyboard.press("b");
+
+    const input = workbox.locator("input").first();
+    await input.waitFor({ state: "visible" });
+    await input.fill("keyboard-bookmark");
+    await workbox.keyboard.press("Enter");
+
+    await expect(nodes.nth(1).locator('[data-bookmark="keyboard-bookmark"]')).toBeVisible();
+    expect(await testRepo.getBookmark("keyboard-bookmark")).toBeDefined();
+  });
+
+  await test.step("t creates a tag on the selected change", async () => {
+    await selectNode(2); // commit A
+    await workbox.keyboard.press("t");
+
+    const input = workbox.locator("input").first();
+    await input.waitFor({ state: "visible" });
+    await input.fill("keyboard-tag");
+    await workbox.keyboard.press("Enter");
+
+    await expect(nodes.nth(2).locator('[data-tag="keyboard-tag"]')).toBeVisible();
+    expect(await testRepo.getTag("keyboard-tag")).toBeDefined();
+  });
+
+  await test.step("s opens the split view for the selected change", async () => {
+    await selectNode(1); // commit B
+    await workbox.keyboard.press("s");
+
+    let splitFrame: Frame | undefined;
+    await expect(async () => {
+      for (const frame of workbox.frames()) {
+        try {
+          if ((await frame.locator(".splitRoot").count()) > 0) {
+            splitFrame = frame;
+            return;
+          }
+        } catch {
+          // The frame can be mid-navigation while the webview (re)loads; just try the next.
+        }
+      }
+      throw new Error("Split view frame not ready");
+    }).toPass();
+
+    await expect(splitFrame!.locator(".splitHeaderDescription")).toHaveText("Described via keyboard");
+    await expect(splitFrame!.locator(".splitFile")).toHaveCount(1);
+
+    // Cancelling leaves the repository untouched.
+    const before = await testRepo.log();
+    await splitFrame!.getByRole("button", { name: "Cancel" }).click();
+    await expect(workbox.locator(".tab", { hasText: /^Split / })).toBeHidden();
+    const after = await testRepo.log();
+    expect(after.map((e) => [e.change_id, e.commit_id, e.description])).toEqual(
+      before.map((e) => [e.change_id, e.commit_id, e.description]),
+    );
   });
 });
 
