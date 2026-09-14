@@ -5,6 +5,49 @@ import { CHANGE_ID_RIGHT_PADDING } from "../types";
 import { escapeInvisibleChars } from "../utils";
 import { BookmarkPill, RemoteBookmarkPill, RemoteTagPill, TagPill } from "./pill";
 import styles from "./tooltip.module.css";
+import type { RegularChangeNode } from "../../../graph-protocol";
+
+// Remote refs of the git remote duplicate local refs, so hide those.
+function TooltipPills({ change }: { change: RegularChangeNode }) {
+  const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
+  const localTagNames = new Set(change.localTags.map((t) => t.name));
+  const filteredRemoteBookmarks = change.remoteBookmarks.filter(
+    (b) => !(b.remote === "git" && localBookmarkNames.has(b.name)),
+  );
+  const filteredRemoteTags = change.remoteTags.filter((t) => !(t.remote === "git" && localTagNames.has(t.name)));
+  if (
+    change.localBookmarks.length === 0 &&
+    filteredRemoteBookmarks.length === 0 &&
+    change.localTags.length === 0 &&
+    filteredRemoteTags.length === 0
+  ) {
+    return null;
+  }
+  return (
+    <div class={styles.tooltipPills}>
+      {change.localBookmarks.map((b) => (
+        <BookmarkPill key={b.name} conflict={b.conflict} synced={b.synced}>
+          {escapeInvisibleChars(b.name)}
+        </BookmarkPill>
+      ))}
+      {filteredRemoteBookmarks.map((b) => (
+        <RemoteBookmarkPill key={b.name + "@" + b.remote}>
+          {escapeInvisibleChars(b.name)}@{b.remote}
+        </RemoteBookmarkPill>
+      ))}
+      {change.localTags.map((t) => (
+        <TagPill key={t.name} conflict={t.conflict} synced={t.synced}>
+          {escapeInvisibleChars(t.name)}
+        </TagPill>
+      ))}
+      {filteredRemoteTags.map((t) => (
+        <RemoteTagPill key={t.name + "@" + t.remote}>
+          {escapeInvisibleChars(t.name)}@{t.remote}
+        </RemoteTagPill>
+      ))}
+    </div>
+  );
+}
 
 export function Tooltip() {
   const ref = useRef<HTMLDivElement>(null);
@@ -83,41 +126,7 @@ export function Tooltip() {
         </div>
       )}
       {change.authorTimestamp && <div class={styles.tooltipTimestamp}>{change.authorTimestamp}</div>}
-      {(() => {
-        const localBookmarkNames = new Set(change.localBookmarks.map((b) => b.name));
-        const localTagNames = new Set(change.localTags.map((t) => t.name));
-        const filteredRemoteBookmarks = change.remoteBookmarks.filter(
-          (b) => !(b.remote === "git" && localBookmarkNames.has(b.name)),
-        );
-        const filteredRemoteTags = change.remoteTags.filter((t) => !(t.remote === "git" && localTagNames.has(t.name)));
-        return change.localBookmarks.length > 0 ||
-          filteredRemoteBookmarks.length > 0 ||
-          change.localTags.length > 0 ||
-          filteredRemoteTags.length > 0 ? (
-          <div class={styles.tooltipPills}>
-            {change.localBookmarks.map((b) => (
-              <BookmarkPill key={b.name} conflict={b.conflict} synced={b.synced}>
-                {escapeInvisibleChars(b.name)}
-              </BookmarkPill>
-            ))}
-            {filteredRemoteBookmarks.map((b) => (
-              <RemoteBookmarkPill key={b.name + "@" + b.remote}>
-                {escapeInvisibleChars(b.name)}@{b.remote}
-              </RemoteBookmarkPill>
-            ))}
-            {change.localTags.map((t) => (
-              <TagPill key={t.name} conflict={t.conflict} synced={t.synced}>
-                {escapeInvisibleChars(t.name)}
-              </TagPill>
-            ))}
-            {filteredRemoteTags.map((t) => (
-              <RemoteTagPill key={t.name + "@" + t.remote}>
-                {escapeInvisibleChars(t.name)}@{t.remote}
-              </RemoteTagPill>
-            ))}
-          </div>
-        ) : null;
-      })()}
+      <TooltipPills change={change} />
       {stats ? (
         <div class={styles.tooltipSummary}>
           {stats.filesChanged} file{stats.filesChanged !== 1 ? "s" : ""} changed,{" "}
