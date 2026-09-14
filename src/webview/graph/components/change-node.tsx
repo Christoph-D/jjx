@@ -1,3 +1,4 @@
+import { useComputed, type ReadonlySignal } from "@preact/signals";
 import { type HTMLAttributes, type RefObject } from "preact";
 import { memo } from "preact/compat";
 import { editChange } from "../edit-change";
@@ -63,6 +64,8 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef, compact, s
   const dragProps = useDragDrop(change);
   const { startHoverTimers, clearHoverTimers, clearHideTimer, scheduleHideTooltip } = createTooltipTimers();
   const isElided = change.branchType === "~";
+  // Per-row computed signal to re-render only rows whose selection changed.
+  const isSelected = useComputed(() => change.branchType !== "~" && selectedNodes.value.has(change.id.changeId));
   const graphW = SWIMLANE_WIDTH * (nodeData?.numLanesActiveVisually ?? 0);
 
   const handleClick = (e: MouseEvent) => {
@@ -160,7 +163,7 @@ export function ChangeNodeRow({ change, index, nodeData, changeIdRef, compact, s
       changeId={changeUniqueId}
       currentWorkingCopy={change.branchType !== "~" && change.currentWorkingCopy}
       isElided={isElided}
-      selected={change.branchType !== "~" && selectedNodes.value.has(change.id.changeId)}
+      selected={isSelected}
       modeClasses={modeClasses}
       data-change-id={changeUniqueId}
       onClick={handleClick}
@@ -206,7 +209,7 @@ function ChangeNodeClass({
   changeId: string;
   currentWorkingCopy: boolean;
   isElided: boolean;
-  selected: boolean;
+  selected: ReadonlySignal<boolean>;
   modeClasses: string;
   children?: preact.ComponentChildren;
 } & HTMLAttributes<HTMLDivElement>) {
@@ -216,11 +219,11 @@ function ChangeNodeClass({
         styles.changeNode,
         currentWorkingCopy && styles.workingCopy,
         isElided && styles.elidedNode,
-        selected && styles.selected,
+        selected.value && styles.selected,
         dropTargetId.value === changeId && styles.dropTarget,
         modeClasses,
       )}
-      data-selected={selected ? "" : undefined}
+      data-selected={selected.value ? "" : undefined}
       {...rest}
     >
       {children}

@@ -71,10 +71,31 @@ export function computeSelection(
   return { kind: "applied", selection: new Set([clickedId]), anchor: clickedId };
 }
 
-function lastSelectedPos(selectable: RegularChangeNode[], currentSelection: ReadonlySet<FullChangeId>): number {
+/**
+ * Indexes the selectable (non-elided) rows in a single pass: `selectable`
+ * holds them in graph order and `positionById` maps each change id to its
+ * position among them, so selection lookups are O(1) instead of a linear
+ * scan per selected id.
+ */
+function indexSelectableChanges(changes: ChangeNode[]): {
+  selectable: RegularChangeNode[];
+  positionById: Map<FullChangeId, number>;
+} {
+  const selectable: RegularChangeNode[] = [];
+  const positionById = new Map<FullChangeId, number>();
+  for (const change of changes) {
+    if (change.branchType !== "~") {
+      positionById.set(change.id.changeId, selectable.length);
+      selectable.push(change);
+    }
+  }
+  return { selectable, positionById };
+}
+
+function lastSelectedPos(positionById: Map<FullChangeId, number>, currentSelection: ReadonlySet<FullChangeId>): number {
   for (const id of Array.from(currentSelection).reverse()) {
-    const pos = selectable.findIndex((c) => c.id.changeId === id);
-    if (pos !== -1) {
+    const pos = positionById.get(id);
+    if (pos !== undefined) {
       return pos;
     }
   }
@@ -90,8 +111,9 @@ export function lastSelectedChangeId(
   changes: ChangeNode[],
   currentSelection: ReadonlySet<FullChangeId>,
 ): FullChangeId | null {
+  const { positionById } = indexSelectableChanges(changes);
   for (const id of Array.from(currentSelection).reverse()) {
-    if (changes.some((c) => c.branchType !== "~" && c.id.changeId === id)) {
+    if (positionById.has(id)) {
       return id;
     }
   }
@@ -119,12 +141,12 @@ export function computeArrowKeySelection(
   currentSelection: ReadonlySet<FullChangeId>,
   direction: 1 | -1,
 ): { selection: Set<FullChangeId>; anchor: FullChangeId } | null {
-  const selectable = changes.filter((c): c is RegularChangeNode => c.branchType !== "~");
+  const { selectable, positionById } = indexSelectableChanges(changes);
   if (selectable.length === 0) {
     return null;
   }
 
-  const referencePos = lastSelectedPos(selectable, currentSelection);
+  const referencePos = lastSelectedPos(positionById, currentSelection);
 
   const targetPos = referencePos === -1 ? (direction === 1 ? 0 : selectable.length - 1) : referencePos + direction;
   if (targetPos < 0 || targetPos >= selectable.length) {
@@ -159,13 +181,13 @@ export function computeShiftArrowKeySelection(
   anchorId: FullChangeId | null,
   direction: 1 | -1,
 ): { selection: Set<FullChangeId>; anchor: FullChangeId } | null {
-  const selectable = changes.filter((c): c is RegularChangeNode => c.branchType !== "~");
+  const { selectable, positionById } = indexSelectableChanges(changes);
   if (selectable.length === 0) {
     return null;
   }
 
-  const referencePos = lastSelectedPos(selectable, currentSelection);
-  let anchorPos = anchorId === null ? -1 : selectable.findIndex((c) => c.id.changeId === anchorId);
+  const referencePos = lastSelectedPos(positionById, currentSelection);
+  let anchorPos = anchorId === null ? -1 : (positionById.get(anchorId) ?? -1);
   if (referencePos === -1 && anchorPos === -1) {
     const anchor = selectable[direction === 1 ? 0 : selectable.length - 1].id.changeId;
     return { selection: new Set([anchor]), anchor };

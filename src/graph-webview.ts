@@ -55,6 +55,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
   public repository: JJRepository | undefined;
   public selectedNodes: Set<FullChangeId> = new Set();
   private currentChanges: ChangeNode[] = [];
+  private changesById = new Map<FullChangeId, RegularChangeNode>();
   private elideOverride: boolean | null = null;
   private readonly splitWebview: SplitWebview;
   private lastFiredSelection: GraphSelection[] = [];
@@ -708,7 +709,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
    * {@link RegularChangeNode}.
    */
   private findRegularChange(changeId: FullChangeId): RegularChangeNode | undefined {
-    return this.currentChanges.find((c): c is RegularChangeNode => c.branchType !== "~" && c.id.changeId === changeId);
+    return this.changesById.get(changeId);
   }
 
   /**
@@ -924,6 +925,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         this.repository.repositoryRoot,
       );
       this.currentChanges = changes;
+      this.changesById = new Map(
+        changes.filter((c): c is RegularChangeNode => c.branchType !== "~").map((c) => [c.id.changeId, c]),
+      );
 
       const unsyncedBookmarks = new Set<string>();
       for (const change of changes) {
@@ -978,11 +982,8 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         }
       }
 
-      const changeIdsInGraph = new Set<FullChangeId>(
-        changes.filter((c): c is RegularChangeNode => c.branchType !== "~").map((c) => c.id.changeId),
-      );
       const previousSelectedNodes = this.selectedNodes;
-      this.selectedNodes = new Set(Array.from(previousSelectedNodes).filter((id) => changeIdsInGraph.has(id)));
+      this.selectedNodes = new Set(Array.from(previousSelectedNodes).filter((id) => this.changesById.has(id)));
       // Notify listeners whenever the resolved selection changed: selected changes may have
       // been removed (e.g. abandoned) or rewritten (same change ID, new commit ID), and both
       // the SCM view and the Details view must follow.

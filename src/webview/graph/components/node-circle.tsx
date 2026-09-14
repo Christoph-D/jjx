@@ -1,4 +1,4 @@
-import { useSignal, useSignalEffect } from "@preact/signals";
+import { useComputed, useSignal, useSignalEffect } from "@preact/signals";
 import {
   currentChanges,
   currentGraph,
@@ -8,7 +8,7 @@ import {
   connectedHighlight,
 } from "../signals";
 import { CIRCLE_RADIUS } from "../types";
-import { getUniqueId, type ChangeNode } from "../../../graph-protocol";
+import { getUniqueId, type ChangeNode, type LaneNode } from "../../../graph-protocol";
 import { getLaneColor, getLaneX } from "../svg-utils";
 import { cx } from "../utils";
 import styles from "./node-circle.module.css";
@@ -100,30 +100,41 @@ export function NodeCircles() {
 
   const changes = currentChanges.value;
   const graph = currentGraph.value;
-  const highlight = connectedHighlight.value;
 
   return (
     <g id="node-circles">
-      {changes.map((change, i) => {
-        const nodeData = graph?.nodes[i];
-        const pos = nodePositions.value[i];
-        return (
-          <g
-            key={getUniqueId(change)}
-            class={cx(
-              styles.nodeCircle,
-              change.branchType !== "~" && selectedNodes.value.has(change.id.changeId) && styles.selected,
-              hoveredChangeId.value === getUniqueId(change) && styles.hovered,
-              highlight && !highlight.connectedIds.has(getUniqueId(change)) && styles.dimmed,
-            )}
-            data-change-id={getUniqueId(change)}
-            style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}
-            transform={pos ? `translate(${pos.x}, ${pos.y})` : undefined}
-          >
-            <Circle change={change} />
-          </g>
-        );
-      })}
+      {changes.map((change, i) => (
+        <NodeCircle key={getUniqueId(change)} change={change} nodeData={graph?.nodes[i]} pos={nodePositions.value[i]} />
+      ))}
+    </g>
+  );
+}
+
+/**
+ * A single node circle. Its class is derived through a per-circle computed
+ * signal so selection, hover and highlight changes re-render only the
+ * affected circles instead of the whole circle layer.
+ */
+function NodeCircle({ change, nodeData, pos }: { change: ChangeNode; nodeData?: LaneNode; pos?: NodePosition }) {
+  const circleClass = useComputed(() => {
+    const uniqueId = getUniqueId(change);
+    const highlight = connectedHighlight.value;
+    return cx(
+      styles.nodeCircle,
+      change.branchType !== "~" && selectedNodes.value.has(change.id.changeId) && styles.selected,
+      hoveredChangeId.value === uniqueId && styles.hovered,
+      highlight && !highlight.connectedIds.has(uniqueId) && styles.dimmed,
+    );
+  });
+
+  return (
+    <g
+      class={circleClass.value}
+      data-change-id={getUniqueId(change)}
+      style={{ "--lane-color": getLaneColor(nodeData?.colorIndex ?? 0) }}
+      transform={pos ? `translate(${pos.x}, ${pos.y})` : undefined}
+    >
+      <Circle change={change} />
     </g>
   );
 }
