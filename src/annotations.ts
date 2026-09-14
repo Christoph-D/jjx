@@ -3,6 +3,7 @@ import type { ChangeWithDetails } from "./types";
 import { resolveRev } from "./uri";
 import type { ExtensionState } from "./extension-state";
 import { relativeTime } from "./relative-time";
+import { formatChangeIdShort } from "./utils";
 import { toWorkspaceUri } from "./workspace-paths";
 
 export function registerAnnotations(state: ExtensionState): void {
@@ -62,7 +63,7 @@ export function registerAnnotations(state: ExtensionState): void {
             continue; // Could be possible if `annotateInfo` is mismatched with `changes` due to a race
           }
           const desc = change.description ? change.description.split("\n")[0] : "(no description)";
-          const contextText = `${change.author.name}, ${relativeTime(change.authoredDate)} • ${desc}`;
+          const contextText = `${change.author.name}, ${relativeTime(change.authoredDate)} • ${formatChangeIdShort(change.changeId)} • ${desc}`;
           decorations.push({
             renderOptions: {
               after: {

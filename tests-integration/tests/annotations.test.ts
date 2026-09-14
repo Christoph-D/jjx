@@ -36,9 +36,9 @@ async function hasAnnotation(locator: Locator, text: string): Promise<boolean> {
 }
 
 test("blame annotations appear in the editor", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.commitFile("a.txt", "line 1\nline 2 (original)\n", "First commit");
+  const firstCommitId = await testRepo.commitFile("a.txt", "line 1\nline 2 (original)\n", "First commit");
   await testRepo.writeFile("a.txt", "line 1\nline 2 (modified)\n");
-  await testRepo.commit("Second commit");
+  const secondCommitId = await testRepo.commit("Second commit");
 
   await expect(graphFrame.locator("#nodes > div").first()).toBeVisible();
 
@@ -50,12 +50,14 @@ test("blame annotations appear in the editor", async ({ graphFrame, testRepo, wo
 
   await expect(async () => {
     expect(await hasAnnotation(editor, "Second commit")).toBe(true);
+    expect(await hasAnnotation(editor, secondCommitId.slice(0, 4))).toBe(true);
   }).toPass();
 
   await workbox.keyboard.press(cursorTop);
 
   await expect(async () => {
     expect(await hasAnnotation(editor, "First commit")).toBe(true);
+    expect(await hasAnnotation(editor, firstCommitId.slice(0, 4))).toBe(true);
   }).toPass();
 
   await testRepo.writeFile(".vscode/settings.json", '{"jjx.enableAnnotations": false}');
