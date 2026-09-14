@@ -14,9 +14,8 @@ import { joinRepositoryPath, repositoryRelativePath, toWorkspaceUri } from "./wo
  * Hosts the Details webview panel, which shows detailed information about the change(s)
  * currently selected in the graph view. The view is driven by the graph selection (see
  * {@link JJGraphWebview.onDidChangeSelection}): with no selection it prompts to select a
- * change, with a single selection it shows that change's details, and with more it reports
- * that multiple changes are not implemented yet. Details are fetched by commit ID, so the
- * shown content stays pinned while the change is being rewritten.
+ * change, otherwise it shows the details of the last selected change. Details are fetched
+ * by commit ID, so the shown content stays pinned while the change is being rewritten.
  */
 export class DetailsWebview implements vscode.Disposable {
   private panel: vscode.WebviewPanel | undefined;
@@ -104,12 +103,8 @@ export class DetailsWebview implements vscode.Disposable {
       void panel.webview.postMessage({ command: "showNoSelection" });
       return;
     }
-    if (selection.length > 1) {
-      void panel.webview.postMessage({ command: "showMultipleSelection" });
-      return;
-    }
     try {
-      const details = await repo.getChangeDetails(selection[0].commitId);
+      const details = await repo.getChangeDetails(selection[selection.length - 1].commitId);
       if (seq !== this.fetchSeq || this.panel !== panel) {
         return;
       }

@@ -19,11 +19,7 @@ export function postMessage(message: DetailsWebviewToExtensionMessage): void {
 }
 
 export type DetailsState =
-  | { kind: "loading" }
-  | { kind: "noSelection" }
-  | { kind: "multipleSelection" }
-  | { kind: "error" }
-  | { kind: "single"; change: ChangeDetails };
+  { kind: "loading" } | { kind: "noSelection" } | { kind: "error" } | { kind: "single"; change: ChangeDetails };
 
 export const detailsState = signal<DetailsState>({ kind: "loading" });
 
@@ -31,9 +27,6 @@ export function applyExtensionMessage(message: DetailsExtensionToWebviewMessage)
   switch (message.command) {
     case "showNoSelection":
       detailsState.value = { kind: "noSelection" };
-      break;
-    case "showMultipleSelection":
-      detailsState.value = { kind: "multipleSelection" };
       break;
     case "updateDetails":
       detailsState.value = { kind: "single", change: message.change };

@@ -1,4 +1,4 @@
-import { test, expect } from "./base-test";
+import { test, expect, mod } from "./base-test";
 import type { Frame, Page } from "@playwright/test";
 import { changeIdFromLogEntry, formatChangeIdShort, maxChangeIdPrefixLength } from "../../src/utils.js";
 
@@ -257,13 +257,25 @@ test("details view shows the selected change and follows the graph selection", a
     await expect(menu).not.toBeVisible();
   });
 
-  await test.step("multiple selections report that they are not implemented yet", async () => {
+  await test.step("multiple selections show the last selected change", async () => {
+    // Ctrl/Cmd+click appends the clicked change to the selection, so commit B is the
+    // most recently added member and its details are shown.
     await nodes.nth(0).click();
-    await nodes.nth(1).click({ modifiers: ["Shift"] });
+    await nodes.nth(1).click({ modifiers: [mod] });
     await expect(nodes.nth(0)).toHaveAttribute("data-selected");
     await expect(nodes.nth(1)).toHaveAttribute("data-selected");
 
-    await expect(detailsFrame.getByText("Multiple changes selected")).toBeVisible();
+    await expect(detailsFrame.getByText("Multiple changes selected")).toHaveCount(0);
+    await expect(detailsFrame.locator(".detailsDescription")).toHaveText("commit B");
+
+    // Shift+click orders the range from the anchor toward the clicked change, so clicking
+    // the working copy last makes it the last selected change.
+    await nodes.nth(1).click();
+    await nodes.nth(0).click({ modifiers: ["Shift"] });
+    await expect(nodes.nth(0)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+
+    await expect(detailsFrame.getByText("(no description set)")).toBeVisible();
   });
 
   await test.step("changing the selection updates the details view", async () => {

@@ -106,9 +106,6 @@ export function App() {
       {state.kind === "noSelection" && (
         <StateMessage icon="info" message="Select a change in the graph to show its details." />
       )}
-      {state.kind === "multipleSelection" && (
-        <StateMessage icon="split" message="Multiple changes selected: Please select a single change." />
-      )}
       {state.kind === "error" && <StateMessage icon="error" message="Failed to load change details." />}
       {state.kind === "single" && <ChangeDetailsView change={state.change} />}
       <FileContextMenu />

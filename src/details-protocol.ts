@@ -30,8 +30,4 @@ export type DetailsWebviewToExtensionMessage =
 
 export type DetailsExtensionToWebviewMessage =
   // Nothing (or nothing resolvable) is selected in the graph view.
-  | { command: "showNoSelection" }
-  // More than one change is selected in the graph view.
-  | { command: "showMultipleSelection" }
-  | { command: "updateDetails"; change: ChangeDetails }
-  | { command: "showErrorState" };
+  { command: "showNoSelection" } | { command: "updateDetails"; change: ChangeDetails } | { command: "showErrorState" };
