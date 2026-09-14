@@ -16,6 +16,7 @@ import type { FullChangeId, RegularChangeNode } from "../../../graph-protocol";
  *   working copy only reacts to the "new" action and when it has content), and
  *   with several selected changes it creates a new change on top with all of
  *   them as parents.
+ * - "n" always creates a new change on top of all selected changes.
  * - "i" opens the commit details view for the current selection.
  * - "d", "e", "b", "t" and "s" act on the last selected change (the most
  *   recently added id in the selection) exactly like the corresponding context
@@ -77,6 +78,15 @@ export function useKeyboardShortcuts() {
       postMessage({ command: "newChildChange", changeIds: selection });
     };
 
+    const newChangeOnSelection = (e: KeyboardEvent) => {
+      const selection = Array.from(selectedNodes.value);
+      if (selection.length === 0) {
+        return;
+      }
+      e.preventDefault();
+      postMessage({ command: "newChildChange", changeIds: selection });
+    };
+
     const openDetailsView = (e: KeyboardEvent) => {
       e.preventDefault();
       postMessage({ command: "openDetailsView" });
@@ -113,6 +123,9 @@ export function useKeyboardShortcuts() {
           return;
         case "i":
           openDetailsView(e);
+          return;
+        case "n":
+          newChangeOnSelection(e);
           return;
         case "d":
           actOnLastSelected(e, (changeId) => postMessage({ command: "describeChange", changeId }));
