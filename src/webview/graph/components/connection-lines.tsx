@@ -7,6 +7,7 @@ import { cx } from "../utils";
 import styles from "./connection-lines.module.css";
 
 interface PathData {
+  key: string;
   d: string;
   fromId: FullChangeId;
   toId: FullChangeId;
@@ -112,10 +113,15 @@ export function ConnectionLines() {
     });
 
     const result: PathData[] = [];
+    const pairOccurrences = new Map<string, number>();
     for (const edge of sortedEdges) {
       const d = buildPathD(edge, rowYList, bottomY, 12);
       if (d) {
+        const base = `${edge.fromId}->${edge.toId}`;
+        const occurrence = pairOccurrences.get(base) ?? 0;
+        pairOccurrences.set(base, occurrence + 1);
         result.push({
+          key: occurrence === 0 ? base : `${base}#${occurrence}`,
           d,
           fromId: edge.fromId,
           toId: edge.toId,
@@ -128,7 +134,7 @@ export function ConnectionLines() {
 
   return (
     <g id="connection-lines">
-      {paths.value.map((p, i) => {
+      {paths.value.map((p) => {
         const highlight = connectedHighlight.value;
         const dimmed =
           highlight &&
@@ -138,7 +144,7 @@ export function ConnectionLines() {
           );
         return (
           <path
-            key={i}
+            key={p.key}
             d={p.d}
             class={cx(styles.connectionLine, dimmed && styles.dimmed)}
             style={{ stroke: p.color }}
