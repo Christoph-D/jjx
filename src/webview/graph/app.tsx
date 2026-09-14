@@ -81,7 +81,7 @@ export function App() {
       scrollY.value = message.preserveScroll ? window.scrollY : 0;
     };
 
-    effect(() => {
+    const dispose = effect(() => {
       if (!isDragging.value && pendingGraphUpdate.value) {
         const update = pendingGraphUpdate.value;
         pendingGraphUpdate.value = null;
@@ -89,7 +89,7 @@ export function App() {
       }
     });
 
-    window.addEventListener("message", (event) => {
+    const handleMessage = (event: MessageEvent) => {
       const message = event.data as ExtensionToWebviewMessage;
       switch (message.command) {
         case "updateGraph":
@@ -200,21 +200,31 @@ export function App() {
           break;
         }
       }
-    });
+    };
 
+    window.addEventListener("message", handleMessage);
     window.addEventListener("blur", closeAllMenus);
 
-    let resizeTimeout: ReturnType<typeof setTimeout>;
-    window.addEventListener("resize", () => {
+    let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
+    const handleResize = () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         requestAnimationFrame(() => {
           currentGraph.value = { ...currentGraph.value! };
         });
       }, 100);
-    });
+    };
+    window.addEventListener("resize", handleResize);
 
     postMessage({ command: "webviewReady" });
+
+    return () => {
+      dispose();
+      window.removeEventListener("message", handleMessage);
+      window.removeEventListener("blur", closeAllMenus);
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(resizeTimeout);
+    };
   }, []);
 
   return (
