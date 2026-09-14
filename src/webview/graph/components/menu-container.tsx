@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import type { ComponentChildren, HTMLAttributes } from "preact";
-import { useCallback, useContext, useEffect, useId, useRef, useState } from "preact/hooks";
+import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "preact/hooks";
 import { cx } from "../utils";
 import { closeAllMenus } from "../signals";
 import styles from "./context-menu.module.css";
@@ -87,8 +87,10 @@ export function Menu({ state, children, ...rest }: MenuProps) {
     };
   }, []);
 
+  const contextValue = useMemo(() => ({ activeId, setActiveId, positions, register }), [activeId, positions, register]);
+
   return (
-    <MenuContext.Provider value={{ activeId, setActiveId, positions, register }}>
+    <MenuContext.Provider value={contextValue}>
       <div {...rest} class={styles.contextMenu} ref={menuRef} onMouseLeave={() => setActiveId(null)}>
         {children}
       </div>
