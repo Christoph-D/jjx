@@ -10,18 +10,22 @@ import {
   closeAllMenus,
   selectedNodes,
 } from "../signals";
-import { useTooltipTimers } from "./use-tooltip-timers";
+import { createTooltipTimers } from "./tooltip-timers";
 import { rootChangeId } from "../types";
 import type { ChangeNode, FullChangeId } from "../../../graph-protocol";
 import changeNodeStyles from "../components/change-node.module.css";
 import dragGhostStyles from "../components/drag-ghost.module.css";
 
 export function useDragDrop(change: ChangeNode) {
+  // Elided ("~") rows return early here. This is only safe because this hook
+  // calls no real hooks itself below — createTooltipTimers() is a plain
+  // closure factory over module-level signals, not a hook. Do not add real
+  // hook calls after this early return.
   if (change.branchType === "~") {
     return {};
   }
   const isRoot = change.id.changeId === rootChangeId;
-  const { clearAllTimers } = useTooltipTimers();
+  const { clearAllTimers } = createTooltipTimers();
 
   return {
     draggable: !isRoot,

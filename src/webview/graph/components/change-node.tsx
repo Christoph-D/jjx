@@ -2,7 +2,7 @@ import { type HTMLAttributes, type RefObject } from "preact";
 import { memo } from "preact/compat";
 import { editChange } from "../edit-change";
 import { useDragDrop } from "../hooks/use-drag-drop";
-import { useTooltipTimers } from "../hooks/use-tooltip-timers";
+import { createTooltipTimers } from "../hooks/tooltip-timers";
 import dragGhostStyles from "./drag-ghost.module.css";
 import { BookmarkPill, BookmarkPushIcon, RemoteBookmarkPill, RemoteTagPill, TagPill, WorkspacePill } from "./pill";
 import styles from "./change-node.module.css";
@@ -61,7 +61,7 @@ interface Props {
 
 export function ChangeNodeRow({ change, index, nodeData, changeIdRef, compact, showingFiles }: Props) {
   const dragProps = useDragDrop(change);
-  const { startHoverTimers, clearHoverTimers, clearHideTimer, scheduleHideTooltip } = useTooltipTimers();
+  const { startHoverTimers, clearHoverTimers, clearHideTimer, scheduleHideTooltip } = createTooltipTimers();
   const isElided = change.branchType === "~";
   const graphW = SWIMLANE_WIDTH * (nodeData?.numLanesActiveVisually ?? 0);
 

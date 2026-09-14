@@ -13,7 +13,7 @@ const TOOLTIP_DELAY_MS = 300;
 const TOOLTIP_HIDE_DELAY_MS = 100;
 const DIFF_STATS_PREFETCH_DELAY_MS = 100;
 
-export function useTooltipTimers() {
+export function createTooltipTimers() {
   const startHoverTimers = (change: RegularChangeNode, pageX: number, pageY: number) => {
     if (!diffStatsCache.value.has(change.id.changeId)) {
       diffStatsPrefetchTimeout.value = setTimeout(() => {

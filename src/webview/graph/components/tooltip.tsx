@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 import { tooltip, diffStatsCache } from "../signals";
-import { useTooltipTimers } from "../hooks/use-tooltip-timers";
+import { createTooltipTimers } from "../hooks/tooltip-timers";
 import { CHANGE_ID_RIGHT_PADDING } from "../types";
 import { escapeInvisibleChars } from "../utils";
 import { BookmarkPill, RemoteBookmarkPill, RemoteTagPill, TagPill } from "./pill";
@@ -52,7 +52,7 @@ function TooltipPills({ change }: { change: RegularChangeNode }) {
 export function Tooltip() {
   const ref = useRef<HTMLDivElement>(null);
   const state = tooltip.value;
-  const { clearHideTimer } = useTooltipTimers();
+  const { clearHideTimer } = createTooltipTimers();
 
   const handleMouseEnter = () => {
     clearHideTimer();
