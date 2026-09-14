@@ -74,6 +74,16 @@ export function ContextMenu() {
       </MenuItem>
       <MenuSeparator />
       <MenuItem
+        action="showDetails"
+        title="Show Details of This Change"
+        onClick={() => {
+          postMessage({ command: "showChangeDetails", changeId: change.id.changeId });
+          contextMenu.value = null;
+        }}
+      >
+        Show Details...
+      </MenuItem>
+      <MenuItem
         action="copyUrl"
         onClick={() => {
           postMessage({ command: "copyUrl", changeId: change.id.changeId });

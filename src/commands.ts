@@ -815,6 +815,12 @@ export function registerInitCommands(state: ExtensionState): void {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("jj.showChangeDetailsWebview", (commitId: string, shortChangeId: string) =>
+      state.detailsWebview!.showChange(commitId, shortChangeId),
+    ),
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("jj.toggleElideImmutableCommits.show", async () => {
       await state.graphWebview!.disableElideImmutableCommits();
     }),

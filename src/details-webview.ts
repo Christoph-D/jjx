@@ -11,17 +11,30 @@ import { logger } from "./logger";
 import { joinRepositoryPath, repositoryRelativePath, toWorkspaceUri } from "./workspace-paths";
 
 /**
- * Hosts the Details webview panel, which shows detailed information about the change(s)
- * currently selected in the graph view. The view is driven by the graph selection (see
- * {@link JJGraphWebview.onDidChangeSelection}): with no selection it prompts to select a
- * change, otherwise it shows the details of the last selected change. Details are fetched
- * by commit ID, so the shown content stays pinned while the change is being rewritten.
+ * One open Details webview panel: the VS Code panel plus the state needed to keep its webview
+ * in sync. `pinnedCommitId` pins the panel to one change (see {@link DetailsWebview.showChange});
+ * without it the panel follows the graph selection.
+ */
+interface DetailsPanel {
+  panel: vscode.WebviewPanel;
+  pinnedCommitId: string | undefined;
+  postedKey: string | undefined;
+  fetchSeq: number;
+  disposed: boolean;
+}
+
+/**
+ * Hosts the Details webview panels, which show detailed information about a change. The main
+ * panel is driven by the graph selection (see {@link JJGraphWebview.onDidChangeSelection}):
+ * with no selection it prompts to select a change, otherwise it shows the details of the last
+ * selected change. Panels opened via {@link showChange} are pinned to one change and keep
+ * showing it regardless of the selection. Details are fetched by commit ID, so the shown
+ * content stays pinned while the change is being rewritten.
  */
 export class DetailsWebview implements vscode.Disposable {
-  private panel: vscode.WebviewPanel | undefined;
+  private selectionPanel: DetailsPanel | undefined;
+  private pinnedPanels: DetailsPanel[] = [];
   private selection: GraphSelection[] = [];
-  private postedKey: string | undefined;
-  private fetchSeq = 0;
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
@@ -31,47 +44,56 @@ export class DetailsWebview implements vscode.Disposable {
     this.disposables.push(
       graphWebview.onDidChangeSelection((selection) => {
         this.selection = selection;
-        void this.sync(false);
+        if (this.selectionPanel) {
+          void this.syncPanel(this.selectionPanel, false);
+        }
       }),
     );
   }
 
-  /** Opens (or reveals) the Details panel. */
+  /** Opens (or reveals) the Details panel that follows the graph selection. */
   public open(): void {
-    if (this.panel) {
-      this.panel.reveal();
+    if (this.selectionPanel) {
+      this.selectionPanel.panel.reveal();
       return;
     }
-    const panel = vscode.window.createWebviewPanel("jjDetailsView", "JJ Commit Details", vscode.ViewColumn.Active, {
-      enableScripts: true,
-      localResourceRoots: [this.extensionUri],
-      retainContextWhenHidden: true,
-    });
-    this.panel = panel;
-    panel.webview.html = this.getWebviewContent(panel.webview);
-    const panelDisposables: vscode.Disposable[] = [
-      panel.webview.onDidReceiveMessage((message: DetailsWebviewToExtensionMessage) => {
-        void this.handleMessage(message);
-      }),
-    ];
-    panel.onDidDispose(() => {
-      panelDisposables.forEach((d) => {
-        d.dispose();
-      });
-      if (this.panel === panel) {
-        this.panel = undefined;
-        this.postedKey = undefined;
+    this.selectionPanel = this.createPanel("JJ Commit Details", undefined, (detailsPanel) => {
+      if (this.selectionPanel === detailsPanel) {
+        this.selectionPanel = undefined;
       }
     });
   }
 
   /**
-   * Re-fetches the details of the current selection. Called after the repository changed,
+   * Opens a Details panel showing the commit with the given commit ID, titled with the given
+   * short change ID. Unlike {@link open}, the panel does not follow the graph selection: it
+   * keeps showing this change until it is closed. Reveals the existing panel if this commit
+   * is already shown.
+   */
+  public showChange(commitId: string, shortChangeId: string): void {
+    const existing = this.pinnedPanels.find((detailsPanel) => detailsPanel.pinnedCommitId === commitId);
+    if (existing) {
+      existing.panel.reveal();
+      return;
+    }
+    const detailsPanel = this.createPanel(`JJ Commit Details (${shortChangeId})`, commitId, (open) => {
+      this.pinnedPanels = this.pinnedPanels.filter((other) => other !== open);
+    });
+    this.pinnedPanels.push(detailsPanel);
+  }
+
+  /**
+   * Re-fetches the details shown by every open panel. Called after the repository changed,
    * because metadata shown in the view (bookmarks, tags) can move between commits even
    * though the selected commit IDs are immutable.
    */
   public refresh(): void {
-    void this.sync(true);
+    if (this.selectionPanel) {
+      void this.syncPanel(this.selectionPanel, true);
+    }
+    for (const detailsPanel of this.pinnedPanels) {
+      void this.syncPanel(detailsPanel, true);
+    }
   }
 
   dispose() {
@@ -80,38 +102,69 @@ export class DetailsWebview implements vscode.Disposable {
     });
   }
 
-  /**
-   * Brings the webview in sync with the current selection. `forced` re-posts the state even
-   * when the selection did not change. Responses to superseded fetches are dropped so the
-   * view never flips back to a stale change.
-   */
-  private async sync(forced: boolean): Promise<void> {
-    const panel = this.panel;
-    if (!panel) {
-      return;
-    }
-    const repo = this.graphWebview.repository;
-    const selection = this.selection;
-    const key = `${repo?.repositoryRoot ?? "<no-repo>"}\0${selection.map((s) => s.commitId).join(",")}`;
-    if (!forced && key === this.postedKey) {
-      return;
-    }
-    this.postedKey = key;
-    const seq = ++this.fetchSeq;
+  private createPanel(
+    title: string,
+    pinnedCommitId: string | undefined,
+    onDispose: (detailsPanel: DetailsPanel) => void,
+  ): DetailsPanel {
+    const panel = vscode.window.createWebviewPanel("jjDetailsView", title, vscode.ViewColumn.Active, {
+      enableScripts: true,
+      localResourceRoots: [this.extensionUri],
+      retainContextWhenHidden: true,
+    });
+    const detailsPanel: DetailsPanel = {
+      panel,
+      pinnedCommitId,
+      postedKey: undefined,
+      fetchSeq: 0,
+      disposed: false,
+    };
+    panel.webview.html = this.getWebviewContent(panel.webview);
+    const panelDisposables: vscode.Disposable[] = [
+      panel.webview.onDidReceiveMessage((message: DetailsWebviewToExtensionMessage) => {
+        void this.handleMessage(message, detailsPanel);
+      }),
+    ];
+    panel.onDidDispose(() => {
+      panelDisposables.forEach((d) => {
+        d.dispose();
+      });
+      detailsPanel.disposed = true;
+      onDispose(detailsPanel);
+    });
+    return detailsPanel;
+  }
 
-    if (!repo || selection.length === 0) {
+  /**
+   * Brings a panel's webview in sync with the commit it should show: the commit the panel is
+   * pinned to, or the last selected change for selection-following panels. `forced` re-posts
+   * the state even when that commit did not change. Responses to superseded fetches are
+   * dropped so the view never flips back to a stale change.
+   */
+  private async syncPanel(detailsPanel: DetailsPanel, forced: boolean): Promise<void> {
+    const { panel } = detailsPanel;
+    const repo = this.graphWebview.repository;
+    const commitId = detailsPanel.pinnedCommitId ?? this.selection[this.selection.length - 1]?.commitId;
+    const key = `${repo?.repositoryRoot ?? "<no-repo>"}\0${commitId ?? ""}`;
+    if (!forced && key === detailsPanel.postedKey) {
+      return;
+    }
+    detailsPanel.postedKey = key;
+    const seq = ++detailsPanel.fetchSeq;
+
+    if (!repo || !commitId) {
       void panel.webview.postMessage({ command: "showNoSelection" });
       return;
     }
     try {
-      const details = await repo.getChangeDetails(selection[selection.length - 1].commitId);
-      if (seq !== this.fetchSeq || this.panel !== panel) {
+      const details = await repo.getChangeDetails(commitId);
+      if (seq !== detailsPanel.fetchSeq || detailsPanel.disposed) {
         return;
       }
       const msg: DetailsExtensionToWebviewMessage = { command: "updateDetails", change: details };
       void panel.webview.postMessage(msg);
     } catch (error: unknown) {
-      if (seq !== this.fetchSeq || this.panel !== panel) {
+      if (seq !== detailsPanel.fetchSeq || detailsPanel.disposed) {
         return;
       }
       logger.warn(`Failed to fetch change details: ${error instanceof Error ? error.message : String(error)}`);
@@ -119,11 +172,11 @@ export class DetailsWebview implements vscode.Disposable {
     }
   }
 
-  private async handleMessage(message: DetailsWebviewToExtensionMessage): Promise<void> {
+  private async handleMessage(message: DetailsWebviewToExtensionMessage, detailsPanel: DetailsPanel): Promise<void> {
     const repo = this.graphWebview.repository;
     switch (message.command) {
       case "webviewReady":
-        await this.sync(true);
+        await this.syncPanel(detailsPanel, true);
         break;
       case "openFileDiff": {
         if (!repo) {

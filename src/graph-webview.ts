@@ -165,6 +165,17 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
         case "openDetailsView":
           await vscode.commands.executeCommand("jj.openDetailsWebview");
           break;
+        case "showChangeDetails": {
+          const change = this.findRegularChange(message.changeId);
+          if (change) {
+            await vscode.commands.executeCommand(
+              "jj.showChangeDetailsWebview",
+              change.commitId,
+              formatChangeIdShort(change.id),
+            );
+          }
+          break;
+        }
         case "moveBookmark":
           try {
             await repo.moveBookmark(message.bookmark, message.targetChangeId);

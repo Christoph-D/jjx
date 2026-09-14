@@ -319,3 +319,68 @@ test("details view shows the selected change and follows the graph selection", a
       .toBe(commitB.change_id);
   });
 });
+
+test("context menu Show Details opens a pinned details view for the clicked change", async ({
+  graphFrame,
+  testRepo,
+  workbox,
+}) => {
+  await testRepo.commitFile("a.txt", "content a", "commit A");
+  await testRepo.commitFile("b.txt", "content b", "commit B");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  await expect(nodes).toHaveCount(4); // @, commit B, commit A, root
+
+  const commitBNode = nodes.nth(1);
+  const shortChangeIdB = ((await commitBNode.locator('[data-role="change-id"]').textContent()) ?? "").replace(
+    /\s+/g,
+    "",
+  );
+
+  await commitBNode.click({ button: "right" });
+  const menu = graphFrame.locator("#context-menu");
+  await expect(menu).toBeVisible();
+
+  await test.step("Show Details sits directly above Copy URL", async () => {
+    await expect(menu.locator('[data-action="showDetails"], [data-action="copyUrl"]')).toHaveText([
+      "Show Details...",
+      "Copy URL",
+    ]);
+  });
+
+  await menu.locator('[data-action="showDetails"]').click();
+  await expect(menu).not.toBeVisible();
+
+  await test.step("the panel is titled with the short change ID the graph shows", async () => {
+    await expect(
+      workbox.getByRole("tab", { name: `JJ Commit Details (${shortChangeIdB})`, exact: true }),
+    ).toBeVisible();
+  });
+
+  const detailsFrame = await findDetailsFrame(workbox);
+  await expect(detailsFrame.locator(".detailsDescription")).toHaveText("commit B");
+
+  await test.step("the pinned view does not follow the graph selection", async () => {
+    await nodes.nth(2).click();
+    await expect(nodes.nth(2)).toHaveAttribute("data-selected");
+
+    await expect(detailsFrame.locator(".detailsDescription")).toHaveText("commit B");
+  });
+
+  await test.step("each pinned change gets its own panel", async () => {
+    await nodes.nth(2).click({ button: "right" });
+    await menu.locator('[data-action="showDetails"]').click();
+    await expect(workbox.getByRole("tab", { name: /^JJ Commit Details/ })).toHaveCount(2);
+  });
+
+  await test.step("showing an already-shown change reveals its panel instead of adding one", async () => {
+    const commitBTab = workbox.getByRole("tab", { name: `JJ Commit Details (${shortChangeIdB})`, exact: true });
+    // The commit A panel opened last, so commit B's tab is not the active one yet.
+    await expect(commitBTab).not.toHaveClass(/active/);
+
+    await commitBNode.click({ button: "right" });
+    await menu.locator('[data-action="showDetails"]').click();
+    await expect(commitBTab).toHaveClass(/active/);
+    await expect(workbox.getByRole("tab", { name: /^JJ Commit Details/ })).toHaveCount(2);
+  });
+});
