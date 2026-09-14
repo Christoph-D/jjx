@@ -165,6 +165,7 @@ The following settings can be configured in VS Code's settings:
 
 | Setting                             | Default     | Description                                                                                                                                            |
 | ----------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `jjx.autoSwitchRepository`          | `true`      | Automatically switch the repository shown in the JJ Graph and Operation Log views to the repository containing the active editor                       |
 | `jjx.autoUpdateStaleWorkspace`      | `true`      | Automatically run `jj workspace update-stale` when the current workspace is stale                                                                      |
 | `jjx.baseWebURL`                    | `""`        | Base URL for the 'Copy URL' feature (e.g., `https://github.com/user/repo`). Overrides `git_web_url()` when set                                         |
 | `jjx.changeDoubleClickAction`       | `"new"`     | Action when double-clicking a change in the graph view: `"edit"` (jj edit) or `"new"` (jj new)                                                         |

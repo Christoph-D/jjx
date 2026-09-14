@@ -747,6 +747,12 @@
     "configuration": {
       "title": "Jujutsu X",
       "properties": {
+        "jjx.autoSwitchRepository": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically switch the repository shown in the JJ Graph and Operation Log views to the repository containing the active editor.",
+          "scope": "resource"
+        },
         "jjx.enableAnnotations": {
           "type": "boolean",
           "default": true,

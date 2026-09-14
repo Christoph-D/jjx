@@ -2,7 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import type { Locator, Page } from "@playwright/test";
-import { test as base, expect, type TestRepo, newTestRepo } from "./base-test";
+import { test as base, expect, mod, type TestRepo, newTestRepo } from "./base-test";
 
 // Opens a multi-root workspace with two independent jj repositories so that
 // repository selection across the graph view, operation log view, and SCM view
@@ -49,6 +49,20 @@ async function openRepoPicker(workbox: Page, paneHeader: Locator): Promise<Locat
   const quickInput = workbox.locator(".quick-input-widget");
   await expect(quickInput).toBeVisible();
   return quickInput;
+}
+
+async function openFileViaQuickOpen(workbox: Page, fileName: string): Promise<Locator> {
+  await workbox.keyboard.press(`${mod}+p`);
+  const quickOpen = workbox.locator(".quick-input-widget");
+  await expect(quickOpen).toBeVisible();
+  await workbox.keyboard.type(fileName);
+  const result = quickOpen.locator(".monaco-list-row").first();
+  await expect(result).toBeVisible();
+  await result.click();
+
+  const editor = workbox.locator(`.monaco-editor[role="code"][data-uri*="${fileName}"]`);
+  await expect(editor).toBeVisible();
+  return editor;
 }
 
 test("multi-root workspace exposes both repos across the graph, operation log, and source controls", async ({
@@ -115,4 +129,33 @@ test("multi-root workspace exposes both repos across the graph, operation log, a
   await expect(
     scmTree.locator('[role="treeitem"][aria-level="2"]').filter({ hasText: "beta commit one" }),
   ).toBeVisible();
+});
+
+test("graph and operation log follow the active editor's repository", async ({
+  workbox,
+  scmView,
+  graphFrame,
+  opLog,
+  repoA,
+  repoB,
+}) => {
+  await repoA.commitFile("alpha.txt", "alpha", "alpha commit one");
+  await repoB.commitFile("beta.txt", "beta", "beta commit one");
+
+  await expect(graphFrame.getByText("alpha commit one")).toBeVisible();
+
+  // Opening a file from repo-beta switches the selected repository.
+  await openFileViaQuickOpen(workbox, "beta.txt");
+  await expect(graphPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-beta/);
+  await expect(opLogPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-beta/);
+  await expect(graphFrame.getByText("beta commit one")).toBeVisible();
+  await expect(graphFrame.getByText("alpha commit one")).toHaveCount(0);
+  await expect(opLog.locator('[role="treeitem"]').filter({ hasText: "beta commit one" }).first()).toBeVisible();
+
+  // Opening a file from repo-alpha switches it back.
+  await openFileViaQuickOpen(workbox, "alpha.txt");
+  await expect(graphPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-alpha/);
+  await expect(opLogPaneHeader(scmView).locator("h3.title")).toHaveText(/repo-alpha/);
+  await expect(graphFrame.getByText("alpha commit one")).toBeVisible();
+  await expect(graphFrame.getByText("beta commit one")).toHaveCount(0);
 });

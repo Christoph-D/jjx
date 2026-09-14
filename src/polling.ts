@@ -7,6 +7,20 @@ import { DetailsWebview } from "./details-webview";
 import type { ExtensionState } from "./extension-state";
 import type { ForceRefresh } from "./source-control";
 
+function syncSelectedRepoToActiveEditor(state: ExtensionState) {
+  if (!vscode.workspace.getConfiguration("jjx").get<boolean>("autoSwitchRepository")) {
+    return;
+  }
+  const uri = vscode.window.activeTextEditor?.document.uri;
+  if (!uri || !["file", "jj"].includes(uri.scheme)) {
+    return;
+  }
+  const repository = state.workspaceSCM.getRepositoryFromUri(uri);
+  if (repository && repository.repositoryRoot !== state.getSelectedRepo()?.repositoryRoot) {
+    state.setSelectedRepo(repository);
+  }
+}
+
 export function initInfrastructure(state: ExtensionState) {
   const context = state.context;
   const initialSelectedRepo = state.getSelectedRepo();
@@ -84,6 +98,10 @@ export function initInfrastructure(state: ExtensionState) {
   );
 
   state.initialize(graphWebview, detailsWebview, operationLogManager);
+
+  syncSelectedRepoToActiveEditor(state);
+  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => syncSelectedRepoToActiveEditor(state)));
+
   vscode.commands.executeCommand("setContext", "jj.reposExist", true);
 }
 
@@ -172,6 +190,9 @@ export function createPolling(
         for (const repoSCM of state.workspaceSCM.repoSCMs) {
           repoSCM.updatePlaceholderText();
         }
+      }
+      if (e.affectsConfiguration("jjx.autoSwitchRepository")) {
+        syncSelectedRepoToActiveEditor(state);
       }
       if (e.affectsConfiguration("jjx.fileClickAction")) {
         for (const repoSCM of state.workspaceSCM.repoSCMs) {
