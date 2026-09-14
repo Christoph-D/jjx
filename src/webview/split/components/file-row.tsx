@@ -1,3 +1,4 @@
+import { useRef } from "preact/hooks";
 import { memo } from "preact/compat";
 import type { ComponentChild } from "preact";
 import type { FileStatusType } from "../../../types";
@@ -46,12 +47,7 @@ function lineText(text: string): string {
 /** Mouse movement (in px) beyond this between mousedown and click counts as a drag selection. */
 const DRAG_THRESHOLD = 3;
 
-/** Where the mouse was pressed last, used to tell drag selections apart from clicks. */
-let lastPointerDown: { x: number; y: number } | undefined;
-
-function wasDragSelection(e: MouseEvent): boolean {
-  const down = lastPointerDown;
-  lastPointerDown = undefined;
+function wasDragSelection(down: { x: number; y: number } | undefined, e: MouseEvent): boolean {
   return (
     down !== undefined &&
     (Math.abs(e.clientX - down.x) > DRAG_THRESHOLD || Math.abs(e.clientY - down.y) > DRAG_THRESHOLD)
@@ -307,6 +303,8 @@ function LineRow({
   hunkIndex: number;
   lineIndex: number;
 }) {
+  /** Where the mouse was pressed last, used to tell drag selections apart from clicks. */
+  const pointerDownRef = useRef<{ x: number; y: number } | undefined>(undefined);
   const checked = getLineChecked(path, line, checkState.value);
   const added = line.kind === "add";
   const id: SplitRowId = { kind: "line", path, hunkIndex, lineIndex };
@@ -318,11 +316,11 @@ function LineRow({
       aria-label={`${added ? "+" : "-"}${lineText(line.text)}`}
       title={checked ? "Exclude line" : "Include line"}
       onMouseDown={(e) => {
-        lastPointerDown = { x: e.clientX, y: e.clientY };
+        pointerDownRef.current = { x: e.clientX, y: e.clientY };
       }}
       onClick={(e) => {
         // Ignore clicks that end a drag selection so copying line text keeps working.
-        if (wasDragSelection(e)) {
+        if (wasDragSelection(pointerDownRef.current, e)) {
           return;
         }
         // Double/triple clicks select a word/line incidentally; drop such (possibly stale)
