@@ -63,5 +63,5 @@ export function useMenuBehavior(
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("blur", close);
     };
-  }, [state, close, onPositioned]);
+  }, [ref, state, close, onPositioned]);
 }
