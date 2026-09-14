@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.15.1
+
+### New Features
+
+- **Auto-switch the selected repository based on the active editor** - In multi-root workspaces, the repository shown in
+  the JJ Graph and Operation Log views now follows the active editor. Disable it with the new `jjx.autoSwitchRepository`
+  setting
+
 ## 1.15.0
 
 ### New Features
