@@ -1,5 +1,22 @@
 # Change Log
 
+## 1.15.2
+
+### New Features
+
+- Right-clicking a change now offers "Show Details..." to view commit details
+
+### Performance
+
+- Make graph view selection updates sub-linear in row count
+
+### Internal
+
+- Re-copy static webview assets in watch mode so edits to HTML files, `config.toml`, and codicons reach the extension
+  host without a manual rebuild
+- Enable react-hooks lint rules for webview code
+- Fix new lint errors and other minor issues in the preact components
+
 ## 1.15.1
 
 ### New Features
