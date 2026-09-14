@@ -31,8 +31,7 @@ system.
   - Alternative: [Extended graph view](images/full-view.png)
 - High information density
 - Author name omitted if it's your own change
-- Elided commits  
-  ![elided commits](images/elided-commits.gif)
+- Elided commits
 - Select a change to see its affected files and diffs
 - Select multiple changes with shift-click (contiguous range from the last clicked change) or ctrl-click (individual
   changes, cmd-click on macOS)
