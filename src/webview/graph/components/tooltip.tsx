@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "preact/hooks";
+import { useEffect, useRef } from "preact/hooks";
 import { tooltip, diffStatsCache } from "../signals";
 import { useTooltipTimers } from "../hooks/use-tooltip-timers";
 import { CHANGE_ID_RIGHT_PADDING } from "../types";
@@ -54,13 +54,13 @@ export function Tooltip() {
   const state = tooltip.value;
   const { clearHideTimer } = useTooltipTimers();
 
-  const handleMouseEnter = useCallback(() => {
+  const handleMouseEnter = () => {
     clearHideTimer();
-  }, []);
+  };
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseLeave = () => {
     tooltip.value = null;
-  }, []);
+  };
 
   useEffect(() => {
     if (!state || !ref.current) {
