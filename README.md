@@ -41,6 +41,19 @@ system.
 - Drag & drop changes onto other changes
 - Optionally show each commit's changed files inline in the graph (like `jj log -s`), with one-click diff opening (⚠️
   experimental, enable with `jjx.showChangedFiles`)
+- Keyboard shortcuts:
+  - `ArrowUp` / `ArrowDown`: Move the selection by one change
+  - `Shift` + `ArrowUp` / `ArrowDown`: Extend the selection by one change, like a `Shift` + click
+  - `Enter`: Open the selected change like a double click; with multiple selected changes, create a new change with all
+    of them as parents
+  - `Delete`: Abandon the selected change(s), with confirmation
+  - `n`: Create a new change on top of the selected change(s), with all of them as parents
+  - `i`: Open the details view for the current selection
+  - `d`: Describe the last selected change
+  - `e`: Edit the last selected change
+  - `b`: Create a bookmark on the last selected change
+  - `t`: Create a tag on the last selected change
+  - `s`: Split the last selected change
 
 ### 🖱️ Context menu
 
