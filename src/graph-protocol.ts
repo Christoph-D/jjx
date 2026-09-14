@@ -108,6 +108,7 @@ export type WebviewToExtensionMessage =
   | { command: "editChangeDirect"; changeId: FullChangeId }
   | { command: "newChildChange"; changeIds: FullChangeId[] }
   | { command: "selectChange"; selectedNodes: FullChangeId[] }
+  | { command: "openDetailsView" }
   | { command: "moveBookmark"; bookmark: string; targetChangeId: FullChangeId }
   | { command: "createBookmark"; targetChangeId: FullChangeId }
   | { command: "createTag"; targetChangeId: FullChangeId }

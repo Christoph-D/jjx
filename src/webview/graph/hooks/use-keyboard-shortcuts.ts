@@ -16,6 +16,7 @@ import type { RegularChangeNode } from "../../../graph-protocol";
  *   working copy only reacts to the "new" action and when it has content), and
  *   with several selected changes it creates a new change on top with all of
  *   them as parents.
+ * - "i" opens the commit details view for the current selection.
  *
  * Modified keys (e.g. Shift+Arrow for range selection) are left alone, as are
  * keys pressed while a menu is open or a drag is in progress.
@@ -72,6 +73,11 @@ export function useKeyboardShortcuts() {
       postMessage({ command: "newChildChange", changeIds: selection });
     };
 
+    const openDetailsView = (e: KeyboardEvent) => {
+      e.preventDefault();
+      postMessage({ command: "openDetailsView" });
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
         return;
@@ -91,6 +97,9 @@ export function useKeyboardShortcuts() {
           return;
         case "Enter":
           activateSelection(e);
+          return;
+        case "i":
+          openDetailsView(e);
           return;
       }
     };

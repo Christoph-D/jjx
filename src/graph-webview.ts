@@ -112,6 +112,7 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
       if (
         !this.repository &&
         message.command !== "selectChange" &&
+        message.command !== "openDetailsView" &&
         message.command !== "reportError" &&
         message.command !== "showWarning"
       ) {
@@ -160,6 +161,9 @@ export class JJGraphWebview implements vscode.WebviewViewProvider {
           this.fireSelection(this.resolveSelection(selectedIds));
           break;
         }
+        case "openDetailsView":
+          await vscode.commands.executeCommand("jj.openDetailsWebview");
+          break;
         case "moveBookmark":
           try {
             await repo.moveBookmark(message.bookmark, message.targetChangeId);
