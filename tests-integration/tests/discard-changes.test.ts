@@ -1,6 +1,10 @@
 import { test, expect, waitForSCMView } from "./base-test";
 
-test("discard changes for a single file via inline button", async ({ graphFrame, testRepo, workbox }) => {
+test("discard changes for a single file and an entire resource group via inline buttons", async ({
+  graphFrame,
+  testRepo,
+  workbox,
+}) => {
   await testRepo.commitFile("a.txt", "original", "A");
 
   await testRepo.writeFile("a.txt", "modified");
@@ -10,72 +14,70 @@ test("discard changes for a single file via inline button", async ({ graphFrame,
 
   const scmView = await waitForSCMView(workbox, ["a.txt", "b.txt"], ["a.txt"]);
 
-  const aFileItems = scmView.getByRole("treeitem", { name: /^a\.txt/ });
-  await expect(aFileItems).toHaveCount(2);
-  const aFileItem = aFileItems.first();
-  await expect(aFileItem).toBeVisible();
-  await aFileItem.hover();
+  await test.step("discard changes for a single file", async () => {
+    const aFileItems = scmView.getByRole("treeitem", { name: /^a\.txt/ });
+    await expect(aFileItems).toHaveCount(2);
+    const aFileItem = aFileItems.first();
+    await expect(aFileItem).toBeVisible();
+    await aFileItem.hover();
 
-  const discardButton = aFileItem.getByRole("button", { name: "Discard Changes" });
-  await expect(discardButton).toBeVisible();
-  await discardButton.click();
+    const discardButton = aFileItem.getByRole("button", { name: "Discard Changes" });
+    await expect(discardButton).toBeVisible();
+    await discardButton.click();
 
-  const dialog = workbox.locator(".monaco-dialog-box");
-  await expect(dialog).toBeVisible();
+    const dialog = workbox.locator(".monaco-dialog-box");
+    await expect(dialog).toBeVisible();
 
-  const confirmDiscard = dialog.getByRole("button", { name: "Discard" });
-  await confirmDiscard.click();
+    const confirmDiscard = dialog.getByRole("button", { name: "Discard" });
+    await confirmDiscard.click();
 
-  const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
-  await expect(scmTree.getByRole("treeitem", { name: /^a\.txt/ })).toHaveCount(1);
+    const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
+    await expect(scmTree.getByRole("treeitem", { name: /^a\.txt/ })).toHaveCount(1);
 
-  await expect(async () => {
-    const content = await testRepo.readFile("a.txt");
-    expect(content).toBe("original");
-  }).toPass();
+    await expect(async () => {
+      const content = await testRepo.readFile("a.txt");
+      expect(content).toBe("original");
+    }).toPass();
 
-  const bFileItem = scmTree.getByRole("treeitem", { name: /^b\.txt/ });
-  await expect(bFileItem).toBeVisible();
-});
+    const bFileItem = scmTree.getByRole("treeitem", { name: /^b\.txt/ });
+    await expect(bFileItem).toBeVisible();
+  });
 
-test("discard changes for entire resource group via inline button", async ({ graphFrame, testRepo, workbox }) => {
-  await testRepo.commitFile("a.txt", "original", "A");
+  await test.step("discard changes for the entire resource group", async () => {
+    // Re-modify a.txt so the working copy holds both files again.
+    await testRepo.writeFile("a.txt", "modified");
 
-  await testRepo.writeFile("a.txt", "modified");
-  await testRepo.writeFile("b.txt", "new file");
+    await waitForSCMView(workbox, ["a.txt", "b.txt"], ["a.txt"]);
 
-  await expect(graphFrame.locator("#nodes > div")).toHaveCount(3);
+    const bFileItem = scmView.getByRole("treeitem", { name: /^b\.txt/ }).first();
+    await expect(bFileItem).toBeVisible();
 
-  const scmView = await waitForSCMView(workbox, ["a.txt", "b.txt"], ["a.txt"]);
+    const workingCopyItem = scmView.getByRole("treeitem", { name: "Working Copy" });
+    await expect(workingCopyItem).toBeVisible();
+    await workingCopyItem.hover();
 
-  const bFileItem = scmView.getByRole("treeitem", { name: /^b\.txt/ }).first();
-  await expect(bFileItem).toBeVisible();
+    const discardButton = workingCopyItem.getByRole("button", { name: "Discard Changes" });
+    await expect(discardButton).toBeVisible();
+    await discardButton.click();
 
-  const workingCopyItem = scmView.getByRole("treeitem", { name: "Working Copy" });
-  await expect(workingCopyItem).toBeVisible();
-  await workingCopyItem.hover();
+    const dialog = workbox.locator(".monaco-dialog-box");
+    await expect(dialog).toBeVisible();
 
-  const discardButton = workingCopyItem.getByRole("button", { name: "Discard Changes" });
-  await expect(discardButton).toBeVisible();
-  await discardButton.click();
+    const confirmDiscard = dialog.getByRole("button", { name: "Discard" });
+    await confirmDiscard.click();
 
-  const dialog = workbox.locator(".monaco-dialog-box");
-  await expect(dialog).toBeVisible();
+    const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
+    await expect(scmTree.getByRole("treeitem", { name: /^a\.txt/ })).toHaveCount(1);
+    await expect(scmTree.getByRole("treeitem", { name: /^b\.txt/ })).toHaveCount(0);
 
-  const confirmDiscard = dialog.getByRole("button", { name: "Discard" });
-  await confirmDiscard.click();
+    await expect(async () => {
+      const content = await testRepo.readFile("a.txt");
+      expect(content).toBe("original");
+    }).toPass();
 
-  const scmTree = workbox.getByRole("tree", { name: "Source Control Management" });
-  await expect(scmTree.getByRole("treeitem", { name: /^a\.txt/ })).toHaveCount(1);
-  await expect(scmTree.getByRole("treeitem", { name: /^b\.txt/ })).toHaveCount(0);
-
-  await expect(async () => {
-    const content = await testRepo.readFile("a.txt");
-    expect(content).toBe("original");
-  }).toPass();
-
-  await expect(async () => {
-    const diffResult = await testRepo.jjCommand(["diff", "--name-only"]);
-    expect(diffResult.stdout.trim()).toBe("");
-  }).toPass();
+    await expect(async () => {
+      const diffResult = await testRepo.jjCommand(["diff", "--name-only"]);
+      expect(diffResult.stdout.trim()).toBe("");
+    }).toPass();
+  });
 });

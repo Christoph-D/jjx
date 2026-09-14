@@ -21,9 +21,9 @@ async function setupRemotesWithTrackedBookmark(testRepo: TestRepo, graphFrame: F
   return { remoteARepo, remoteBRepo, bookmarkPill };
 }
 
-test("push bookmark to all remotes via upload icon", async ({ graphFrame, testRepo }) => {
+test("push bookmark to all and single remotes and untrack from another", async ({ graphFrame, testRepo }) => {
   test.slow();
-  const { bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
+  const { remoteARepo, remoteBRepo, bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
 
   await testRepo.commitFile("test.txt", "content", "initial commit");
 
@@ -33,89 +33,69 @@ test("push bookmark to all remotes via upload icon", async ({ graphFrame, testRe
   const unsyncedPill = graphFrame.locator('[data-bookmark="my-bookmark"][data-unsynced]');
   const uploadIcon = bookmarkPill.locator('[data-role="push-icon"]');
 
-  await expect(uploadIcon).toBeVisible();
+  await test.step("push bookmark to all remotes via upload icon", async () => {
+    await expect(uploadIcon).toBeVisible();
 
-  await uploadIcon.click();
+    await uploadIcon.click();
 
-  await expect(unsyncedPill).not.toBeVisible();
-});
+    await expect(unsyncedPill).not.toBeVisible();
+  });
 
-test("push bookmark to single remote via context menu", async ({ graphFrame, testRepo }) => {
-  test.slow();
-  const { remoteARepo, remoteBRepo, bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
+  await test.step("push bookmark to single remote via context menu", async () => {
+    const changeId = await testRepo.commitFile("new.txt", "new content", "second commit");
+    await testRepo.jjCommand(["bookmark", "move", "my-bookmark", "--to", "@-"]);
 
-  await testRepo.commitFile("test.txt", "content", "initial commit");
-  const uploadIcon = bookmarkPill.locator('[data-role="push-icon"]');
-  await expect(uploadIcon).toBeVisible();
-  await uploadIcon.click();
+    await expect(unsyncedPill).toBeVisible();
+    await expect(uploadIcon).toBeVisible();
 
-  const unsyncedPill = graphFrame.locator('[data-bookmark="my-bookmark"][data-unsynced]');
-  await expect(unsyncedPill).not.toBeVisible();
+    await clickPillMenuItem(graphFrame, bookmarkPill, "Push to remote-a");
 
-  const changeId = await testRepo.commitFile("new.txt", "new content", "second commit");
-  await testRepo.jjCommand(["bookmark", "move", "my-bookmark", "--to", "@-"]);
+    await expect(async () => {
+      const showResult = await remoteARepo.jjCommand(["show", changeId]);
+      expect(showResult.exitCode).toBe(0);
+    }).toPass();
 
-  await expect(unsyncedPill).toBeVisible();
-  await expect(uploadIcon).toBeVisible();
+    const showResultB = await remoteBRepo.jjCommand(["show", changeId]);
+    expect(showResultB.exitCode).not.toBe(0);
 
-  await clickPillMenuItem(graphFrame, bookmarkPill, "Push to remote-a");
+    await expect(unsyncedPill).toBeVisible();
 
-  await expect(async () => {
-    const showResult = await remoteARepo.jjCommand(["show", changeId]);
-    expect(showResult.exitCode).toBe(0);
-  }).toPass();
+    await expect(async () => {
+      await bookmarkPill.click({ button: "right" });
+      const pushMenu = graphFrame.locator("#pill-context-menu");
+      await expect(pushMenu).toBeVisible();
+      const pushToB = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-b" });
+      await expect(pushToB).toBeVisible();
+      const pushToA = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-a" });
+      await expect(pushToA).not.toBeVisible({ timeout: 2_000 });
+      await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
+      await expect(pushMenu).not.toBeVisible();
+    }).toPass();
 
-  const showResultB = await remoteBRepo.jjCommand(["show", changeId]);
-  expect(showResultB.exitCode).not.toBe(0);
+    await clickPillMenuItem(graphFrame, bookmarkPill, "Push to remote-b");
+    await expect(unsyncedPill).not.toBeVisible();
+  });
 
-  await expect(unsyncedPill).toBeVisible();
+  await test.step("push to one remote and untrack from another", async () => {
+    const changeId = await testRepo.commitFile("third.txt", "third content", "third commit");
+    await testRepo.jjCommand(["bookmark", "move", "my-bookmark", "--to", "@-"]);
+    await expect(unsyncedPill).toBeVisible();
 
-  await expect(async () => {
-    await bookmarkPill.click({ button: "right" });
-    const pushMenu = graphFrame.locator("#pill-context-menu");
-    await expect(pushMenu).toBeVisible();
-    const pushToB = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-b" });
-    await expect(pushToB).toBeVisible();
-    const pushToA = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-a" });
-    await expect(pushToA).not.toBeVisible({ timeout: 2_000 });
-    await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
-    await expect(pushMenu).not.toBeVisible();
-  }).toPass();
+    await clickPillMenuItem(graphFrame, bookmarkPill, "Push to remote-a");
 
-  await clickPillMenuItem(graphFrame, bookmarkPill, "Push to remote-b");
-  await expect(unsyncedPill).not.toBeVisible();
-});
+    await expect(async () => {
+      const showResult = await remoteARepo.jjCommand(["show", changeId]);
+      expect(showResult.exitCode).toBe(0);
+    }).toPass();
 
-test("push to one remote and untrack from another", async ({ graphFrame, testRepo }) => {
-  test.slow();
-  const { remoteARepo, bookmarkPill } = await setupRemotesWithTrackedBookmark(testRepo, graphFrame);
+    await clickPillMenuItem(graphFrame, bookmarkPill, "Untrack from remote-b");
+    await expect(unsyncedPill).not.toBeVisible();
 
-  await testRepo.commitFile("test.txt", "content", "initial commit");
-  const uploadIcon = bookmarkPill.locator('[data-role="push-icon"]');
-  await expect(uploadIcon).toBeVisible();
-  await uploadIcon.click();
+    await clickPillMenuItem(graphFrame, bookmarkPill, "Untrack from remote-a");
 
-  const unsyncedPill = graphFrame.locator('[data-bookmark="my-bookmark"][data-unsynced]');
-  await expect(unsyncedPill).not.toBeVisible();
-
-  const changeId = await testRepo.commitFile("new.txt", "new content", "second commit");
-  await testRepo.jjCommand(["bookmark", "move", "my-bookmark", "--to", "@-"]);
-  await expect(unsyncedPill).toBeVisible();
-
-  await clickPillMenuItem(graphFrame, bookmarkPill, "Push to remote-a");
-
-  await expect(async () => {
-    const showResult = await remoteARepo.jjCommand(["show", changeId]);
-    expect(showResult.exitCode).toBe(0);
-  }).toPass();
-
-  await clickPillMenuItem(graphFrame, bookmarkPill, "Untrack from remote-b");
-  await expect(unsyncedPill).not.toBeVisible();
-
-  await clickPillMenuItem(graphFrame, bookmarkPill, "Untrack from remote-a");
-
-  await expect(async () => {
-    const trackedResult = await testRepo.jjCommand(["bookmark", "list", "my-bookmark", "--tracked"]);
-    expect(trackedResult.stdout.trim()).toBe("");
-  }).toPass();
+    await expect(async () => {
+      const trackedResult = await testRepo.jjCommand(["bookmark", "list", "my-bookmark", "--tracked"]);
+      expect(trackedResult.stdout.trim()).toBe("");
+    }).toPass();
+  });
 });

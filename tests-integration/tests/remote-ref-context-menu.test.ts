@@ -1,5 +1,4 @@
 import { test, expect, newTestRepo, clickPillMenuItem, clickRemoteRefMenuItem, type TestRepo } from "./base-test";
-import type { Frame } from "@playwright/test";
 import path from "path";
 
 async function setupRemotes(testRepo: TestRepo, ...names: string[]) {
@@ -12,50 +11,31 @@ async function setupRemotes(testRepo: TestRepo, ...names: string[]) {
   return repos;
 }
 
-async function setupTrackedAndPushedBookmark(testRepo: TestRepo, graphFrame: Frame) {
-  const { "remote-a": remoteARepo } = await setupRemotes(testRepo, "remote-a");
+test("remote ref pill context menus", async ({ graphFrame, testRepo, workbox }) => {
+  test.slow();
+  const { "remote-a": remoteARepo, "remote-b": remoteBRepo } = await setupRemotes(testRepo, "remote-a", "remote-b");
+  const dialog = workbox.locator(".monaco-dialog-box");
+
+  // A bookmark tracked on and pushed to remote-a.
   await testRepo.commitFile("test.txt", "content", "initial commit");
   await testRepo.jjCommand(["bookmark", "create", "-r", "@-", "my-bookmark"]);
-
   const bookmarkPill = graphFrame.locator('[data-bookmark="my-bookmark"]');
   await expect(bookmarkPill).toBeVisible();
   await clickPillMenuItem(graphFrame, bookmarkPill, "Track on remote-a");
-  const uploadIcon = bookmarkPill.locator('[data-role="push-icon"]');
-  await expect(uploadIcon).toBeVisible();
-  await uploadIcon.click();
+  const bookmarkUploadIcon = bookmarkPill.locator('[data-role="push-icon"]');
+  await expect(bookmarkUploadIcon).toBeVisible();
+  await bookmarkUploadIcon.click();
   // Wait for the push to complete (bookmark becomes synced) before proceeding.
   await expect(graphFrame.locator('[data-bookmark="my-bookmark"][data-unsynced]')).not.toBeVisible();
-  return { remoteARepo, bookmarkPill };
-}
 
-async function setupTrackedAndPushedTag(testRepo: TestRepo, graphFrame: Frame) {
-  const { "remote-a": remoteARepo } = await setupRemotes(testRepo, "remote-a");
-  await testRepo.commitFile("test.txt", "content", "initial commit");
-  await testRepo.createTag("my-tag", "@-");
+  await test.step("canceling remote bookmark deletion does not delete it from the remote", async () => {
+    // Deleting the local bookmark makes the (unsynced, tracked) remote pill appear.
+    await testRepo.jjCommand(["bookmark", "delete", "my-bookmark"]);
+    const remotePill = graphFrame.locator('[data-remote-bookmark="my-bookmark"][data-remote="remote-a"]');
+    await expect(remotePill).toBeVisible();
 
-  const tagPill = graphFrame.locator('[data-tag="my-tag"]');
-  await expect(tagPill).toBeVisible();
-  await testRepo.jjCommand(["tag", "track", "my-tag", "--remote=remote-a"]);
-  const uploadIcon = tagPill.locator('[data-role="push-icon"]');
-  await expect(uploadIcon).toBeVisible();
-  await uploadIcon.click();
-  await expect(graphFrame.locator('[data-tag="my-tag"][data-unsynced]')).not.toBeVisible();
-  return { remoteARepo, tagPill };
-}
-
-test("remote bookmark pill context menu", async ({ graphFrame, testRepo, workbox }) => {
-  test.slow();
-  const { remoteARepo, bookmarkPill } = await setupTrackedAndPushedBookmark(testRepo, graphFrame);
-
-  // Deleting the local bookmark makes the (unsynced, tracked) remote pill appear.
-  await testRepo.jjCommand(["bookmark", "delete", "my-bookmark"]);
-  const remotePill = graphFrame.locator('[data-remote-bookmark="my-bookmark"][data-remote="remote-a"]');
-  await expect(remotePill).toBeVisible();
-
-  await test.step("cancel deletion does not delete the bookmark from the remote", async () => {
     await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete Bookmark from remote-a");
 
-    const dialog = workbox.locator(".monaco-dialog-box");
     await expect(dialog).toBeVisible();
     await workbox.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
@@ -66,6 +46,7 @@ test("remote bookmark pill context menu", async ({ graphFrame, testRepo, workbox
   });
 
   await test.step("restore deleted bookmark from remote via remote pill context menu", async () => {
+    const remotePill = graphFrame.locator('[data-remote-bookmark="my-bookmark"][data-remote="remote-a"]');
     await clickRemoteRefMenuItem(graphFrame, remotePill, "Restore Bookmark from remote-a");
 
     // Restoring recreates the local bookmark, so the remote-only pill disappears
@@ -78,11 +59,11 @@ test("remote bookmark pill context menu", async ({ graphFrame, testRepo, workbox
   await test.step("delete bookmark from remote via remote pill context menu", async () => {
     // Delete the local bookmark again to make the remote pill reappear.
     await testRepo.jjCommand(["bookmark", "delete", "my-bookmark"]);
+    const remotePill = graphFrame.locator('[data-remote-bookmark="my-bookmark"][data-remote="remote-a"]');
     await expect(remotePill).toBeVisible();
 
     await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete Bookmark from remote-a");
 
-    const dialog = workbox.locator(".monaco-dialog-box");
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('delete the bookmark "my-bookmark" from "remote-a"');
     await dialog.getByRole("button", { name: "Delete from remote-a" }).click();
@@ -93,19 +74,24 @@ test("remote bookmark pill context menu", async ({ graphFrame, testRepo, workbox
       expect(await remoteARepo.getBookmark("my-bookmark")).toBeUndefined();
     }).toPass();
   });
-});
 
-test("remote tag pill context menu", async ({ graphFrame, testRepo, workbox }) => {
-  test.slow();
-  const { remoteARepo, tagPill } = await setupTrackedAndPushedTag(testRepo, graphFrame);
-
-  await testRepo.jjCommand(["tag", "delete", "my-tag"]);
-  await expect(tagPill).not.toBeVisible();
-  const remotePill = graphFrame.locator('[data-remote-tag="my-tag"][data-remote="remote-a"]');
-  await expect(remotePill).toBeVisible();
+  // A tag tracked on and pushed to remote-b.
+  await testRepo.createTag("my-tag", "@-");
+  const tagPill = graphFrame.locator('[data-tag="my-tag"]');
+  await expect(tagPill).toBeVisible();
+  await testRepo.jjCommand(["tag", "track", "my-tag", "--remote=remote-b"]);
+  const tagUploadIcon = tagPill.locator('[data-role="push-icon"]');
+  await expect(tagUploadIcon).toBeVisible();
+  await tagUploadIcon.click();
+  await expect(graphFrame.locator('[data-tag="my-tag"][data-unsynced]')).not.toBeVisible();
 
   await test.step("restore deleted tag from remote via remote pill context menu", async () => {
-    await clickRemoteRefMenuItem(graphFrame, remotePill, "Restore Tag from remote-a");
+    await testRepo.jjCommand(["tag", "delete", "my-tag"]);
+    await expect(tagPill).not.toBeVisible();
+    const remotePill = graphFrame.locator('[data-remote-tag="my-tag"][data-remote="remote-b"]');
+    await expect(remotePill).toBeVisible();
+
+    await clickRemoteRefMenuItem(graphFrame, remotePill, "Restore Tag from remote-b");
 
     await expect(remotePill).not.toBeVisible();
     await expect(tagPill).toBeVisible();
@@ -115,35 +101,32 @@ test("remote tag pill context menu", async ({ graphFrame, testRepo, workbox }) =
   await test.step("delete tag from remote via remote pill context menu", async () => {
     // Delete the local tag again to make the remote pill reappear.
     await testRepo.jjCommand(["tag", "delete", "my-tag"]);
+    const remotePill = graphFrame.locator('[data-remote-tag="my-tag"][data-remote="remote-b"]');
     await expect(remotePill).toBeVisible();
 
-    await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete Tag from remote-a");
+    await clickRemoteRefMenuItem(graphFrame, remotePill, "Delete Tag from remote-b");
 
-    const dialog = workbox.locator(".monaco-dialog-box");
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('delete the tag "my-tag" from "remote-a"');
-    await dialog.getByRole("button", { name: "Delete from remote-a" }).click();
+    await expect(dialog).toContainText('delete the tag "my-tag" from "remote-b"');
+    await dialog.getByRole("button", { name: "Delete from remote-b" }).click();
     await expect(dialog).not.toBeVisible();
 
     await expect(remotePill).not.toBeVisible();
     await expect(async () => {
-      expect(await remoteARepo.getTag("my-tag")).toBeUndefined();
+      expect(await remoteBRepo.getTag("my-tag")).toBeUndefined();
     }).toPass();
   });
-});
-
-test("track untracked remote refs via remote pill context menu", async ({ graphFrame, testRepo }) => {
-  test.slow();
-  const { "remote-src": remoteSrcRepo } = await setupRemotes(testRepo, "remote-src");
-  // Land the bookmark and the tag on different commits. Both scenarios share a
-  // single remote repo, but keeping each ref on its own commit avoids stacking
-  // two pills on one row (which makes one pill intercept the other's clicks).
-  await remoteSrcRepo.commitFile("a.txt", "x", "first commit");
-  await remoteSrcRepo.commitFile("b.txt", "y", "second commit");
-  await remoteSrcRepo.jjCommand(["bookmark", "create", "-r", "@-", "remote-only-bookmark"]);
-  await remoteSrcRepo.createTag("remote-only-tag", "@--");
 
   await test.step("track untracked remote bookmark via remote pill context menu", async () => {
+    const { "remote-src": remoteSrcRepo } = await setupRemotes(testRepo, "remote-src");
+    // Land the bookmark and the tag on different commits. Both scenarios share a
+    // single remote repo, but keeping each ref on its own commit avoids stacking
+    // two pills on one row (which makes one pill intercept the other's clicks).
+    await remoteSrcRepo.commitFile("a.txt", "x", "first commit");
+    await remoteSrcRepo.commitFile("b.txt", "y", "second commit");
+    await remoteSrcRepo.jjCommand(["bookmark", "create", "-r", "@-", "remote-only-bookmark"]);
+    await remoteSrcRepo.createTag("remote-only-tag", "@--");
+
     // Scope the fetch to the bookmark so the tag stays unfetched until its step.
     await testRepo.jjCommand(["git", "fetch", "--remote", "remote-src", "--branch", "remote-only-bookmark"]);
     // The default graph revset only shows commits connected to the working

@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as os from "os";
 import path from "path";
 
-async function setupRemotesWithTrackedTag(testRepo: TestRepo, graphFrame: Frame) {
+async function setupRemotesWithTag(testRepo: TestRepo, graphFrame: Frame) {
   const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
   const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
   const remoteARepo = await newTestRepo(remoteAPath);
@@ -18,125 +18,105 @@ async function setupRemotesWithTrackedTag(testRepo: TestRepo, graphFrame: Frame)
 
   const tagPill = graphFrame.locator('[data-tag="my-tag"]');
   await expect(tagPill).toBeVisible();
-
-  await testRepo.jjCommand(["tag", "track", "my-tag", "--remote=remote-a"]);
-  await testRepo.jjCommand(["tag", "track", "my-tag", "--remote=remote-b"]);
 
   return { remoteARepo, remoteBRepo, tagPill };
 }
 
-test("push tag to all remotes via upload icon", async ({ graphFrame, testRepo }) => {
+test("push tag to untracked and single remotes via context menu and to all remotes via upload icon", async ({
+  graphFrame,
+  testRepo,
+}) => {
   test.slow();
-  const { tagPill } = await setupRemotesWithTrackedTag(testRepo, graphFrame);
-
-  const nodes = graphFrame.locator("#nodes > div");
-  await expect(nodes).toHaveCount(3);
+  const { remoteARepo, remoteBRepo, tagPill } = await setupRemotesWithTag(testRepo, graphFrame);
 
   const unsyncedPill = graphFrame.locator('[data-tag="my-tag"][data-unsynced]');
   const uploadIcon = tagPill.locator('[data-role="push-icon"]');
 
-  await expect(uploadIcon).toBeVisible();
+  await test.step("push to an untracked remote tracks the tag there", async () => {
+    // Push to remote-a first (tracks the tag on remote-a only).
+    await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");
+    await expect(async () => {
+      expect(await remoteARepo.getTag("my-tag")).toBeDefined();
+    }).toPass();
 
-  await uploadIcon.click();
+    // remote-b is still untracked. Pushing to it must succeed despite the tag
+    // already being tracked on remote-a (regression test for jj 0.44 refusing to
+    // create a new remote tag on an untracked remote).
+    await clickPillMenuItem(graphFrame, tagPill, "Push to remote-b");
+    await expect(async () => {
+      expect(await remoteBRepo.getTag("my-tag")).toBeDefined();
+    }).toPass();
 
-  await expect(unsyncedPill).not.toBeVisible();
-});
+    // Both remotes are now tracked and in sync.
+    await expect(unsyncedPill).not.toBeVisible();
+  });
 
-test("push tag to single remote and untracked second remote via context menu", async ({ graphFrame, testRepo }) => {
-  test.slow();
-  const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
-  const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
-  const remoteARepo = await newTestRepo(remoteAPath);
-  const remoteBRepo = await newTestRepo(remoteBPath);
+  await test.step("push to a single remote via context menu after moving the tag", async () => {
+    // Move the tag to a new commit, making it out-of-sync with the remotes again.
+    const changeId = await testRepo.commitFile("new.txt", "new content", "second commit");
+    await testRepo.jjCommand(["tag", "set", "-r", "@-", "my-tag", "--allow-move"]);
 
-  await testRepo.jjCommand(["git", "remote", "add", "remote-a", remoteAPath]);
-  await testRepo.jjCommand(["git", "remote", "add", "remote-b", remoteBPath]);
+    await expect(unsyncedPill).toBeVisible();
 
-  await testRepo.commitFile("test.txt", "content", "initial commit");
-  await testRepo.createTag("my-tag", "@-");
+    await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");
 
-  const tagPill = graphFrame.locator('[data-tag="my-tag"]');
-  await expect(tagPill).toBeVisible();
-  const unsyncedPill = graphFrame.locator('[data-tag="my-tag"][data-unsynced]');
+    await expect(async () => {
+      const showResult = await remoteARepo.jjCommand(["show", changeId]);
+      expect(showResult.exitCode).toBe(0);
+    }).toPass();
 
-  // Push to remote-a first (tracks the tag on remote-a only).
-  await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");
-  await expect(async () => {
-    expect(await remoteARepo.getTag("my-tag")).toBeDefined();
-  }).toPass();
+    const showResultB = await remoteBRepo.jjCommand(["show", changeId]);
+    expect(showResultB.exitCode).not.toBe(0);
 
-  // remote-b is still untracked. Pushing to it must succeed despite the tag
-  // already being tracked on remote-a (regression test for jj 0.44 refusing to
-  // create a new remote tag on an untracked remote).
-  await clickPillMenuItem(graphFrame, tagPill, "Push to remote-b");
-  await expect(async () => {
-    expect(await remoteBRepo.getTag("my-tag")).toBeDefined();
-  }).toPass();
+    await expect(unsyncedPill).toBeVisible();
 
-  // Both remotes are now tracked and in sync.
-  await expect(unsyncedPill).not.toBeVisible();
+    // remote-a is now in sync, so only remote-b should be offered as a push target.
+    await expect(async () => {
+      await tagPill.click({ button: "right" });
+      const pushMenu = graphFrame.locator("#pill-context-menu");
+      await expect(pushMenu).toBeVisible();
+      const pushToB = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-b" });
+      await expect(pushToB).toBeVisible();
+      const pushToA = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-a" });
+      await expect(pushToA).not.toBeVisible({ timeout: 2_000 });
+      await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
+      await expect(pushMenu).not.toBeVisible();
+    }).toPass();
 
-  // Move the tag to a new commit, making it out-of-sync with the remotes again.
-  const changeId = await testRepo.commitFile("new.txt", "new content", "second commit");
-  await testRepo.jjCommand(["tag", "set", "-r", "@-", "my-tag", "--allow-move"]);
+    await clickPillMenuItem(graphFrame, tagPill, "Push to remote-b");
+    await expect(unsyncedPill).not.toBeVisible();
+  });
 
-  await expect(unsyncedPill).toBeVisible();
+  await test.step("push to all remotes via upload icon", async () => {
+    // Move the tag again so the upload icon has something to push.
+    await testRepo.commitFile("third.txt", "third content", "third commit");
+    await testRepo.jjCommand(["tag", "set", "-r", "@-", "my-tag", "--allow-move"]);
 
-  await clickPillMenuItem(graphFrame, tagPill, "Push to remote-a");
+    await expect(unsyncedPill).toBeVisible();
+    await expect(uploadIcon).toBeVisible();
 
-  await expect(async () => {
-    const showResult = await remoteARepo.jjCommand(["show", changeId]);
-    expect(showResult.exitCode).toBe(0);
-  }).toPass();
+    await uploadIcon.click();
 
-  const showResultB = await remoteBRepo.jjCommand(["show", changeId]);
-  expect(showResultB.exitCode).not.toBe(0);
+    await expect(unsyncedPill).not.toBeVisible();
+  });
 
-  await expect(unsyncedPill).toBeVisible();
+  await test.step("tag context menu offers push and delete but never track/untrack", async () => {
+    // Neither remote has this tag yet, so both are push targets.
+    await testRepo.createTag("menu-tag", "@-");
+    const menuTagPill = graphFrame.locator('[data-tag="menu-tag"]');
+    await expect(menuTagPill).toBeVisible();
 
-  // remote-a is now in sync, so only remote-b should be offered as a push target.
-  await expect(async () => {
-    await tagPill.click({ button: "right" });
-    const pushMenu = graphFrame.locator("#pill-context-menu");
-    await expect(pushMenu).toBeVisible();
-    const pushToB = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-b" });
-    await expect(pushToB).toBeVisible();
-    const pushToA = pushMenu.locator("[data-action]").filter({ hasText: "Push to remote-a" });
-    await expect(pushToA).not.toBeVisible({ timeout: 2_000 });
+    await menuTagPill.click({ button: "right" });
+    const menu = graphFrame.locator("#pill-context-menu");
+    await expect(menu).toBeVisible();
+    await expect(menu.locator("[data-action]").filter({ hasText: "Push to remote-a" })).toBeVisible();
+    await expect(menu.locator("[data-action]").filter({ hasText: "Push to remote-b" })).toBeVisible();
+    await expect(menu.locator("[data-action]").filter({ hasText: "Track on" })).toHaveCount(0);
+    await expect(menu.locator("[data-action]").filter({ hasText: "Untrack from" })).toHaveCount(0);
+    await expect(menu.locator("[data-action]").filter({ hasText: "Delete Tag" })).toBeVisible();
     await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
-    await expect(pushMenu).not.toBeVisible();
-  }).toPass();
-
-  await clickPillMenuItem(graphFrame, tagPill, "Push to remote-b");
-  await expect(unsyncedPill).not.toBeVisible();
-});
-
-test("tag context menu offers push and delete but never track/untrack", async ({ graphFrame, testRepo }) => {
-  test.slow();
-  const remoteAPath = path.join(path.dirname(testRepo.repoPath), "remote-a");
-  const remoteBPath = path.join(path.dirname(testRepo.repoPath), "remote-b");
-  await newTestRepo(remoteAPath);
-  await newTestRepo(remoteBPath);
-  await testRepo.jjCommand(["git", "remote", "add", "remote-a", remoteAPath]);
-  await testRepo.jjCommand(["git", "remote", "add", "remote-b", remoteBPath]);
-
-  await testRepo.commitFile("test.txt", "content", "initial commit");
-  await testRepo.createTag("menu-tag", "@-");
-
-  const tagPill = graphFrame.locator('[data-tag="menu-tag"]');
-  await expect(tagPill).toBeVisible();
-
-  // Neither remote has the tag yet, so both are push targets.
-  await tagPill.click({ button: "right" });
-  const menu = graphFrame.locator("#pill-context-menu");
-  await expect(menu).toBeVisible();
-  await expect(menu.locator("[data-action]").filter({ hasText: "Push to remote-a" })).toBeVisible();
-  await expect(menu.locator("[data-action]").filter({ hasText: "Push to remote-b" })).toBeVisible();
-  await expect(menu.locator("[data-action]").filter({ hasText: "Track on" })).toHaveCount(0);
-  await expect(menu.locator("[data-action]").filter({ hasText: "Untrack from" })).toHaveCount(0);
-  await expect(menu.locator("[data-action]").filter({ hasText: "Delete Tag" })).toBeVisible();
-  await graphFrame.locator("body").click({ position: { x: 1, y: 1 } });
-  await expect(menu).not.toBeVisible();
+    await expect(menu).not.toBeVisible();
+  });
 });
 
 const JJ_038_PATH = process.env.JJX_JJ_038_PATH ?? "/usr/local/bin/jj-0.38";
