@@ -16,9 +16,10 @@ export function FileContextMenu() {
       return;
     }
     const menu = ref.current;
+    let raf: number | undefined;
     if (menu) {
       menu.style.visibility = "hidden";
-      requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => {
         if (!ref.current) {
           return;
         }
@@ -40,6 +41,9 @@ export function FileContextMenu() {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("blur", closeFileContextMenu);
     return () => {
+      if (raf !== undefined) {
+        cancelAnimationFrame(raf);
+      }
       window.removeEventListener("pointerdown", handlePointerDown, true);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("blur", closeFileContextMenu);

@@ -14,9 +14,10 @@ export function TextContextMenu() {
       return;
     }
     const menu = ref.current;
+    let raf: number | undefined;
     if (menu) {
       menu.style.visibility = "hidden";
-      requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => {
         if (!ref.current) {
           return;
         }
@@ -38,6 +39,9 @@ export function TextContextMenu() {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("blur", closeTextContextMenu);
     return () => {
+      if (raf !== undefined) {
+        cancelAnimationFrame(raf);
+      }
       window.removeEventListener("pointerdown", handlePointerDown, true);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("blur", closeTextContextMenu);

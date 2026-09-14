@@ -59,13 +59,14 @@ export function Menu({ state, children, ...rest }: MenuProps) {
     if (!menu) {
       return;
     }
-    requestAnimationFrame(() => {
+    const raf = requestAnimationFrame(() => {
       if (!menuRef.current) {
         return;
       }
       positionMenu(menuRef.current, state.clientX, state.clientY);
       setPositions(measureSubmenus(registrations.current));
     });
+    return () => cancelAnimationFrame(raf);
   }, [state]);
 
   useEffect(() => {

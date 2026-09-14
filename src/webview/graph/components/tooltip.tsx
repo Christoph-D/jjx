@@ -72,7 +72,7 @@ export function Tooltip() {
     el.style.left = "-9999px";
     el.style.top = "-9999px";
 
-    requestAnimationFrame(() => {
+    const raf = requestAnimationFrame(() => {
       const scrollY = window.scrollY || window.pageYOffset;
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
@@ -108,6 +108,8 @@ export function Tooltip() {
       el.style.left = left + "px";
       el.style.top = top + "px";
     });
+
+    return () => cancelAnimationFrame(raf);
   }, [state]);
 
   if (!state) {
