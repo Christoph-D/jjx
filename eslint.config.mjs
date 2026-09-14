@@ -2,6 +2,7 @@
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import globals from "globals";
+import reactHooks from "eslint-plugin-react-hooks";
 
 // Selectors matching `vscode.Uri.file(...)` and a directly imported `Uri.file(...)`.
 const uriFileSelectors = [
@@ -180,6 +181,21 @@ export default tseslint.config(
       eqeqeq: "warn",
       "no-throw-literal": "warn",
       semi: "warn",
+    },
+  },
+  // ---------------------------------------------------------------------
+  // Hook rules for the Preact webviews. Only the classic two rules are
+  // enabled: the plugin's "recommended" preset additionally turns on the
+  // React Compiler rules (purity, immutability, static-components, ...),
+  // which do not fit the signals-driven Preact components.
+  {
+    files: ["src/webview/**/*.{ts,tsx}"],
+    plugins: {
+      "react-hooks": reactHooks,
+    },
+    rules: {
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
 );
