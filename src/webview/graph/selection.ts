@@ -71,6 +71,16 @@ export function computeSelection(
   return { kind: "applied", selection: new Set([clickedId]), anchor: clickedId };
 }
 
+function lastSelectedPos(selectable: RegularChangeNode[], currentSelection: ReadonlySet<FullChangeId>): number {
+  for (const id of Array.from(currentSelection).reverse()) {
+    const pos = selectable.findIndex((c) => c.id.changeId === id);
+    if (pos !== -1) {
+      return pos;
+    }
+  }
+  return -1;
+}
+
 /**
  * Returns the last selected change: the most recently added id in the
  * selection that is still present in the graph as a selectable (non-elided)
@@ -114,8 +124,7 @@ export function computeArrowKeySelection(
     return null;
   }
 
-  const lastId = lastSelectedChangeId(changes, currentSelection);
-  const referencePos = lastId === null ? -1 : selectable.findIndex((c) => c.id.changeId === lastId);
+  const referencePos = lastSelectedPos(selectable, currentSelection);
 
   const targetPos = referencePos === -1 ? (direction === 1 ? 0 : selectable.length - 1) : referencePos + direction;
   if (targetPos < 0 || targetPos >= selectable.length) {
@@ -123,4 +132,59 @@ export function computeArrowKeySelection(
   }
   const anchor = selectable[targetPos].id.changeId;
   return { selection: new Set([anchor]), anchor };
+}
+
+/**
+ * Computes the graph selection resulting from pressing Shift+ArrowUp
+ * (`direction` -1) or Shift+ArrowDown (`direction` 1):
+ * - The selection extends to one selectable row beyond the last selected
+ *   change, keeping the selection anchor fixed like a Shift+click range, so it
+ *   grows when moving away from the anchor and shrinks when moving back toward
+ *   it. Moving past the anchor extends the range in the other direction.
+ * - Elided ("~") rows are skipped like with the plain arrow keys.
+ * - Without a selection (or one that is no longer part of the graph),
+ *   Shift+ArrowDown selects the top-most change and Shift+ArrowUp the
+ *   bottom-most one, like the plain arrow keys. Without a usable anchor the
+ *   last selected change becomes the anchor.
+ * - The selection never wraps: moving past the first or last change leaves
+ *   everything unchanged, as does an all-elided graph. In those cases `null`
+ *   is returned.
+ *
+ * Like a Shift+click range, the selection is ordered from the anchor toward
+ * the newly selected change, so its last element is the row the keys moved to.
+ */
+export function computeShiftArrowKeySelection(
+  changes: ChangeNode[],
+  currentSelection: ReadonlySet<FullChangeId>,
+  anchorId: FullChangeId | null,
+  direction: 1 | -1,
+): { selection: Set<FullChangeId>; anchor: FullChangeId } | null {
+  const selectable = changes.filter((c): c is RegularChangeNode => c.branchType !== "~");
+  if (selectable.length === 0) {
+    return null;
+  }
+
+  const referencePos = lastSelectedPos(selectable, currentSelection);
+  let anchorPos = anchorId === null ? -1 : selectable.findIndex((c) => c.id.changeId === anchorId);
+  if (referencePos === -1 && anchorPos === -1) {
+    const anchor = selectable[direction === 1 ? 0 : selectable.length - 1].id.changeId;
+    return { selection: new Set([anchor]), anchor };
+  }
+  if (anchorPos === -1) {
+    anchorPos = referencePos;
+  }
+  const fromPos = referencePos === -1 ? anchorPos : referencePos;
+  const targetPos = fromPos + direction;
+  if (targetPos < 0 || targetPos >= selectable.length) {
+    return null;
+  }
+  const step = targetPos >= anchorPos ? 1 : -1;
+  const selection = new Set<FullChangeId>();
+  for (let i = anchorPos; ; i += step) {
+    selection.add(selectable[i].id.changeId);
+    if (i === targetPos) {
+      break;
+    }
+  }
+  return { selection, anchor: selectable[anchorPos].id.changeId };
 }

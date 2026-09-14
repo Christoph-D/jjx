@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   computeArrowKeySelection,
   computeSelection,
+  computeShiftArrowKeySelection,
   elidedRangeSelectionWarning,
   lastSelectedChangeId,
 } from "../webview/graph/selection";
@@ -303,5 +304,153 @@ describe("lastSelectedChangeId", () => {
     const changes: ChangeNode[] = [regular("a"), elided("e1")];
 
     assert.equal(lastSelectedChangeId(changes, new Set([full("e1"), full("a")])), full("a"));
+  });
+});
+
+describe("computeShiftArrowKeySelection", () => {
+  it("extends the selection down one row from a single selection, keeping the anchor", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c"), regular("d")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("b")]), full("b"), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("b"), full("c")]), anchor: full("b") });
+  });
+
+  it("keeps extending downward on repeated presses", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c"), regular("d")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("b"), full("c")]), full("b"), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("b"), full("c"), full("d")]), anchor: full("b") });
+  });
+
+  it("extends the selection up one row, ordered from the anchor", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("c")]), full("c"), -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("b"), full("c")]), anchor: full("c") });
+    if (outcome !== null) {
+      assert.deepEqual([...outcome.selection], [full("c"), full("b")]);
+    }
+  });
+
+  it("shrinks a downward-grown range", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c"), regular("d")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("a"), full("b"), full("c")]), full("a"), -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a"), full("b")]), anchor: full("a") });
+  });
+
+  it("shrinks back to just the anchor", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("a"), full("b")]), full("a"), -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a")]), anchor: full("a") });
+  });
+
+  it("grows past the anchor in the other direction", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    // The range grew upward from the anchor b, so the last selected change is a.
+    const shrunk = computeShiftArrowKeySelection(changes, new Set([full("b"), full("a")]), full("b"), 1);
+    assert.deepEqual(shrunk, { selection: new Set([full("b")]), anchor: full("b") });
+
+    const regrown = computeShiftArrowKeySelection(changes, new Set([full("b")]), full("b"), 1);
+    assert.deepEqual(regrown, { selection: new Set([full("b"), full("c")]), anchor: full("b") });
+  });
+
+  it("extends a multi-selection by its last selected change", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c"), regular("d")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("a"), full("b"), full("c")]), full("a"), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a"), full("b"), full("c"), full("d")]), anchor: full("a") });
+  });
+
+  it("replaces a non-contiguous selection with the anchor range", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c"), regular("d")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("a"), full("c")]), full("c"), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("c"), full("d")]), anchor: full("c") });
+  });
+
+  it("skips elided rows when extending down", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), elided("e2"), regular("d")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("a")]), full("a"), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a"), full("d")]), anchor: full("a") });
+  });
+
+  it("skips elided rows when extending up", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), elided("e2"), regular("d")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("d")]), full("d"), -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a"), full("d")]), anchor: full("d") });
+  });
+
+  it("keeps skipping elided rows on repeated presses", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), regular("c"), regular("d")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("a"), full("c")]), full("a"), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a"), full("c"), full("d")]), anchor: full("a") });
+  });
+
+  it("seeds the anchor at the last selected change when there is none", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("b")]), null, 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("b"), full("c")]), anchor: full("b") });
+  });
+
+  it("selects the top-most change on Shift+ArrowDown without a selection", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set(), null, 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a")]), anchor: full("a") });
+  });
+
+  it("selects the bottom-most change on Shift+ArrowUp without a selection", () => {
+    const changes: ChangeNode[] = [regular("a"), elided("e1"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set(), null, -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("c")]), anchor: full("c") });
+  });
+
+  it("extends from the anchor when the selection is no longer in the graph", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("gone")]), full("b"), 1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("b"), full("c")]), anchor: full("b") });
+  });
+
+  it("seeds the anchor at the last selected change still in the graph", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("b"), full("gone")]), null, -1);
+
+    assert.deepEqual(outcome, { selection: new Set([full("a"), full("b")]), anchor: full("b") });
+  });
+
+  it("does nothing on Shift+ArrowUp at the top-most change", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("a")]), full("a"), -1);
+
+    assert.equal(outcome, null);
+  });
+
+  it("does nothing on Shift+ArrowDown at the bottom-most change", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), regular("c")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("b"), full("c")]), full("a"), 1);
+
+    assert.equal(outcome, null);
+  });
+
+  it("does nothing on Shift+ArrowDown at the last change followed by elided rows", () => {
+    const changes: ChangeNode[] = [regular("a"), regular("b"), elided("e1")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set([full("b")]), full("a"), 1);
+
+    assert.equal(outcome, null);
+  });
+
+  it("does nothing for a graph without selectable changes", () => {
+    const changes: ChangeNode[] = [elided("e1"), elided("e2")];
+    const outcome = computeShiftArrowKeySelection(changes, new Set(), null, 1);
+
+    assert.equal(outcome, null);
   });
 });

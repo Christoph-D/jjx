@@ -11,6 +11,7 @@ test("arrow keys move the selection in the graph", async ({ graphFrame, testRepo
   await testRepo.createTag("test-tag", "@-");
 
   const nodes = graphFrame.locator("#nodes > div");
+  const selectedNodes = graphFrame.locator("#nodes > div[data-selected]");
   await expect(nodes).toHaveCount(3); // @, commit C, elided
 
   const elidedNode = graphFrame.locator('#nodes > div[data-change-id^="~"]');
@@ -19,7 +20,7 @@ test("arrow keys move the selection in the graph", async ({ graphFrame, testRepo
   // The rows are not focusable; clicking the elided row gives the webview itself focus
   // without changing the selection (plain clicks on elided rows are ignored).
   await elidedNode.click();
-  await expect(nodes.locator("[data-selected]")).toHaveCount(0);
+  await expect(selectedNodes).toHaveCount(0);
 
   await test.step("ArrowDown from an empty selection starts at the top change", async () => {
     await workbox.keyboard.press("ArrowDown");
@@ -53,7 +54,7 @@ test("arrow keys move the selection in the graph", async ({ graphFrame, testRepo
   await test.step("ArrowUp from an empty selection starts at the bottom-most selectable change", async () => {
     // Ctrl/Cmd+click toggles the selected change back out of the selection.
     await nodes.nth(0).click({ modifiers: [mod] });
-    await expect(nodes.locator("[data-selected]")).toHaveCount(0);
+    await expect(selectedNodes).toHaveCount(0);
 
     await workbox.keyboard.press("ArrowUp");
     await expect(nodes.nth(1)).toHaveAttribute("data-selected");
@@ -72,6 +73,86 @@ test("arrow keys move the selection in the graph", async ({ graphFrame, testRepo
     await workbox.keyboard.press("ArrowUp");
     await expect(nodes.nth(0)).toHaveAttribute("data-selected");
     await expect(nodes.nth(1)).not.toHaveAttribute("data-selected");
+  });
+});
+
+test("shift+arrow keys extend the selection in the graph", async ({ graphFrame, testRepo, workbox }) => {
+  await testRepo.commitFile("a.txt", "content a", "commit A");
+  await testRepo.commitFile("b.txt", "content b", "commit B");
+  await testRepo.commitFile("c.txt", "content c", "commit C");
+
+  const nodes = graphFrame.locator("#nodes > div");
+  const selectedNodes = graphFrame.locator("#nodes > div[data-selected]");
+  await expect(nodes).toHaveCount(5); // @, commit C, commit B, commit A, root
+
+  // Clicking the row both selects it and gives the webview keyboard focus.
+  await nodes.nth(1).click(); // commit C
+  await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+
+  await test.step("Shift+ArrowDown extends the selection downward one row", async () => {
+    await workbox.keyboard.press("Shift+ArrowDown");
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(2)).toHaveAttribute("data-selected");
+    await expect(selectedNodes).toHaveCount(2);
+  });
+
+  await test.step("repeated Shift+ArrowDown presses keep extending downward", async () => {
+    await workbox.keyboard.press("Shift+ArrowDown");
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(2)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(3)).toHaveAttribute("data-selected");
+    await expect(selectedNodes).toHaveCount(3);
+  });
+
+  await test.step("Shift+ArrowDown extends to the root change as the last row", async () => {
+    await workbox.keyboard.press("Shift+ArrowDown");
+    await expect(selectedNodes).toHaveCount(4);
+    await expect(nodes.nth(4)).toHaveAttribute("data-selected");
+  });
+
+  await test.step("Shift+ArrowDown at the last change does nothing (no wrap)", async () => {
+    await workbox.keyboard.press("Shift+ArrowDown");
+    await expect(selectedNodes).toHaveCount(4);
+  });
+
+  await test.step("Shift+ArrowUp shrinks the grown range", async () => {
+    await workbox.keyboard.press("Shift+ArrowUp");
+    await expect(selectedNodes).toHaveCount(3);
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(2)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(3)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(4)).not.toHaveAttribute("data-selected");
+  });
+
+  await test.step("Shift+ArrowUp shrinks back to the anchor", async () => {
+    await workbox.keyboard.press("Shift+ArrowUp");
+    await workbox.keyboard.press("Shift+ArrowUp");
+    await expect(selectedNodes).toHaveCount(1);
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+  });
+
+  await test.step("Shift+ArrowUp extends upward past the anchor", async () => {
+    await workbox.keyboard.press("Shift+ArrowUp");
+    await expect(selectedNodes).toHaveCount(2);
+    await expect(nodes.nth(0)).toHaveAttribute("data-selected");
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+  });
+
+  await test.step("Shift+ArrowUp at the top-most change does nothing", async () => {
+    await workbox.keyboard.press("Shift+ArrowUp");
+    await expect(selectedNodes).toHaveCount(2);
+  });
+
+  await test.step("plain ArrowDown still collapses to a single selection", async () => {
+    await workbox.keyboard.press("ArrowDown");
+    await expect(selectedNodes).toHaveCount(1);
+    await expect(nodes.nth(1)).toHaveAttribute("data-selected");
+  });
+
+  await test.step("plain ArrowUp still collapses to a single selection", async () => {
+    await workbox.keyboard.press("ArrowUp");
+    await expect(selectedNodes).toHaveCount(1);
+    await expect(nodes.nth(0)).toHaveAttribute("data-selected");
   });
 });
 
