@@ -1,9 +1,9 @@
+import type { JSX } from "preact";
 import { useSignal, useSignalEffect } from "@preact/signals";
 import { currentChanges, currentGraph, changeIdHorizontalOffset, connectedHighlight } from "../signals";
 import type { FullChangeId } from "../../../graph-protocol";
 import { getLaneColor } from "../svg-utils";
 import { buildEdgeSegments, buildVisiblePathDs, type PathSegment } from "../connection-segments";
-import { cx } from "../utils";
 import styles from "./connection-lines.module.css";
 
 interface PathData {
@@ -87,23 +87,27 @@ export function ConnectionLines() {
   // same lane fully covers.
   const visibleDs = buildVisiblePathDs(renderPaths.map((p) => p.segments));
 
+  const dimmedPaths: JSX.Element[] = [];
+  const activePaths: JSX.Element[] = [];
+  renderPaths.forEach((p, i) => {
+    const d = visibleDs[i];
+    if (d === null) {
+      return;
+    }
+    const element = <path key={p.key} d={d} class={styles.connectionLine} style={{ stroke: p.color }} />;
+    if (highlight !== null && !isHighlighted(p)) {
+      dimmedPaths.push(element);
+    } else {
+      activePaths.push(element);
+    }
+  });
+
+  // Dimmed lines share a group so the opacity applies once to the whole set
+  // instead of compounding where the lines overlap or cross.
   return (
     <g id="connection-lines">
-      {renderPaths.map((p, i) => {
-        const d = visibleDs[i];
-        if (d === null) {
-          return null;
-        }
-        const dimmed = highlight !== null && !isHighlighted(p);
-        return (
-          <path
-            key={p.key}
-            d={d}
-            class={cx(styles.connectionLine, dimmed && styles.dimmed)}
-            style={{ stroke: p.color }}
-          />
-        );
-      })}
+      {dimmedPaths.length > 0 && <g class={styles.dimmedGroup}>{dimmedPaths}</g>}
+      {activePaths}
     </g>
   );
 }

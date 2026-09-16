@@ -2,9 +2,9 @@
   stroke-width: 2;
   stroke-linecap: round;
   fill: none;
-  transition: opacity 0.2s ease-in-out;
 }
 
-.connectionLine.dimmed {
+.dimmedGroup {
   opacity: var(--dimmed-opacity);
+  transition: opacity 0.2s ease-in-out;
 }
