@@ -77,7 +77,7 @@ export const rebaseMenu = signal<RebaseMenuState | null>(null);
 export const tooltip = signal<TooltipState | null>(null);
 export const diffStatsCache = signal<Map<string, DiffStats>>(new Map());
 
-interface HighlightState {
+export interface HighlightState {
   focalId: string;
   connectedIds: Set<string>;
 }

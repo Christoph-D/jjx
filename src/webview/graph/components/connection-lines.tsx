@@ -1,9 +1,16 @@
-import type { JSX } from "preact";
 import { useSignal, useSignalEffect } from "@preact/signals";
-import { currentChanges, currentGraph, changeIdHorizontalOffset, connectedHighlight } from "../signals";
+import { useRef } from "preact/hooks";
+import {
+  currentChanges,
+  currentGraph,
+  changeIdHorizontalOffset,
+  connectedHighlight,
+  type HighlightState,
+} from "../signals";
 import type { FullChangeId } from "../../../graph-protocol";
 import { getLaneColor } from "../svg-utils";
 import { buildEdgeSegments, buildVisiblePathDs, type PathSegment } from "../connection-segments";
+import { cx } from "../utils";
 import styles from "./connection-lines.module.css";
 
 interface PathData {
@@ -14,8 +21,17 @@ interface PathData {
   color: string;
 }
 
+interface OverlayEntry {
+  /** Whether the path belongs to the current highlight and stays fully opaque. */
+  active: boolean;
+  /** Mount fading in so newly highlighted lines brighten like the node circles. */
+  animateIn: boolean;
+}
+
 export function ConnectionLines() {
   const paths = useSignal<PathData[]>([]);
+  const overlayEntries = useRef(new Map<string, OverlayEntry>());
+  const prevHighlight = useRef<HighlightState | null>(null);
 
   useSignalEffect(() => {
     void currentChanges.value;
@@ -78,36 +94,79 @@ export function ConnectionLines() {
     ((p.fromId === highlight.focalId && highlight.connectedIds.has(p.toId)) ||
       (p.toId === highlight.focalId && highlight.connectedIds.has(p.fromId)));
 
-  // Put a highlighted path on top in the z order so it's unobscured.
-  const renderPaths = highlight
-    ? [...paths.value.filter((p) => !isHighlighted(p)), ...paths.value.filter(isHighlighted)]
-    : paths.value;
+  const allPaths = paths.value;
+  const pathByKey = new Map(allPaths.map((p) => [p.key, p]));
+
+  // Highlighted lines are kept fully opaque in an overlay above the dimmed
+  // group. Entries persist across renders so their opacity transitions run:
+  // lines entering or leaving a highlight crossfade over their dimmed twins,
+  // matching how the node circles dim and brighten. When the highlight is
+  // cleared the entries are left as they are, so highlighted lines stay bright
+  // while the group fades back in.
+  if (highlight !== null) {
+    for (const entry of overlayEntries.current.values()) {
+      entry.active = false;
+    }
+    for (const p of allPaths) {
+      if (!isHighlighted(p)) {
+        continue;
+      }
+      const existing = overlayEntries.current.get(p.key);
+      if (existing) {
+        existing.active = true;
+      } else {
+        overlayEntries.current.set(p.key, {
+          active: true,
+          // When a highlight starts from none, the twin underneath starts at
+          // full opacity, so the copy can appear instantly; when swapping
+          // between highlights the twin is dimmed, so the copy fades in.
+          animateIn: prevHighlight.current !== null,
+        });
+      }
+    }
+  }
+  for (const key of overlayEntries.current.keys()) {
+    if (!pathByKey.has(key)) {
+      overlayEntries.current.delete(key);
+    }
+  }
+  prevHighlight.current = highlight;
 
   // Skip straight vertical segments that a segment painted above them in the
   // same lane fully covers.
-  const visibleDs = buildVisiblePathDs(renderPaths.map((p) => p.segments));
+  const visibleDs = buildVisiblePathDs(allPaths.map((p) => p.segments));
 
-  const dimmedPaths: JSX.Element[] = [];
-  const activePaths: JSX.Element[] = [];
-  renderPaths.forEach((p, i) => {
-    const d = visibleDs[i];
-    if (d === null) {
-      return;
-    }
-    const element = <path key={p.key} d={d} class={styles.connectionLine} style={{ stroke: p.color }} />;
-    if (highlight !== null && !isHighlighted(p)) {
-      dimmedPaths.push(element);
-    } else {
-      activePaths.push(element);
-    }
-  });
-
-  // Dimmed lines share a group so the opacity applies once to the whole set
-  // instead of compounding where the lines overlap or cross.
   return (
     <g id="connection-lines">
-      {dimmedPaths.length > 0 && <g class={styles.dimmedGroup}>{dimmedPaths}</g>}
-      {activePaths}
+      <g class={cx(styles.linesGroup, highlight !== null && styles.dimmedGroup)}>
+        {allPaths.map((p, i) => {
+          const d = visibleDs[i];
+          if (d === null) {
+            return null;
+          }
+          return <path key={p.key} d={d} class={styles.connectionLine} style={{ stroke: p.color }} />;
+        })}
+      </g>
+      <g>
+        {[...overlayEntries.current].map(([key, entry]) => {
+          const p = pathByKey.get(key);
+          if (!p) {
+            return null;
+          }
+          return (
+            <path
+              key={p.key}
+              d={p.segments.map((segment) => segment.d).join(" ")}
+              class={cx(
+                styles.overlayLine,
+                entry.active && styles.overlayLineActive,
+                entry.animateIn && styles.overlayLineAnimateIn,
+              )}
+              style={{ stroke: p.color }}
+            />
+          );
+        })}
+      </g>
     </g>
   );
 }

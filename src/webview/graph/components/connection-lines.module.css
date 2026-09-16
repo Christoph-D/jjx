@@ -1,10 +1,44 @@
-.connectionLine {
+.connectionLine,
+.overlayLine {
   stroke-width: 2;
   stroke-linecap: round;
   fill: none;
 }
 
+/* The transition lives on this base class so it still applies when the dimmed
+   class below is removed; otherwise the lines would snap back instantly. */
+.linesGroup {
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* All lines share one group so dimming applies once to the whole set instead
+   of compounding where the lines overlap or cross. */
 .dimmedGroup {
   opacity: var(--dimmed-opacity);
+}
+
+/* Copies of highlighted lines drawn fully opaque above their dimmed twins.
+   Entries persist across renders so these opacity transitions run at the same
+   speed and with the same easing as the node circles. */
+.overlayLine {
+  opacity: 0;
   transition: opacity 0.2s ease-in-out;
+}
+
+.overlayLineActive {
+  opacity: 1;
+}
+
+/* Mounting elements do not run transitions, so fade in with an animation. */
+.overlayLineAnimateIn {
+  animation: connectionLineOverlayIn 0.2s ease-in-out;
+}
+
+@keyframes connectionLineOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
