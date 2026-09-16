@@ -66,11 +66,29 @@ export function assignLanes(entries: LogEntry[]): ChangeIdGraph {
 
     if (norm.parentIds.length > 0) {
       const firstParent = norm.parentIds[0];
-      const firstParentAlreadyTracked = lanes.some((l, i) => i !== nodeLane && l.targetId === firstParent);
-      lanes[nodeLane] = {
-        targetId: firstParentAlreadyTracked ? null : firstParent,
-        colorIndex: color,
-      };
+      const trackedIndex = lanes.findIndex((l, i) => i !== nodeLane && l.targetId === firstParent);
+      if (trackedIndex === -1) {
+        lanes[nodeLane] = {
+          targetId: firstParent,
+          colorIndex: color,
+        };
+      } else if (trackedIndex > nodeLane) {
+        // The first parent is already tracked to the right of this change.
+        // Reposition it into this change's lane so the connection continues
+        // straight down instead of bending right, freeing the old lane for
+        // later changes. This can happen repeatedly, moving a shared parent
+        // one lane to the left per consuming change.
+        lanes[nodeLane] = { ...lanes[trackedIndex] };
+        lanes[trackedIndex] = {
+          targetId: null,
+          colorIndex: lanes[trackedIndex].colorIndex,
+        };
+      } else {
+        lanes[nodeLane] = {
+          targetId: null,
+          colorIndex: color,
+        };
+      }
     } else {
       lanes[nodeLane] = {
         targetId: null,

@@ -328,6 +328,91 @@ describe("assignLanes", () => {
     assert.strictEqual(edgeC.lanePath[1], 1);
   });
 
+  it("repositions a shared parent into the lane of a change further left", () => {
+    // A merge of four changes that all share the same parent.
+    // The shared parent should be repositioned one lane to the left per
+    // consuming change, so a single connection can turn left multiple times.
+    const entries = [
+      makeEntry("0", ["1", "2", "3", "4"]),
+      makeEntry("4", ["5"]),
+      makeEntry("3", ["5"]),
+      makeEntry("2", ["5"]),
+      makeEntry("1", ["5"]),
+      makeEntry("5", []),
+    ];
+    const result = assignLanes(entries);
+
+    assert.strictEqual(findNodeByChangeId(result, "0")!.lane, 0);
+    assert.strictEqual(findNodeByChangeId(result, "4")!.lane, 3);
+    assert.strictEqual(findNodeByChangeId(result, "3")!.lane, 2);
+    assert.strictEqual(findNodeByChangeId(result, "2")!.lane, 1);
+    assert.strictEqual(findNodeByChangeId(result, "1")!.lane, 0);
+    assert.strictEqual(findNodeByChangeId(result, "5")!.lane, 0);
+
+    const from4 = findEdgesFrom(result, "4");
+    assert.strictEqual(from4.length, 1);
+    assert.deepStrictEqual(from4[0].lanePath, [3, 3, 2, 1, 0]);
+
+    const from3 = findEdgesFrom(result, "3");
+    assert.deepStrictEqual(from3[0].lanePath, [2, 2, 1, 0]);
+
+    const from2 = findEdgesFrom(result, "2");
+    assert.deepStrictEqual(from2[0].lanePath, [1, 1, 0]);
+
+    const from1 = findEdgesFrom(result, "1");
+    assert.deepStrictEqual(from1[0].lanePath, [0, 0]);
+  });
+
+  it("repositioning a parent may cross occupied lanes", () => {
+    // "N" sits in lane 0 while its parent "5" is tracked in lane 2, with the
+    // "7" edge occupying lane 1 in between. "5" still repositions into lane 0.
+    const entries = [
+      makeEntry("m", ["A", "B", "C"]),
+      makeEntry("C", ["5"]),
+      makeEntry("B", ["7"]),
+      makeEntry("7", []),
+      makeEntry("A", ["N"]),
+      makeEntry("N", ["5"]),
+      makeEntry("5", []),
+    ];
+    const result = assignLanes(entries);
+
+    assert.strictEqual(findNodeByChangeId(result, "N")!.lane, 0);
+    assert.strictEqual(findNodeByChangeId(result, "5")!.lane, 0);
+
+    const fromN = findEdgesFrom(result, "N");
+    assert.deepStrictEqual(fromN[0].lanePath, [0, 0]);
+
+    const fromC = findEdgesFrom(result, "C");
+    assert.deepStrictEqual(fromC[0].lanePath, [2, 2, 2, 2, 2, 0]);
+  });
+
+  it("does not reposition a non-first parent", () => {
+    // "X" is a merge whose first parent "A" is untracked and whose second
+    // parent "5" is already tracked in a lane to the right. Only the first
+    // parent takes over the node's lane; "5" stays where it is.
+    const entries = [
+      makeEntry("m1", ["X", "s1", "s2"]),
+      makeEntry("s2", ["5"]),
+      makeEntry("s1", ["6"]),
+      makeEntry("6", []),
+      makeEntry("X", ["A", "5"]),
+      makeEntry("5", []),
+      makeEntry("A", ["9"]),
+      makeEntry("9", []),
+    ];
+    const result = assignLanes(entries);
+
+    assert.strictEqual(findNodeByChangeId(result, "X")!.lane, 0);
+    assert.strictEqual(findNodeByChangeId(result, "5")!.lane, 2);
+
+    const fromX = findEdgesFrom(result, "X");
+    const edgeXToA = fromX.find((edge) => edge.toId === "A");
+    const edgeXTo5 = fromX.find((edge) => edge.toId === "5");
+    assert.deepStrictEqual(edgeXToA!.lanePath, [0, 0, 0]);
+    assert.deepStrictEqual(edgeXTo5!.lanePath, [0, 2]);
+  });
+
   it("invisible parent nodes free their lane", () => {
     // Simulates the output of addInvisibleParentNodes:
     // "aaa" has a parent "bbb" outside the visible set, so a synthetic
