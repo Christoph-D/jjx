@@ -132,16 +132,21 @@ export function ConnectionLines() {
     paths.value = result;
   });
 
+  const highlight = connectedHighlight.value;
+  const isHighlighted = (p: PathData) =>
+    highlight !== null &&
+    ((p.fromId === highlight.focalId && highlight.connectedIds.has(p.toId)) ||
+      (p.toId === highlight.focalId && highlight.connectedIds.has(p.fromId)));
+
+  // Put a highlighted path on top in the z order so it's unobscured.
+  const renderPaths = highlight
+    ? [...paths.value.filter((p) => !isHighlighted(p)), ...paths.value.filter(isHighlighted)]
+    : paths.value;
+
   return (
     <g id="connection-lines">
-      {paths.value.map((p) => {
-        const highlight = connectedHighlight.value;
-        const dimmed =
-          highlight &&
-          !(
-            (p.fromId === highlight.focalId && highlight.connectedIds.has(p.toId)) ||
-            (p.toId === highlight.focalId && highlight.connectedIds.has(p.fromId))
-          );
+      {renderPaths.map((p) => {
+        const dimmed = highlight !== null && !isHighlighted(p);
         return (
           <path
             key={p.key}
