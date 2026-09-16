@@ -1,5 +1,5 @@
 .connectionLine,
-.overlayLine {
+.highlightLine {
   stroke-width: 2;
   stroke-linecap: round;
   fill: none;
@@ -17,28 +17,14 @@
   opacity: var(--dimmed-opacity);
 }
 
-/* Copies of highlighted lines drawn fully opaque above their dimmed twins.
-   Entries persist across renders so these opacity transitions run at the same
-   speed and with the same easing as the node circles. */
-.overlayLine {
+/* Duplicates of the lines, stacked above their twins in the group below.
+   They stay invisible except while highlighted and fade with the same
+   duration and easing as the group and the node circles. */
+.highlightLine {
   opacity: 0;
   transition: opacity 0.2s ease-in-out;
 }
 
-.overlayLineActive {
+.highlightLineActive {
   opacity: 1;
-}
-
-/* Mounting elements do not run transitions, so fade in with an animation. */
-.overlayLineAnimateIn {
-  animation: connectionLineOverlayIn 0.2s ease-in-out;
-}
-
-@keyframes connectionLineOverlayIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
