@@ -148,7 +148,7 @@ test("take screenshot of jj graph for readme", async ({ userDataDir, graphFrame,
     x: clip.x,
     y: clip.y,
     width: 320,
-    height: 440,
+    height: 480,
   });
 
   // Make the jj graph horizontally larger
@@ -218,7 +218,7 @@ test("take screenshot of the details view", async ({ userDataDir, scmView, graph
     throw new Error("Failed to resize editor area");
   }
   const viewportWidth = await workbox.evaluate(() => window.innerWidth);
-  const dragRight = viewportWidth - (sashBox.x + sashBox.width) - 680;
+  const dragRight = viewportWidth - (sashBox.x + sashBox.width) - 550;
   const sashCenterX = sashBox.x + sashBox.width / 2;
   const sashCenterY = sashBox.y + sashBox.height / 2;
   await workbox.mouse.move(sashCenterX, sashCenterY);
