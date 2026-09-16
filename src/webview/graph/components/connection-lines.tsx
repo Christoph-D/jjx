@@ -1,77 +1,17 @@
 import { useSignal, useSignalEffect } from "@preact/signals";
 import { currentChanges, currentGraph, changeIdHorizontalOffset, connectedHighlight } from "../signals";
-import { EDGE_EXTENSION } from "../types";
-import type { ChangeIdGraph, FullChangeId } from "../../../graph-protocol";
-import { getLaneColor, getLaneX } from "../svg-utils";
+import type { FullChangeId } from "../../../graph-protocol";
+import { getLaneColor } from "../svg-utils";
+import { buildEdgeSegments, buildVisiblePathDs, type PathSegment } from "../connection-segments";
 import { cx } from "../utils";
 import styles from "./connection-lines.module.css";
 
 interface PathData {
   key: string;
-  d: string;
+  segments: PathSegment[];
   fromId: FullChangeId;
   toId: FullChangeId;
   color: string;
-}
-
-function buildPathD(
-  edge: ChangeIdGraph["edges"][number],
-  rowYList: number[],
-  bottomY: number,
-  arcRadius: number,
-): string | null {
-  const d: string[] = [];
-
-  const lastSegmentIndex = edge.lanePath.length - 2;
-  for (let i = 0; i <= lastSegmentIndex; i++) {
-    const segFromLane = edge.lanePath[i];
-    const segToLane = edge.lanePath[i + 1];
-    const segFromRow = edge.fromRow + i;
-    const segToRow = edge.fromRow + i + 1;
-    const segFromY = rowYList[segFromRow];
-
-    let segToY: number;
-    if (edge.extendsToBottom && i === lastSegmentIndex) {
-      segToY = bottomY;
-    } else {
-      segToY = rowYList[segToRow];
-    }
-
-    if (segFromY === undefined || segToY === undefined) {
-      continue;
-    }
-
-    const fromX = getLaneX(segFromLane);
-    const toX = getLaneX(segToLane);
-
-    if (segFromLane === segToLane) {
-      d.push(`M ${fromX} ${segFromY} V ${segToY}`);
-    } else if (Math.abs(segFromLane - segToLane) === 1) {
-      const c = 18;
-      d.push(`M ${fromX} ${segFromY}`);
-      d.push(`C ${fromX} ${segFromY + c} ${toX} ${segToY - c} ${toX} ${segToY}`);
-    } else {
-      const prevToY = segToRow > 0 ? rowYList[segToRow - 1] : segToY - EDGE_EXTENSION;
-      const horizontalY = (segToY + prevToY) / 2;
-      const r = arcRadius;
-      const goingRight = toX > fromX;
-
-      d.push(`M ${fromX} ${segFromY}`);
-      d.push(`V ${horizontalY - r}`);
-      if (goingRight) {
-        d.push(`A ${r} ${r} 0 0 0 ${fromX + r} ${horizontalY}`);
-        d.push(`H ${toX - r}`);
-        d.push(`A ${r} ${r} 0 0 1 ${toX} ${horizontalY + r}`);
-      } else {
-        d.push(`A ${r} ${r} 0 0 1 ${fromX - r} ${horizontalY}`);
-        d.push(`H ${toX + r}`);
-        d.push(`A ${r} ${r} 0 0 0 ${toX} ${horizontalY + r}`);
-      }
-      d.push(`V ${segToY}`);
-    }
-  }
-
-  return d.length > 0 ? d.join(" ") : null;
 }
 
 export function ConnectionLines() {
@@ -115,14 +55,14 @@ export function ConnectionLines() {
     const result: PathData[] = [];
     const pairOccurrences = new Map<string, number>();
     for (const edge of sortedEdges) {
-      const d = buildPathD(edge, rowYList, bottomY, 12);
-      if (d) {
+      const segments = buildEdgeSegments(edge, rowYList, bottomY, 12);
+      if (segments) {
         const base = `${edge.fromId}->${edge.toId}`;
         const occurrence = pairOccurrences.get(base) ?? 0;
         pairOccurrences.set(base, occurrence + 1);
         result.push({
           key: occurrence === 0 ? base : `${base}#${occurrence}`,
-          d,
+          segments,
           fromId: edge.fromId,
           toId: edge.toId,
           color: getLaneColor(edge.colorIndex),
@@ -143,14 +83,22 @@ export function ConnectionLines() {
     ? [...paths.value.filter((p) => !isHighlighted(p)), ...paths.value.filter(isHighlighted)]
     : paths.value;
 
+  // Skip straight vertical segments that a segment painted above them in the
+  // same lane fully covers.
+  const visibleDs = buildVisiblePathDs(renderPaths.map((p) => p.segments));
+
   return (
     <g id="connection-lines">
-      {renderPaths.map((p) => {
+      {renderPaths.map((p, i) => {
+        const d = visibleDs[i];
+        if (d === null) {
+          return null;
+        }
         const dimmed = highlight !== null && !isHighlighted(p);
         return (
           <path
             key={p.key}
-            d={p.d}
+            d={d}
             class={cx(styles.connectionLine, dimmed && styles.dimmed)}
             style={{ stroke: p.color }}
           />
