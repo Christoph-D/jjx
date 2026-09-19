@@ -313,6 +313,14 @@ export function registerPreInitCommands(state: ExtensionState): void {
     }),
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand("jj.openGlobalGitSettings", async () => {
+      await vscode.commands.executeCommand("workbench.action.openSettings", {
+        query: "git.enabled",
+      });
+    }),
+  );
+
   registerCommand(
     context,
     "jj.openFileInWorkingCopyResourceState",

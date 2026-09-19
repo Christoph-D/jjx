@@ -8,8 +8,8 @@ import * as path from "path";
 // two surfaces:
 //   - a persistent status bar item (`$(warning) jjx issues (N)`) whose command
 //     (`jj.showColocatedWarnings`) re-shows the warning, and
-//   - a `showWarningMessage` toast offering a single action, "Open Folder
-//     Settings".
+//   - a `showWarningMessage` toast offering two actions, "Open Global Settings"
+//     and "Open Folder Settings".
 // There is no persistent "don't show again" state.
 
 // A colocated repo (`.jj` + `.git`) with the Git extension enabled: the warning
@@ -30,22 +30,26 @@ const colocatedTest = base.extend({
 
 colocatedTest.use({ customSettings: { "git.enabled": true } });
 
-colocatedTest("warns about a colocated jj/git repository with an Open Folder Settings action", async ({ workbox }) => {
-  // The persistent status bar item is the reliable signal that detection ran.
-  const statusItem = workbox.locator(".statusbar-item", { hasText: /jjx issues/ });
-  await expect(statusItem).toBeVisible();
+colocatedTest(
+  "warns about a colocated jj/git repository with Open Global Settings and Open Folder Settings actions",
+  async ({ workbox }) => {
+    // The persistent status bar item is the reliable signal that detection ran.
+    const statusItem = workbox.locator(".statusbar-item", { hasText: /jjx issues/ });
+    await expect(statusItem).toBeVisible();
 
-  // Re-trigger the warning toast via the status bar item's command so the toast
-  // is freshly visible (startup toasts may collapse into the notification
-  // center). `.first()` tolerates a still-visible startup toast.
-  await statusItem.click();
+    // Re-trigger the warning toast via the status bar item's command so the toast
+    // is freshly visible (startup toasts may collapse into the notification
+    // center). `.first()` tolerates a still-visible startup toast.
+    await statusItem.click();
 
-  const colocatedToast = workbox
-    .locator(".notifications-toasts .notification-list-item")
-    .filter({ hasText: /Colocated Jujutsu and Git repository detected in "repo"/ });
-  await expect(colocatedToast.first()).toBeVisible();
-  await expect(colocatedToast.first().getByRole("button", { name: /Open Folder Settings/ })).toBeVisible();
-});
+    const colocatedToast = workbox
+      .locator(".notifications-toasts .notification-list-item")
+      .filter({ hasText: /Colocated Jujutsu and Git repository detected in "repo"/ });
+    await expect(colocatedToast.first()).toBeVisible();
+    await expect(colocatedToast.first().getByRole("button", { name: /Open Global Settings/ })).toBeVisible();
+    await expect(colocatedToast.first().getByRole("button", { name: /Open Folder Settings/ })).toBeVisible();
+  },
+);
 
 // A non-colocated, git-backed jj repo store (no top-level `.git`). Even with the
 // Git extension enabled, the detection condition (`.jj` AND `.git`) must fail,

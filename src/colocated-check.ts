@@ -60,10 +60,13 @@ export async function registerColocatedCheck(
     for (const repoRoot of colocatedRepos) {
       const folderName = path.basename(repoRoot);
       const message = `Colocated Jujutsu and Git repository detected in "${folderName}". Consider disabling the Git extension to avoid conflicts.`;
-      const openSettings = "Open Folder Settings";
+      const openGlobalSettings = "Open Global Settings";
+      const openFolderSettings = "Open Folder Settings";
 
-      vscode.window.showWarningMessage(message, openSettings).then((selection) => {
-        if (selection === openSettings) {
+      vscode.window.showWarningMessage(message, openGlobalSettings, openFolderSettings).then((selection) => {
+        if (selection === openGlobalSettings) {
+          vscode.commands.executeCommand("jj.openGlobalGitSettings");
+        } else if (selection === openFolderSettings) {
           vscode.commands.executeCommand("jj.openFolderGitSettings", repoRoot);
         }
       });
@@ -75,10 +78,13 @@ export async function registerColocatedCheck(
       for (const repoRoot of reposWithWarnings) {
         const folderName = path.basename(repoRoot);
         const message = `Colocated Jujutsu and Git repository detected in "${folderName}". Consider disabling the Git extension to avoid conflicts.`;
-        const openSettings = "Open Folder Settings";
+        const openGlobalSettings = "Open Global Settings";
+        const openFolderSettings = "Open Folder Settings";
 
-        vscode.window.showWarningMessage(message, openSettings).then((selection) => {
-          if (selection === openSettings) {
+        vscode.window.showWarningMessage(message, openGlobalSettings, openFolderSettings).then((selection) => {
+          if (selection === openGlobalSettings) {
+            vscode.commands.executeCommand("jj.openGlobalGitSettings");
+          } else if (selection === openFolderSettings) {
             vscode.commands.executeCommand("jj.openFolderGitSettings", repoRoot);
           }
         });
