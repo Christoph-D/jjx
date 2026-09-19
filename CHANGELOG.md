@@ -1,5 +1,19 @@
 # Change Log
 
+## 1.16.0
+
+### New Features
+
+- **More compact graph layout** - Lines connecting to shared parent commits now merge towards the left, more closely
+  matching the `jj` CLI graph layout
+- The colocated jj/git repository warning now offers an "Open Global Settings" action in addition to "Open Folder
+  Settings"
+
+### Bug Fixes
+
+- Fix minor visual glitches in the highlighting of connections in the graph view
+- Increase the tool tip delay to 600ms
+
 ## 1.15.2
 
 ### New Features
