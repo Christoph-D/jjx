@@ -9,7 +9,7 @@ import {
 } from "../signals";
 import type { RegularChangeNode } from "../../../graph-protocol";
 
-const TOOLTIP_DELAY_MS = 300;
+const TOOLTIP_DELAY_MS = 600;
 const TOOLTIP_HIDE_DELAY_MS = 100;
 const DIFF_STATS_PREFETCH_DELAY_MS = 100;
 
