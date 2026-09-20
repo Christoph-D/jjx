@@ -1,5 +1,19 @@
 # Change Log
 
+## 1.16.1
+
+### Bug Fixes
+
+- **Reset filesystem watchers on refresh** - Refreshing a view now disposes and re-creates file system watchers, so
+  broken or incomplete watchers recover automatically
+
+### Internal
+
+- Pin release workflow GitHub Actions by commit SHA
+- Update GitHub Actions versions in CI
+- Update pnpm to 12.4.2
+- Remove unnecessary config from devcontainer
+
 ## 1.16.0
 
 ### New Features
