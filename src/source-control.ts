@@ -383,6 +383,15 @@ export class WorkspaceSourceControlManager {
     throw new Error("Resource state not found in any resource group");
   }
 
+  /**
+   * Disposes and re-creates the file system watchers of every repository in the workspace.
+   */
+  resetWatchers() {
+    for (const repoSCM of this.repoSCMs) {
+      repoSCM.resetWatchers();
+    }
+  }
+
   dispose() {
     this.cancellationTokenSource.cancel();
     this.cancellationTokenSource.dispose();
@@ -456,6 +465,9 @@ class RepositorySourceControlManager {
   status: RepositoryStatus | undefined;
   parentShowResults: Map<string, Show> = new Map();
   private watcherDebounceTimer: NodeJS.Timeout | undefined;
+  private watcherSubscriptions: {
+    dispose(): unknown;
+  }[] = [];
 
   constructor(
     public repositoryRoot: RealPath,
@@ -493,6 +505,19 @@ class RepositorySourceControlManager {
       provideOriginalResource,
     };
 
+    this.resetWatchers();
+  }
+
+  /**
+   * Disposes any existing file system watchers and sets up fresh ones. Called on construction
+   * and whenever the user refreshes a view, so stale or broken watchers are rebuilt.
+   */
+  resetWatchers() {
+    for (const subscription of this.watcherSubscriptions) {
+      subscription.dispose();
+    }
+    this.watcherSubscriptions = [];
+
     const jjRepoPath = path.join(this.repositoryRoot, ".jj/repo");
     let jjRootRepoPath: string;
     // In jj workspaces, .jj/repo is a regular file pointing to the real repo.
@@ -510,17 +535,17 @@ class RepositorySourceControlManager {
     const opstoreWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(path.join(jjRootRepoPath, "op_store/operations"), "*"),
     );
-    this.subscriptions.push(opstoreWatcher);
+    this.watcherSubscriptions.push(opstoreWatcher);
 
     const repoWatcher = vscode.workspace.createFileSystemWatcher("**/*");
-    this.subscriptions.push(repoWatcher);
+    this.watcherSubscriptions.push(repoWatcher);
 
     const opstoreChangedWatchEvent = anyEvent(
       opstoreWatcher.onDidCreate,
       opstoreWatcher.onDidChange,
       opstoreWatcher.onDidDelete,
     );
-    opstoreChangedWatchEvent(() => this.handleWatcherEvent(), undefined, this.subscriptions);
+    opstoreChangedWatchEvent(() => this.handleWatcherEvent(), undefined, this.watcherSubscriptions);
 
     const repoChangedWatchEvent = filterEvent(
       anyEvent(repoWatcher.onDidCreate, repoWatcher.onDidChange, repoWatcher.onDidDelete),
@@ -531,7 +556,7 @@ class RepositorySourceControlManager {
         return !segments.includes(".jj") && !segments.includes(".git");
       },
     );
-    repoChangedWatchEvent(() => this.handleWatcherEvent(), undefined, this.subscriptions);
+    repoChangedWatchEvent(() => this.handleWatcherEvent(), undefined, this.watcherSubscriptions);
   }
 
   private handleWatcherEvent() {
@@ -960,6 +985,9 @@ class RepositorySourceControlManager {
     if (this.watcherDebounceTimer) {
       clearTimeout(this.watcherDebounceTimer);
       this.watcherDebounceTimer = undefined;
+    }
+    for (const subscription of this.watcherSubscriptions) {
+      subscription.dispose();
     }
     for (const subscription of this.subscriptions) {
       subscription.dispose();

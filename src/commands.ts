@@ -299,7 +299,10 @@ async function openFileDiff(repo: JJRepository, filePath: string, changeId: Full
 export function registerPreInitCommands(state: ExtensionState): void {
   const context = state.context;
 
-  registerCommandWithLoading(context, "jj.refresh", () => state.throttledPoll?.("force") ?? Promise.resolve());
+  registerCommandWithLoading(context, "jj.refresh", () => {
+    state.workspaceSCM.resetWatchers();
+    return state.throttledPoll?.("force") ?? Promise.resolve();
+  });
 
   context.subscriptions.push(
     vscode.commands.registerCommand("jj.openFolderGitSettings", async (repoPath: string) => {
@@ -813,6 +816,7 @@ export function registerInitCommands(state: ExtensionState): void {
     context,
     "jj.refreshGraphWebview",
     async () => {
+      state.workspaceSCM.resetWatchers();
       await state.graphWebview!.refresh();
     },
     { errorPrefix: "Failed to refresh graph" },
@@ -865,6 +869,7 @@ export function registerInitCommands(state: ExtensionState): void {
   }
 
   registerCommand(context, "jj.refreshOperationLog", async () => {
+    state.workspaceSCM.resetWatchers();
     await state.operationLogManager!.refresh();
   });
 
