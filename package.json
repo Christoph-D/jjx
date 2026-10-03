@@ -306,12 +306,18 @@
         "title": "Fetch from Selected Remote...",
         "category": "Jujutsu",
         "icon": "$(repo-fetch)"
+      },
+      {
+        "command": "jj.gitPushToRemote",
+        "title": "Push to Selected Remote...",
+        "category": "Jujutsu",
+        "icon": "$(repo-push)"
       }
     ],
     "submenus": [
       {
         "id": "jj.graphFetchSubmenu",
-        "label": "Fetch...",
+        "label": "Fetch & Push...",
         "icon": "$(ellipsis)"
       }
     ],
@@ -435,6 +441,11 @@
           "command": "jj.gitFetchFromRemote",
           "when": "view == jjGraphWebview",
           "group": "1_fetch@2"
+        },
+        {
+          "command": "jj.gitPushToRemote",
+          "when": "view == jjGraphWebview",
+          "group": "2_push@1"
         }
       ],
       "view/item/context": [

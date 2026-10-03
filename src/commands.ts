@@ -130,6 +130,68 @@ async function selectRepositoryQuickPick(state: ExtensionState): Promise<void> {
   }
 }
 
+type PushFlagItem = vscode.QuickPickItem & { flag: string };
+
+function showPushFlagsQuickPick(): Promise<string[] | undefined> {
+  const deletedItem: PushFlagItem = {
+    label: "--deleted",
+    description: "Push all deleted bookmarks and tags",
+    flag: "--deleted",
+  };
+  const allItem: PushFlagItem = {
+    label: "--all",
+    description: "Push all bookmarks and tags (including new ones)",
+    flag: "--all",
+  };
+  const trackedItem: PushFlagItem = {
+    label: "--tracked",
+    description: "Push all tracked bookmarks and tags",
+    picked: true,
+    flag: "--tracked",
+  };
+
+  const quickPick = vscode.window.createQuickPick<PushFlagItem>();
+  quickPick.placeholder = "Select What to Push";
+  quickPick.canSelectMany = true;
+  quickPick.items = [deletedItem, allItem, trackedItem];
+  quickPick.selectedItems = [trackedItem];
+
+  let previousSelection = new Set(quickPick.selectedItems);
+  quickPick.onDidChangeSelection((selectedItems) => {
+    const current = new Set(selectedItems);
+    // jj rejects --all combined with --tracked, so uncheck the flag that was
+    // already selected when the other one gets checked.
+    const addedAll = current.has(allItem) && !previousSelection.has(allItem);
+    const addedTracked = current.has(trackedItem) && !previousSelection.has(trackedItem);
+    let next = selectedItems;
+    if (addedAll && current.has(trackedItem)) {
+      next = selectedItems.filter((item) => item !== trackedItem);
+    } else if (addedTracked && current.has(allItem)) {
+      next = selectedItems.filter((item) => item !== allItem);
+    }
+    previousSelection = new Set(next);
+    if (next !== selectedItems) {
+      quickPick.selectedItems = next;
+    }
+  });
+
+  return new Promise((resolve) => {
+    let accepted = false;
+    quickPick.onDidAccept(() => {
+      accepted = true;
+      resolve(quickPick.selectedItems.map((item) => item.flag));
+      quickPick.hide();
+    });
+    quickPick.onDidHide(() => {
+      if (!accepted) {
+        resolve(undefined);
+      }
+      quickPick.dispose();
+    });
+    quickPick.show();
+  });
+}
+
 async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpression: string, state: ExtensionState) {
   uri ??= vscode.window.activeTextEditor?.document.uri;
   if (!uri) {
@@ -940,6 +1002,34 @@ export function registerInitCommands(state: ExtensionState): void {
       }
     },
     { errorPrefix: "Failed to fetch from remote" },
+  );
+
+  registerCommand(
+    context,
+    "jj.gitPushToRemote",
+    async () => {
+      const repository = state.getSelectedRepo();
+      if (!repository) {
+        return;
+      }
+      const remotes = await repository.getRemotes();
+      if (remotes.length === 0) {
+        vscode.window.showWarningMessage("No remotes configured.");
+        return;
+      }
+      const remote = await vscode.window.showQuickPick(remotes, {
+        placeHolder: "Select a Remote to Push To",
+      });
+      if (!remote) {
+        return;
+      }
+      const flags = await showPushFlagsQuickPick();
+      if (!flags) {
+        return;
+      }
+      await repository.gitPushToRemote(remote, flags);
+    },
+    { errorPrefix: "Failed to push to remote" },
   );
 
   for (const [command, method] of [

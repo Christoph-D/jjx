@@ -21,7 +21,7 @@ test("fetch from selected remote, default remote, and all remotes", async ({
 
   const clickSubmenuItem = async (text: string) => {
     await expect(async () => {
-      await graphPaneHeader.getByRole("button", { name: /Fetch\.\.\./ }).click();
+      await graphPaneHeader.getByRole("button", { name: /Fetch & Push\.\.\./ }).click();
       const contextView = workbox.locator(".context-view");
       await expect(contextView).toBeVisible({ timeout: 3000 });
       const item = workbox

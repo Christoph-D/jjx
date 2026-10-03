@@ -1752,6 +1752,12 @@ export class JJRepository {
     return promise;
   }
 
+  async gitPushToRemote(remote: string, flags: string[]): Promise<void> {
+    await this.jjCommand(["git", "push", "--remote", remote, ...flags], {
+      timeout: TIMEOUTS.GIT_FETCH,
+    });
+  }
+
   async updateStale(token?: vscode.CancellationToken): Promise<void> {
     await this.jjCommand(["workspace", "update-stale"], { token, timeout: TIMEOUTS.UPDATE_STALE });
   }
