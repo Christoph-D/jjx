@@ -29,7 +29,7 @@ import {
   shouldOpenWorkingCopyRightSide,
 } from "./utils";
 import { getMergeEditorConfigs } from "./jj-editor";
-import { handleJJCommand, type ProcessOutput } from "./process";
+import { CancelledError, handleJJCommand, type ProcessOutput } from "./process";
 
 function registerCommand<T extends unknown[]>(
   context: vscode.ExtensionContext,
@@ -215,17 +215,47 @@ async function selectRemoteForOperation(
   return remote ? { repository, remote } : undefined;
 }
 
-async function withFetchPushSubmenuSyncing(operation: () => Promise<void>): Promise<void> {
+// Cancellation sources of fetch/push operations started from the graph view's Fetch & Push
+// submenu. They are tracked so the syncing icon replacing the submenu can cancel them.
+const fetchPushSubmenuCancelSources = new Set<vscode.CancellationTokenSource>();
+
+async function withFetchPushSubmenuSyncing(
+  operation: (token: vscode.CancellationToken | undefined) => Promise<void>,
+): Promise<void> {
+  const source = new vscode.CancellationTokenSource();
+  fetchPushSubmenuCancelSources.add(source);
   await vscode.commands.executeCommand("setContext", "jj.fetchPushSyncing", true);
   try {
-    await operation();
+    await operation(source.token);
+  } catch (error) {
+    // Cancellation is user-initiated. The cancel handler reports it,
+    // so don't also surface a generic failure message.
+    if (!(error instanceof CancelledError)) {
+      throw error;
+    }
   } finally {
-    await vscode.commands.executeCommand("setContext", "jj.fetchPushSyncing", false);
+    fetchPushSubmenuCancelSources.delete(source);
+    source.dispose();
+    if (fetchPushSubmenuCancelSources.size === 0) {
+      await vscode.commands.executeCommand("setContext", "jj.fetchPushSyncing", false);
+    }
   }
 }
 
-function runRemoteOperation(fromSubmenu: boolean, operation: () => Promise<void>): Promise<void> {
-  return fromSubmenu ? withFetchPushSubmenuSyncing(operation) : operation();
+function cancelFetchPushSubmenuOperations(): boolean {
+  let cancelled = false;
+  for (const source of fetchPushSubmenuCancelSources) {
+    source.cancel();
+    cancelled = true;
+  }
+  return cancelled;
+}
+
+function runRemoteOperation(
+  fromSubmenu: boolean,
+  operation: (token: vscode.CancellationToken | undefined) => Promise<void>,
+): Promise<void> {
+  return fromSubmenu ? withFetchPushSubmenuSyncing(operation) : operation(undefined);
 }
 
 async function fetchAllRemotesAction(state: ExtensionState, fromSubmenu: boolean): Promise<void> {
@@ -233,8 +263,8 @@ async function fetchAllRemotesAction(state: ExtensionState, fromSubmenu: boolean
   if (!repository) {
     return;
   }
-  await runRemoteOperation(fromSubmenu, async () => {
-    reportFetchResult(await repository.gitFetchAllRemotes());
+  await runRemoteOperation(fromSubmenu, async (token) => {
+    reportFetchResult(await repository.gitFetchAllRemotes(token));
   });
 }
 
@@ -243,8 +273,8 @@ async function fetchFromRemoteAction(state: ExtensionState, fromSubmenu: boolean
   if (!selection) {
     return;
   }
-  await runRemoteOperation(fromSubmenu, async () => {
-    reportFetchResult(await selection.repository.gitFetchFromRemote(selection.remote));
+  await runRemoteOperation(fromSubmenu, async (token) => {
+    reportFetchResult(await selection.repository.gitFetchFromRemote(selection.remote, token));
   });
 }
 
@@ -257,7 +287,9 @@ async function pushToRemoteAction(state: ExtensionState, fromSubmenu: boolean): 
   if (!flags) {
     return;
   }
-  await runRemoteOperation(fromSubmenu, () => selection.repository.gitPushToRemote(selection.remote, flags));
+  await runRemoteOperation(fromSubmenu, (token) =>
+    selection.repository.gitPushToRemote(selection.remote, flags, token),
+  );
 }
 
 async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpression: string, state: ExtensionState) {
@@ -1004,7 +1036,15 @@ export function registerInitCommands(state: ExtensionState): void {
   });
 
   context.subscriptions.push(vscode.commands.registerCommand("jj.gitFetch.syncing", () => {}));
-  context.subscriptions.push(vscode.commands.registerCommand("jj.graphFetchSubmenu.syncing", () => {}));
+  context.subscriptions.push(
+    vscode.commands.registerCommand("jj.graphFetchSubmenu.syncing", () => {
+      if (cancelFetchPushSubmenuOperations()) {
+        vscode.window.showWarningMessage(
+          "Cancelled the ongoing fetch/push. The operation may already have succeeded. Please fetch from the remote to reconcile the state.",
+        );
+      }
+    }),
+  );
 
   registerCommand(
     context,

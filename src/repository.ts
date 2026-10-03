@@ -1712,7 +1712,7 @@ export class JJRepository {
 
   private gitFetchAllRemotesPromise: Promise<ProcessOutput> | undefined;
 
-  gitFetchAllRemotes(): Promise<ProcessOutput> {
+  gitFetchAllRemotes(token?: vscode.CancellationToken): Promise<ProcessOutput> {
     if (!this.gitFetchAllRemotesPromise) {
       this.gitFetchAllRemotesPromise = (async () => {
         try {
@@ -1721,6 +1721,7 @@ export class JJRepository {
               timeout: TIMEOUTS.GIT_FETCH,
               cwd: this.repositoryRoot,
             }),
+            token,
           );
         } finally {
           this.gitFetchAllRemotesPromise = undefined;
@@ -1732,7 +1733,7 @@ export class JJRepository {
 
   private gitFetchFromRemotePromises = new Map<string, Promise<ProcessOutput>>();
 
-  gitFetchFromRemote(remote: string): Promise<ProcessOutput> {
+  gitFetchFromRemote(remote: string, token?: vscode.CancellationToken): Promise<ProcessOutput> {
     let promise = this.gitFetchFromRemotePromises.get(remote);
     if (!promise) {
       promise = (async () => {
@@ -1742,6 +1743,7 @@ export class JJRepository {
               timeout: TIMEOUTS.GIT_FETCH,
               cwd: this.repositoryRoot,
             }),
+            token,
           );
         } finally {
           this.gitFetchFromRemotePromises.delete(remote);
@@ -1752,9 +1754,10 @@ export class JJRepository {
     return promise;
   }
 
-  async gitPushToRemote(remote: string, flags: string[]): Promise<void> {
+  async gitPushToRemote(remote: string, flags: string[], token?: vscode.CancellationToken): Promise<void> {
     await this.jjCommand(["git", "push", "--remote", remote, ...flags], {
       timeout: TIMEOUTS.GIT_FETCH,
+      token,
     });
   }
 

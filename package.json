@@ -333,7 +333,7 @@
       },
       {
         "command": "jj.graphFetchSubmenu.syncing",
-        "title": "Fetch & Push in Progress...",
+        "title": "Fetch & Push in Progress... (Click to Cancel)",
         "category": "Jujutsu",
         "icon": "$(sync~spin)"
       }
