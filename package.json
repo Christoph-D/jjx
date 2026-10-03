@@ -312,6 +312,30 @@
         "title": "Push to Selected Remote...",
         "category": "Jujutsu",
         "icon": "$(repo-push)"
+      },
+      {
+        "command": "jj.graphFetchSubmenu.fetchAllRemotes",
+        "title": "Fetch from All Remotes",
+        "category": "Jujutsu",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "jj.graphFetchSubmenu.fetchFromRemote",
+        "title": "Fetch from Selected Remote...",
+        "category": "Jujutsu",
+        "icon": "$(repo-fetch)"
+      },
+      {
+        "command": "jj.graphFetchSubmenu.pushToRemote",
+        "title": "Push to Selected Remote...",
+        "category": "Jujutsu",
+        "icon": "$(repo-push)"
+      },
+      {
+        "command": "jj.graphFetchSubmenu.syncing",
+        "title": "Fetch & Push in Progress...",
+        "category": "Jujutsu",
+        "icon": "$(sync~spin)"
       }
     ],
     "submenus": [
@@ -427,23 +451,28 @@
         },
         {
           "submenu": "jj.graphFetchSubmenu",
-          "when": "view == jjGraphWebview",
+          "when": "view == jjGraphWebview && !jj.fetchPushSyncing",
+          "group": "navigation@8"
+        },
+        {
+          "command": "jj.graphFetchSubmenu.syncing",
+          "when": "view == jjGraphWebview && jj.fetchPushSyncing",
           "group": "navigation@8"
         }
       ],
       "jj.graphFetchSubmenu": [
         {
-          "command": "jj.gitFetchAllRemotes",
+          "command": "jj.graphFetchSubmenu.fetchAllRemotes",
           "when": "view == jjGraphWebview",
           "group": "1_fetch@1"
         },
         {
-          "command": "jj.gitFetchFromRemote",
+          "command": "jj.graphFetchSubmenu.fetchFromRemote",
           "when": "view == jjGraphWebview",
           "group": "1_fetch@2"
         },
         {
-          "command": "jj.gitPushToRemote",
+          "command": "jj.graphFetchSubmenu.pushToRemote",
           "when": "view == jjGraphWebview",
           "group": "2_push@1"
         }
@@ -629,6 +658,22 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "jj.graphFetchSubmenu.fetchAllRemotes",
+          "when": "false"
+        },
+        {
+          "command": "jj.graphFetchSubmenu.fetchFromRemote",
+          "when": "false"
+        },
+        {
+          "command": "jj.graphFetchSubmenu.pushToRemote",
+          "when": "false"
+        },
+        {
+          "command": "jj.graphFetchSubmenu.syncing",
+          "when": "false"
+        },
         {
           "command": "jj.openFileResourceState",
           "when": "false"

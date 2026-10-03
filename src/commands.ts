@@ -29,7 +29,7 @@ import {
   shouldOpenWorkingCopyRightSide,
 } from "./utils";
 import { getMergeEditorConfigs } from "./jj-editor";
-import { handleJJCommand } from "./process";
+import { handleJJCommand, type ProcessOutput } from "./process";
 
 function registerCommand<T extends unknown[]>(
   context: vscode.ExtensionContext,
@@ -190,6 +190,74 @@ function showPushFlagsQuickPick(): Promise<string[] | undefined> {
     });
     quickPick.show();
   });
+}
+
+function reportFetchResult(result: ProcessOutput): void {
+  if (result.stderr.toString().includes("Nothing changed.")) {
+    vscode.window.showInformationMessage("Fetch: Nothing changed.");
+  }
+}
+
+async function selectRemoteForOperation(
+  state: ExtensionState,
+  placeHolder: string,
+): Promise<{ repository: JJRepository; remote: string } | undefined> {
+  const repository = state.getSelectedRepo();
+  if (!repository) {
+    return undefined;
+  }
+  const remotes = await repository.getRemotes();
+  if (remotes.length === 0) {
+    vscode.window.showWarningMessage("No remotes configured.");
+    return undefined;
+  }
+  const remote = await vscode.window.showQuickPick(remotes, { placeHolder });
+  return remote ? { repository, remote } : undefined;
+}
+
+async function withFetchPushSubmenuSyncing(operation: () => Promise<void>): Promise<void> {
+  await vscode.commands.executeCommand("setContext", "jj.fetchPushSyncing", true);
+  try {
+    await operation();
+  } finally {
+    await vscode.commands.executeCommand("setContext", "jj.fetchPushSyncing", false);
+  }
+}
+
+function runRemoteOperation(fromSubmenu: boolean, operation: () => Promise<void>): Promise<void> {
+  return fromSubmenu ? withFetchPushSubmenuSyncing(operation) : operation();
+}
+
+async function fetchAllRemotesAction(state: ExtensionState, fromSubmenu: boolean): Promise<void> {
+  const repository = state.getSelectedRepo();
+  if (!repository) {
+    return;
+  }
+  await runRemoteOperation(fromSubmenu, async () => {
+    reportFetchResult(await repository.gitFetchAllRemotes());
+  });
+}
+
+async function fetchFromRemoteAction(state: ExtensionState, fromSubmenu: boolean): Promise<void> {
+  const selection = await selectRemoteForOperation(state, "Select a Remote to Fetch From");
+  if (!selection) {
+    return;
+  }
+  await runRemoteOperation(fromSubmenu, async () => {
+    reportFetchResult(await selection.repository.gitFetchFromRemote(selection.remote));
+  });
+}
+
+async function pushToRemoteAction(state: ExtensionState, fromSubmenu: boolean): Promise<void> {
+  const selection = await selectRemoteForOperation(state, "Select a Remote to Push To");
+  if (!selection) {
+    return;
+  }
+  const flags = await showPushFlagsQuickPick();
+  if (!flags) {
+    return;
+  }
+  await runRemoteOperation(fromSubmenu, () => selection.repository.gitPushToRemote(selection.remote, flags));
 }
 
 async function navigateToRelativeChange(uri: vscode.Uri | undefined, revExpression: string, state: ExtensionState) {
@@ -936,6 +1004,7 @@ export function registerInitCommands(state: ExtensionState): void {
   });
 
   context.subscriptions.push(vscode.commands.registerCommand("jj.gitFetch.syncing", () => {}));
+  context.subscriptions.push(vscode.commands.registerCommand("jj.graphFetchSubmenu.syncing", () => {}));
 
   registerCommand(
     context,
@@ -959,78 +1028,26 @@ export function registerInitCommands(state: ExtensionState): void {
     { errorPrefix: "Failed to fetch from remote" },
   );
 
-  registerCommand(
-    context,
-    "jj.gitFetchAllRemotes",
-    async () => {
-      const repository = state.getSelectedRepo();
-      if (!repository) {
-        return;
-      }
-      const result = await repository.gitFetchAllRemotes();
-      const output = result.stderr.toString();
-      if (output.includes("Nothing changed.")) {
-        vscode.window.showInformationMessage("Fetch: Nothing changed.");
-      }
-    },
-    { errorPrefix: "Failed to fetch from all remotes" },
-  );
+  registerCommand(context, "jj.gitFetchAllRemotes", () => fetchAllRemotesAction(state, false), {
+    errorPrefix: "Failed to fetch from all remotes",
+  });
+  registerCommand(context, "jj.graphFetchSubmenu.fetchAllRemotes", () => fetchAllRemotesAction(state, true), {
+    errorPrefix: "Failed to fetch from all remotes",
+  });
 
-  registerCommand(
-    context,
-    "jj.gitFetchFromRemote",
-    async () => {
-      const repository = state.getSelectedRepo();
-      if (!repository) {
-        return;
-      }
-      const remotes = await repository.getRemotes();
-      if (remotes.length === 0) {
-        vscode.window.showWarningMessage("No remotes configured.");
-        return;
-      }
-      const remote = await vscode.window.showQuickPick(remotes, {
-        placeHolder: "Select a Remote to Fetch From",
-      });
-      if (!remote) {
-        return;
-      }
-      const result = await repository.gitFetchFromRemote(remote);
-      const output = result.stderr.toString();
-      if (output.includes("Nothing changed.")) {
-        vscode.window.showInformationMessage("Fetch: Nothing changed.");
-      }
-    },
-    { errorPrefix: "Failed to fetch from remote" },
-  );
+  registerCommand(context, "jj.gitFetchFromRemote", () => fetchFromRemoteAction(state, false), {
+    errorPrefix: "Failed to fetch from remote",
+  });
+  registerCommand(context, "jj.graphFetchSubmenu.fetchFromRemote", () => fetchFromRemoteAction(state, true), {
+    errorPrefix: "Failed to fetch from remote",
+  });
 
-  registerCommand(
-    context,
-    "jj.gitPushToRemote",
-    async () => {
-      const repository = state.getSelectedRepo();
-      if (!repository) {
-        return;
-      }
-      const remotes = await repository.getRemotes();
-      if (remotes.length === 0) {
-        vscode.window.showWarningMessage("No remotes configured.");
-        return;
-      }
-      const remote = await vscode.window.showQuickPick(remotes, {
-        placeHolder: "Select a Remote to Push To",
-      });
-      if (!remote) {
-        return;
-      }
-      const flags = await showPushFlagsQuickPick();
-      if (!flags) {
-        return;
-      }
-      await repository.gitPushToRemote(remote, flags);
-    },
-    { errorPrefix: "Failed to push to remote" },
-  );
+  registerCommand(context, "jj.gitPushToRemote", () => pushToRemoteAction(state, false), {
+    errorPrefix: "Failed to push to remote",
+  });
+  registerCommand(context, "jj.graphFetchSubmenu.pushToRemote", () => pushToRemoteAction(state, true), {
+    errorPrefix: "Failed to push to remote",
+  });
 
   for (const [command, method] of [
     ["jj.undo", "undo"],
