@@ -215,16 +215,23 @@ async function selectRemoteForOperation(
   return remote ? { repository, remote } : undefined;
 }
 
-// Cancellation sources of fetch/push operations started from the graph view's Fetch & Push
-// submenu. They are tracked so the syncing icon replacing the submenu can cancel them.
-const fetchPushSubmenuCancelSources = new Set<vscode.CancellationTokenSource>();
+// Cancellation sources of syncing fetch/push operations, keyed by the context variable that
+// toggles their syncing icon. They are tracked so clicking the syncing icon replacing the
+// button or submenu can cancel the ongoing operations.
+const syncingCancelSources = new Map<string, Set<vscode.CancellationTokenSource>>();
 
-async function withFetchPushSubmenuSyncing(
+async function withSyncingCancellation(
+  contextKey: string,
   operation: (token: vscode.CancellationToken | undefined) => Promise<void>,
 ): Promise<void> {
+  let sources = syncingCancelSources.get(contextKey);
+  if (!sources) {
+    sources = new Set();
+    syncingCancelSources.set(contextKey, sources);
+  }
   const source = new vscode.CancellationTokenSource();
-  fetchPushSubmenuCancelSources.add(source);
-  await vscode.commands.executeCommand("setContext", "jj.fetchPushSyncing", true);
+  sources.add(source);
+  await vscode.commands.executeCommand("setContext", contextKey, true);
   try {
     await operation(source.token);
   } catch (error) {
@@ -234,17 +241,18 @@ async function withFetchPushSubmenuSyncing(
       throw error;
     }
   } finally {
-    fetchPushSubmenuCancelSources.delete(source);
+    sources.delete(source);
     source.dispose();
-    if (fetchPushSubmenuCancelSources.size === 0) {
-      await vscode.commands.executeCommand("setContext", "jj.fetchPushSyncing", false);
+    if (sources.size === 0) {
+      syncingCancelSources.delete(contextKey);
+      await vscode.commands.executeCommand("setContext", contextKey, false);
     }
   }
 }
 
-function cancelFetchPushSubmenuOperations(): boolean {
+function cancelSyncingOperations(contextKey: string): boolean {
   let cancelled = false;
-  for (const source of fetchPushSubmenuCancelSources) {
+  for (const source of syncingCancelSources.get(contextKey) ?? []) {
     source.cancel();
     cancelled = true;
   }
@@ -255,7 +263,7 @@ function runRemoteOperation(
   fromSubmenu: boolean,
   operation: (token: vscode.CancellationToken | undefined) => Promise<void>,
 ): Promise<void> {
-  return fromSubmenu ? withFetchPushSubmenuSyncing(operation) : operation(undefined);
+  return fromSubmenu ? withSyncingCancellation("jj.fetchPushSyncing", operation) : operation(undefined);
 }
 
 async function fetchAllRemotesAction(state: ExtensionState, fromSubmenu: boolean): Promise<void> {
@@ -1035,10 +1043,18 @@ export function registerInitCommands(state: ExtensionState): void {
     await state.operationLogManager!.refresh();
   });
 
-  context.subscriptions.push(vscode.commands.registerCommand("jj.gitFetch.syncing", () => {}));
+  context.subscriptions.push(
+    vscode.commands.registerCommand("jj.gitFetch.syncing", () => {
+      if (cancelSyncingOperations("jj.fetching")) {
+        vscode.window.showWarningMessage(
+          "Cancelled the ongoing fetch. The fetch may already have succeeded. Please fetch again to reconcile the state.",
+        );
+      }
+    }),
+  );
   context.subscriptions.push(
     vscode.commands.registerCommand("jj.graphFetchSubmenu.syncing", () => {
-      if (cancelFetchPushSubmenuOperations()) {
+      if (cancelSyncingOperations("jj.fetchPushSyncing")) {
         vscode.window.showWarningMessage(
           "Cancelled the ongoing fetch/push. The operation may already have succeeded. Please fetch from the remote to reconcile the state.",
         );
@@ -1054,16 +1070,9 @@ export function registerInitCommands(state: ExtensionState): void {
       if (!repository) {
         return;
       }
-      await vscode.commands.executeCommand("setContext", "jj.fetching", true);
-      try {
-        const result = await repository.gitFetch();
-        const output = result.stderr.toString();
-        if (output.includes("Nothing changed.")) {
-          vscode.window.showInformationMessage("Fetch: Nothing changed.");
-        }
-      } finally {
-        await vscode.commands.executeCommand("setContext", "jj.fetching", false);
-      }
+      await withSyncingCancellation("jj.fetching", async (token) => {
+        reportFetchResult(await repository.gitFetch(token));
+      });
     },
     { errorPrefix: "Failed to fetch from remote" },
   );

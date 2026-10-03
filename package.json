@@ -162,7 +162,7 @@
       },
       {
         "command": "jj.gitFetch.syncing",
-        "title": "Fetching from Default Remote...",
+        "title": "Fetching from Default Remote... (Click to Cancel)",
         "category": "Jujutsu",
         "icon": "$(sync~spin)"
       },

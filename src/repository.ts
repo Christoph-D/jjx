@@ -1695,12 +1695,13 @@ export class JJRepository {
     ]);
   }
 
-  gitFetch(): Promise<ProcessOutput> {
+  gitFetch(token?: vscode.CancellationToken): Promise<ProcessOutput> {
     if (!this.gitFetchPromise) {
       this.gitFetchPromise = (async () => {
         try {
           return await collectProcessOutput(
             this.spawnJJ(["git", "fetch"], { timeout: TIMEOUTS.GIT_FETCH, cwd: this.repositoryRoot }),
+            token,
           );
         } finally {
           this.gitFetchPromise = undefined;
