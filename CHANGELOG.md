@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.16.2
+
+### New Features
+
+- **Push to Selected Remote** - The graph view's "Fetch & Push..." submenu now offers a "Push to Selected Remote..."
+  action with a quick pick for push flags (`--tracked`, `--all`, `--deleted`)
+- **Cancel remote operations** - Clicking the spinning syncing icon during a fetch or push started from the graph view
+  command bar cancels the ongoing operation
+
 ## 1.16.1
 
 ### Bug Fixes
