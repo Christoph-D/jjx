@@ -342,7 +342,7 @@
       {
         "id": "jj.graphFetchSubmenu",
         "label": "Fetch & Push...",
-        "icon": "$(ellipsis)"
+        "icon": "$(cloud)"
       }
     ],
     "menus": {
@@ -415,48 +415,48 @@
           "group": "navigation@1"
         },
         {
-          "command": "jj.undo",
-          "when": "view == jjGraphWebview",
-          "group": "navigation@2"
-        },
-        {
-          "command": "jj.redo",
-          "when": "view == jjGraphWebview",
-          "group": "navigation@3"
-        },
-        {
-          "command": "jj.refreshGraphWebview",
-          "when": "view == jjGraphWebview",
-          "group": "navigation@4"
-        },
-        {
-          "command": "jj.newGraphWebview",
-          "when": "view == jjGraphWebview && jjGraphView.nodesSelected",
-          "group": "navigation@5"
-        },
-        {
-          "command": "jj.toggleElideImmutableCommits.show",
-          "when": "view == jjGraphWebview && jjGraphView.elidingActive",
-          "group": "navigation@6"
-        },
-        {
-          "command": "jj.toggleElideImmutableCommits.elide",
-          "when": "view == jjGraphWebview && !jjGraphView.elidingActive",
-          "group": "navigation@6"
-        },
-        {
-          "command": "jj.selectGraphWebviewRepo",
-          "when": "view == jjGraphWebview && jj.hasMultipleRepos",
-          "group": "navigation@7"
-        },
-        {
           "submenu": "jj.graphFetchSubmenu",
           "when": "view == jjGraphWebview && !jj.fetchPushSyncing",
-          "group": "navigation@8"
+          "group": "navigation@2"
         },
         {
           "command": "jj.graphFetchSubmenu.syncing",
           "when": "view == jjGraphWebview && jj.fetchPushSyncing",
+          "group": "navigation@2"
+        },
+        {
+          "command": "jj.undo",
+          "when": "view == jjGraphWebview",
+          "group": "navigation@3"
+        },
+        {
+          "command": "jj.redo",
+          "when": "view == jjGraphWebview",
+          "group": "navigation@4"
+        },
+        {
+          "command": "jj.refreshGraphWebview",
+          "when": "view == jjGraphWebview",
+          "group": "navigation@5"
+        },
+        {
+          "command": "jj.newGraphWebview",
+          "when": "view == jjGraphWebview && jjGraphView.nodesSelected",
+          "group": "navigation@6"
+        },
+        {
+          "command": "jj.toggleElideImmutableCommits.show",
+          "when": "view == jjGraphWebview && jjGraphView.elidingActive",
+          "group": "navigation@7"
+        },
+        {
+          "command": "jj.toggleElideImmutableCommits.elide",
+          "when": "view == jjGraphWebview && !jjGraphView.elidingActive",
+          "group": "navigation@7"
+        },
+        {
+          "command": "jj.selectGraphWebviewRepo",
+          "when": "view == jjGraphWebview && jj.hasMultipleRepos",
           "group": "navigation@8"
         }
       ],
